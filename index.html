@@ -48,6 +48,8 @@
     .photoPick{width:82px;height:82px;border-radius:20px;background:#f7f3ef;border:1px dashed #d3c8be;display:grid;place-items:center;overflow:hidden;position:relative}.photoPick img{width:100%;height:100%;object-fit:cover}.photoPick input{position:absolute;inset:0;opacity:0}.removeRow{width:44px;height:44px;border-radius:15px;border:0;background:#fae8ea;color:var(--danger);font-weight:900}
     .topbar{display:flex;align-items:center;gap:10px;margin-bottom:16px}.back{width:44px;height:44px;border:1px solid var(--line);background:#fff;border-radius:15px;font-size:21px}.topbar h2{margin:0;font-size:21px;font-weight:950}
     .empty{padding:30px 16px;text-align:center;color:var(--muted)}
+    .typeChoices{display:grid;grid-template-columns:1fr 1fr;gap:10px}.typeChoice{position:relative}.typeChoice input{position:absolute;opacity:0;pointer-events:none}.typeChoice span{min-height:50px;border:1px solid var(--line);border-radius:16px;display:grid;place-items:center;background:#fff;font-weight:900}.typeChoice input:checked+span{background:var(--pink);border-color:var(--pink2);color:#7d4e5a}
+    .pagePhoto{display:grid;grid-template-columns:104px 1fr 44px;gap:12px;align-items:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:20px}.pagePhoto img{width:104px;height:82px;object-fit:cover;border-radius:16px;background:#f7f3ef}.photoDetails{display:grid;gap:8px;min-width:0}.photoDetails select{width:100%;min-height:44px;border:1px solid var(--line);background:#fff;border-radius:14px;padding:0 10px}.photoName{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.createActions{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-top:16px}.createSummary{display:flex;align-items:center;justify-content:space-between;gap:12px}.createSummary b{font-size:18px}.createSummary small{display:block;color:var(--muted);margin-top:3px}
 
     /* Canva-inspired home */
     .homeIntro{padding:2px 2px 0}.homeIntro h1{font-size:31px;margin:0 0 3px;font-weight:950}.homeIntro .sub{font-size:13px;color:var(--muted);font-weight:700}
@@ -68,7 +70,7 @@
 
     .footerNav{position:fixed;left:0;right:0;bottom:0;padding:8px 14px calc(8px + env(safe-area-inset-bottom));background:rgba(251,250,247,.95);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:20}.footerInner{width:min(760px,100%);display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.navBtn{min-height:58px;border:0;border-radius:18px;background:transparent;font-weight:850;color:#77736f}.navBtn.active{background:#fff;border:1px solid var(--line);box-shadow:0 5px 14px rgba(70,58,47,.05);color:var(--ink)}
     .toast{position:fixed;left:50%;bottom:108px;transform:translateX(-50%) translateY(18px);opacity:0;background:#403934;color:white;padding:12px 16px;border-radius:999px;font-size:13px;font-weight:850;transition:.2s;z-index:50;pointer-events:none;max-width:90%;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-    @media(max-width:560px){.albumScroller{grid-template-columns:1fr 1fr}.albumCard:nth-child(3){display:none}.grid.three{grid-template-columns:1fr 1fr}.bulkRow{grid-template-columns:74px 1fr 42px}.photoPick{width:74px;height:74px}.homeIntro h1{font-size:28px}}
+    @media(max-width:560px){.albumScroller{grid-template-columns:1fr 1fr}.albumCard:nth-child(3){display:none}.grid.three{grid-template-columns:1fr 1fr}.bulkRow{grid-template-columns:74px 1fr 42px}.photoPick{width:74px;height:74px}.homeIntro h1{font-size:28px}.pagePhoto{grid-template-columns:82px 1fr 42px}.pagePhoto img{width:82px;height:74px}}
     @media(max-width:360px){.albumScroller{grid-template-columns:1fr}.albumCard:nth-child(2){display:none}.homeActions{grid-template-columns:1fr}.brand{font-size:21px}}
 
   </style>
@@ -101,24 +103,27 @@
         <div class="sub"><span id="homeYear">2026年度</span>・<span id="homeClass">—</span></div>
       </div>
 
-      <div class="continueHead"><h2>続きから作る</h2><span class="pill">0 / 12ページ</span></div>
-      <div class="albumScroller">
-        <button class="albumCard pink" type="button" id="createPageBtn">
-          <div class="albumThumb">🌷</div><span class="albumStatus">作成をはじめる</span><div class="albumMonth">4月</div><div class="albumMeta">写真を追加してページを作成</div>
-        </button>
-        <button class="albumCard blue" type="button" data-placeholder="page">
-          <div class="albumThumb">📷</div><span class="albumStatus">未作成</span><div class="albumMonth">5月</div><div class="albumMeta">ページ作成機能は次フェーズ</div>
-        </button>
-        <button class="albumCard yellow" type="button" data-placeholder="page">
-          <div class="albumThumb">✨</div><span class="albumStatus">準備中</span><div class="albumMonth">行事</div><div class="albumMeta">月・イベント両方に対応予定</div>
-        </button>
-      </div>
+      <div class="continueHead"><h2>続きから作る</h2><span class="pill" id="pageProgress">0 / 12ページ</span></div>
+      <div class="albumScroller" id="homePages"></div>
 
       <div class="sectionTitle"><h2>ホーム</h2><span class="hint" id="homeDesc">まず園児を登録しましょう。</span></div>
       <div class="homeActions">
         <button class="homeAction" type="button" data-go="admin"><span class="ico">⚙️</span><b>管理</b><small>クラス・園児・ページ・写真・年度</small></button>
         <button class="homeAction" type="button" id="savedBooksBtn"><span class="ico">📚</span><b>保存したBOOK</b><small>完成した個人冊子をここから確認</small></button>
       </div>
+    </section>
+
+    <section class="screen" data-screen="pageCreate">
+      <div class="topbar"><button class="back" id="closePageCreate" type="button">‹</button><h2>ページを作成</h2></div>
+      <div class="card stack">
+        <div class="field"><label for="pageTitle">ページタイトル</label><input id="pageTitle" type="text" maxlength="40" placeholder="例：4月の思い出" autocomplete="off"></div>
+        <div class="field"><label>ページの種類</label><div class="typeChoices"><label class="typeChoice"><input type="radio" name="pageType" value="month" checked><span>月</span></label><label class="typeChoice"><input type="radio" name="pageType" value="event"><span>イベント</span></label></div></div>
+      </div>
+      <div class="sectionTitle"><h2>写真</h2><span class="pill" id="pagePhotoCount">0枚</span></div>
+      <div class="notice" id="pageChildNotice">写真を追加し、それぞれ園児を選んでください。</div>
+      <div class="stack" id="pagePhotos" style="margin-top:12px"></div>
+      <label class="fileBtn wide" style="margin-top:12px">＋ 写真を追加<input id="pagePhotoInput" type="file" accept="image/*" multiple></label>
+      <div class="createActions"><button class="ghost" id="cancelPage" type="button">キャンセル</button><button class="primary" id="savePage" type="button">ページを保存</button></div>
     </section>
 
     <section class="screen" data-screen="admin">
@@ -197,8 +202,8 @@
     {id:'deigo',name:'でいご組',age:'4歳'}, {id:'sakura',name:'さくら組',age:'5歳'}
   ];
   const STORE_KEY='omoide_book_v01';
-  const defaultState={setupCompleted:false,year:2026,selectedClassId:'tulip',creationMode:'mixed',photosPerChild:3,children:[]};
-  let state=loadState(); let currentClassId=state.selectedClassId; let bulkDraft=[];
+  const defaultState={setupCompleted:false,year:2026,selectedClassId:'tulip',creationMode:'mixed',photosPerChild:3,children:[],pages:[]};
+  let state=loadState(); let currentClassId=state.selectedClassId; let bulkDraft=[]; let pageDraft=[];
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 
   function loadState(){try{return {...defaultState,...JSON.parse(localStorage.getItem(STORE_KEY)||'{}')}}catch{return {...defaultState}}}
@@ -207,12 +212,15 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup';window.scrollTo({top:0,behavior:'instant'}); if(screen==='home')renderHome(); if(screen==='admin'){} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); refreshNav(screen);}
+  function show(screen){$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate';window.scrollTo({top:0,behavior:'instant'}); if(screen==='home')renderHome(); if(screen==='admin'){} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
   function renderSetup(){const s=$('#setupClass');s.innerHTML=CLASSES.map(c=>`<option value="${c.id}">${c.name}（${c.age}）</option>`).join('');s.value=state.selectedClassId;$('#setupMode').value=state.creationMode;$('#setupCount').value=String(state.photosPerChild);}
-  function renderHome(){const c=cls(state.selectedClassId);$('#homeClass').textContent=c.name;$('#homeYear').textContent=`${state.year}年度`;const n=state.children.filter(x=>x.classId===state.selectedClassId).length;$('#homeDesc').textContent=n?`${n}名登録済み。次はページ作成機能を追加していきます。`:'まず管理画面からクラスアイコンと園児を登録しましょう。';}
+  function renderHome(){const c=cls(state.selectedClassId);$('#homeClass').textContent=c.name;$('#homeYear').textContent=`${state.year}年度`;const n=state.children.filter(x=>x.classId===state.selectedClassId).length;const pages=state.pages.filter(x=>x.classId===state.selectedClassId);$('#homeDesc').textContent=n?`${n}名登録済み。写真を選んでページを作成できます。`:'まず管理画面からクラスアイコンと園児を登録しましょう。';$('#pageProgress').textContent=`${pages.length} / 12ページ`;const cards=pages.slice(-2).reverse().map((p,i)=>`<button class="albumCard ${i?'blue':'pink'}" type="button" data-saved-page="${p.id}"><div class="albumThumb">${p.type==='event'?'✨':'📷'}</div><span class="albumStatus">保存済み</span><div class="albumMonth">${escapeHtml(p.title)}</div><div class="albumMeta">${p.photoCount}枚の写真・${p.assignedCount}枚振り分け済み</div></button>`).join('');$('#homePages').innerHTML=cards+`<button class="albumCard yellow" type="button" data-create-page><div class="albumThumb">＋</div><span class="albumStatus">新規作成</span><div class="albumMonth">作成</div><div class="albumMeta">月またはイベントのページを作成</div></button>`;$$('[data-create-page]').forEach(b=>b.addEventListener('click',openPageCreate));$$('[data-saved-page]').forEach(b=>b.addEventListener('click',()=>toast('このページは保存済みです')));}
+
+  function openPageCreate(){pageDraft=[];$('#pageTitle').value='';const preferred=state.creationMode==='event'?'event':'month';const radio=$(`input[name="pageType"][value="${preferred}"]`);if(radio)radio.checked=true;show('pageCreate')}
+  function renderPageDraft(){const children=state.children.filter(x=>x.classId===state.selectedClassId);const wrap=$('#pagePhotos');wrap.innerHTML='';$('#pagePhotoCount').textContent=`${pageDraft.length}枚`;$('#pageChildNotice').textContent=children.length?'写真を追加し、それぞれ園児を選んでください。':'先に管理画面で園児を登録すると、写真を振り分けできます。';pageDraft.forEach((photo,i)=>{const el=document.createElement('div');el.className='pagePhoto';const options=['<option value="">園児を選択</option>',...children.map(child=>`<option value="${child.id}" ${photo.childId===child.id?'selected':''}>${escapeHtml(child.name)}</option>`)].join('');el.innerHTML=`<img src="${fileUrl(photo.file)}" alt="追加した写真 ${i+1}"><div class="photoDetails"><div class="photoName">${escapeHtml(photo.file.name)}</div><select data-photo-child="${photo.id}" aria-label="${i+1}枚目を園児に振り分け">${options}</select></div><button class="removeRow" type="button" data-remove-photo="${photo.id}" aria-label="写真を削除">×</button>`;wrap.appendChild(el)});$$('[data-photo-child]').forEach(s=>s.addEventListener('change',()=>{const p=pageDraft.find(x=>x.id===s.dataset.photoChild);if(p)p.childId=s.value}));$$('[data-remove-photo]').forEach(b=>b.addEventListener('click',()=>{pageDraft=pageDraft.filter(x=>x.id!==b.dataset.removePhoto);renderPageDraft()}));}
 
   function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('omoide_book_assets',1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('images'))db.createObjectStore('images')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
   async function putImage(key,file){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction('images','readwrite');tx.objectStore('images').put(file,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});}
@@ -239,9 +247,11 @@
   $('#addBulkRow').addEventListener('click',()=>{if(bulkDraft.length>=30){toast('1回で登録できるのは最大30名です');return}bulkDraft.push(freshRow());renderBulk()});
   $('#saveBulk').addEventListener('click',async()=>{const valid=bulkDraft.filter(r=>r.name.trim()||r.file);if(!valid.length){toast('園児情報を入力してください');return}if(valid.some(r=>!r.name.trim()||!r.file)){toast('写真とフルネームを両方入力してください');return}for(const r of valid){const childId=crypto.randomUUID();state.children.push({id:childId,classId:currentClassId,name:r.name.trim(),createdAt:Date.now()});await putImage(`child:${childId}`,r.file)}saveState();bulkDraft=[];show('childList');toast(`${valid.length}名を一括登録しました`)});
   $('#savePageSettings').addEventListener('click',()=>{state.creationMode=$('#adminMode').value;state.photosPerChild=Number($('#adminCount').value);saveState();toast('ページ設定を保存しました')});
-  $('#createPageBtn').addEventListener('click',()=>toast('ページ作成は次フェーズで実装します'));
-  $$('[data-placeholder="page"]').forEach(b=>b.addEventListener('click',()=>toast('このページは次フェーズで作成できるようにします')));
-  $('#footerCreate').addEventListener('click',()=>toast('ページ作成は次フェーズで実装します'));
+  $('#footerCreate').addEventListener('click',openPageCreate);
+  $('#pagePhotoInput').addEventListener('change',e=>{const files=[...(e.target.files||[])];pageDraft.push(...files.map(file=>({id:crypto.randomUUID(),file,childId:''})));e.target.value='';renderPageDraft()});
+  $('#closePageCreate').addEventListener('click',()=>show('home'));
+  $('#cancelPage').addEventListener('click',()=>show('home'));
+  $('#savePage').addEventListener('click',async()=>{const title=$('#pageTitle').value.trim();if(!title){toast('ページタイトルを入力してください');$('#pageTitle').focus();return}if(!pageDraft.length){toast('写真を1枚以上追加してください');return}if(pageDraft.some(p=>!p.childId)){toast('すべての写真を園児に振り分けてください');return}const pageId=crypto.randomUUID();const button=$('#savePage');button.disabled=true;button.textContent='保存中…';try{for(const photo of pageDraft)await putImage(`page:${pageId}:${photo.id}`,photo.file);state.pages.push({id:pageId,classId:state.selectedClassId,title,type:$('input[name="pageType"]:checked').value,photos:pageDraft.map(p=>({id:p.id,childId:p.childId})),photoCount:pageDraft.length,assignedCount:pageDraft.filter(p=>p.childId).length,createdAt:Date.now()});saveState();pageDraft=[];show('home');toast('ページを保存しました')}finally{button.disabled=false;button.textContent='ページを保存'}});
   $('#savedBooksBtn').addEventListener('click',()=>toast('保存済みBOOKは冊子作成フェーズで実装します'));
   $('#resetBtn').addEventListener('click',()=>{if(!confirm('土台版の設定・園児データを初期化しますか？'))return;localStorage.removeItem(STORE_KEY);indexedDB.deleteDatabase('omoide_book_assets');location.reload()});
 
