@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#fff8ef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="おもいでBOOK" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-192.svg" />
+  <title>おもいでBOOK</title>
+  <style>
+
+    :root{
+      --bg:#fbfaf7; --paper:#ffffff; --ink:#30312f; --muted:#7d7c77; --line:#ebe8e1;
+      --pink:#f8e4e8; --pink2:#f4cdd7; --lav:#ece7f9; --mint:#e5f3eb; --blue:#e7f0f8; --yellow:#fbefc8;
+      --accent:#df8fa3; --accent2:#8e7cc5; --green:#6ba282; --danger:#c96f79;
+      --shadow:0 10px 28px rgba(70,58,47,.07); --r:26px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",system-ui,sans-serif}
+    body{min-height:100vh}
+    button,input,select{font:inherit} button{cursor:pointer}
+    .app{max-width:760px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 16px calc(108px + env(safe-area-inset-bottom))}
+    .header{display:flex;align-items:center;gap:12px;margin:0 2px 18px}
+    .flower{width:46px;height:46px;border-radius:18px;background:#fff;display:grid;place-items:center;font-size:26px;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .grow{flex:1;min-width:0}.brand{font-weight:950;font-size:24px;letter-spacing:.03em}.hint{font-size:12px;color:var(--muted);line-height:1.45}
+    .pill{border:1px solid var(--line);background:#fff;padding:8px 12px;border-radius:999px;color:var(--muted);font-size:12px;font-weight:800}
+    .screen{display:none}.screen.active{display:block}
+    .hero,.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+    .hero{padding:22px;background:linear-gradient(145deg,#fff 20%,#fff9f6 100%)}
+    h1,h2,h3,p{margin-top:0}.hero h1{font-size:28px;margin-bottom:8px}.hero p{color:var(--muted);line-height:1.65;margin-bottom:0}
+    .sectionTitle{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:24px 4px 11px}.sectionTitle h2{font-size:18px;margin:0;font-weight:900}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid.one{grid-template-columns:1fr}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .primary,.secondary,.danger,.ghost{border:0;border-radius:18px;min-height:50px;padding:12px 17px;font-weight:900}
+    .primary{background:#e694a8;color:#fff}.secondary{background:var(--lav);color:#554b72}.danger{background:#fae8ea;color:var(--danger)}.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+    .wide{width:100%}.row{display:flex;gap:10px;align-items:center}.row.wrap{flex-wrap:wrap}.stack{display:grid;gap:12px}
+    .field{display:grid;gap:7px}.field label{font-size:13px;font-weight:900}.field input,.field select{width:100%;min-height:50px;border:1px solid var(--line);background:#fff;border-radius:16px;padding:0 14px;color:var(--ink);font-size:16px}
+    .card{padding:16px}.soft{background:#fffdf9}
+    .notice{padding:14px 15px;border-radius:18px;background:#fff8dd;color:#695d34;font-size:13px;line-height:1.6;border:1px solid #f2e7b8}.oknote{background:#eef8f2;color:#496c58;border-color:#d7eadf}
+    .progress{height:9px;background:#f1eee9;border-radius:999px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#efadbd,#d98aa0);border-radius:inherit}
+    .list{display:grid;gap:10px}.item{display:flex;gap:12px;align-items:center;padding:13px 14px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 5px 14px rgba(70,58,47,.035)}
+    .avatar{width:54px;height:54px;border-radius:18px;background:#f5f1ec;object-fit:cover;display:grid;place-items:center;font-size:24px;flex:0 0 auto;overflow:hidden}.item .meta{min-width:0;flex:1}.item .meta b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item .meta small{color:var(--muted)}
+    .classCard{display:grid;gap:10px;text-align:center}.classIcon{width:104px;height:104px;margin:auto;border-radius:26px;background:#faf7f2;border:1px dashed #d6ccc3;display:grid;place-items:center;overflow:hidden;font-size:34px}.classIcon img{width:100%;height:100%;object-fit:cover}
+    .fileBtn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:15px;background:#fff;border:1px solid var(--line);font-weight:900}.fileBtn input{display:none}
+    .bulkRow{display:grid;grid-template-columns:82px 1fr 46px;gap:10px;align-items:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 5px 14px rgba(70,58,47,.03)}
+    .photoPick{width:82px;height:82px;border-radius:20px;background:#f7f3ef;border:1px dashed #d3c8be;display:grid;place-items:center;overflow:hidden;position:relative}.photoPick img{width:100%;height:100%;object-fit:cover}.photoPick input{position:absolute;inset:0;opacity:0}.removeRow{width:44px;height:44px;border-radius:15px;border:0;background:#fae8ea;color:var(--danger);font-weight:900}
+    .topbar{display:flex;align-items:center;gap:10px;margin-bottom:16px}.back{width:44px;height:44px;border:1px solid var(--line);background:#fff;border-radius:15px;font-size:21px}.topbar h2{margin:0;font-size:21px;font-weight:950}
+    .empty{padding:30px 16px;text-align:center;color:var(--muted)}
+
+    /* Canva-inspired home */
+    .homeIntro{padding:2px 2px 0}.homeIntro h1{font-size:31px;margin:0 0 3px;font-weight:950}.homeIntro .sub{font-size:13px;color:var(--muted);font-weight:700}
+    .continueHead{display:flex;align-items:center;justify-content:space-between;margin:25px 2px 12px}.continueHead h2{margin:0;font-size:20px;font-weight:950}
+    .albumScroller{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    .albumCard{border:0;text-align:left;border-radius:25px;padding:14px;min-height:195px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px;color:var(--ink);position:relative;overflow:hidden}
+    .albumCard::after{content:"";position:absolute;width:72px;height:72px;border-radius:50%;right:-24px;top:-20px;background:rgba(255,255,255,.35)}
+    .albumCard.pink{background:#f7dfe5}.albumCard.blue{background:#e5eff7}.albumCard.yellow{background:#f8edc7}
+    .albumThumb{height:78px;border-radius:18px;background:rgba(255,255,255,.62);display:grid;place-items:center;font-size:34px;border:1px solid rgba(255,255,255,.65)}
+    .albumMonth{font-size:20px;font-weight:950}.albumStatus{font-size:11px;font-weight:900;display:inline-flex;align-self:flex-start;background:rgba(255,255,255,.68);padding:5px 8px;border-radius:999px}.albumMeta{font-size:11px;color:#6f6b67;line-height:1.35}
+    .homeActions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}.homeAction{border:0;border-radius:24px;padding:17px;text-align:left;min-height:118px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}.homeAction .ico{font-size:28px}.homeAction b{display:block;font-size:17px;margin:8px 0 4px}.homeAction small{color:var(--muted)}
+
+    /* Canva-inspired admin */
+    .adminLead{margin:2px 2px 18px}.adminLead h1{font-size:30px;margin:0 0 5px;font-weight:950}.adminLead p{color:var(--muted);margin:0;font-size:13px}
+    .adminStack{display:grid;gap:12px}.adminCard{width:100%;border:1px solid var(--line);background:#fff;border-radius:24px;padding:16px;display:grid;grid-template-columns:50px 1fr auto;gap:13px;align-items:center;text-align:left;box-shadow:var(--shadow);color:var(--ink)}
+    .adminNum{width:50px;height:50px;border-radius:17px;display:grid;place-items:center;font-weight:950;font-size:18px}.adminCard:nth-child(1) .adminNum{background:var(--pink)}.adminCard:nth-child(2) .adminNum{background:var(--lav)}.adminCard:nth-child(3) .adminNum{background:var(--mint)}.adminCard:nth-child(4) .adminNum{background:var(--blue)}.adminCard:nth-child(5) .adminNum{background:var(--yellow)}
+    .adminCard b{display:block;font-size:16px;margin-bottom:3px}.adminCard small{color:var(--muted);line-height:1.4}.chev{font-size:24px;color:#aaa49d}
+
+    .footerNav{position:fixed;left:0;right:0;bottom:0;padding:8px 14px calc(8px + env(safe-area-inset-bottom));background:rgba(251,250,247,.95);backdrop-filter:blur(16px);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:20}.footerInner{width:min(760px,100%);display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.navBtn{min-height:58px;border:0;border-radius:18px;background:transparent;font-weight:850;color:#77736f}.navBtn.active{background:#fff;border:1px solid var(--line);box-shadow:0 5px 14px rgba(70,58,47,.05);color:var(--ink)}
+    .toast{position:fixed;left:50%;bottom:108px;transform:translateX(-50%) translateY(18px);opacity:0;background:#403934;color:white;padding:12px 16px;border-radius:999px;font-size:13px;font-weight:850;transition:.2s;z-index:50;pointer-events:none;max-width:90%;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    @media(max-width:560px){.albumScroller{grid-template-columns:1fr 1fr}.albumCard:nth-child(3){display:none}.grid.three{grid-template-columns:1fr 1fr}.bulkRow{grid-template-columns:74px 1fr 42px}.photoPick{width:74px;height:74px}.homeIntro h1{font-size:28px}}
+    @media(max-width:360px){.albumScroller{grid-template-columns:1fr}.albumCard:nth-child(2){display:none}.homeActions{grid-template-columns:1fr}.brand{font-size:21px}}
+
+  </style>
+</head>
+<body>
+  <main class="app" id="app">
+    <div class="header">
+      <div class="flower">📖</div>
+      <div class="grow"><div class="brand">おもいでブック</div><div class="hint" id="headerSub">Canva UI版 v0.2</div></div>
+      <button class="pill" id="resetBtn" type="button">初期化</button>
+    </div>
+
+    <section class="screen" data-screen="setup">
+      <div class="hero">
+        <h1>はじめに設定しましょう 📖</h1>
+        <p>この端末で作るクラスと、ページ作成の基本条件を設定します。設定後はホームから変更できます。</p>
+      </div>
+      <div class="sectionTitle"><h2>基本設定</h2></div>
+      <div class="card stack">
+        <div class="field"><label>作成するクラス</label><select id="setupClass"></select></div>
+        <div class="field"><label>ページ作成方式</label><select id="setupMode"><option value="monthly">月ごと</option><option value="event">イベントごと</option><option value="mixed">月・イベント両方</option></select></div>
+        <div class="field"><label>1人あたりの写真枚数</label><select id="setupCount"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></div>
+        <button class="primary wide" id="completeSetup" type="button">設定を完了する</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="home">
+      <div class="homeIntro">
+        <h1>おもいでブック</h1>
+        <div class="sub"><span id="homeYear">2026年度</span>・<span id="homeClass">—</span></div>
+      </div>
+
+      <div class="continueHead"><h2>続きから作る</h2><span class="pill">0 / 12ページ</span></div>
+      <div class="albumScroller">
+        <button class="albumCard pink" type="button" id="createPageBtn">
+          <div class="albumThumb">🌷</div><span class="albumStatus">作成をはじめる</span><div class="albumMonth">4月</div><div class="albumMeta">写真を追加してページを作成</div>
+        </button>
+        <button class="albumCard blue" type="button" data-placeholder="page">
+          <div class="albumThumb">📷</div><span class="albumStatus">未作成</span><div class="albumMonth">5月</div><div class="albumMeta">ページ作成機能は次フェーズ</div>
+        </button>
+        <button class="albumCard yellow" type="button" data-placeholder="page">
+          <div class="albumThumb">✨</div><span class="albumStatus">準備中</span><div class="albumMonth">行事</div><div class="albumMeta">月・イベント両方に対応予定</div>
+        </button>
+      </div>
+
+      <div class="sectionTitle"><h2>ホーム</h2><span class="hint" id="homeDesc">まず園児を登録しましょう。</span></div>
+      <div class="homeActions">
+        <button class="homeAction" type="button" data-go="admin"><span class="ico">⚙️</span><b>管理</b><small>クラス・園児・ページ・写真・年度</small></button>
+        <button class="homeAction" type="button" id="savedBooksBtn"><span class="ico">📚</span><b>保存したBOOK</b><small>完成した個人冊子をここから確認</small></button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="admin">
+      <div class="adminLead"><h1>管理</h1><p>おもいでブックの設定</p></div>
+      <div class="adminStack">
+        <button class="adminCard" data-go="classIcons" type="button"><span class="adminNum">1</span><span><b>クラスアイコン設定</b><small>表紙に使う各クラスの花の画像</small></span><span class="chev">›</span></button>
+        <button class="adminCard" data-go="childClasses" type="button"><span class="adminNum">2</span><span><b>園児管理</b><small>園児の登録・顔写真・削除</small></span><span class="chev">›</span></button>
+        <button class="adminCard" data-go="pageSettings" type="button"><span class="adminNum">3</span><span><b>ページ設定</b><small>月・行事・1人あたりの枚数</small></span><span class="chev">›</span></button>
+        <button class="adminCard" data-go="photoAdmin" type="button"><span class="adminNum">4</span><span><b>写真管理</b><small>候補写真・保存済み写真</small></span><span class="chev">›</span></button>
+        <button class="adminCard" data-go="yearAdmin" type="button"><span class="adminNum">5</span><span><b>年度管理</b><small>新年度開始・自動進級</small></span><span class="chev">›</span></button>
+      </div>
+      <div class="notice oknote" style="margin-top:14px">大切な写真はこの端末内で管理します。AI仕分けはMacBook到着後に追加予定です。</div>
+    </section>
+
+    <section class="screen" data-screen="classIcons">
+      <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>クラスアイコン設定</h2></div>
+      <div class="notice">ここで登録した画像を、そのクラスの表紙メイン画像として使います。</div>
+      <div class="sectionTitle"><h2>6クラス</h2></div>
+      <div class="grid" id="classIconGrid"></div>
+    </section>
+
+    <section class="screen" data-screen="childClasses">
+      <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>園児管理</h2></div>
+      <div class="sectionTitle"><h2>クラスを選択</h2></div>
+      <div class="list" id="childClassList"></div>
+    </section>
+
+    <section class="screen" data-screen="childList">
+      <div class="topbar"><button class="back" data-go="childClasses" type="button">‹</button><h2 id="childListTitle">園児一覧</h2></div>
+      <div class="row wrap" style="margin-bottom:12px"><button class="primary grow" id="openBulk" type="button">＋ 園児を追加</button></div>
+      <div class="list" id="childList"></div>
+    </section>
+
+    <section class="screen" data-screen="bulkRegister">
+      <div class="topbar"><button class="back" data-go="childList" type="button">‹</button><h2>園児一括登録</h2></div>
+      <div class="notice"><b>写真＋フルネーム</b>を1セットとして、1回の登録作業で最大30名までまとめて登録できます。</div>
+      <div class="sectionTitle"><h2 id="bulkTitle">登録する園児</h2><span class="pill" id="bulkCount">0 / 30</span></div>
+      <div class="stack" id="bulkRows"></div>
+      <div class="row wrap" style="margin-top:12px"><button class="secondary grow" id="addBulkRow" type="button">＋ 入力欄を追加</button><button class="primary grow" id="saveBulk" type="button">一括登録</button></div>
+    </section>
+
+    <section class="screen" data-screen="pageSettings">
+      <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>ページ設定</h2></div>
+      <div class="card stack">
+        <div class="field"><label>ページ作成方式</label><select id="adminMode"><option value="monthly">月ごと</option><option value="event">イベントごと</option><option value="mixed">月・イベント両方</option></select></div>
+        <div class="field"><label>1人あたり使用する写真枚数</label><select id="adminCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+        <button class="primary wide" id="savePageSettings" type="button">設定を保存</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="photoAdmin">
+      <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>写真管理</h2></div>
+      <div class="hero"><h1>📸 写真管理の土台</h1><p>AI仕分けはMacBook到着後に追加します。次フェーズでは、ページ写真の追加と手動での園児紐づけを先に実装します。</p></div>
+    </section>
+
+    <section class="screen" data-screen="yearAdmin">
+      <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>年度管理</h2></div>
+      <div class="card stack"><div class="row"><div class="grow"><div class="hint">現在年度</div><b id="yearLabel" style="font-size:24px">2026年度</b></div><span class="pill">使用中</span></div><div class="notice">新年度開始・自動進級は、園児データとページ保存が安定してから有効化します。</div></div>
+    </section>
+  </main>
+
+  <nav class="footerNav" id="footerNav" hidden>
+    <div class="footerInner">
+      <button class="navBtn" data-go="home" type="button">⌂<br><span class="hint">ホーム</span></button>
+      <button class="navBtn" id="footerCreate" type="button">＋<br><span class="hint">作成</span></button>
+      <button class="navBtn" data-go="admin" type="button">⚙︎<br><span class="hint">管理</span></button>
+    </div>
+  </nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const CLASSES = [
+    {id:'tanpopo',name:'たんぽぽ組',age:'0歳'}, {id:'tulip',name:'ちゅうりっぷ組',age:'1歳'},
+    {id:'cosmos',name:'コスモス組',age:'2歳'}, {id:'canna',name:'カンナ組',age:'3歳'},
+    {id:'deigo',name:'でいご組',age:'4歳'}, {id:'sakura',name:'さくら組',age:'5歳'}
+  ];
+  const STORE_KEY='omoide_book_v01';
+  const defaultState={setupCompleted:false,year:2026,selectedClassId:'tulip',creationMode:'mixed',photosPerChild:3,children:[]};
+  let state=loadState(); let currentClassId=state.selectedClassId; let bulkDraft=[];
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+
+  function loadState(){try{return {...defaultState,...JSON.parse(localStorage.getItem(STORE_KEY)||'{}')}}catch{return {...defaultState}}}
+  function saveState(){localStorage.setItem(STORE_KEY,JSON.stringify(state)); refreshHeader();}
+  function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800)}
+  function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
+  function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
+
+  function show(screen){$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup';window.scrollTo({top:0,behavior:'instant'}); if(screen==='home')renderHome(); if(screen==='admin'){} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); refreshNav(screen);}
+  function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
+  function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
+
+  function renderSetup(){const s=$('#setupClass');s.innerHTML=CLASSES.map(c=>`<option value="${c.id}">${c.name}（${c.age}）</option>`).join('');s.value=state.selectedClassId;$('#setupMode').value=state.creationMode;$('#setupCount').value=String(state.photosPerChild);}
+  function renderHome(){const c=cls(state.selectedClassId);$('#homeClass').textContent=c.name;$('#homeYear').textContent=`${state.year}年度`;const n=state.children.filter(x=>x.classId===state.selectedClassId).length;$('#homeDesc').textContent=n?`${n}名登録済み。次はページ作成機能を追加していきます。`:'まず管理画面からクラスアイコンと園児を登録しましょう。';}
+
+  function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('omoide_book_assets',1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('images'))db.createObjectStore('images')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+  async function putImage(key,file){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction('images','readwrite');tx.objectStore('images').put(file,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});}
+  async function getImage(key){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction('images','readonly');const r=tx.objectStore('images').get(key);r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);});}
+  async function deleteImage(key){const db=await openDB();return new Promise(resolve=>{const tx=db.transaction('images','readwrite');tx.objectStore('images').delete(key);tx.oncomplete=resolve;tx.onerror=resolve;});}
+  function fileUrl(file){return URL.createObjectURL(file)}
+
+  async function renderClassIcons(){const grid=$('#classIconGrid');grid.innerHTML='';for(const c of CLASSES){const card=document.createElement('div');card.className='card classCard';card.innerHTML=`<div class="classIcon" id="icon-${c.id}">🌼</div><b>${c.name}</b><span class="hint">${c.age}</span><label class="fileBtn">画像を選択<input type="file" accept="image/*" data-icon-input="${c.id}"></label>`;grid.appendChild(card);const blob=await getImage(`classIcon:${c.id}`);if(blob){const box=card.querySelector('.classIcon');box.innerHTML=`<img alt="${c.name} アイコン" src="${fileUrl(blob)}">`}}
+    $$('[data-icon-input]').forEach(inp=>inp.addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;await putImage(`classIcon:${inp.dataset.iconInput}`,f);toast('クラスアイコンを保存しました');renderClassIcons();}));
+  }
+
+  function renderChildClasses(){const list=$('#childClassList');list.innerHTML=CLASSES.map(c=>{const n=state.children.filter(x=>x.classId===c.id).length;return `<button class="item" type="button" data-class-open="${c.id}" style="width:100%;text-align:left"><div class="avatar">🌱</div><div class="meta"><b>${c.name}</b><small>${c.age} ・ ${n}名登録</small></div><span>›</span></button>`}).join('');$$('[data-class-open]').forEach(b=>b.addEventListener('click',()=>{currentClassId=b.dataset.classOpen;show('childList')}));}
+
+  async function renderChildList(){const c=cls(currentClassId);$('#childListTitle').textContent=`${c.name} 園児一覧`;const list=$('#childList');const children=state.children.filter(x=>x.classId===currentClassId);if(!children.length){list.innerHTML='<div class="card empty">まだ園児が登録されていません。<br>「園児を追加」から登録できます。</div>';return}list.innerHTML='';for(const child of children){const item=document.createElement('div');item.className='item';const avatar=document.createElement('div');avatar.className='avatar';const blob=await getImage(`child:${child.id}`);if(blob)avatar.innerHTML=`<img alt="${escapeHtml(child.name)}" src="${fileUrl(blob)}" style="width:100%;height:100%;object-fit:cover;border-radius:16px">`;else avatar.textContent='👧';item.appendChild(avatar);item.insertAdjacentHTML('beforeend',`<div class="meta"><b>${escapeHtml(child.name)}</b><small>AI仕分け用の基準写真</small></div><button class="danger" type="button" data-delete-child="${child.id}">削除</button>`);list.appendChild(item)}$$('[data-delete-child]').forEach(b=>b.addEventListener('click',async()=>{if(!confirm('この園児を削除しますか？'))return;state.children=state.children.filter(x=>x.id!==b.dataset.deleteChild);saveState();await deleteImage(`child:${b.dataset.deleteChild}`);renderChildList();toast('園児を削除しました')}));}
+
+  function freshRow(){return {id:crypto.randomUUID(),name:'',file:null}}
+  function renderBulk(){const c=cls(currentClassId);$('#bulkTitle').textContent=`${c.name} に登録`;if(!bulkDraft.length)bulkDraft=[freshRow(),freshRow(),freshRow()];const wrap=$('#bulkRows');wrap.innerHTML='';bulkDraft.forEach((r,i)=>{const el=document.createElement('div');el.className='bulkRow';el.innerHTML=`<label class="photoPick"><span>${r.file?'':'📷'}</span>${r.file?`<img src="${fileUrl(r.file)}" alt="写真プレビュー">`:''}<input type="file" accept="image/*" data-bulk-file="${r.id}" aria-label="${i+1}人目の写真"></label><div class="field"><label>${i+1}人目 フルネーム</label><input type="text" value="${escapeHtml(r.name)}" data-bulk-name="${r.id}" placeholder="例：幸地 かりん" autocomplete="off"></div><button class="removeRow" type="button" data-remove-row="${r.id}" aria-label="この入力欄を削除">×</button>`;wrap.appendChild(el)});$('#bulkCount').textContent=`${bulkDraft.length} / 30`;$$('[data-bulk-name]').forEach(inp=>inp.addEventListener('input',()=>{const r=bulkDraft.find(x=>x.id===inp.dataset.bulkName);if(r)r.name=inp.value}));$$('[data-bulk-file]').forEach(inp=>inp.addEventListener('change',()=>{const r=bulkDraft.find(x=>x.id===inp.dataset.bulkFile);if(r)r.file=inp.files?.[0]||null;renderBulk()}));$$('[data-remove-row]').forEach(b=>b.addEventListener('click',()=>{bulkDraft=bulkDraft.filter(x=>x.id!==b.dataset.removeRow);if(!bulkDraft.length)bulkDraft=[freshRow()];renderBulk()}));}
+
+  function renderPageSettings(){$('#adminMode').value=state.creationMode;$('#adminCount').value=String(state.photosPerChild)}
+
+  $$('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
+  $('#completeSetup').addEventListener('click',()=>{state.selectedClassId=$('#setupClass').value;state.creationMode=$('#setupMode').value;state.photosPerChild=Number($('#setupCount').value);state.setupCompleted=true;saveState();show('home');toast('初回設定を保存しました')});
+  $('#openBulk').addEventListener('click',()=>{bulkDraft=[];show('bulkRegister')});
+  $('#addBulkRow').addEventListener('click',()=>{if(bulkDraft.length>=30){toast('1回で登録できるのは最大30名です');return}bulkDraft.push(freshRow());renderBulk()});
+  $('#saveBulk').addEventListener('click',async()=>{const valid=bulkDraft.filter(r=>r.name.trim()||r.file);if(!valid.length){toast('園児情報を入力してください');return}if(valid.some(r=>!r.name.trim()||!r.file)){toast('写真とフルネームを両方入力してください');return}for(const r of valid){const childId=crypto.randomUUID();state.children.push({id:childId,classId:currentClassId,name:r.name.trim(),createdAt:Date.now()});await putImage(`child:${childId}`,r.file)}saveState();bulkDraft=[];show('childList');toast(`${valid.length}名を一括登録しました`)});
+  $('#savePageSettings').addEventListener('click',()=>{state.creationMode=$('#adminMode').value;state.photosPerChild=Number($('#adminCount').value);saveState();toast('ページ設定を保存しました')});
+  $('#createPageBtn').addEventListener('click',()=>toast('ページ作成は次フェーズで実装します'));
+  $$('[data-placeholder="page"]').forEach(b=>b.addEventListener('click',()=>toast('このページは次フェーズで作成できるようにします')));
+  $('#footerCreate').addEventListener('click',()=>toast('ページ作成は次フェーズで実装します'));
+  $('#savedBooksBtn').addEventListener('click',()=>toast('保存済みBOOKは冊子作成フェーズで実装します'));
+  $('#resetBtn').addEventListener('click',()=>{if(!confirm('土台版の設定・園児データを初期化しますか？'))return;localStorage.removeItem(STORE_KEY);indexedDB.deleteDatabase('omoide_book_assets');location.reload()});
+
+  renderSetup();refreshHeader();$('#yearLabel').textContent=`${state.year}年度`;show(state.setupCompleted?'home':'setup');
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(()=>{})}
+})();
+</script>
+</body>
+</html>
