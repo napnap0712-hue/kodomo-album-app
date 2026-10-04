@@ -72,6 +72,18 @@
     .candidate.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(223,143,163,.18)}
     .candidate.selected::after{content:"✓";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-size:12px;font-weight:950}
     .candidateActions{display:flex;align-items:center;gap:8px;margin-top:6px}.candidateActions .hint{flex:1}.candidateDone{min-height:36px;border:0;border-radius:12px;padding:0 16px;background:var(--accent);color:#fff;font-weight:900}.candidateDone:disabled{opacity:.4}
+    @media(orientation:landscape){
+      #photoPanel{left:4%;right:4%;bottom:6px;max-height:none;height:82px;padding:8px 10px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:1fr;gap:10px;align-items:center}
+      #photoPanel .panelHead{margin:0;display:flex;align-items:center;gap:6px}
+      #photoPanel .panelHead b{display:none}
+      #photoPanel .panelClose{width:34px;height:34px;order:2}
+      #photoPanel .candidateRow{min-height:0;height:62px;padding:0;gap:8px;align-items:center;overflow-x:auto}
+      #photoPanel .candidate{height:56px;flex-basis:62px}
+      #photoPanel .addCandidate{flex-basis:96px;min-width:96px;height:56px;font-size:12px;line-height:1.15;padding:5px 8px}
+      #photoPanel .candidateActions{margin:0;display:grid;grid-template-columns:auto;gap:4px;align-content:center;min-width:92px}
+      #photoPanel .candidateActions .hint{text-align:center;font-size:10px;line-height:1}
+      #photoPanel .candidateDone{min-height:38px;padding:0 18px}
+    }
 
     /* Canva-inspired home */
     .homeIntro{padding:2px 2px 0}.homeIntro h1{font-size:31px;margin:0 0 3px;font-weight:950}.homeIntro .sub{font-size:13px;color:var(--muted);font-weight:700}
