@@ -329,9 +329,9 @@
   $('#cancelPage').addEventListener('click',()=>show('home'));
   $('#savePage').addEventListener('click',async()=>{const title=$('#pageTitle').value.trim();if(!title){toast('ページタイトルを入力してください');$('#pageTitle').focus();return}if(!pageDraft.length){toast('写真を1枚以上追加してください');return}if(pageDraft.some(p=>!p.childId)){toast('すべての写真を園児に振り分けてください');return}const pageId=crypto.randomUUID();const button=$('#savePage');button.disabled=true;button.textContent='保存中…';try{for(const photo of pageDraft)await putImage(`page:${pageId}:${photo.id}`,photo.file);state.pages.push({id:pageId,classId:state.selectedClassId,title,type:$('input[name="pageType"]:checked').value,photos:pageDraft.map(p=>({id:p.id,childId:p.childId})),photoCount:pageDraft.length,assignedCount:pageDraft.filter(p=>p.childId).length,createdAt:Date.now()});saveState();pageDraft=[];show('home');toast('ページを保存しました')}finally{button.disabled=false;button.textContent='ページを保存'}});
   $$('.piconTab').forEach(button=>button.addEventListener('click',()=>setPanel(openPanel===button.dataset.panel?null:button.dataset.panel)));
-  $('.panelClose').forEach(button=>button.addEventListener('click',()=>{if(openPanel==='crop')cropDraft=null;setPanel(null);renderSpread()}));
+  $$('.panelClose').forEach(button=>button.addEventListener('click',()=>{if(openPanel==='crop')cropDraft=null;setPanel(null);renderSpread()}));
   $$('[data-layout]').forEach(button=>button.addEventListener('click',()=>applyLayout(button.dataset.layout)));
-  $('[data-crop]').forEach(button=>button.addEventListener('click',()=>cropShape(button.dataset.crop)));
+  $$('[data-crop]').forEach(button=>button.addEventListener('click',()=>cropShape(button.dataset.crop)));
   $('#cropConfirm').addEventListener('click',confirmCrop);
   $('#cropCancel').addEventListener('click',cancelCrop);
   $('#undoEdit').addEventListener('click',()=>restoreEdit(editHistoryIndex-1));
