@@ -269,7 +269,7 @@
   let candidateSelection=new Set(),viewScale=1,viewX=0,viewY=0,cropDraft=null,sharedAssets=[];const sharedBlobUrls=new Map();
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 
-  function migrateState(raw){const next={...defaultState,...(raw&&typeof raw==='object'?raw:{})};next.children=Array.isArray(next.children)?next.children:[];next.pages=Array.isArray(next.pages)?next.pages:[];next.pages=next.pages.map(p=>({...p,photos:Array.isArray(p.photos)?p.photos:[],layout:Array.isArray(p.layout)?p.layout.map(x=>({...x,clipPath:x.clipPath||'none',bgRemoved:!!x.bgRemoved,trimLeft:Number(x.trimLeft)||0,trimRight:Number(x.trimRight)||0,trimTop:Number(x.trimTop)||0,trimBottom:Number(x.trimBottom)||0})):[],texts:Array.isArray(p.texts)?p.texts.map(t=>({id:t.id||crypto.randomUUID(),text:t.text||'',x:Number(t.x)||20,y:Number(t.y)||20,width:Number(t.width)||28,height:Number(t.height)||12,font:t.font||'HaniHani',size:Number(t.size)||28,color:t.color||'#4f4944',zIndex:Number(t.zIndex)||100})):[],background:p.background&&typeof p.background==='object'?{left:{pattern:p.background.left?.pattern||'plain',color:p.background.left?.color||'#ffffff',imageUrl:p.background.left?.imageUrl||null},right:{pattern:p.background.right?.pattern||'plain',color:p.background.right?.color||'#ffffff',imageUrl:p.background.right?.imageUrl||null}}:{left:{pattern:'plain',color:'#ffffff',imageUrl:null},right:{pattern:'plain',color:'#ffffff',imageUrl:null}},stickers:Array.isArray(p.stickers)?p.stickers.map(s=>({id:s.id||crypto.randomUUID(),symbol:s.symbol||'✨',assetUrl:s.assetUrl||null,bgRemoved:!!s.bgRemoved,x:Number(s.x)||44,y:Number(s.y)||38,width:Number(s.width)||12,height:Number(s.height)||17,rotation:Number(s.rotation)||0,zIndex:Number(s.zIndex)||1})):[]}));next.schemaVersion=DATA_SCHEMA;return next}
+  function migrateState(raw){const next={...defaultState,...(raw&&typeof raw==='object'?raw:{})};next.children=Array.isArray(next.children)?next.children:[];next.pages=Array.isArray(next.pages)?next.pages:[];next.pages=next.pages.map(p=>({...p,photos:Array.isArray(p.photos)?p.photos:[],layout:Array.isArray(p.layout)?p.layout.map(x=>({...x,clipPath:x.clipPath||'none',bgRemoved:!!x.bgRemoved,trimLeft:Number(x.trimLeft)||0,trimRight:Number(x.trimRight)||0,trimTop:Number(x.trimTop)||0,trimBottom:Number(x.trimBottom)||0})):[],texts:Array.isArray(p.texts)?p.texts.map(t=>({id:t.id||crypto.randomUUID(),text:t.text||'',x:Number(t.x)||20,y:Number(t.y)||20,width:Number(t.width)||28,height:Number(t.height)||12,font:t.font||'HaniHani',size:Number(t.size)||28,color:t.color||'#4f4944',zIndex:Number(t.zIndex)||100})):[],background:p.background&&typeof p.background==='object'?{left:{pattern:p.background.left?.pattern||'plain',color:p.background.left?.color||'#ffffff',opacity:Number.isFinite(Number(p.background.left?.opacity))?Number(p.background.left.opacity):35,imageUrl:p.background.left?.imageUrl||null},right:{pattern:p.background.right?.pattern||'plain',color:p.background.right?.color||'#ffffff',opacity:Number.isFinite(Number(p.background.right?.opacity))?Number(p.background.right.opacity):35,imageUrl:p.background.right?.imageUrl||null}}:{left:{pattern:'plain',color:'#ffffff',imageUrl:null},right:{pattern:'plain',color:'#ffffff',imageUrl:null}},stickers:Array.isArray(p.stickers)?p.stickers.map(s=>({id:s.id||crypto.randomUUID(),symbol:s.symbol||'✨',assetUrl:s.assetUrl||null,bgRemoved:!!s.bgRemoved,x:Number(s.x)||44,y:Number(s.y)||38,width:Number(s.width)||12,height:Number(s.height)||17,rotation:Number(s.rotation)||0,zIndex:Number(s.zIndex)||1})):[]}));next.schemaVersion=DATA_SCHEMA;return next}
   function loadState(){try{return migrateState(JSON.parse(localStorage.getItem(STORE_KEY)||'{}'))}catch{return {...defaultState}}}
   function saveState(){state=migrateState(state);localStorage.setItem(STORE_KEY,JSON.stringify(state));refreshHeader();}
   function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800)}
@@ -436,16 +436,28 @@
   $('#resetBtn').addEventListener('click',()=>{if(!confirm('土台版の設定・園児データを初期化しますか？'))return;localStorage.removeItem(STORE_KEY);indexedDB.deleteDatabase('omoide_book_assets');location.reload()});
 
   const editorScreen=$('.screen.editor');if(editorScreen){editorScreen.addEventListener('contextmenu',e=>e.preventDefault());editorScreen.addEventListener('dragstart',e=>e.preventDefault());editorScreen.addEventListener('selectstart',e=>{if(!e.target.closest('.textEditable'))e.preventDefault()});editorScreen.addEventListener('pointerdown',e=>{if(!openPanel)return;if(e.target.closest('.piconPanel,.piconTab,.editorBar'))return;if(openPanel==='crop'&&cropDraft&&e.target.closest('.cropGuide,.cropGuideHandle'))return;if(openPanel==='crop'&&cropDraft)cropDraft=null;setPanel(null)},{capture:true})}
-  bindViewportGestures();renderSetup();refreshHeader();$('#yearLabel').textContent=`${state.year}年度`;show(state.setupCompleted?'home':'setup');
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.addEventListener('controllerchange',()=>{
-      if(sessionStorage.getItem('omoide-sw-reloaded')==='v0.76')return;
-      sessionStorage.setItem('omoide-sw-reloaded','v0.76');
-      location.replace('./?v=76');
-    });
-    navigator.serviceWorker.register('./sw.js?v=76',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
+  function bootApp(){
+    try{
+      bindViewportGestures();
+      renderSetup();
+      refreshHeader();
+      $('#yearLabel').textContent=`${state.year}年度`;
+      show(state.setupCompleted?'home':'setup');
+    }catch(err){
+      console.error('startup error',err);
+      document.body.classList.remove('editing');
+      const app=$('#app'),setup=$('[data-screen="setup"]'),home=$('[data-screen="home"]');
+      if(app)app.classList.remove('editorMode');
+      $('.screen').forEach(x=>x.classList.remove('active'));
+      if(state.setupCompleted&&home)home.classList.add('active');
+      else if(setup)setup.classList.add('active');
+    }
   }
-  window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
+  bootApp();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('./sw.js?v=77',{updateViaCache:'none'}).then(reg=>reg.update()).catch(err=>console.warn('service worker update skipped',err));
+  }
+  window.addEventListener('pageshow',e=>{if(e.persisted){try{refreshHeader();show(state.setupCompleted?'home':'setup')}catch(err){console.warn('pageshow restore skipped',err)}}});
 })();
 </script>
 </body>
