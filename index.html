@@ -440,11 +440,11 @@
   bindViewportGestures();renderSetup();refreshHeader();$('#yearLabel').textContent=`${state.year}年度`;show(state.setupCompleted?'home':'setup');
   if('serviceWorker' in navigator){
     navigator.serviceWorker.addEventListener('controllerchange',()=>{
-      if(sessionStorage.getItem('omoide-sw-reloaded')==='v0.73')return;
-      sessionStorage.setItem('omoide-sw-reloaded','v0.73');
-      location.replace('./?v=73');
+      if(sessionStorage.getItem('omoide-sw-reloaded')==='v0.74')return;
+      sessionStorage.setItem('omoide-sw-reloaded','v0.74');
+      location.replace('./?v=74');
     });
-    navigator.serviceWorker.register('./sw.js?v=73',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js?v=74',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
   }
   window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
 })();
