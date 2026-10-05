@@ -431,7 +431,15 @@
 
   const editorScreen=$('.screen.editor');if(editorScreen){editorScreen.addEventListener('contextmenu',e=>e.preventDefault());editorScreen.addEventListener('dragstart',e=>e.preventDefault());editorScreen.addEventListener('selectstart',e=>{if(!e.target.closest('.textEditable'))e.preventDefault()});editorScreen.addEventListener('pointerdown',e=>{if(!openPanel)return;if(e.target.closest('.piconPanel,.piconTab,.editorBar'))return;if(openPanel==='crop'&&cropDraft&&e.target.closest('.cropGuide,.cropGuideHandle'))return;if(openPanel==='crop'&&cropDraft)cropDraft=null;setPanel(null)},{capture:true})}
   bindViewportGestures();renderSetup();refreshHeader();$('#yearLabel').textContent=`${state.year}年度`;show(state.setupCompleted?'home':'setup');
-  if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{})}
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(sessionStorage.getItem('omoide-sw-reloaded')==='v0.60')return;
+      sessionStorage.setItem('omoide-sw-reloaded','v0.60');
+      location.reload();
+    });
+    navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
+  }
+  window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()});
 })();
 </script>
 </body>
