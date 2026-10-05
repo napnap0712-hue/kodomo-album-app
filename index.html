@@ -457,7 +457,7 @@
   async function prepareE2ETestState(){
     if(!TEST_MODE)return;
     const childId='e2e-child',pageId='e2e-page',photoId='e2e-photo',itemId='e2e-item';
-    const photo=await fetch('./assets/test/test-child.jpg',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('test photo '+r.status);return r.blob()});
+    const photo=await fetch('./assets/test/test-child.b64',{cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('test photo '+r.status);const b64=(await r.text()).trim(),raw=atob(b64),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);return new Blob([bytes],{type:'image/jpeg'})});
     await putImage(`page:${pageId}:${photoId}`,photo);
     state=migrateState({...defaultState,setupCompleted:true,year:2026,selectedClassId:'tulip',creationMode:'mixed',photosPerChild:3,children:[{id:childId,classId:'tulip',name:'テスト園児'}],pages:[{id:pageId,classId:'tulip',title:'背景テスト',type:'month',photos:[{id:photoId,childId}],photoCount:1,assignedCount:1,createdAt:Date.now(),layout:[{id:itemId,photoId,x:8,y:13,width:34,height:50,rotation:0,zIndex:1,clipPath:'none',bgRemoved:false,trimLeft:0,trimRight:0,trimTop:0,trimBottom:0}],texts:[],stickers:[],background:{left:{pattern:'plain',color:'#ffffff',opacity:35,patternScale:100,imageUrl:null},right:{pattern:'plain',color:'#ffffff',opacity:35,patternScale:100,imageUrl:null}}}]});
     currentClassId=state.selectedClassId;
