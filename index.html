@@ -469,7 +469,7 @@
   $('#addText').addEventListener('click',addTextItem);
   $$('[data-font]').forEach(b=>b.addEventListener('click',()=>{const item=selectedText();if(!item)return;item.font=b.dataset.font;const edit=$(`[data-text-item="${item.id}"] .textEditable`);if(edit)edit.style.fontFamily=fontStack(item.font);recordEdit();syncTextPanel()}));
   function applySelectedTextColor(color){const item=selectedText();if(!item)return;item.color=color;const edit=$(`[data-text-item="${item.id}"] .textEditable`);if(edit)edit.style.color=item.color;recordEdit();syncTextPanel()}
-  $('[data-color]').forEach(b=>{b.addEventListener('click',()=>applySelectedTextColor(b.dataset.color));b.addEventListener('pointerup',e=>{if(e.pointerType==='touch'){e.preventDefault();applySelectedTextColor(b.dataset.color)}})});
+  $$('[data-color]').forEach(b=>{b.addEventListener('click',()=>applySelectedTextColor(b.dataset.color));b.addEventListener('pointerup',e=>{if(e.pointerType==='touch'){e.preventDefault();applySelectedTextColor(b.dataset.color)}})});
   $('#deleteText').addEventListener('click',()=>{if(!selectedTextId)return;textItems=textItems.filter(x=>x.id!==selectedTextId);selectedTextId=null;recordEdit();renderSpread();syncTextPanel()});
   $('#layerFront').addEventListener('click',()=>moveLayer('front'));
   $('#layerForward').addEventListener('click',()=>moveLayer('forward'));
@@ -515,7 +515,7 @@
   }
   bootApp();
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js?v=97',{updateViaCache:'none'}).then(reg=>reg.update()).catch(err=>console.warn('service worker update skipped',err));
+    navigator.serviceWorker.register('./sw.js?v=98',{updateViaCache:'none'}).then(reg=>reg.update()).catch(err=>console.warn('service worker update skipped',err));
   }
   window.addEventListener('pageshow',e=>{if(e.persisted){try{refreshHeader();show(state.setupCompleted?'home':'setup')}catch(err){console.warn('pageshow restore skipped',err)}}});
 })();
