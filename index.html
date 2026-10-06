@@ -260,7 +260,7 @@
     {id:'deigo',name:'でいご組',age:'4歳'}, {id:'sakura',name:'さくら組',age:'5歳'}
   ];
   const STORE_KEY='omoide_book_v01';
-  const TEST_MODE=new URLSearchParams(location.search).get('e2e')==='1';
+  const TEST_PARAMS=new URLSearchParams(location.search),TEST_MODE=TEST_PARAMS.get('e2e')==='1',TEST_ADD_PHOTO=TEST_PARAMS.get('e2eAdd')==='1';
   const SUPABASE_URL='https://qlvuayqevkmtpkjstkmd.supabase.co';
   const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsdnVheXFldmttdHBranN0a21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNDA4ODYsImV4cCI6MjEwNTgxNjg4Nn0.QdLaqAuSPO9wyqWbmbMyDKxS_sdd4nfW5aPlvspTu5c';
   const DATA_SCHEMA=12;
@@ -310,7 +310,7 @@
   function updateEditControls(){const selectedPhoto=editItems.some(x=>x.id===selectedEditId),selectedText=textItems.some(x=>x.id===selectedTextId),selectedSticker=stickerItems.some(x=>x.id===selectedStickerId),selected=selectedPhoto||selectedText||selectedSticker;$('#undoEdit').disabled=editHistoryIndex<=0;$('#redoEdit').disabled=editHistoryIndex>=editHistory.length-1;$('#deletePhoto').disabled=!selected;['layerFront','layerForward','layerBackward','layerBack'].forEach(id=>$('#'+id).disabled=!selected);$('#editQuick').classList.toggle('show',selected)}
   async function openEditor(pageId){editingPage=state.pages.find(p=>p.id===pageId);if(!editingPage)return;selectedEditId=null;selectedTextId=null;selectedStickerId=null;openPanel=null;cropDraft=null;candidateSelection.clear();viewScale=1;viewX=0;viewY=0;applyViewTransform();editItems=(editingPage.layout||[]).map(x=>({...x}));textItems=(editingPage.texts||[]).map(x=>({...x}));stickerItems=(editingPage.stickers||[]).map(x=>({...x}));editBackground=JSON.parse(JSON.stringify(editingPage.background||{left:{pattern:'plain',color:'#ffffff',imageUrl:null},right:{pattern:'plain',color:'#ffffff',imageUrl:null}}));editHistory=[snapshotEdit()];editHistoryIndex=0;$('#editorTitle').textContent=editingPage.title;show('editor');await ensureCustomFonts();await renderEditorCandidates();renderSpread();setPanel(null);loadSharedAssets().catch(()=>{})}
   function updateCandidateDone(){const n=candidateSelection.size;$('#candidateSelectionCount').textContent=`${n}枚選択`;$('#candidateDone').disabled=!n}
-  async function addEditorPhotoFiles(files){if(!editingPage||!files?.length)return;for(const file of files){const id=crypto.randomUUID();await putImage(`page:${editingPage.id}:${id}`,file);editingPage.photos.push({id,childId:''});editingPage.photoCount=editingPage.photos.length}saveState();await renderEditorCandidates();toast(`${files.length}枚の写真を追加しました`)}
+  async function addEditorPhotoFiles(files){if(!editingPage||!files?.length)return;const addedIds=[];for(const file of files){const id=crypto.randomUUID();await putImage(`page:${editingPage.id}:${id}`,file);editingPage.photos.push({id,childId:''});editingPage.photoCount=editingPage.photos.length;addedIds.push(id)}saveState();if(addedIds.length)addPhotosToSpread(addedIds);else await renderEditorCandidates();toast(`${files.length}枚の写真を見開きに追加しました`)}
   async function renderEditorCandidates(){const row=$('#candidatePhotos');row.innerHTML='<label class="candidate addCandidate" id="addEditorPhoto">＋ 写真追加<input id="editorPhotoInput" type="file" accept="image/*" multiple aria-label="写真を追加"></label>';for(const photo of editingPage.photos){const blob=await getImage(`page:${editingPage.id}:${photo.id}`);if(!blob)continue;const button=document.createElement('button');button.type='button';button.className=`candidate${candidateSelection.has(photo.id)?' selected':''}`;button.dataset.candidatePhoto=photo.id;button.title='選択';button.innerHTML=`<img src="${fileUrl(blob)}" alt="候補写真">`;row.appendChild(button)}const input=$('#editorPhotoInput');if(input)input.addEventListener('change',async e=>{const files=[...(e.target.files||[])];e.target.value='';await addEditorPhotoFiles(files)});$$('[data-candidate-photo]').forEach(button=>button.addEventListener('click',()=>{const id=button.dataset.candidatePhoto;if(candidateSelection.has(id))candidateSelection.delete(id);else candidateSelection.add(id);button.classList.toggle('selected',candidateSelection.has(id));updateCandidateDone()}));updateCandidateDone()}
   function sharedAssetUrl(path){return SUPABASE_URL+'/storage/v1/object/public/shared-assets/'+path.split('/').map(encodeURIComponent).join('/')}
   async function sharedDisplayUrl(url){if(!url)return'';if(url.startsWith('blob:'))return url;if(sharedBlobUrls.has(url))return sharedBlobUrls.get(url);try{const r=await fetch(url,{cache:'no-store',mode:'cors'});if(!r.ok)throw new Error('asset '+r.status);const clean=url.split('?')[0].toLowerCase();let blob;if(clean.endsWith('.b64')){const b64=(await r.text()).trim();const raw=atob(b64),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);blob=new Blob([bytes],{type:'image/png'})}else{const buf=await r.arrayBuffer();const type=clean.endsWith('.png')?'image/png':clean.endsWith('.webp')?'image/webp':clean.endsWith('.gif')?'image/gif':'image/jpeg';blob=new Blob([buf],{type})}const local=URL.createObjectURL(blob);sharedBlobUrls.set(url,local);return local}catch(err){console.error(err);return url}}
@@ -469,7 +469,7 @@
       renderSetup();
       refreshHeader();
       $('#yearLabel').textContent=`${state.year}年度`;
-      if(TEST_MODE){await openEditor('e2e-page');return}
+      if(TEST_MODE){await openEditor('e2e-page');if(TEST_ADD_PHOTO){const r=await fetch('./assets/test/test-child.b64',{cache:'no-store'}),b64=(await r.text()).trim(),raw=atob(b64),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);await addEditorPhotoFiles([new Blob([bytes],{type:'image/jpeg'})])}return}
       show(state.setupCompleted?'home':'setup');
     }catch(err){
       console.error('startup error',err);
@@ -483,7 +483,7 @@
   }
   bootApp();
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js?v=83',{updateViaCache:'none'}).then(reg=>reg.update()).catch(err=>console.warn('service worker update skipped',err));
+    navigator.serviceWorker.register('./sw.js?v=84',{updateViaCache:'none'}).then(reg=>reg.update()).catch(err=>console.warn('service worker update skipped',err));
   }
   window.addEventListener('pageshow',e=>{if(e.persisted){try{refreshHeader();show(state.setupCompleted?'home':'setup')}catch(err){console.warn('pageshow restore skipped',err)}}});
 })();
