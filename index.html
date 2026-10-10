@@ -494,7 +494,7 @@
       const buttons=document.createElement('div');buttons.className='sortActions';
       const add=document.createElement('button');add.textContent='＋ 写真を追加・紐づけ';add.onclick=()=>{sortView='assign';renderPhotoSorting()};
       const remove=document.createElement('button');remove.textContent=unassigned?'写真の詳細で園児を選ぶ':'選択した写真の紐づけを解除（'+sortSelection.size+'）';
-      remove.disabled=unassigned||!sortSelection.size;remove.onclick=()=>{if(!sortSelection.size)return;photos.filter(p=>sortSelection.has(p.id)).forEach(p=>setPhotoLinks(p,photoLinks(p).filter(id=>id!==sortChildId)));saveState();sortSelection.clear();renderPhotoSorting();toast('紐づけを解除しました')};
+      remove.dataset.sortRemove='1';remove.disabled=unassigned||!sortSelection.size;remove.onclick=()=>{if(!sortSelection.size)return;photos.filter(p=>sortSelection.has(p.id)).forEach(p=>setPhotoLinks(p,photoLinks(p).filter(id=>id!==sortChildId)));saveState();sortSelection.clear();renderPhotoSorting();toast('紐づけを解除しました')};
       buttons.append(add,remove);wrap.appendChild(buttons);
       await renderSortTiles(photos,wrap,token,true);
       return;
@@ -504,7 +504,7 @@
       const tip=document.createElement('p');tip.textContent='写真を複数選択して、園児に追加できます';wrap.appendChild(tip);
       const bar=document.createElement('div');bar.className='sortActions';
       const save=document.createElement('button');save.textContent='選択した写真を紐づけ（'+sortSelection.size+'）';
-      save.onclick=()=>{for(const p of sortPhotos().filter(p=>sortSelection.has(p.id)))setPhotoLinks(p,[...photoLinks(p),sortChildId].filter(Boolean));saveState();sortSelection.clear();sortView='photos';renderPhotoSorting();toast('写真を紐づけました')};
+      save.dataset.sortAssign='1';save.onclick=()=>{for(const p of sortPhotos().filter(p=>sortSelection.has(p.id)))setPhotoLinks(p,[...photoLinks(p),sortChildId].filter(Boolean));saveState();sortSelection.clear();sortView='photos';renderPhotoSorting();toast('写真を紐づけました')};
       bar.appendChild(save);wrap.appendChild(bar);
       await renderSortTiles(sortPhotos().filter(p=>!photoLinks(p).includes(sortChildId)),wrap,token,false);return;
     }
@@ -533,11 +533,23 @@
       if(token!==sortRenderVersion)return;if(!blob)continue;
       const btn=document.createElement('button');btn.type='button';btn.className='sortTile'+(sortSelection.has(photo.id)?' selected':'');
       btn.appendChild(await sortThumb(blob));grid.appendChild(btn);
-      btn.onclick=()=>{if(sortSelection.has(photo.id))sortSelection.delete(photo.id);else sortSelection.add(photo.id);renderPhotoSorting()};
+      btn.setAttribute('aria-pressed',sortSelection.has(photo.id));
+      btn.onclick=()=>{
+        if(sortSelection.has(photo.id))sortSelection.delete(photo.id);else sortSelection.add(photo.id);
+        const selected=sortSelection.has(photo.id);
+        btn.classList.toggle('selected',selected);
+        btn.setAttribute('aria-pressed',selected);
+        const detailButton=wrap.querySelector('[data-sort-detail-open]');
+        if(detailButton)detailButton.disabled=!sortSelection.size;
+        const removeButton=wrap.querySelector('[data-sort-remove]');
+        if(removeButton){removeButton.disabled=!sortSelection.size;removeButton.textContent='選択した写真の紐づけを解除（'+sortSelection.size+'）'}
+        const assignButton=wrap.querySelector('[data-sort-assign]');
+        if(assignButton)assignButton.textContent='選択した写真を紐づけ（'+sortSelection.size+'）';
+      };
       btn.ondblclick=()=>sortOpenDetail(photo.id);
       btn.addEventListener('contextmenu',e=>{e.preventDefault();sortOpenDetail(photo.id)});
     }
-    const detail=document.createElement('div');detail.className='sortActions';const open=document.createElement('button');open.textContent='選択した写真の詳細を見る';open.disabled=!sortSelection.size;open.onclick=()=>sortOpenDetail([...sortSelection][0]);detail.appendChild(open);wrap.appendChild(detail);
+    const detail=document.createElement('div');detail.className='sortActions';const open=document.createElement('button');open.textContent='選択した写真の詳細を見る';open.dataset.sortDetailOpen='1';open.disabled=!sortSelection.size;open.onclick=()=>sortOpenDetail([...sortSelection][0]);detail.appendChild(open);wrap.appendChild(detail);
     if(!photos.length)grid.innerHTML='<div class="sectionEmpty" style="grid-column:1/-1">写真はありません</div>';
   }
 
