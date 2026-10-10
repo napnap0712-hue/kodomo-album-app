@@ -192,7 +192,7 @@
     #textCurveSlider:disabled,#textCurveReset:disabled{opacity:.42}
     .placedText.curved .textEditable:not(:focus){color:transparent!important;caret-color:currentColor}
     .placedText .curvedGlyphLayer{position:absolute;inset:0;pointer-events:none;overflow:visible}
-    .placedText.curved .textEditable:focus+.curvedGlyphLayer{display:none}
+    .placedText.curved:focus-within .curvedGlyphLayer{display:none}
     /* Keep all seven picon tabs reachable on narrow iPhone screens. */
     @media(max-width:480px){.screen.editor .piconTabs{gap:3px;overflow-x:hidden;justify-content:space-between}.screen.editor .piconTab{flex:1 1 0;min-width:0;width:auto;height:47px;padding:0 1px;font-size:9px;letter-spacing:0}.screen.editor .piconTab::before{font-size:17px}}
     /* Keep the text picon interactive above the stage without altering editor logic. */
