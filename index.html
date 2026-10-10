@@ -189,19 +189,6 @@
       <div class="classWorkspaceTop"><button type="button" class="back" id="backToClassHome" aria-label="クラス一覧に戻る">‹</button><div><h1 id="workspaceClassTitle">クラスのページ</h1><div class="hint" id="workspaceYear">2026年度</div></div></div>
       <div class="sectionListTitle"><h2>📖 セクション一覧</h2><button class="sectionNew" id="sectionNew" type="button">＋ 新規作成</button></div>
       <div id="sectionList" class="sectionList"></div>
-      <div class="homeIntro">
-        <h1>おもいでブック</h1>
-        <div class="sub"><span id="homeYear">2026年度</span>・<span id="homeClass">—</span></div>
-      </div>
-
-      <div class="continueHead"><h2>続きから作る</h2><span class="pill" id="pageProgress">0 / 12ページ</span></div>
-      <div class="albumScroller" id="homePages"></div>
-
-      <div class="sectionTitle"><h2>ホーム</h2><span class="hint" id="homeDesc">まず園児を登録しましょう。</span></div>
-      <div class="homeActions">
-        <button class="homeAction" type="button" data-go="admin"><span class="ico">⚙️</span><b>管理</b><small>クラス・園児・ページ・写真・年度</small></button>
-        <button class="homeAction" type="button" id="savedBooksBtn"><span class="ico">📚</span><b>保存したBOOK</b><small>完成した個人冊子をここから確認</small></button>
-      </div>
     </section>
 
     <section class="screen" data-screen="pageCreate">
@@ -387,7 +374,14 @@
       }catch(e){console.error('section delete error',e);b.disabled=false;toast('削除できませんでした')}
     }));
   }
-  function renderHome(){renderCrayonHomeClasses();const c=cls(state.selectedClassId);$('#workspaceClassTitle').textContent=c.name+'のページ';$('#workspaceYear').textContent=state.year+'年度';$('#homeClass').textContent=c.name;$('#homeYear').textContent=`${state.year}年度`;const n=state.children.filter(x=>x.classId===state.selectedClassId).length;const pages=state.pages.filter(x=>x.classId===state.selectedClassId);$('#homeDesc').textContent=n?`${n}名登録済み。写真を選んでページを作成できます。`:'まず管理画面からクラスアイコンと園児を登録しましょう。';$('#pageProgress').textContent=`${pages.length} / 12見開き`;renderSectionList(pages);const cards=pages.slice(-3).reverse().map((p,i)=>`<button class="albumCard ${i?'blue':'pink'}" type="button" data-saved-page="${p.id}"><div class="albumThumb">${p.type==='event'?'✨':'📷'}</div><span class="albumStatus">保存済み</span><div class="albumMonth">${escapeHtml(p.title)}</div><div class="albumMeta">${p.photoCount}枚の写真・${p.assignedCount}枚振り分け済み</div></button>`).join('');$('#homePages').innerHTML=cards+`<button class="albumCard yellow" type="button" data-create-page><div class="albumThumb">＋</div><span class="albumStatus">新規作成</span><div class="albumMonth">作成</div><div class="albumMeta">月またはイベントのページを作成</div></button>`;$$('[data-create-page]').forEach(b=>b.addEventListener('click',openPageCreate));$$('[data-saved-page]').forEach(b=>b.addEventListener('click',()=>openEditor(b.dataset.savedPage)));}
+  function renderHome(){
+    renderCrayonHomeClasses();
+    const c=cls(state.selectedClassId);
+    $('#workspaceClassTitle').textContent=c.name+'のページ';
+    $('#workspaceYear').textContent=state.year+'年度';
+    const pages=state.pages.filter(p=>p.classId===state.selectedClassId);
+    renderSectionList(pages);
+  }
 
   function openPageCreate(){pageDraft=[];$('#pageTitle').value='';const preferred=state.creationMode==='event'?'event':'month';const radio=$(`input[name="pageType"][value="${preferred}"]`);if(radio)radio.checked=true;show('pageCreate')}
   function renderPageDraft(){const children=state.children.filter(x=>x.classId===state.selectedClassId);const wrap=$('#pagePhotos');wrap.innerHTML='';$('#pagePhotoCount').textContent=`${pageDraft.length}枚`;$('#pageChildNotice').textContent=children.length?'写真を追加し、それぞれ園児を選んでください。':'先に管理画面で園児を登録すると、写真を振り分けできます。';pageDraft.forEach((photo,i)=>{const el=document.createElement('div');el.className='pagePhoto';const options=['<option value="">園児を選択</option>',...children.map(child=>`<option value="${child.id}" ${photo.childId===child.id?'selected':''}>${escapeHtml(child.name)}</option>`)].join('');el.innerHTML=`<img src="${fileUrl(photo.file)}" alt="追加した写真 ${i+1}"><div class="photoDetails"><div class="photoName">${escapeHtml(photo.file.name)}</div><select data-photo-child="${photo.id}" aria-label="${i+1}枚目を園児に振り分け">${options}</select></div><button class="removeRow" type="button" data-remove-photo="${photo.id}" aria-label="写真を削除">×</button>`;wrap.appendChild(el)});$$('[data-photo-child]').forEach(s=>s.addEventListener('change',()=>{const p=pageDraft.find(x=>x.id===s.dataset.photoChild);if(p)p.childId=s.value}));$$('[data-remove-photo]').forEach(b=>b.addEventListener('click',()=>{pageDraft=pageDraft.filter(x=>x.id!==b.dataset.removePhoto);renderPageDraft()}));}
@@ -588,7 +582,6 @@
   $('#closeEditor').addEventListener('click',()=>show('classWorkspace'));
   $('#saveEdit').addEventListener('click',()=>{if(!editingPage)return;const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,zIndex})=>({id,text,x,y,width,height,font,size,color,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();editingPage=state.pages.find(p=>p.id===pageId)||editingPage;show('classWorkspace');toast('見開きの配置を保存しました')});
   $('#spread').addEventListener('pointerdown',e=>{if(e.target===$('#spread')){selectedEditId=null;selectedTextId=null;selectedStickerId=null;$$('.placedPhoto').forEach(x=>x.classList.remove('selected'));$$('.placedText').forEach(x=>x.classList.remove('selected'));$$('.placedSticker').forEach(x=>x.classList.remove('selected'));syncTextPanel();updateEditControls()}});
-  $('#savedBooksBtn').addEventListener('click',()=>toast('保存済みBOOKは冊子作成フェーズで実装します'));
   $('#resetBtn').addEventListener('click',()=>{if(!confirm('土台版の設定・園児データを初期化しますか？'))return;localStorage.removeItem(STORE_KEY);indexedDB.deleteDatabase('omoide_book_assets');location.reload()});
 
   const editorScreen=$('.screen.editor');if(editorScreen){editorScreen.addEventListener('contextmenu',e=>e.preventDefault());editorScreen.addEventListener('dragstart',e=>e.preventDefault());editorScreen.addEventListener('selectstart',e=>{if(!e.target.closest('.textEditable'))e.preventDefault()});editorScreen.addEventListener('pointerdown',e=>{if(!openPanel)return;if(e.target.closest('.piconPanel,.piconTab,.editorBar'))return;if(openPanel==='crop'&&cropDraft&&e.target.closest('.cropGuide,.cropGuideHandle'))return;if(openPanel==='crop'&&cropDraft)cropDraft=null;setPanel(null)},{capture:true})}
