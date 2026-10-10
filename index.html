@@ -191,8 +191,8 @@
     #textCurveReset{border:0;background:#f8dce7;border-radius:10px;min-height:36px;font-weight:800;color:#955573}
     #textCurveSlider:disabled,#textCurveReset:disabled{opacity:.42}
     .placedText.curved .textEditable:not(:focus){color:transparent!important;caret-color:currentColor}
-    .placedText .curvedTextSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-    .placedText.curved .textEditable:focus+.curvedTextSvg{display:none}
+    .placedText .curvedGlyphLayer{position:absolute;inset:0;pointer-events:none;overflow:visible}
+    .placedText.curved:focus-within .curvedGlyphLayer{display:none}
     /* Keep all seven picon tabs reachable on narrow iPhone screens. */
     @media(max-width:480px){.screen.editor .piconTabs{gap:3px;overflow-x:hidden;justify-content:space-between}.screen.editor .piconTab{flex:1 1 0;min-width:0;width:auto;height:47px;padding:0 1px;font-size:9px;letter-spacing:0}.screen.editor .piconTab::before{font-size:17px}}
     /* Keep the text picon interactive above the stage without altering editor logic. */
@@ -741,19 +741,28 @@
   function fontStack(name){return `"${name}", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`}
   function updateCurvedText(el,item){
     if(!el)return;
-    const n=Math.max(-100,Math.min(100,Number(item.curve)||0));
-    el.classList.toggle('curved',n!==0);
-    let svg=el.querySelector('.curvedTextSvg');
-    if(!n){if(svg)svg.remove();return}
-    const ns='http://www.w3.org/2000/svg',edit=el.querySelector('.textEditable');
-    if(!svg){svg=document.createElementNS(ns,'svg');svg.classList.add('curvedTextSvg');svg.setAttribute('viewBox','0 0 320 140');svg.setAttribute('preserveAspectRatio','none');const defs=document.createElementNS(ns,'defs'),path=document.createElementNS(ns,'path');path.setAttribute('id','text-curve-'+item.id);defs.appendChild(path);svg.appendChild(defs);const text=document.createElementNS(ns,'text'),tp=document.createElementNS(ns,'textPath');tp.setAttribute('href','#text-curve-'+item.id);tp.setAttribute('startOffset','50%');text.setAttribute('text-anchor','middle');text.appendChild(tp);svg.appendChild(text);el.insertBefore(svg,edit.nextSibling)}
-    const path=svg.querySelector('path'),t=svg.querySelector('text'),tp=svg.querySelector('textPath');
-    const ends=70+n*.28,control=70-n*1.05;
-    path.setAttribute('d','M 8 '+ends+' Q 160 '+control+' 312 '+ends);
-    t.setAttribute('fill',item.color||'#4f4944');
-    t.setAttribute('font-family',fontStack(item.font||'HaniHani'));
-    t.setAttribute('font-size',String(Math.max(12,Math.min(58,Number(item.size)||28))));
-    tp.textContent=item.text||'';
+    const curve=Math.max(-100,Math.min(100,Number(item.curve)||0)),value=item.text||'';
+    let layer=el.querySelector('.curvedGlyphLayer');
+    el.classList.toggle('curved',!!curve&&!!value);
+    if(!curve||!value){if(layer)layer.remove();return}
+    if(!layer){layer=document.createElement('div');layer.className='curvedGlyphLayer';el.appendChild(layer)}
+    const size=Number(item.size)||28,font=fontStack(item.font||'HaniHani');
+    const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');if(!ctx)return;
+    ctx.font=size+'px '+font;
+    const chars=Array.from(value.replaceAll(String.fromCharCode(10),' '));
+    const widths=chars.map(ch=>Math.max(1,ctx.measureText(ch).width||size));
+    const total=widths.reduce((a,b)=>a+b,0),extent=Math.abs(curve)/100*Math.PI*1.8;
+    const radius=Math.max(1,total/extent),sign=curve>0?1:-1;
+    let pos=0;const frag=document.createDocumentFragment();
+    chars.forEach((ch,i)=>{
+      const angle=(pos+widths[i]/2-total/2)/radius;
+      const span=document.createElement('span');span.textContent=ch;
+      span.style.cssText='position:absolute;left:50%;top:50%;white-space:pre;';
+      span.style.fontFamily=font;span.style.fontSize=size+'px';span.style.color=item.color||'#4f4944';
+      span.style.transform='translate(-50%,-50%) translate('+radius*Math.sin(angle)+'px,'+sign*radius*(1-Math.cos(angle))+'px) rotate('+sign*angle*180/Math.PI+'deg)';
+      frag.appendChild(span);pos+=widths[i];
+    });
+    layer.replaceChildren(frag);
   }
   function renderTextItems(spread){for(const item of textItems){const el=document.createElement('div');el.className=`placedText${item.id===selectedTextId?' selected':''}`;el.dataset.textItem=item.id;el.style.left=(item.x||0)+'%';el.style.top=(item.y||0)+'%';el.style.width=(item.width||28)+'%';el.style.height=(item.height||12)+'%';el.style.zIndex=item.zIndex||100;const edit=document.createElement('div');edit.className='textEditable';edit.contentEditable='true';edit.spellcheck=false;edit.setAttribute('role','textbox');edit.setAttribute('aria-label','文字を編集');edit.style.fontFamily=fontStack(item.font||'HaniHani');edit.style.fontSize=(item.size||28)+'px';edit.style.color=item.color||'#4f4944';edit.textContent=item.text||'';el.appendChild(edit);updateCurvedText(el,item);['nw','ne','sw','se','left','right','top','bottom'].forEach(side=>{const h=document.createElement('span');h.className='textResize '+side;h.dataset.textResize=side;h.contentEditable='false';el.appendChild(h)});spread.appendChild(el);bindTextGesture(el,item);bindTextResize(el,item)}}
   function placeCaretEnd(el){const range=document.createRange(),sel=window.getSelection();range.selectNodeContents(el);range.collapse(false);sel.removeAllRanges();sel.addRange(range)}
