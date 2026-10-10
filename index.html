@@ -197,6 +197,10 @@
     @media(max-width:480px){.screen.editor .piconTabs{gap:3px;overflow-x:hidden;justify-content:space-between}.screen.editor .piconTab{flex:1 1 0;min-width:0;width:auto;height:47px;padding:0 1px;font-size:9px;letter-spacing:0}.screen.editor .piconTab::before{font-size:17px}}
     /* Keep the text picon interactive above the stage without altering editor logic. */
     .screen.editor #textPanel.open{visibility:visible;pointer-events:auto;z-index:75}
+    /* Text picon unfolds upward from the bottom tabs on iPhone. */
+    .screen.editor #textPanel{position:absolute;top:auto!important;bottom:57px!important;left:8px;right:8px;max-height:min(55dvh,390px);transform:translate3d(0,calc(100% + 65px),0);visibility:hidden;pointer-events:none;z-index:75}
+    .screen.editor #textPanel.open{transform:translate3d(0,0,0)!important;visibility:visible;pointer-events:auto}
+    .screen.editor #textPanel .textTools{min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
     /* Canva-inspired home */
     .homeIntro{padding:2px 2px 0}.homeIntro h1{font-size:31px;margin:0 0 3px;font-weight:950}.homeIntro .sub{font-size:13px;color:var(--muted);font-weight:700}
     .continueHead{display:flex;align-items:center;justify-content:space-between;margin:25px 2px 12px}.continueHead h2{margin:0;font-size:20px;font-weight:950}
