@@ -193,6 +193,10 @@
     .placedText.curved .textEditable:not(:focus){color:transparent!important;caret-color:currentColor}
     .placedText .curvedTextSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
     .placedText.curved .textEditable:focus+.curvedTextSvg{display:none}
+    /* Keep all seven picon tabs reachable on narrow iPhone screens. */
+    @media(max-width:480px){.screen.editor .piconTabs{gap:3px;overflow-x:hidden;justify-content:space-between}.screen.editor .piconTab{flex:1 1 0;min-width:0;width:auto;height:47px;padding:0 1px;font-size:9px;letter-spacing:0}.screen.editor .piconTab::before{font-size:17px}}
+    /* Keep the text picon interactive above the stage without altering editor logic. */
+    .screen.editor #textPanel.open{visibility:visible;pointer-events:auto;z-index:75}
     /* Canva-inspired home */
     .homeIntro{padding:2px 2px 0}.homeIntro h1{font-size:31px;margin:0 0 3px;font-weight:950}.homeIntro .sub{font-size:13px;color:var(--muted);font-weight:700}
     .continueHead{display:flex;align-items:center;justify-content:space-between;margin:25px 2px 12px}.continueHead h2{margin:0;font-size:20px;font-weight:950}
@@ -818,7 +822,7 @@
   $('#closePageCreate').addEventListener('click',()=>show('classWorkspace'));
   $('#cancelPage').addEventListener('click',()=>show('classWorkspace'));
   $('#savePage').addEventListener('click',async()=>{const title=$('#pageTitle').value.trim();if(!title){toast('ページタイトルを入力してください');$('#pageTitle').focus();return}if(!pageDraft.length){toast('写真を1枚以上追加してください');return}if(pageDraft.some(p=>!p.childId)){toast('すべての写真を園児に振り分けてください');return}const pageId=crypto.randomUUID();const button=$('#savePage');button.disabled=true;button.textContent='保存中…';try{for(const photo of pageDraft)await putImage(`page:${pageId}:${photo.id}`,photo.file);state.pages.push({id:pageId,classId:state.selectedClassId,title,type:$('input[name="pageType"]:checked').value,photos:pageDraft.map(p=>({id:p.id,childId:p.childId})),photoCount:pageDraft.length,assignedCount:pageDraft.filter(p=>p.childId).length,createdAt:Date.now()});saveState();pageDraft=[];show('classWorkspace');toast('ページを保存しました')}finally{button.disabled=false;button.textContent='ページを保存'}});
-  $$('.piconTab').forEach(button=>{button.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation()});button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setPanel(openPanel===button.dataset.panel?null:button.dataset.panel)})});
+  $('.piconTab').forEach(button=>{button.addEventListener('pointerdown',e=>{e.stopPropagation();if(button.dataset.panel!=='text')e.preventDefault()});button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setPanel(openPanel===button.dataset.panel?null:button.dataset.panel)})});
   $$('.panelClose').forEach(button=>button.addEventListener('click',()=>{if(openPanel==='crop')cropDraft=null;setPanel(null);renderSpread()}));
   $$('[data-layout]').forEach(button=>button.addEventListener('click',()=>applyLayout(button.dataset.layout)));
   $$('[data-crop]').forEach(button=>button.addEventListener('click',()=>cropShape(button.dataset.crop)));
