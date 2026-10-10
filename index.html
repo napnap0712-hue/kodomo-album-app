@@ -138,6 +138,18 @@
     .photoManageThumb.selected::after{content:"✓";position:absolute;right:4px;top:4px;background:#df6b91;border-radius:50%;width:25px;height:25px;display:grid;place-items:center;color:white}
     .photoManageBottom{display:grid;gap:10px;margin-bottom:25px}.photoManageBottom button{min-height:48px;border:0;border-radius:15px;font-weight:900;background:#fff0c6;color:#76592a}
     .photoManageBottom .editGo{background:#e4f1dc;color:#467342}
+    /* Dedicated child photo sorting */
+    .sortTop{display:flex;align-items:center;gap:10px;margin:8px 0 15px}.sortTop h1{font-size:21px;margin:0}
+    .sortFilters{display:flex;gap:7px;overflow-x:auto;padding:4px 0 15px}.sortFilters button{border:1px solid #e8d9d0;background:#fff;border-radius:99px;padding:9px 13px;white-space:nowrap;font-weight:800}
+    .sortFilters button.active{background:#f9dbe6;border-color:#ea99b5}.sortList{display:grid;gap:10px}
+    .sortChild{width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:white;border:1px solid #eee1db;border-radius:19px;padding:12px;min-height:78px}
+    .sortAvatar{width:50px;height:50px;border-radius:50%;background:#f8e8ce;display:grid;place-items:center;overflow:hidden;font-size:25px;flex:none}.sortAvatar img{width:100%;height:100%;object-fit:cover}
+    .sortChildMain{flex:1}.sortChildMain b{display:block;font-size:17px}.sortChildMain small{color:#6a6662}
+    .sortStatus{border-radius:20px;background:#e7f4e4;padding:5px 9px;font-size:12px;font-weight:900}.sortStatus.low{background:#ffebcd}.sortStatus.high{background:#fee0e0}
+    .sortTiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 18px}.sortTile{aspect-ratio:1;padding:0;border:3px solid transparent;background:#fff;border-radius:13px;overflow:hidden;position:relative}.sortTile img{width:100%;height:100%;object-fit:cover}.sortTile.selected{border-color:#e16a91}.sortTile.selected:after{content:"✓";position:absolute;right:5px;top:5px;background:#e16a91;color:white;width:25px;height:25px;border-radius:50%;display:grid;place-items:center}
+    .sortActions{display:grid;gap:9px;margin:12px 0}.sortActions button{border:0;border-radius:14px;min-height:46px;background:#e4effc;color:#476994;font-weight:900}
+    .sortDetailImage{width:100%;max-height:54vh;object-fit:contain;background:#fff;border-radius:18px}.sortDetailNav{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0}
+    .sortCheckboxes{display:grid;grid-template-columns:1fr 1fr;gap:9px}.sortCheckboxes label{display:flex;align-items:center;gap:6px;background:#fff;border-radius:12px;padding:12px;min-height:44px}
     /* Canva-inspired home */
     .homeIntro{padding:2px 2px 0}.homeIntro h1{font-size:31px;margin:0 0 3px;font-weight:950}.homeIntro .sub{font-size:13px;color:var(--muted);font-weight:700}
     .continueHead{display:flex;align-items:center;justify-content:space-between;margin:25px 2px 12px}.continueHead h2{margin:0;font-size:20px;font-weight:950}
@@ -210,6 +222,10 @@
       </div>
       <div id="photoManageGrid" class="photoManageGrid"></div>
       <div class="photoManageBottom"><button type="button" id="photoSortEntry">👧 園児別写真振り分け</button><button type="button" id="photoEditEntry" class="editGo">📖 見開き編集へ</button></div>
+    </section>
+    <section class="screen" data-screen="photoSort">
+      <div class="sortTop"><button type="button" class="back" id="sortBack">‹</button><h1 id="sortTitle">園児別写真振り分け</h1></div>
+      <div id="sortContent"></div>
     </section>
     <section class="screen" data-screen="pageCreate">
       <div class="topbar"><button class="back" id="closePageCreate" type="button">‹</button><h2>ページを作成</h2></div>
@@ -345,7 +361,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -436,6 +452,95 @@
     await Promise.allSettled([...selected].map(id=>deleteImage('page:'+page.id+':'+id)).concat(affected.filter(i=>i.bgRemoved).map(i=>deleteImage('bg:'+page.id+':'+i.id))));
     toast('選択した写真を削除しました');
   }
+
+  let sortView='children',sortPreviousView='photos',sortFilter='all',sortChildId=null,sortPhotoId=null,sortSelection=new Set(),sortRenderVersion=0;
+  function photoLinks(photo){return Array.isArray(photo.childIds)?photo.childIds.filter(Boolean):photo.childId?[photo.childId]:[]}
+  function setPhotoLinks(photo,ids){photo.childIds=[...new Set(ids)];photo.childId=photo.childIds[0]||''}
+  function sortPage(){return state.pages.find(p=>p.id===managingPhotoPageId)}
+  function sortChildren(){return state.children.filter(c=>c.classId===state.selectedClassId)}
+  function sortPhotos(){return sortPage()?.photos||[]}
+  function sortCount(id){return sortPhotos().filter(p=>photoLinks(p).includes(id)).length}
+  function sortStatus(count){return count<state.photosPerChild?'不足':count>20?'多い':'適正'}
+  function sortOpenPhotos(id){sortChildId=id;sortSelection.clear();sortView='photos';renderPhotoSorting()}
+  function sortOpenDetail(id){sortPhotoId=id;sortPreviousView=sortView;sortView='detail';renderPhotoSorting()}
+  async function sortThumb(blob){const img=document.createElement('img');img.src=fileUrl(blob);img.alt='写真';return img}
+  async function renderPhotoSorting(){
+    const p=sortPage();if(!p){show('photoManage');return}
+    const token=++sortRenderVersion,wrap=$('#sortContent');wrap.replaceChildren();
+    if(sortView==='children'){
+      $('#sortTitle').textContent='園児別写真振り分け';
+      const tabs=[['all','すべて'],['low','不足'],['ok','適正'],['high','多い'],['none','未振り分け']];
+      const filters=document.createElement('div');filters.className='sortFilters';
+      tabs.forEach(([id,title])=>{const btn=document.createElement('button');btn.type='button';btn.textContent=title;btn.classList.toggle('active',sortFilter===id);btn.onclick=()=>{sortFilter=id;renderPhotoSorting()};filters.appendChild(btn)});
+      wrap.appendChild(filters);
+      if(sortFilter==='none'){const btn=document.createElement('button');btn.className='sectionNew';btn.textContent='未振り分け写真 '+sortPhotos().filter(x=>!photoLinks(x).length).length+'枚を見る';btn.onclick=()=>sortOpenPhotos(null);wrap.appendChild(btn);return}
+      const list=document.createElement('div');list.className='sortList';wrap.appendChild(list);
+      const children=sortChildren().filter(c=>{const status=sortStatus(sortCount(c.id));return sortFilter==='all'||(sortFilter==='low'&&status==='不足')||(sortFilter==='ok'&&status==='適正')||(sortFilter==='high'&&status==='多い')});
+      if(!children.length){list.innerHTML='<div class="sectionEmpty">対象の園児がいません 🌷</div>';return}
+      for(const child of children){
+        const count=sortCount(child.id),status=sortStatus(count);
+        const btn=document.createElement('button');btn.type='button';btn.className='sortChild';
+        btn.innerHTML='<span class="sortAvatar">🌼</span><span class="sortChildMain"><b>'+escapeHtml(child.name)+'</b><small>候補 '+count+'枚</small></span><span class="sortStatus '+(status==='不足'?'low':status==='多い'?'high':'')+'">'+status+'</span><span>›</span>';
+        btn.onclick=()=>sortOpenPhotos(child.id);list.appendChild(btn);
+        try{const blob=await getImage('child:'+child.id);if(token!==sortRenderVersion)return;if(blob){const avatar=btn.querySelector('.sortAvatar');avatar.replaceChildren(await sortThumb(blob))}}catch(e){console.warn(e)}
+      }
+      return;
+    }
+    if(sortView==='photos'){
+      const child=sortChildren().find(c=>c.id===sortChildId),unassigned=sortChildId===null;
+      $('#sortTitle').textContent=unassigned?'未振り分け写真':(child?.name||'園児')+'の写真';
+      const photos=sortPhotos().filter(p=>unassigned?!photoLinks(p).length:photoLinks(p).includes(sortChildId));
+      const caption=document.createElement('p');caption.textContent='候補 '+photos.length+'枚（写真をタップして選択）';wrap.appendChild(caption);
+      const buttons=document.createElement('div');buttons.className='sortActions';
+      const add=document.createElement('button');add.textContent='＋ 写真を追加・紐づけ';add.onclick=()=>{sortView='assign';renderPhotoSorting()};
+      const remove=document.createElement('button');remove.textContent=unassigned?'写真の詳細で園児を選ぶ':'選択した写真の紐づけを解除（'+sortSelection.size+'）';
+      remove.disabled=unassigned||!sortSelection.size;remove.onclick=()=>{if(!sortSelection.size)return;photos.filter(p=>sortSelection.has(p.id)).forEach(p=>setPhotoLinks(p,photoLinks(p).filter(id=>id!==sortChildId)));saveState();sortSelection.clear();renderPhotoSorting();toast('紐づけを解除しました')};
+      buttons.append(add,remove);wrap.appendChild(buttons);
+      await renderSortTiles(photos,wrap,token,true);
+      return;
+    }
+    if(sortView==='assign'){
+      $('#sortTitle').textContent='写真を紐づけ';
+      const tip=document.createElement('p');tip.textContent='写真を複数選択して、園児に追加できます';wrap.appendChild(tip);
+      const bar=document.createElement('div');bar.className='sortActions';
+      const save=document.createElement('button');save.textContent='選択した写真を紐づけ（'+sortSelection.size+'）';
+      save.onclick=()=>{for(const p of sortPhotos().filter(p=>sortSelection.has(p.id)))setPhotoLinks(p,[...photoLinks(p),sortChildId].filter(Boolean));saveState();sortSelection.clear();sortView='photos';renderPhotoSorting();toast('写真を紐づけました')};
+      bar.appendChild(save);wrap.appendChild(bar);
+      await renderSortTiles(sortPhotos().filter(p=>!photoLinks(p).includes(sortChildId)),wrap,token,false);return;
+    }
+    if(sortView==='detail'){
+      $('#sortTitle').textContent='写真の詳細';
+      const photos=sortPhotos(),idx=photos.findIndex(p=>p.id===sortPhotoId),photo=photos[idx];if(!photo){sortView='children';renderPhotoSorting();return}
+      const img=document.createElement('img');img.className='sortDetailImage';img.alt='選択した写真';wrap.appendChild(img);
+      try{const blob=await getImage('page:'+p.id+':'+photo.id);if(blob&&token===sortRenderVersion)img.src=fileUrl(blob)}catch(e){console.warn(e)}
+      const nav=document.createElement('div');nav.className='sortDetailNav';
+      const prev=document.createElement('button');prev.textContent='‹ 前へ';prev.disabled=idx===0;prev.onclick=()=>sortOpenDetail(photos[idx-1].id);
+      const next=document.createElement('button');next.textContent='次へ ›';next.disabled=idx===photos.length-1;next.onclick=()=>sortOpenDetail(photos[idx+1].id);
+      nav.append(prev,document.createTextNode((idx+1)+' / '+photos.length),next);wrap.appendChild(nav);
+      const checks=document.createElement('div');checks.className='sortCheckboxes';wrap.appendChild(checks);
+      const selected=new Set(photoLinks(photo));
+      sortChildren().forEach(c=>{const label=document.createElement('label');const input=document.createElement('input');input.type='checkbox';input.checked=selected.has(c.id);input.onchange=()=>input.checked?selected.add(c.id):selected.delete(c.id);label.append(input,document.createTextNode(c.name));checks.appendChild(label)});
+      const bar=document.createElement('div');bar.className='sortActions';
+      const save=document.createElement('button');save.textContent='✓ 紐づけを保存';save.onclick=()=>{setPhotoLinks(photo,[...selected]);saveState();toast('保存しました');renderPhotoSorting()};
+      const clear=document.createElement('button');clear.textContent='未振り分けに戻す';clear.onclick=()=>{setPhotoLinks(photo,[]);saveState();toast('未振り分けに戻しました');renderPhotoSorting()};
+      bar.append(save,clear);wrap.appendChild(bar);
+    }
+  }
+  async function renderSortTiles(photos,wrap,token,allowDetail){
+    const grid=document.createElement('div');grid.className='sortTiles';wrap.appendChild(grid);
+    for(const photo of photos){
+      let blob;try{blob=await getImage('page:'+sortPage().id+':'+photo.id)}catch(e){continue}
+      if(token!==sortRenderVersion)return;if(!blob)continue;
+      const btn=document.createElement('button');btn.type='button';btn.className='sortTile'+(sortSelection.has(photo.id)?' selected':'');
+      btn.appendChild(await sortThumb(blob));grid.appendChild(btn);
+      btn.onclick=()=>{if(sortSelection.has(photo.id))sortSelection.delete(photo.id);else sortSelection.add(photo.id);renderPhotoSorting()};
+      btn.ondblclick=()=>sortOpenDetail(photo.id);
+      btn.addEventListener('contextmenu',e=>{e.preventDefault();sortOpenDetail(photo.id)});
+    }
+    const detail=document.createElement('div');detail.className='sortActions';const open=document.createElement('button');open.textContent='選択した写真の詳細を見る';open.disabled=!sortSelection.size;open.onclick=()=>sortOpenDetail([...sortSelection][0]);detail.appendChild(open);wrap.appendChild(detail);
+    if(!photos.length)grid.innerHTML='<div class="sectionEmpty" style="grid-column:1/-1">写真はありません</div>';
+  }
+
   function renderHome(){
     renderCrayonHomeClasses();
     const c=cls(state.selectedClassId);
@@ -601,7 +706,8 @@
   $('#photoManageInput').addEventListener('change',e=>{const files=[...(e.target.files||[])];e.target.value='';addManagedPhotos(files)});
   $('#photoManageRemove').addEventListener('click',removeManagedPhotos);
   $('#photoEditEntry').addEventListener('click',()=>{if(managingPhotoPageId)openEditor(managingPhotoPageId)});
-  $('#photoSortEntry').addEventListener('click',()=>toast('園児別振り分け画面は次の段階で実装します'));
+  $('#photoSortEntry').addEventListener('click',()=>{sortView='children';sortFilter='all';show('photoSort')});
+  $('#sortBack').addEventListener('click',()=>{if(sortView==='detail')sortView=sortPreviousView;else if(sortView==='photos')sortView='children';else {show('photoManage');return}renderPhotoSorting()});
   $('#sectionNew').addEventListener('click',openPageCreate);
   $('#completeSetup').addEventListener('click',()=>{state.selectedClassId=$('#setupClass').value;state.creationMode=$('#setupMode').value;state.photosPerChild=Number($('#setupCount').value);state.setupCompleted=true;saveState();show('home');toast('初回設定を保存しました')});
   $('#openBulk').addEventListener('click',()=>{bulkDraft=[];show('bulkRegister')});
