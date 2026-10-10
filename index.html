@@ -127,6 +127,17 @@
     .sectionKind{display:inline-block;background:#fce4eb;border-radius:30px;padding:3px 10px;font-size:11px;font-weight:900;margin-bottom:3px}
     .sectionDelete{margin-top:8px;border:1px solid #f6c9cc;background:#fff7f7;color:#b74f60;border-radius:12px;min-height:42px;padding:8px 14px;font-weight:850}
     .sectionEmpty{padding:27px 15px;text-align:center;color:#716a65;border:2px dashed #efcbbf;border-radius:19px;background:#fffcf8}
+    .photoManageTop{position:sticky;top:0;z-index:11;background:#fbfaf7;padding:12px 0}
+    .photoManageBar{display:flex;align-items:center;gap:12px}.photoManageBar h1{font-size:23px;margin:0}
+    .photoManageCount{font-weight:900;margin:12px 0}.photoManageActions{display:flex;gap:8px;flex-wrap:wrap}
+    .photoManageActions label,.photoManageActions button{border:0;border-radius:14px;padding:12px;font-size:13px;font-weight:900;min-height:44px;background:#e3f0ff;color:#416b9a;cursor:pointer}
+    .photoManageActions .photoRemove{background:#ffecf1;color:#ae516c}.photoRemove:disabled{opacity:.45}
+    .photoManageGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:18px 0}
+    .photoManageThumb{aspect-ratio:1;border:3px solid transparent;background:#fff;border-radius:12px;overflow:hidden;position:relative;padding:0}
+    .photoManageThumb img{width:100%;height:100%;object-fit:cover}.photoManageThumb.selected{border-color:#df6b91}
+    .photoManageThumb.selected::after{content:"✓";position:absolute;right:4px;top:4px;background:#df6b91;border-radius:50%;width:25px;height:25px;display:grid;place-items:center;color:white}
+    .photoManageBottom{display:grid;gap:10px;margin-bottom:25px}.photoManageBottom button{min-height:48px;border:0;border-radius:15px;font-weight:900;background:#fff0c6;color:#76592a}
+    .photoManageBottom .editGo{background:#e4f1dc;color:#467342}
     /* Canva-inspired home */
     .homeIntro{padding:2px 2px 0}.homeIntro h1{font-size:31px;margin:0 0 3px;font-weight:950}.homeIntro .sub{font-size:13px;color:var(--muted);font-weight:700}
     .continueHead{display:flex;align-items:center;justify-content:space-between;margin:25px 2px 12px}.continueHead h2{margin:0;font-size:20px;font-weight:950}
@@ -191,6 +202,15 @@
       <div id="sectionList" class="sectionList"></div>
     </section>
 
+    <section class="screen" data-screen="photoManage">
+      <div class="photoManageTop">
+        <div class="photoManageBar"><button type="button" class="back" id="photoBack">‹</button><h1 id="photoManageTitle">写真管理</h1></div>
+        <div class="photoManageCount" id="photoManageCount">候補写真 現在0枚</div>
+        <div class="photoManageActions"><label>＋ 写真を追加<input type="file" id="photoManageInput" accept="image/*" multiple hidden></label><button type="button" id="photoManageRemove" class="photoRemove" disabled>🗑 選択した写真を削除（0）</button></div>
+      </div>
+      <div id="photoManageGrid" class="photoManageGrid"></div>
+      <div class="photoManageBottom"><button type="button" id="photoSortEntry">👧 園児別写真振り分け</button><button type="button" id="photoEditEntry" class="editGo">📖 見開き編集へ</button></div>
+    </section>
     <section class="screen" data-screen="pageCreate">
       <div class="topbar"><button class="back" id="closePageCreate" type="button">‹</button><h2>ページを作成</h2></div>
       <div class="card stack">
@@ -325,7 +345,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -361,7 +381,7 @@
       const participants=p.type==='event'&&Array.isArray(p.participantIds)?p.participantIds.length:childCount;
       return '<article class="sectionEntry"><button type="button" class="sectionOpen" data-section-open="'+p.id+'"><span class="sectionVisual" aria-hidden="true">'+(p.type==='event'?'🎈':'🌼')+'</span><span class="sectionData"><span class="sectionKind">'+(p.type==='event'?'行事':'月')+'</span><b>'+escapeHtml(p.title)+'</b><small>参加園児 '+participants+'名 ・ 候補写真 '+count+'枚</small></span><span aria-hidden="true">❯</span></button><button type="button" class="sectionDelete" data-section-delete="'+p.id+'">🗑 このセクションを削除</button></article>';
     }).join('');
-    target.querySelectorAll('[data-section-open]').forEach(b=>b.addEventListener('click',()=>openEditor(b.dataset.sectionOpen)));
+    target.querySelectorAll('[data-section-open]').forEach(b=>b.addEventListener('click',()=>openPhotoManagement(b.dataset.sectionOpen)));
     target.querySelectorAll('[data-section-delete]').forEach(b=>b.addEventListener('click',async()=>{
       const page=state.pages.find(p=>p.id===b.dataset.sectionDelete);
       if(!page||!confirm('「'+page.title+'」を削除しますか？\\nこのセクションの写真・編集データも削除されます。'))return;
@@ -373,6 +393,48 @@
         state.pages=state.pages.filter(p=>p.id!==page.id);saveState();renderHome();toast('セクションを削除しました');
       }catch(e){console.error('section delete error',e);b.disabled=false;toast('削除できませんでした')}
     }));
+  }
+
+  let managingPhotoPageId=null,manageSelected=new Set(),manageRenderToken=0;
+  function openPhotoManagement(pageId){if(!state.pages.some(p=>p.id===pageId))return;managingPhotoPageId=pageId;manageSelected.clear();show('photoManage')}
+  async function renderPhotoManagement(){
+    const page=state.pages.find(p=>p.id===managingPhotoPageId);if(!page){show('classWorkspace');return}
+    $('#photoManageTitle').textContent=page.title+' ・ 写真管理';
+    $('#photoManageCount').textContent='候補写真 現在'+(page.photos||[]).length+'枚';
+    $('#photoManageRemove').textContent='🗑 選択した写真を削除（'+manageSelected.size+'）';
+    $('#photoManageRemove').disabled=!manageSelected.size;
+    const token=++manageRenderToken,grid=$('#photoManageGrid');grid.replaceChildren();
+    for(const photo of page.photos||[]){
+      let blob=null;try{blob=await getImage('page:'+page.id+':'+photo.id)}catch(e){console.warn('image load error',e)}
+      if(token!==manageRenderToken||!blob)continue;
+      const btn=document.createElement('button');btn.type='button';btn.className='photoManageThumb'+(manageSelected.has(photo.id)?' selected':'');
+      btn.setAttribute('aria-label','候補写真を選択');btn.setAttribute('aria-pressed',manageSelected.has(photo.id));
+      const img=document.createElement('img');img.src=fileUrl(blob);img.alt='候補写真';btn.appendChild(img);grid.appendChild(btn);
+      btn.addEventListener('click',()=>{
+        if(manageSelected.has(photo.id))manageSelected.delete(photo.id);else manageSelected.add(photo.id);
+        btn.classList.toggle('selected',manageSelected.has(photo.id));btn.setAttribute('aria-pressed',manageSelected.has(photo.id));
+        $('#photoManageRemove').textContent='🗑 選択した写真を削除（'+manageSelected.size+'）';$('#photoManageRemove').disabled=!manageSelected.size;
+      });
+    }
+    if(!grid.childElementCount)grid.innerHTML='<div class="sectionEmpty" style="grid-column:1/-1">写真がありません。＋ 写真を追加から選んでね 🌼</div>';
+  }
+  async function addManagedPhotos(files){
+    const page=state.pages.find(p=>p.id===managingPhotoPageId);if(!page||!files.length)return;
+    const input=$('#photoManageInput');input.disabled=true;let added=0;
+    try{
+      for(const file of files){const id=crypto.randomUUID();await putImage('page:'+page.id+':'+id,file);page.photos.push({id,childId:''});added++}
+      page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;saveState();toast(added+'枚追加しました');
+    }catch(e){console.error(e);saveState();toast('写真の追加が一部失敗しました')}finally{input.disabled=false;renderPhotoManagement()}
+  }
+  async function removeManagedPhotos(){
+    const page=state.pages.find(p=>p.id===managingPhotoPageId);if(!page||!manageSelected.size)return;
+    if(!confirm('選択した'+manageSelected.size+'枚を削除しますか？\n見開きに配置済みの場合は配置からも外れます。'))return;
+    const selected=new Set(manageSelected),affected=(page.layout||[]).filter(i=>selected.has(i.photoId));
+    page.photos=page.photos.filter(p=>!selected.has(p.id));page.layout=(page.layout||[]).filter(i=>!selected.has(i.photoId));
+    page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;saveState();
+    manageSelected.clear();renderPhotoManagement();
+    await Promise.allSettled([...selected].map(id=>deleteImage('page:'+page.id+':'+id)).concat(affected.filter(i=>i.bgRemoved).map(i=>deleteImage('bg:'+page.id+':'+i.id))));
+    toast('選択した写真を削除しました');
   }
   function renderHome(){
     renderCrayonHomeClasses();
@@ -535,6 +597,11 @@
 
   $$('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
   $('#backToClassHome').addEventListener('click',()=>show('home'));
+  $('#photoBack').addEventListener('click',()=>show('classWorkspace'));
+  $('#photoManageInput').addEventListener('change',e=>{const files=[...(e.target.files||[])];e.target.value='';addManagedPhotos(files)});
+  $('#photoManageRemove').addEventListener('click',removeManagedPhotos);
+  $('#photoEditEntry').addEventListener('click',()=>{if(managingPhotoPageId)openEditor(managingPhotoPageId)});
+  $('#photoSortEntry').addEventListener('click',()=>toast('園児別振り分け画面は次の段階で実装します'));
   $('#sectionNew').addEventListener('click',openPageCreate);
   $('#completeSetup').addEventListener('click',()=>{state.selectedClassId=$('#setupClass').value;state.creationMode=$('#setupMode').value;state.photosPerChild=Number($('#setupCount').value);state.setupCompleted=true;saveState();show('home');toast('初回設定を保存しました')});
   $('#openBulk').addEventListener('click',()=>{bulkDraft=[];show('bulkRegister')});
@@ -579,8 +646,8 @@
   $('#redoEdit').addEventListener('click',()=>restoreEdit(editHistoryIndex+1));
   $('#candidateDone').addEventListener('click',async()=>await addPhotosToSpread([...candidateSelection]));
   $('#deletePhoto').addEventListener('click',()=>{if(selectedEditId){editItems=editItems.filter(x=>x.id!==selectedEditId);selectedEditId=null}else if(selectedTextId){textItems=textItems.filter(x=>x.id!==selectedTextId);selectedTextId=null}else if(selectedStickerId){stickerItems=stickerItems.filter(x=>x.id!==selectedStickerId);selectedStickerId=null}else return;recordEdit();renderSpread();syncTextPanel()});
-  $('#closeEditor').addEventListener('click',()=>show('classWorkspace'));
-  $('#saveEdit').addEventListener('click',()=>{if(!editingPage)return;const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,zIndex})=>({id,text,x,y,width,height,font,size,color,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();editingPage=state.pages.find(p=>p.id===pageId)||editingPage;show('classWorkspace');toast('見開きの配置を保存しました')});
+  $('#closeEditor').addEventListener('click',()=>show('photoManage'));
+  $('#saveEdit').addEventListener('click',()=>{if(!editingPage)return;const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,zIndex})=>({id,text,x,y,width,height,font,size,color,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();editingPage=state.pages.find(p=>p.id===pageId)||editingPage;show('photoManage');toast('見開きの配置を保存しました')});
   $('#spread').addEventListener('pointerdown',e=>{if(e.target===$('#spread')){selectedEditId=null;selectedTextId=null;selectedStickerId=null;$$('.placedPhoto').forEach(x=>x.classList.remove('selected'));$$('.placedText').forEach(x=>x.classList.remove('selected'));$$('.placedSticker').forEach(x=>x.classList.remove('selected'));syncTextPanel();updateEditControls()}});
   $('#resetBtn').addEventListener('click',()=>{if(!confirm('土台版の設定・園児データを初期化しますか？'))return;localStorage.removeItem(STORE_KEY);indexedDB.deleteDatabase('omoide_book_assets');location.reload()});
 
