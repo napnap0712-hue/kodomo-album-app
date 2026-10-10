@@ -707,7 +707,7 @@
   $('#photoManageRemove').addEventListener('click',removeManagedPhotos);
   $('#photoEditEntry').addEventListener('click',()=>{if(managingPhotoPageId)openEditor(managingPhotoPageId)});
   $('#photoSortEntry').addEventListener('click',()=>{sortView='children';sortFilter='all';show('photoSort')});
-  $('#sortBack').addEventListener('click',()=>{if(sortView==='detail')sortView=sortPreviousView;else if(sortView==='photos')sortView='children';else {show('photoManage');return}renderPhotoSorting()});
+  $('#sortBack').addEventListener('click',()=>{if(sortView==='detail')sortView=sortPreviousView;else if(sortView==='assign')sortView='photos';else if(sortView==='photos')sortView='children';else {show('photoManage');return}renderPhotoSorting()});
   $('#sectionNew').addEventListener('click',openPageCreate);
   $('#completeSetup').addEventListener('click',()=>{state.selectedClassId=$('#setupClass').value;state.creationMode=$('#setupMode').value;state.photosPerChild=Number($('#setupCount').value);state.setupCompleted=true;saveState();show('home');toast('初回設定を保存しました')});
   $('#openBulk').addEventListener('click',()=>{bulkDraft=[];show('bulkRegister')});
