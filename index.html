@@ -84,6 +84,30 @@
 
 
 
+
+    /* Crayon home: scoped to home screen; other screens retain their styling. */
+    [data-screen="home"] .crayonHomeHero{text-align:center;position:relative;padding:15px 8px 8px;background:#fff;border-radius:24px;color:#674838}
+    [data-screen="home"] .crayonDoodles{display:flex;justify-content:space-between;font-size:29px;line-height:1.2;pointer-events:none}
+    [data-screen="home"] .crayonTitle{font:900 clamp(25px,7vw,37px)/1.35 "Hachi Maru Pop","M PLUS Rounded 1c",sans-serif;letter-spacing:-.04em;margin:2px 0 8px}
+    [data-screen="home"] .crayonTitle span:nth-child(6n+1){color:#ed6172}[data-screen="home"] .crayonTitle span:nth-child(6n+2){color:#ed9233}
+    [data-screen="home"] .crayonTitle span:nth-child(6n+3){color:#6bb45d}[data-screen="home"] .crayonTitle span:nth-child(6n+4){color:#278de5}
+    [data-screen="home"] .crayonTitle span:nth-child(6n+5){color:#9471d2}[data-screen="home"] .crayonTitle span:nth-child(6n){color:#e76d9e}
+    [data-screen="home"] .crayonTagline{font-size:13px;color:#694d43;font-weight:800}
+    [data-screen="home"] .crayonYear{display:inline-block;background:#fff2ce;border:2px solid #f7d890;border-radius:99px;padding:8px 20px;margin-top:13px;font-weight:900}
+    [data-screen="home"] .crayonHeading{text-align:center;font-family:"Kiwi Maru",sans-serif;color:#654435;font-size:21px;font-weight:900;margin:22px 0 14px}
+    [data-screen="home"] .crayonClassGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    [data-screen="home"] .crayonClassCard{position:relative;border:2px solid var(--edge);background:linear-gradient(135deg,rgba(255,255,255,.85),rgba(255,255,255,.25)),var(--tint);border-radius:19px;min-height:137px;padding:10px 8px 10px 16px;color:#654435;text-align:center;box-shadow:3px 5px 0 var(--edge),0 6px 14px #68513a10;overflow:hidden;touch-action:manipulation;transition:transform .12s}
+    [data-screen="home"] .crayonClassCard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:10px;background:var(--edge);border-right:2px solid #ffffff91}
+    [data-screen="home"] .crayonClassCard:active{transform:translate(2px,3px);box-shadow:1px 2px 0 var(--edge)}
+    [data-screen="home"] .crayonClassCard.active{outline:3px solid #7299dc;outline-offset:2px}
+    [data-screen="home"] .crayonClassCard .classFlower{display:block;font-size:43px;height:57px;line-height:1.3;filter:drop-shadow(1px 2px 0 #ffffffa1)}
+    [data-screen="home"] .crayonClassCard .classFlower img{height:55px;max-width:85%;object-fit:contain}
+    [data-screen="home"] .crayonClassCard b{display:block;font-family:"Kiwi Maru",sans-serif;font-size:clamp(14px,4vw,19px);white-space:nowrap}
+    [data-screen="home"] .crayonClassCard small{display:inline-block;background:#ffffffce;border-radius:30px;margin-top:4px;padding:2px 10px;font-weight:800}
+    [data-screen="home"] .crayonClassCard:focus-visible{outline:3px solid #297be0;outline-offset:3px}
+    [data-screen="home"] .crayonHomeFooter{text-align:center;padding:18px 0 0;font-size:25px;pointer-events:none}
+    @media(max-width:360px){[data-screen="home"] .crayonClassGrid{gap:9px}[data-screen="home"] .crayonClassCard{min-height:122px;padding:7px 4px 7px 12px}}
+
     /* Canva-inspired home */
     .homeIntro{padding:2px 2px 0}.homeIntro h1{font-size:31px;margin:0 0 3px;font-weight:950}.homeIntro .sub{font-size:13px;color:var(--muted);font-weight:700}
     .continueHead{display:flex;align-items:center;justify-content:space-between;margin:25px 2px 12px}.continueHead h2{margin:0;font-size:20px;font-weight:950}
@@ -131,6 +155,15 @@
     </section>
 
     <section class="screen" data-screen="home">
+      <div class="crayonHomeHero">
+        <div class="crayonDoodles" aria-hidden="true"><span>☀️ ☁️</span><span>📖 🌈</span></div>
+        <h1 class="crayonTitle" aria-label="おもいでブック"><span>お</span><span>も</span><span>い</span><span>で</span><span>ブ</span><span>ッ</span><span>ク</span></h1>
+        <div class="crayonTagline">みんなの思い出をいっぱい残そう</div>
+        <div class="crayonYear" id="crayonHomeYear">2026年度</div>
+      </div>
+      <h2 class="crayonHeading">🌷 クラスをえらぶ</h2>
+      <div class="crayonClassGrid" id="crayonClassGrid" aria-label="クラス選択"></div>
+      <div class="crayonHomeFooter" aria-hidden="true">🌱 🌼 🏫 🌷 🌳</div>
       <div class="homeIntro">
         <h1>おもいでブック</h1>
         <div class="sub"><span id="homeYear">2026年度</span>・<span id="homeClass">—</span></div>
@@ -285,7 +318,30 @@
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
   function renderSetup(){const s=$('#setupClass');s.innerHTML=CLASSES.map(c=>`<option value="${c.id}">${c.name}（${c.age}）</option>`).join('');s.value=state.selectedClassId;$('#setupMode').value=state.creationMode;$('#setupCount').value=String(state.photosPerChild);}
-  function renderHome(){const c=cls(state.selectedClassId);$('#homeClass').textContent=c.name;$('#homeYear').textContent=`${state.year}年度`;const n=state.children.filter(x=>x.classId===state.selectedClassId).length;const pages=state.pages.filter(x=>x.classId===state.selectedClassId);$('#homeDesc').textContent=n?`${n}名登録済み。写真を選んでページを作成できます。`:'まず管理画面からクラスアイコンと園児を登録しましょう。';$('#pageProgress').textContent=`${pages.length} / 12ページ`;const cards=pages.slice(-2).reverse().map((p,i)=>`<button class="albumCard ${i?'blue':'pink'}" type="button" data-saved-page="${p.id}"><div class="albumThumb">${p.type==='event'?'✨':'📷'}</div><span class="albumStatus">保存済み</span><div class="albumMonth">${escapeHtml(p.title)}</div><div class="albumMeta">${p.photoCount}枚の写真・${p.assignedCount}枚振り分け済み</div></button>`).join('');$('#homePages').innerHTML=cards+`<button class="albumCard yellow" type="button" data-create-page><div class="albumThumb">＋</div><span class="albumStatus">新規作成</span><div class="albumMonth">作成</div><div class="albumMeta">月またはイベントのページを作成</div></button>`;$$('[data-create-page]').forEach(b=>b.addEventListener('click',openPageCreate));$$('[data-saved-page]').forEach(b=>b.addEventListener('click',()=>openEditor(b.dataset.savedPage)));}
+
+  function renderCrayonHomeClasses(){
+    const grid=$('#crayonClassGrid');if(!grid)return;
+    const flowers={tanpopo:'🌼',tulip:'🌷',cosmos:'🌸',canna:'🌺',deigo:'🌺',sakura:'🌸'};
+    const palette={tanpopo:['#fff1bb','#f3bf55'],tulip:['#ffdae2','#ee8ea8'],cosmos:['#e8dbfa','#ad92d4'],canna:['#ddf2dc','#9ccaab'],deigo:['#d9edff','#8dc0e7'],sakura:['#ffe1ed','#ecabbf']};
+    $('#crayonHomeYear').textContent=state.year+'年度';
+    grid.innerHTML=CLASSES.map(c=>{
+      const [tint,edge]=palette[c.id]||['#fff4e6','#e4c4aa'];
+      return '<button type="button" class="crayonClassCard'+(c.id===state.selectedClassId?' active':'')+'" style="--tint:'+tint+';--edge:'+edge+'" data-crayon-class="'+c.id+'" aria-pressed="'+(c.id===state.selectedClassId)+'"><span class="classFlower" data-crayon-flower="'+c.id+'" aria-hidden="true">'+flowers[c.id]+'</span><b>'+escapeHtml(c.name)+'</b><small>'+escapeHtml(c.age)+'</small></button>';
+    }).join('');
+    grid.querySelectorAll('[data-crayon-class]').forEach(button=>button.addEventListener('click',()=>{
+      if(button.dataset.crayonClass===state.selectedClassId)return;
+      state.selectedClassId=button.dataset.crayonClass;currentClassId=state.selectedClassId;
+      saveState();renderHome();toast(cls(state.selectedClassId).name+'を選びました');
+    }));
+    // Use user-uploaded class emblems if present; preserve the built-in flower fallback.
+    CLASSES.forEach(async c=>{
+      try{const blob=await getImage('classIcon:'+c.id);const target=grid.querySelector('[data-crayon-flower="'+c.id+'"]');
+        if(blob&&target){const img=document.createElement('img');img.alt='';img.src=fileUrl(blob);target.replaceChildren(img)}
+      }catch(e){console.warn('class emblem unavailable',e)}
+    });
+  }
+
+  function renderHome(){renderCrayonHomeClasses();const c=cls(state.selectedClassId);$('#homeClass').textContent=c.name;$('#homeYear').textContent=`${state.year}年度`;const n=state.children.filter(x=>x.classId===state.selectedClassId).length;const pages=state.pages.filter(x=>x.classId===state.selectedClassId);$('#homeDesc').textContent=n?`${n}名登録済み。写真を選んでページを作成できます。`:'まず管理画面からクラスアイコンと園児を登録しましょう。';$('#pageProgress').textContent=`${pages.length} / 12ページ`;const cards=pages.slice(-2).reverse().map((p,i)=>`<button class="albumCard ${i?'blue':'pink'}" type="button" data-saved-page="${p.id}"><div class="albumThumb">${p.type==='event'?'✨':'📷'}</div><span class="albumStatus">保存済み</span><div class="albumMonth">${escapeHtml(p.title)}</div><div class="albumMeta">${p.photoCount}枚の写真・${p.assignedCount}枚振り分け済み</div></button>`).join('');$('#homePages').innerHTML=cards+`<button class="albumCard yellow" type="button" data-create-page><div class="albumThumb">＋</div><span class="albumStatus">新規作成</span><div class="albumMonth">作成</div><div class="albumMeta">月またはイベントのページを作成</div></button>`;$$('[data-create-page]').forEach(b=>b.addEventListener('click',openPageCreate));$$('[data-saved-page]').forEach(b=>b.addEventListener('click',()=>openEditor(b.dataset.savedPage)));}
 
   function openPageCreate(){pageDraft=[];$('#pageTitle').value='';const preferred=state.creationMode==='event'?'event':'month';const radio=$(`input[name="pageType"][value="${preferred}"]`);if(radio)radio.checked=true;show('pageCreate')}
   function renderPageDraft(){const children=state.children.filter(x=>x.classId===state.selectedClassId);const wrap=$('#pagePhotos');wrap.innerHTML='';$('#pagePhotoCount').textContent=`${pageDraft.length}枚`;$('#pageChildNotice').textContent=children.length?'写真を追加し、それぞれ園児を選んでください。':'先に管理画面で園児を登録すると、写真を振り分けできます。';pageDraft.forEach((photo,i)=>{const el=document.createElement('div');el.className='pagePhoto';const options=['<option value="">園児を選択</option>',...children.map(child=>`<option value="${child.id}" ${photo.childId===child.id?'selected':''}>${escapeHtml(child.name)}</option>`)].join('');el.innerHTML=`<img src="${fileUrl(photo.file)}" alt="追加した写真 ${i+1}"><div class="photoDetails"><div class="photoName">${escapeHtml(photo.file.name)}</div><select data-photo-child="${photo.id}" aria-label="${i+1}枚目を園児に振り分け">${options}</select></div><button class="removeRow" type="button" data-remove-photo="${photo.id}" aria-label="写真を削除">×</button>`;wrap.appendChild(el)});$$('[data-photo-child]').forEach(s=>s.addEventListener('change',()=>{const p=pageDraft.find(x=>x.id===s.dataset.photoChild);if(p)p.childId=s.value}));$$('[data-remove-photo]').forEach(b=>b.addEventListener('click',()=>{pageDraft=pageDraft.filter(x=>x.id!==b.dataset.removePhoto);renderPageDraft()}));}
