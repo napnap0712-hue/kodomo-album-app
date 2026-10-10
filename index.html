@@ -702,8 +702,8 @@
   }
   function setBgMode(mode){
     bgMode=mode;
-    $('#backgroundPanel [data-bg-mode]').forEach(b=>b.classList.toggle('active',b.dataset.bgMode===mode));
-    $('#backgroundPanel [data-bg-group]').forEach(g=>g.classList.toggle('active',g.dataset.bgGroup===mode));
+    $$('#backgroundPanel [data-bg-mode]').forEach(b=>b.classList.toggle('active',b.dataset.bgMode===mode));
+    $$('#backgroundPanel [data-bg-group]').forEach(g=>g.classList.toggle('active',g.dataset.bgGroup===mode));
     if(mode==='image')renderLocalBackgrounds();
   }
   function syncBackgroundPanel(){const cfg=selectedBgConfig();setBgMode(bgMode);$$('[data-bg-target]').forEach(b=>b.classList.toggle('active',b.dataset.bgTarget===bgTarget));$$('[data-bg-pattern]').forEach(b=>b.classList.toggle('active',b.dataset.bgPattern===cfg.pattern));$$('[data-bg-color]').forEach(b=>b.classList.toggle('active',b.dataset.bgColor===cfg.color));const slider=$('#bgOpacity'),value=$('#bgOpacityValue'),scale=$('#bgPatternScale'),scaleValue=$('#bgPatternScaleValue');if(slider)slider.value=cfg.opacity;if(value)value.textContent=cfg.opacity+'%';if(scale){scale.value=cfg.patternScale;scale.disabled=cfg.pattern==='plain'}if(scaleValue)scaleValue.textContent=cfg.patternScale+'%'}
@@ -807,7 +807,7 @@
   $('#bgPatternScale').addEventListener('change',e=>setBackgroundScale(e.target.value,true));
   $$('[data-builtin-stamp]').forEach(b=>{const path=b.dataset.builtinStamp,preview=b.querySelector('[data-builtin-preview]');if(preview)sharedDisplayUrl(path).then(url=>{preview.src=url});b.addEventListener('click',()=>addStickerAsset(path))});
   backgroundLibrary=bgLibraryRead();
-  $('#backgroundPanel [data-bg-mode]').forEach(b=>b.addEventListener('click',()=>setBgMode(b.dataset.bgMode)));
+  $$('#backgroundPanel [data-bg-mode]').forEach(b=>b.addEventListener('click',()=>setBgMode(b.dataset.bgMode)));
   $('#bgImageInput').addEventListener('change',async e=>{
     const input=e.target,files=[...(input.files||[])];input.value='';if(!files.length)return;input.disabled=true;
     let added=0;
