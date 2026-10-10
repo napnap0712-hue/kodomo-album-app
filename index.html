@@ -136,7 +136,7 @@
     .photoManageThumb{aspect-ratio:1;border:3px solid transparent;background:#fff;border-radius:12px;overflow:hidden;position:relative;padding:0}
     .photoManageThumb img{width:100%;height:100%;object-fit:cover}.photoManageThumb.selected{border-color:#df6b91}
     .photoManageThumb.selected::after{content:"✓";position:absolute;right:4px;top:4px;background:#df6b91;border-radius:50%;width:25px;height:25px;display:grid;place-items:center;color:white}
-    .photoManageBottom{display:grid;gap:10px;margin-bottom:25px}.photoManageBottom button{min-height:48px;border:0;border-radius:15px;font-weight:900;background:#fff0c6;color:#76592a}
+    .photoManageBottom{display:grid;gap:10px;margin:14px 0 16px}.photoManageBottom button{min-height:48px;border:0;border-radius:15px;font-weight:900;background:#fff0c6;color:#76592a}
     .photoManageBottom .editGo{background:#e4f1dc;color:#467342}
     /* Dedicated child photo sorting */
     .sortTop{display:flex;align-items:center;gap:10px;margin:8px 0 15px}.sortTop h1{font-size:21px;margin:0}
@@ -241,8 +241,8 @@
         <div class="photoManageCount" id="photoManageCount">候補写真 現在0枚</div>
         <div class="photoManageActions"><label>＋ 写真を追加<input type="file" id="photoManageInput" accept="image/*" multiple hidden></label><button type="button" id="photoManageRemove" class="photoRemove" disabled>🗑 選択した写真を削除（0）</button></div>
       </div>
-      <div id="photoManageGrid" class="photoManageGrid"></div>
       <div class="photoManageBottom"><button type="button" id="photoSortEntry">👧 園児別写真振り分け</button><button type="button" id="photoEditEntry" class="editGo">📖 見開き編集へ</button></div>
+      <div id="photoManageGrid" class="photoManageGrid"></div>
     </section>
     <section class="screen" data-screen="photoSort">
       <div class="sortTop"><button type="button" class="back" id="sortBack">‹</button><h1 id="sortTitle">園児別写真振り分け</h1></div>
