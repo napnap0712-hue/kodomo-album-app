@@ -396,6 +396,25 @@
     .screen.editor #photoPanel .candidateDone{border-radius:16px;background:#f6b5d0;color:#5b4550;min-height:42px;padding:6px 12px;font-size:12px}
     .screen.editor #photoPanel .candidateDone:disabled{opacity:.55}
     .screen.editor #photoPanel #candidateSelectionCount{font-size:12px;white-space:nowrap}
+    /* Canva crop tab: tidy shape choices and background removal in the same fixed panel. */
+    .screen.editor #cropPanel{overflow-y:auto;overflow-x:hidden;padding:10px 12px 15px;scrollbar-width:thin}
+    .screen.editor #cropPanel .panelHead{margin-bottom:8px}
+    .screen.editor #cropPanel .panelHead b{font-size:14px;color:#56494a}
+    .screen.editor #cropPanel .cropBtns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .screen.editor #cropPanel .cropShapeGrid{grid-column:1/-1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+    .screen.editor #cropPanel .cropShapeGrid button{min-height:0;aspect-ratio:1/1;border:2px solid #eadcd1;border-radius:13px;background:#fffdfb;padding:7px}
+    .screen.editor #cropPanel .cropShapeGrid button.active{border-color:#dc9fba;background:#ffdeeb}
+    .screen.editor #cropPanel .cropBtns>.cropConfirm{background:#c2f6d9;border-color:#a5e4c6;color:#345c49}
+    .screen.editor #cropPanel .cropBtns>.cropCancel{background:#ffdfdf;border-color:#f5c6c7;color:#8c5656}
+    .screen.editor #cropPanel .cropBtns>[data-crop="clear"]{background:#fff;border-color:#e1d5c7;color:#6b6058}
+    .screen.editor #cropPanel .cropBtns>button{min-height:38px;font-size:10px;padding:5px 2px;border-radius:13px}
+    .screen.editor #cropPanel .cropBackgroundTools{margin-top:13px;gap:7px}
+    .screen.editor #cropPanel .cropBackgroundTools>b{font-size:13px;color:#554749}
+    .screen.editor #cropPanel .bgBtns{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+    .screen.editor #cropPanel .bgStatus{grid-column:1/-1;font-size:11px}
+    .screen.editor #cropPanel .bgBtns button{border-radius:14px;min-height:38px;font-size:11px}
+    .screen.editor #cropPanel #removeBackground{background:#bce8ff;border-color:#a6d8f0;color:#355c71}
+    .screen.editor #cropPanel #restoreBackground{background:#fff;border-color:#e5d9cd;color:#635952}
 </style>
 </head>
 <body>
