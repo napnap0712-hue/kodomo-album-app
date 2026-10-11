@@ -633,6 +633,26 @@
     .screen.editor #stickerPanel #sharedStickerGrid .sharedAssetEmpty{
       width:100%!important;font-size:11px!important;text-align:left!important;padding:4px!important
     }
+
+    /* Prevent large sticker artwork from overflowing the compact two-row gallery. */
+    .screen.editor #stickerPanel .stickerGrid{
+      grid-template-rows:repeat(2,minmax(0,42px))!important;
+      grid-auto-columns:calc((100% - 36px)/5)!important;
+      column-gap:9px!important;row-gap:9px!important;
+      min-height:93px!important;max-height:93px!important;
+      align-items:center!important
+    }
+    .screen.editor #stickerPanel .stickerPick{
+      display:flex!important;align-items:center!important;justify-content:center!important;
+      box-sizing:border-box!important;min-width:0!important;max-width:100%!important;
+      height:42px!important;min-height:42px!important;max-height:42px!important;
+      overflow:hidden!important;padding:2px!important
+    }
+    .screen.editor #stickerPanel .stickerPick img{
+      display:block!important;width:100%!important;height:100%!important;
+      max-width:43px!important;max-height:38px!important;
+      object-fit:contain!important;object-position:center!important
+    }
 </style>
 </head>
 <body>
