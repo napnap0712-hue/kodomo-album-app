@@ -755,6 +755,15 @@
     .screen.editor #textPanel .textColor.active:is([data-color="#ffffff"],[data-color="#ffe9a8"],[data-color="#ffd93d"])::after{
       color:#352e38;text-shadow:none;
     }
+
+    /* Match sticker panel outer bounds to all other editor panels. */
+    .screen.editor #stickerPanel{
+      box-sizing:border-box!important;
+      left:8px!important;right:8px!important;width:auto!important;
+      margin-left:0!important;margin-right:0!important;
+      min-width:0!important;max-width:none!important;
+      border-radius:0 0 19px 19px!important;
+    }
 </style>
 </head>
 <body>
