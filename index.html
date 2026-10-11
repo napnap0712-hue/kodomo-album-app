@@ -1168,7 +1168,7 @@
   $('#textCurveSlider').addEventListener('change',e=>changeTextCurve(e.target.value,true));
   $('#textCurveReset').addEventListener('click',()=>{const item=selectedText();if(!item)return;$('#textCurveSlider').value=0;changeTextCurve(0,true)});
 
-  $('[data-font]').forEach(b=>b.addEventListener('click',()=>{const item=selectedText();if(!item){toast('先に「＋文字を追加」で文字を選択してね');return}item.font=b.dataset.font;const edit=$(`[data-text-item="${item.id}"] .textEditable`);if(edit)edit.style.fontFamily=fontStack(item.font);updateCurvedText($(`[data-text-item="${item.id}"]`),item);recordEdit();syncTextPanel()}));
+  $$('[data-font]').forEach(b=>b.addEventListener('click',()=>{const item=selectedText();if(!item){toast('先に「＋文字を追加」で文字を選択してね');return}item.font=b.dataset.font;const edit=$(`[data-text-item="${item.id}"] .textEditable`);if(edit)edit.style.fontFamily=fontStack(item.font);updateCurvedText($(`[data-text-item="${item.id}"]`),item);recordEdit();syncTextPanel()}));
   function applySelectedTextColor(color){const item=selectedText();if(!item){toast('先に文字を追加・選択してね');return}item.color=color;const edit=$(`[data-text-item="${item.id}"] .textEditable`);if(edit)edit.style.color=item.color;updateCurvedText($(`[data-text-item="${item.id}"]`),item);recordEdit();syncTextPanel()}
   $$('[data-color]').forEach(b=>{b.addEventListener('click',()=>applySelectedTextColor(b.dataset.color));b.addEventListener('pointerup',e=>{if(e.pointerType==='touch'){e.preventDefault();applySelectedTextColor(b.dataset.color)}})});
   $('#deleteText').addEventListener('click',()=>{if(!selectedTextId)return;textItems=textItems.filter(x=>x.id!==selectedTextId);selectedTextId=null;recordEdit();renderSpread();syncTextPanel()});
