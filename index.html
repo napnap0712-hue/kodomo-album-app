@@ -833,6 +833,27 @@
     @media (prefers-reduced-motion:reduce){
       :where(button, [role="button"], .fileBtn, .sectionOpen, .sectionNew, .sortChildCard){transition:none!important}
     }
+
+    /* Simplified admin home: original supplied six crayon icons in a single tiny sprite. */
+    .screen[data-screen="admin"]{background:#fffdfa!important;padding:18px 16px 32px!important}
+    .adminDashboardHead{text-align:center;margin:12px 0 25px}
+    .adminDashboardHead h1{font-family:"Kosugi Maru",sans-serif;font-size:30px;letter-spacing:.03em;color:#4b302b;margin:0 0 11px;font-weight:900}
+    .adminDashboardHead p{font-size:13px;font-weight:700;color:#634740;margin:0}
+    .adminDashboardGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 11px;max-width:560px;margin:0 auto}
+    .adminTile{min-width:0;height:176px;border:2px solid var(--tile-edge);border-radius:22px;background:#fff;box-shadow:0 4px 9px var(--tile-shadow);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:16px 8px 9px;cursor:pointer}
+    .adminTile-pink{--tile-edge:#ffd0d3;--tile-shadow:#fadce0;--tile-accent:#f597ae}
+    .adminTile-blue{--tile-edge:#c3e4ff;--tile-shadow:#dbeeff;--tile-accent:#91bdf9}
+    .adminTile-rose{--tile-edge:#ffd0d3;--tile-shadow:#fadce0;--tile-accent:#f597ae}
+    .adminTile-green{--tile-edge:#c9f1d8;--tile-shadow:#e1f8e8;--tile-accent:#73d5b1}
+    .adminTile-purple{--tile-edge:#e7d3ff;--tile-shadow:#f1e7ff;--tile-accent:#c4a0f1}
+    .adminTile-yellow{--tile-edge:#ffe4a7;--tile-shadow:#fff1d3;--tile-accent:#ffd47b}
+    .adminTileIcon{display:block;width:110px;height:96px;max-width:100%;background-image:url("data:image/jpeg;base64,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");background-size:300% 200%;background-repeat:no-repeat}
+    .adminIcon-0{background-position:0% 0%}.adminIcon-1{background-position:50% 0%}.adminIcon-2{background-position:100% 0%}
+    .adminIcon-3{background-position:0% 100%}.adminIcon-4{background-position:50% 100%}.adminIcon-5{background-position:100% 100%}
+    .adminTileBottom{display:flex;align-items:center;width:100%;justify-content:center;position:relative;min-height:30px}
+    .adminTileBottom b{font-family:"Kosugi Maru",sans-serif;font-size:15px;white-space:nowrap;color:#4b322e}
+    .adminTileArrow{position:absolute;right:0;top:0;width:28px;height:28px;border-radius:50%;background:var(--tile-accent);color:white;font-size:26px;font-weight:700;line-height:24px;text-align:center}
+    @media(max-width:350px){.adminTile{height:155px;padding:11px 5px 7px}.adminTileIcon{height:83px;width:96px}.adminTileBottom b{font-size:13px}.adminTileArrow{height:23px;width:23px;font-size:21px;line-height:20px}}
 </style>
 </head>
 <body>
@@ -898,15 +919,15 @@
     </section>
 
     <section class="screen" data-screen="admin">
-      <div class="adminLead"><h1>管理</h1><p>おもいでブックの設定</p></div>
-      <div class="adminStack">
-        <button class="adminCard" data-go="classIcons" type="button"><span class="adminNum">1</span><span><b>クラスアイコン設定</b><small>表紙に使う各クラスの花の画像</small></span><span class="chev">›</span></button>
-        <button class="adminCard" data-go="childClasses" type="button"><span class="adminNum">2</span><span><b>園児管理</b><small>園児の登録・顔写真・削除</small></span><span class="chev">›</span></button>
-        <button class="adminCard" data-go="pageSettings" type="button"><span class="adminNum">3</span><span><b>ページ設定</b><small>月・行事・1人あたりの枚数</small></span><span class="chev">›</span></button>
-        <button class="adminCard" data-go="photoAdmin" type="button"><span class="adminNum">4</span><span><b>写真管理</b><small>候補写真・保存済み写真</small></span><span class="chev">›</span></button>
-        <button class="adminCard" data-go="yearAdmin" type="button"><span class="adminNum">5</span><span><b>年度管理</b><small>新年度開始・自動進級</small></span><span class="chev">›</span></button>
+      <div class="adminDashboardHead"><h1>管理画面</h1><p>おもいでブックの設定</p></div>
+      <div class="adminDashboardGrid">
+        <button class="adminTile adminTile-pink" type="button" data-go="childClasses" aria-label="園児管理"><span class="adminTileIcon adminIcon-0" aria-hidden="true"></span><span class="adminTileBottom"><b>園児管理</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
+        <button class="adminTile adminTile-blue" type="button" data-go="pageSettings" aria-label="アルバム設定"><span class="adminTileIcon adminIcon-1" aria-hidden="true"></span><span class="adminTileBottom"><b>アルバム設定</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
+        <button class="adminTile adminTile-rose" type="button" data-go="photoAdmin" aria-label="写真管理"><span class="adminTileIcon adminIcon-2" aria-hidden="true"></span><span class="adminTileBottom"><b>写真管理</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
+        <button class="adminTile adminTile-green" type="button" data-go="classIcons" aria-label="クラスアイコン"><span class="adminTileIcon adminIcon-3" aria-hidden="true"></span><span class="adminTileBottom"><b>クラスアイコン</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
+        <button class="adminTile adminTile-purple" type="button" data-go="yearAdmin" aria-label="年度管理"><span class="adminTileIcon adminIcon-4" aria-hidden="true"></span><span class="adminTileBottom"><b>年度管理</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
+        <button class="adminTile adminTile-yellow" type="button" id="adminBackupComingSoon" aria-label="データ保存"><span class="adminTileIcon adminIcon-5" aria-hidden="true"></span><span class="adminTileBottom"><b>データ保存</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
       </div>
-      <div class="notice oknote" style="margin-top:14px">大切な写真はこの端末内で管理します。AI仕分けはMacBook到着後に追加予定です。</div>
     </section>
 
     <section class="screen" data-screen="classIcons">
@@ -995,6 +1016,8 @@
 
 <script>
 (() => {
+  // Backup and restore require a separate reviewed implementation.
+  document.getElementById('adminBackupComingSoon')?.addEventListener('click',()=>toast('データ保存は準備中です'));
   const CLASSES = [
     {id:'tanpopo',name:'たんぽぽ組',age:'0歳'}, {id:'tulip',name:'ちゅうりっぷ組',age:'1歳'},
     {id:'cosmos',name:'コスモス組',age:'2歳'}, {id:'canna',name:'カンナ組',age:'3歳'},
