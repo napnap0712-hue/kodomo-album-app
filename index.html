@@ -514,16 +514,22 @@
     // Fixed Canva homepage PNGs; uploaded class icons remain in storage unchanged.
   }
 
+  function appendSectionCreateButton(target){
+    const button=document.createElement('button');
+    button.type='button';button.className='sectionNew';button.textContent='＋新規作成';
+    button.addEventListener('click',openPageCreate);
+    target.appendChild(button);
+  }
   function renderSectionList(pages){
     const target=$('#sectionList');if(!target)return;
-    if(!pages.length){target.innerHTML='';target.appendChild($('#sectionNew'));return}
+    if(!pages.length){target.innerHTML='';appendSectionCreateButton(target);return}
     const childCount=state.children.filter(c=>c.classId===state.selectedClassId).length;
     target.innerHTML=pages.map(p=>{
       const count=Array.isArray(p.photos)?p.photos.length:(p.photoCount||0);
       const participants=p.type==='event'&&Array.isArray(p.participantIds)?p.participantIds.length:childCount;
       return '<article class="sectionEntry"><button type="button" class="sectionOpen" data-section-open="'+p.id+'"><span class="sectionVisual" aria-hidden="true">'+(p.type==='event'?'🎈':'🌼')+'</span><span class="sectionData"><span class="sectionKind">'+(p.type==='event'?'行事':'月')+'</span><b>'+escapeHtml(p.title)+'</b><small>参加園児 '+participants+'名 ・ 候補写真 '+count+'枚</small></span><span aria-hidden="true">❯</span></button><button type="button" class="sectionDelete" data-section-delete="'+p.id+'">🗑 このセクションを削除</button></article>';
     }).join('');
-    target.appendChild($('#sectionNew'));
+    appendSectionCreateButton(target);
     target.querySelectorAll('[data-section-open]').forEach(b=>b.addEventListener('click',()=>openPhotoManagement(b.dataset.sectionOpen)));
     target.querySelectorAll('[data-section-delete]').forEach(b=>b.addEventListener('click',async()=>{
       const page=state.pages.find(p=>p.id===b.dataset.sectionDelete);
