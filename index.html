@@ -217,6 +217,22 @@
     [data-screen="pageCreate"] .pageCreateActionsTop>.fileBtn.wide{width:100%;margin:0!important;min-height:44px}
     [data-screen="pageCreate"] .pageCreateActionsTop>.createActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0}
     [data-screen="pageCreate"] .pageCreateActionsTop>.createActions>button{min-height:44px}
+    /* Canva design for previously saved pages — visual only; original photo data and actions unchanged. */
+    .app:has([data-screen="photoManage"].active)>.header{display:none}
+    [data-screen="photoManage"]{max-width:440px;margin:0 auto;padding:14px 4px 24px}
+    [data-screen="photoManage"] .photoManageTop{position:relative;top:auto;z-index:auto;background:transparent;padding:40px 0 10px}
+    [data-screen="photoManage"] .photoManageTop::before{content:"";position:absolute;left:0;top:0;width:155px;height:34px;background:url("./logo.png") center left/contain no-repeat}
+    [data-screen="photoManage"] .photoManageBar{display:flex;gap:10px;align-items:center}
+    [data-screen="photoManage"] .photoManageBar .back{order:2;margin-left:auto;width:42px;height:42px;flex-shrink:0;background:#fff}
+    [data-screen="photoManage"] .photoManageBar h1{order:1;font-size:21px;font-weight:900;min-width:0;overflow-wrap:anywhere}
+    [data-screen="photoManage"] .photoManageCount{font-size:14px;margin:12px 0}
+    [data-screen="photoManage"] .photoManageActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    [data-screen="photoManage"] .photoManageActions label{display:flex;justify-content:center;align-items:center;border-radius:999px;background:#c3ffc7;color:#292929;padding:10px 7px}
+    [data-screen="photoManage"] .photoManageActions .photoRemove{border-radius:999px;background:#ffd4dc;color:#b45161;padding:10px 5px}
+    [data-screen="photoManage"] .photoManageBottom{display:grid;grid-template-columns:1fr;gap:10px;margin:14px 0}
+    [data-screen="photoManage"] .photoManageBottom button{width:100%;min-height:45px;border-radius:999px;background:#fff;border:2px solid #f6a5d1;color:#333;font-weight:800}
+    [data-screen="photoManage"] .photoManageBottom .editGo{border-color:#49c78a;background:#fff;color:#333}
+    [data-screen="photoManage"] .photoManageGrid{margin:14px 0;gap:9px}
     .photoManageTop{position:sticky;top:0;z-index:11;background:#fbfaf7;padding:12px 0}
     .photoManageBar{display:flex;align-items:center;gap:12px}.photoManageBar h1{font-size:23px;margin:0}
     .photoManageCount{font-weight:900;margin:12px 0}.photoManageActions{display:flex;gap:8px;flex-wrap:wrap}
