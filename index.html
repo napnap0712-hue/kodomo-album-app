@@ -816,6 +816,23 @@
     .screen.editor #photoPanel .editorFolderStatus{
       top:auto!important;bottom:3px!important;right:7px!important;font-size:9px!important;
     }
+
+    /* App-wide tactile press feedback. Individual colors, layouts, transforms,
+       event handlers and selection states remain untouched. */
+    :where(button, [role="button"], .fileBtn, .sectionOpen, .sectionNew, .sortChildCard):not(:disabled):not([aria-disabled="true"]){
+      -webkit-tap-highlight-color:transparent;
+      transition:translate 110ms ease-out, filter 110ms ease-out;
+    }
+    :where(button, [role="button"], .fileBtn, .sectionOpen, .sectionNew, .sortChildCard):not(:disabled):not([aria-disabled="true"]):not(.editorFolderPhoto):not(.candidate):not(.placedPhoto){
+      filter:drop-shadow(0 2px 0 rgba(83,62,48,.23));
+    }
+    :where(button, [role="button"], .fileBtn, .sectionOpen, .sectionNew, .sortChildCard):not(:disabled):not([aria-disabled="true"]):active{
+      translate:0 2px;
+      filter:brightness(.94) drop-shadow(0 0 0 transparent);
+    }
+    @media (prefers-reduced-motion:reduce){
+      :where(button, [role="button"], .fileBtn, .sectionOpen, .sectionNew, .sortChildCard){transition:none!important}
+    }
 </style>
 </head>
 <body>
