@@ -383,6 +383,19 @@
     .screen.editor .piconTab[data-panel="background"]{background:#ffb5b8}
     .screen.editor .cropBackgroundTools{margin-top:12px;border-top:1px solid #e9d2b9;padding-top:10px;display:grid;gap:7px}
     @media(orientation:portrait){.screen.editor .spreadViewport{inset:0 8px 262px}.screen.editor .piconTabs{bottom:214px}.screen.editor .piconPanel{bottom:4px;height:213px;max-height:213px}}
+    /* Canva photo tab: compact header and tidy horizontal square thumbnails. */
+    .screen.editor #photoPanel{display:flex;flex-direction:column;gap:8px;overflow:hidden}
+    .screen.editor #photoPanel .panelHead{margin:0;flex:none}
+    .screen.editor #photoPanel .panelHead b{font-size:14px;color:#554b4a}
+    .screen.editor #photoPanel .candidateRow{display:flex;flex:1 1 auto;min-height:0;max-height:none;gap:10px;align-items:center;padding:2px 1px 7px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+    .screen.editor #photoPanel .candidate{height:min(94px,100%);width:auto;flex:0 0 auto;aspect-ratio:1/1;border-radius:15px;border:2px solid #eadde0;overflow:hidden;background:#fff;box-shadow:none}
+    .screen.editor #photoPanel .candidate.selected{border-color:#eb82b8;box-shadow:0 0 0 2px #ffd3e7}
+    .screen.editor #photoPanel .addCandidate{min-width:88px;border:2px dashed #d7c2b4;color:#655b5a;background:#fffdfb;font-size:23px;font-weight:800}
+    .screen.editor #photoPanel .addCandidate small{font-size:11px;font-weight:700}
+    .screen.editor #photoPanel .candidateActions{display:flex;flex:none;justify-content:space-between;gap:9px;margin:0}
+    .screen.editor #photoPanel .candidateDone{border-radius:16px;background:#f6b5d0;color:#5b4550;min-height:42px;padding:6px 12px;font-size:12px}
+    .screen.editor #photoPanel .candidateDone:disabled{opacity:.55}
+    .screen.editor #photoPanel #candidateSelectionCount{font-size:12px;white-space:nowrap}
 </style>
 </head>
 <body>
