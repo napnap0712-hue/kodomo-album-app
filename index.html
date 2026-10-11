@@ -1298,15 +1298,18 @@
     const top=create('div','editorFolderTop');top.append(back,title);row.append(top);
     const grid=create('div','editorFolderPhotos');row.append(grid);
     const filtered=photos.filter(p=>editorPhotoFolder==='unassigned'?!photoLinks(p).length:photoLinks(p).includes(editorPhotoFolder));
+    // Draw the complete photo grid immediately, then load thumbnails concurrently.
     for(const photo of filtered){
       if(token!==editorCandidateRenderToken)return;
-      const key='page:'+editingPage.id+':'+photo.id,blob=editorFreshBlobs.get(key)||await getImage(key);
-      if(!blob)continue;
       const btn=create('button','editorFolderPhoto'+(candidateSelection.has(photo.id)?' selected':''));
       btn.type='button';btn.dataset.candidatePhoto=photo.id;
-      const img=create('img');img.src=fileUrl(blob);img.alt='候補写真';btn.append(img);
+      const img=create('img');img.alt='候補写真';img.loading='lazy';img.decoding='async';btn.append(img);
       btn.addEventListener('click',()=>{if(candidateSelection.has(photo.id))candidateSelection.delete(photo.id);else candidateSelection.add(photo.id);btn.classList.toggle('selected',candidateSelection.has(photo.id));updateCandidateDone()});
       grid.append(btn);
+      const key='page:'+editingPage.id+':'+photo.id;
+      Promise.resolve(editorFreshBlobs.get(key)||getImage(key)).then(blob=>{
+        if(blob&&token===editorCandidateRenderToken&&btn.isConnected)img.src=fileUrl(blob);
+      }).catch(error=>console.warn('candidate thumbnail unavailable',error));
     }
     if(!grid.childElementCount)grid.append(create('span','editorFolderEmpty','候補写真がありません。写真管理で園児に紐づけてください。'));
     updateCandidateDone();
