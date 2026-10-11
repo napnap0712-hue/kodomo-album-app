@@ -108,6 +108,28 @@
     [data-screen="home"] .crayonHomeFooter{text-align:center;padding:18px 0 0;font-size:25px;pointer-events:none}
     @media(max-width:360px){[data-screen="home"] .crayonClassGrid{gap:9px}[data-screen="home"] .crayonClassCard{min-height:122px;padding:7px 4px 7px 12px}}
 
+
+    /* Canva homepage visual changes are scoped exclusively to home. */
+    .app:has([data-screen="home"].active){max-width:430px;padding-top:calc(12px + env(safe-area-inset-top))}
+    .app:has([data-screen="home"].active)>.header{display:none}
+    body:has([data-screen="home"].active) #footerNav{display:none}
+    [data-screen="home"]{min-height:calc(100dvh - 36px);background-color:white;background-image:radial-gradient(#e9e9e9 .65px,transparent .8px);background-size:13px 13px;padding:46px 20px 26px;border-radius:22px}
+    [data-screen="home"] .crayonHomeHero{background:transparent;padding:0;margin:0 0 26px;border-radius:0}
+    [data-screen="home"] .crayonTitle{margin:0 auto;line-height:1}
+    [data-screen="home"] .crayonTitle img{display:block;width:min(100%,320px);max-height:84px;object-fit:contain;margin:auto}
+    [data-screen="home"] .crayonYear{display:none}
+    [data-screen="home"] .crayonClassGrid{max-width:320px;margin:auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+    [data-screen="home"] .crayonClassCard{width:100%;aspect-ratio:1;min-height:0;padding:10px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:none;border-radius:23px;background:var(--tint);box-shadow:none;color:#333}
+    [data-screen="home"] .crayonClassCard::before{display:none}
+    [data-screen="home"] .crayonClassCard.active{outline:none}
+    [data-screen="home"] .crayonClassCard:active{transform:scale(.96);box-shadow:none}
+    [data-screen="home"] .crayonClassCard .classFlower{height:76px;width:100%;display:flex;align-items:center;justify-content:center;filter:none}
+    [data-screen="home"] .crayonClassCard .classFlower img{height:100%;max-width:92%;object-fit:contain}
+    [data-screen="home"] .crayonClassCard b{font-family:"Kiwi Maru","Hiragino Maru Gothic ProN",sans-serif;font-size:clamp(13px,3.8vw,17px);font-weight:900;line-height:1.2}
+    [data-screen="home"] .canvaHomeSettings{display:flex;justify-content:center;align-items:center;gap:9px;margin:30px auto 10px;min-height:48px;padding:6px 19px;border:2px solid #ed646d;border-radius:999px;background:#fff;color:#333;font-weight:700;font-size:17px}
+    [data-screen="home"] .canvaHomeSettings img{width:30px;height:30px;object-fit:contain;border-radius:4px}
+    @media(max-width:360px){[data-screen="home"]{padding-left:12px;padding-right:12px}[data-screen="home"] .crayonClassGrid{gap:15px}[data-screen="home"] .crayonClassCard{min-height:0;padding:8px 4px}}
+
     /* Keep all three recently saved spreads visible on narrow iPhones. */
     @media(max-width:560px){[data-screen="home"] .albumScroller .albumCard:nth-child(3){display:flex}}
     @media(max-width:360px){[data-screen="home"] .albumScroller{grid-template-columns:1fr 1fr}[data-screen="home"] .albumScroller .albumCard:nth-child(2){display:flex}}
@@ -249,15 +271,9 @@
     </section>
 
     <section class="screen" data-screen="home">
-      <div class="crayonHomeHero">
-        <div class="crayonDoodles" aria-hidden="true"><span>☀️ ☁️</span><span>📖 🌈</span></div>
-        <h1 class="crayonTitle" aria-label="おもいでブック"><span>お</span><span>も</span><span>い</span><span>で</span><span>ブ</span><span>ッ</span><span>ク</span></h1>
-        <div class="crayonTagline">みんなの思い出をいっぱい残そう</div>
-        <div class="crayonYear" id="crayonHomeYear">2026年度</div>
-      </div>
-      <h2 class="crayonHeading">🌷 クラスをえらぶ</h2>
+      <div class="crayonHomeHero"><h1 class="crayonTitle"><img src="./logo.png" alt="おもいでぶっく"></h1><span class="crayonYear" id="crayonHomeYear">2026年度</span></div>
       <div class="crayonClassGrid" id="crayonClassGrid" aria-label="クラス選択"></div>
-      <div class="crayonHomeFooter" aria-hidden="true">🌱 🌼 🏫 🌷 🌳</div>
+      <button type="button" class="canvaHomeSettings" data-go="admin"><img src="./gear.jpeg" alt="" aria-hidden="true"><span>設定・管理</span></button>
     </section>
 
     <section class="screen" data-screen="classWorkspace">
@@ -421,23 +437,18 @@
 
   function renderCrayonHomeClasses(){
     const grid=$('#crayonClassGrid');if(!grid)return;
-    const flowers={tanpopo:'🌼',tulip:'🌷',cosmos:'🌸',canna:'🌺',deigo:'🌺',sakura:'🌸'};
-    const palette={tanpopo:['#fff1bb','#f3bf55'],tulip:['#ffdae2','#ee8ea8'],cosmos:['#e8dbfa','#ad92d4'],canna:['#ddf2dc','#9ccaab'],deigo:['#d9edff','#8dc0e7'],sakura:['#ffe1ed','#ecabbf']};
+    const flowers={tanpopo:'tanpopo.png',tulip:'tulip.png',cosmos:'cosmos.png',canna:'canna.png',deigo:'deigo.png',sakura:'sakura.png'};
+    const palette={tanpopo:['#fbd4d8','#fbd4d8'],tulip:['#ffe1bc','#ffe1bc'],cosmos:['#ffffb5','#ffffb5'],canna:['#d4ffc2','#d4ffc2'],deigo:['#beeefa','#beeefa'],sakura:['#f5ccfa','#f5ccfa']};
     $('#crayonHomeYear').textContent=state.year+'年度';
     grid.innerHTML=CLASSES.map(c=>{
       const [tint,edge]=palette[c.id]||['#fff4e6','#e4c4aa'];
-      return '<button type="button" class="crayonClassCard'+(c.id===state.selectedClassId?' active':'')+'" style="--tint:'+tint+';--edge:'+edge+'" data-crayon-class="'+c.id+'" aria-pressed="'+(c.id===state.selectedClassId)+'"><span class="classFlower" data-crayon-flower="'+c.id+'" aria-hidden="true">'+flowers[c.id]+'</span><b>'+escapeHtml(c.name)+'</b><small>'+escapeHtml(c.age)+'</small></button>';
+      return '<button type="button" class="crayonClassCard'+(c.id===state.selectedClassId?' active':'')+'" style="--tint:'+tint+';--edge:'+edge+'" data-crayon-class="'+c.id+'" aria-pressed="'+(c.id===state.selectedClassId)+'"><span class="classFlower" data-crayon-flower="'+c.id+'" aria-hidden="true">'+'<img src="./'+flowers[c.id]+'" alt="">'+'</span><b>'+escapeHtml(c.name)+'</b></button>';
     }).join('');
     grid.querySelectorAll('[data-crayon-class]').forEach(button=>button.addEventListener('click',()=>{
       state.selectedClassId=button.dataset.crayonClass;currentClassId=state.selectedClassId;
       saveState();show('classWorkspace');
     }));
-    // Use user-uploaded class emblems if present; preserve the built-in flower fallback.
-    CLASSES.forEach(async c=>{
-      try{const blob=await getImage('classIcon:'+c.id);const target=grid.querySelector('[data-crayon-flower="'+c.id+'"]');
-        if(blob&&target){const img=document.createElement('img');img.alt='';img.src=fileUrl(blob);target.replaceChildren(img)}
-      }catch(e){console.warn('class emblem unavailable',e)}
-    });
+    // Fixed Canva homepage PNGs; uploaded class icons remain in storage unchanged.
   }
 
   function renderSectionList(pages){
