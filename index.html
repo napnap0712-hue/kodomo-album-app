@@ -653,6 +653,28 @@
       max-width:43px!important;max-height:38px!important;
       object-fit:contain!important;object-position:center!important
     }
+
+    /* App-bundled stamps only: compact Canva-style three-row horizontal gallery. */
+    .screen.editor #stickerPanel .stickerScrollBody{gap:0!important;padding:7px 9px!important;overflow:hidden!important}
+    .screen.editor #stickerPanel .panelHead{display:none!important}
+    .screen.editor #stickerPanel .sharedAssetTools{display:none!important}
+    .screen.editor #stickerPanel .stickerGrid{
+      display:grid!important;grid-template-rows:repeat(3,minmax(0,57px))!important;
+      grid-auto-flow:column!important;grid-auto-columns:calc((100% - 45px)/6)!important;
+      gap:6px 9px!important;width:100%!important;height:100%!important;
+      min-height:0!important;max-height:none!important;flex:1 1 auto!important;
+      overflow-x:auto!important;overflow-y:hidden!important;
+      padding:4px 3px 7px!important;align-content:center!important;touch-action:pan-x!important
+    }
+    .screen.editor #stickerPanel .stickerPick{
+      width:100%!important;height:57px!important;min-height:0!important;max-height:57px!important;
+      display:grid!important;place-items:center!important;border:0!important;background:transparent!important;
+      padding:2px!important;overflow:hidden!important
+    }
+    .screen.editor #stickerPanel .stickerPick img{
+      display:block!important;width:100%!important;height:100%!important;
+      max-width:57px!important;max-height:53px!important;object-fit:contain!important
+    }
 </style>
 </head>
 <body>
