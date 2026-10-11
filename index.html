@@ -233,6 +233,23 @@
     [data-screen="photoManage"] .photoManageBottom button{width:100%;min-height:45px;border-radius:999px;background:#fff;border:2px solid #f6a5d1;color:#333;font-weight:800}
     [data-screen="photoManage"] .photoManageBottom .editGo{border-color:#49c78a;background:#fff;color:#333}
     [data-screen="photoManage"] .photoManageGrid{margin:14px 0;gap:9px}
+    /* Canva nursery-photo sorting screen; display-only styles, all link handlers preserved. */
+    .app:has([data-screen="photoSort"].active)>.header{display:none}
+    [data-screen="photoSort"]{max-width:440px;margin:0 auto;padding:13px 5px 24px}
+    [data-screen="photoSort"] .sortTop{position:relative;display:flex;align-items:center;margin:0 0 17px;padding-top:40px;gap:10px}
+    [data-screen="photoSort"] .sortTop::before{content:"";position:absolute;top:0;left:0;width:155px;height:34px;background:url("./logo.png") left center/contain no-repeat;pointer-events:none}
+    [data-screen="photoSort"] .sortTop .back{order:2;margin-left:auto;flex-shrink:0;background:#fff}
+    [data-screen="photoSort"] .sortTop h1{order:1;font-size:21px;font-weight:900;line-height:1.3}
+    [data-screen="photoSort"] .sortList{display:grid;grid-template-columns:1fr;gap:12px}
+    [data-screen="photoSort"] .sortChild{display:flex;align-items:center;min-height:94px;padding:13px 15px;background:#fff4ba;border:none;border-radius:22px;box-shadow:none;gap:14px}
+    [data-screen="photoSort"] .sortAvatar{width:66px;height:66px;flex:0 0 66px;border-radius:15px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    [data-screen="photoSort"] .sortAvatar img{width:100%;height:100%;object-fit:cover}
+    [data-screen="photoSort"] .sortChildMain{min-width:0}
+    [data-screen="photoSort"] .sortChildMain b{font-size:18px;font-weight:850;color:#42413e}
+    [data-screen="photoSort"] .sortChildMain small{font-size:13px;color:#6b6657}
+    [data-screen="photoSort"] .sortChild>span:last-child{color:#8d8460;font-size:23px}
+    [data-screen="photoSort"] .sortFilters{display:flex;gap:5px;overflow-x:auto;padding:3px 1px 12px}
+    [data-screen="photoSort"] .sortFilters button{flex-shrink:0}
     .photoManageTop{position:sticky;top:0;z-index:11;background:#fbfaf7;padding:12px 0}
     .photoManageBar{display:flex;align-items:center;gap:12px}.photoManageBar h1{font-size:23px;margin:0}
     .photoManageCount{font-weight:900;margin:12px 0}.photoManageActions{display:flex;gap:8px;flex-wrap:wrap}
