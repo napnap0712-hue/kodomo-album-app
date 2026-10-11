@@ -1364,6 +1364,7 @@
   document.addEventListener('pointerup',e=>{
     const start=stickerTouchStart;stickerTouchStart=null;
     if(!start||start.pointerId!==e.pointerId||Math.hypot(e.clientX-start.x,e.clientY-start.y)>14)return;
+    if(e.target.closest?.('[data-builtin-stamp]'))return; // normal gallery handler already receives this tap
     if(Date.now()-stickerCoordinateLast<450)return;
     stickerCoordinateLast=Date.now();
     // Defer so this capture listener cannot interfere with the existing button.
