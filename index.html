@@ -529,6 +529,22 @@
       border:0!important;background:transparent!important;box-shadow:none!important;
     }
     .screen.editor #stickerPanel .sharedAssetTile{background:transparent!important}
+
+    /* Sticker gallery stays within the shared fixed-height cream panel. */
+    .screen.editor #stickerPanel{
+      overflow-y:auto!important;overflow-x:hidden!important;
+      -webkit-overflow-scrolling:touch!important;overscroll-behavior-y:contain!important;
+      touch-action:pan-y!important;align-items:stretch!important;
+    }
+    .screen.editor #stickerPanel .stickerGrid{
+      flex-shrink:0!important;overflow-x:auto!important;overflow-y:hidden!important;
+    }
+    .screen.editor #stickerPanel .sharedAssetTools{
+      flex:0 0 auto!important;min-height:0!important;padding-bottom:12px!important;
+    }
+    .screen.editor #stickerPanel #sharedStickerGrid{
+      flex:0 0 auto!important;overflow-x:auto!important;overflow-y:hidden!important;
+    }
 </style>
 </head>
 <body>
