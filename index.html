@@ -1000,7 +1000,7 @@
     const heading=document.createElement('b');heading.textContent='人物の背景削除';
     group.append(heading,backgroundTools);cropPanel.appendChild(group);
   }
-  $('.piconTab').forEach(button=>{button.addEventListener('pointerdown',e=>{e.stopPropagation();if(button.dataset.panel!=='text')e.preventDefault()});button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setPanel(button.dataset.panel)})});
+  $$('.piconTab').forEach(button=>{button.addEventListener('pointerdown',e=>{e.stopPropagation();if(button.dataset.panel!=='text')e.preventDefault()});button.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setPanel(button.dataset.panel)})});
   // Keep textPanel within editorStage alongside the other permanently visible tabs.
   $$('.panelClose').forEach(button=>button.addEventListener('click',()=>{if(openPanel==='crop')cropDraft=null;setPanel('photos');renderSpread()}));
   $$('[data-layout]').forEach(button=>button.addEventListener('click',()=>applyLayout(button.dataset.layout)));
