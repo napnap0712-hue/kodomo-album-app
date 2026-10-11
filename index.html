@@ -109,13 +109,6 @@
     @media(max-width:360px){[data-screen="home"] .crayonClassGrid{gap:9px}[data-screen="home"] .crayonClassCard{min-height:122px;padding:7px 4px 7px 12px}}
 
 
-    /* Shared dotted app backdrop; editor paper and tools are deliberately untouched. */
-    html,body{background-color:#fff;background-image:radial-gradient(#e9e9e9 .65px,transparent .8px);background-size:13px 13px;min-height:100%;background-attachment:fixed}
-    body{min-height:100dvh}
-    .app{background:transparent}
-    .app:has([data-screen="home"].active){max-width:none;padding:0}
-    [data-screen="home"]{min-height:100dvh;width:100%;border-radius:0;background-color:transparent;background-image:none;padding:calc(46px + env(safe-area-inset-top)) max(20px,calc((100vw - 390px)/2 + 20px)) calc(26px + env(safe-area-inset-bottom))}
-    @media(max-width:360px){[data-screen="home"]{padding-left:12px;padding-right:12px}}
     /* Canva homepage visual changes are scoped exclusively to home. */
     .app:has([data-screen="home"].active){max-width:430px;padding-top:calc(12px + env(safe-area-inset-top))}
     .app:has([data-screen="home"].active)>.header{display:none}
@@ -136,6 +129,14 @@
     [data-screen="home"] .canvaHomeSettings{display:flex;justify-content:center;align-items:center;gap:9px;margin:30px auto 10px;min-height:48px;padding:6px 19px;border:2px solid #ed646d;border-radius:999px;background:#fff;color:#333;font-weight:700;font-size:17px}
     [data-screen="home"] .canvaHomeSettings img{width:30px;height:30px;object-fit:contain;border-radius:4px}
     @media(max-width:360px){[data-screen="home"]{padding-left:12px;padding-right:12px}[data-screen="home"] .crayonClassGrid{gap:15px}[data-screen="home"] .crayonClassCard{min-height:0;padding:8px 4px}}
+
+    /* Shared dotted app backdrop; editor paper and tools are deliberately untouched. */
+    html,body{background-color:#fff;background-image:radial-gradient(#e9e9e9 .65px,transparent .8px);background-size:13px 13px;min-height:100%;background-attachment:fixed}
+    body{min-height:100dvh}
+    .app{background:transparent}
+    .app:has([data-screen="home"].active){max-width:none;padding:0}
+    [data-screen="home"]{min-height:100dvh;width:100%;border-radius:0;background-color:transparent;background-image:none;padding:calc(46px + env(safe-area-inset-top)) max(20px,calc((100vw - 390px)/2 + 20px)) calc(26px + env(safe-area-inset-bottom))}
+    @media(max-width:360px){[data-screen="home"]{padding-left:12px;padding-right:12px}}
 
     /* Keep all three recently saved spreads visible on narrow iPhones. */
     @media(max-width:560px){[data-screen="home"] .albumScroller .albumCard:nth-child(3){display:flex}}
