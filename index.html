@@ -173,6 +173,26 @@
     [data-screen="classWorkspace"] .sectionDelete{margin-top:auto;padding:4px 6px;min-height:31px;font-size:10px;background:#ffffffac;border:0;border-radius:10px}
     [data-screen="classWorkspace"] #sectionList>.sectionNew{display:flex;align-items:center;justify-content:center;width:100%;min-height:156px;border:0;border-radius:23px;background:#d2ffc5;color:#353a30;font-size:15px;box-shadow:none;padding:15px}
     [data-screen="classWorkspace"] .sectionEmpty{grid-column:1/-1}
+    /* Canva page-list refinement: square cards and compact header, only classWorkspace. */
+    .app:has([data-screen="classWorkspace"].active)>.header{display:none}
+    [data-screen="classWorkspace"]{max-width:440px;margin:0 auto;padding:24px 6px 24px}
+    [data-screen="classWorkspace"] .classWorkspaceTop{display:block;margin:0 0 12px;position:relative;padding:0}
+    [data-screen="classWorkspace"] .classWorkspaceTop::before{content:"";display:block;width:155px;height:34px;background:url("./logo.png") center left/contain no-repeat}
+    [data-screen="classWorkspace"] .classWorkspaceTop::after{content:"ページ作成";display:block;font-size:23px;font-weight:900;line-height:1.3;color:#3b3b3b;margin-top:2px}
+    [data-screen="classWorkspace"] .classWorkspaceTop>.back{position:absolute;right:0;top:0;width:38px;height:38px;border-radius:50%;background:#fff}
+    [data-screen="classWorkspace"] .classWorkspaceTop>div{margin-top:6px}
+    [data-screen="classWorkspace"] .classWorkspaceTop h1{font-size:13px;font-weight:700;color:#777;margin:0}
+    [data-screen="classWorkspace"] .classWorkspaceTop .hint{font-size:11px}
+    [data-screen="classWorkspace"] .sectionListTitle{display:none}
+    [data-screen="classWorkspace"] .sectionList{gap:13px;grid-template-columns:repeat(2,minmax(0,1fr))}
+    [data-screen="classWorkspace"] .sectionEntry{aspect-ratio:1/1;min-height:0;border-radius:23px;padding:8px 7px;background:#fbdeed;display:flex;flex-direction:column}
+    [data-screen="classWorkspace"] .sectionOpen{min-height:0;flex:1;padding:2px;gap:3px}
+    [data-screen="classWorkspace"] .sectionData b{font-size:clamp(13px,3.7vw,18px);font-weight:700}
+    [data-screen="classWorkspace"] .sectionData small{font-size:10px;margin-top:8px}
+    [data-screen="classWorkspace"] .sectionKind{background:transparent;font-size:10px;margin:0}
+    [data-screen="classWorkspace"] .sectionDelete{align-self:center;min-height:28px;max-width:100%;font-size:9px;margin:0;padding:3px 5px;background:rgba(255,255,255,.55);color:#a56d7b}
+    [data-screen="classWorkspace"] #sectionList>.sectionNew{aspect-ratio:1/1;min-height:0;height:auto;border-radius:23px;background:#d4ffc9;font-size:16px}
+    @media(max-width:360px){[data-screen="classWorkspace"] .sectionList{gap:10px}[data-screen="classWorkspace"]{padding-left:2px;padding-right:2px}}
     .photoManageTop{position:sticky;top:0;z-index:11;background:#fbfaf7;padding:12px 0}
     .photoManageBar{display:flex;align-items:center;gap:12px}.photoManageBar h1{font-size:23px;margin:0}
     .photoManageCount{font-weight:900;margin:12px 0}.photoManageActions{display:flex;gap:8px;flex-wrap:wrap}
