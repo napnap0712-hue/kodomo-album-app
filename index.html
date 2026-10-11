@@ -717,6 +717,13 @@
     /* One continuous image frame across the A3-equivalent spread, no duplicate tiles. */
     .pageBgFrame{position:absolute;inset:0;z-index:0;pointer-events:none;background-size:cover;background-position:center;background-repeat:no-repeat}
     .pageBgFrameCenter{position:absolute;inset:9% 8%;background:#fff;pointer-events:none}
+
+    /* Selected background color: clear, accessible ring inside the fixed panel. */
+    .screen.editor #backgroundPanel .bgQuickColor{position:relative;transition:transform .12s ease,box-shadow .12s ease}
+    .screen.editor #backgroundPanel .bgQuickColor.active{
+      transform:scale(1.09);box-shadow:0 0 0 2px #fff5e9,0 0 0 4px #493c43,0 2px 5px #493c4333!important;
+      z-index:1
+    }
 </style>
 </head>
 <body>
@@ -1256,7 +1263,7 @@
     $$('#backgroundPanel [data-bg-group]').forEach(g=>g.classList.toggle('active',g.dataset.bgGroup===mode));
     if(mode==='image')renderLocalBackgrounds();
   }
-  function syncBackgroundPanel(){const cfg=selectedBgConfig();const qo=$('#bgQuickOpacity'),qs=$('#bgQuickScale');if(qo){qo.value=cfg.opacity;qo.disabled=cfg.pattern==='frame'}if(qs){qs.value=cfg.patternScale;qs.disabled=cfg.pattern==='frame'}$$('[data-quick-pattern]').forEach(b=>b.classList.toggle('active',!cfg.imageUrl&&b.dataset.quickPattern===cfg.pattern));$$('[data-quick-frame]').forEach(b=>b.classList.toggle('active',!!cfg.imageUrl&&cfg.imageUrl.endsWith('omoide-frame-'+b.dataset.quickFrame+'.webp')));setBgMode(bgMode);$$('[data-bg-target]').forEach(b=>b.classList.toggle('active',b.dataset.bgTarget===bgTarget));$$('[data-bg-pattern]').forEach(b=>b.classList.toggle('active',b.dataset.bgPattern===cfg.pattern));$$('[data-bg-color]').forEach(b=>b.classList.toggle('active',b.dataset.bgColor===cfg.color));const slider=$('#bgOpacity'),value=$('#bgOpacityValue'),scale=$('#bgPatternScale'),scaleValue=$('#bgPatternScaleValue');if(slider)slider.value=cfg.opacity;if(value)value.textContent=cfg.opacity+'%';if(scale){scale.value=cfg.patternScale;scale.disabled=cfg.pattern==='plain'}if(scaleValue)scaleValue.textContent=cfg.patternScale+'%'}
+  function syncBackgroundPanel(){const cfg=selectedBgConfig();const qo=$('#bgQuickOpacity'),qs=$('#bgQuickScale');if(qo){qo.value=cfg.opacity;qo.disabled=cfg.pattern==='frame'}if(qs){qs.value=cfg.patternScale;qs.disabled=cfg.pattern==='frame'}$$('[data-quick-color]').forEach(b=>{const chosen=b.dataset.quickColor.toLowerCase()===String(cfg.color||'').toLowerCase();b.classList.toggle('active',chosen);b.setAttribute('aria-pressed',String(chosen))});$$('[data-quick-pattern]').forEach(b=>b.classList.toggle('active',!cfg.imageUrl&&b.dataset.quickPattern===cfg.pattern));$$('[data-quick-frame]').forEach(b=>b.classList.toggle('active',!!cfg.imageUrl&&cfg.imageUrl.endsWith('omoide-frame-'+b.dataset.quickFrame+'.webp')));setBgMode(bgMode);$$('[data-bg-target]').forEach(b=>b.classList.toggle('active',b.dataset.bgTarget===bgTarget));$$('[data-bg-pattern]').forEach(b=>b.classList.toggle('active',b.dataset.bgPattern===cfg.pattern));$$('[data-bg-color]').forEach(b=>b.classList.toggle('active',b.dataset.bgColor===cfg.color));const slider=$('#bgOpacity'),value=$('#bgOpacityValue'),scale=$('#bgPatternScale'),scaleValue=$('#bgPatternScaleValue');if(slider)slider.value=cfg.opacity;if(value)value.textContent=cfg.opacity+'%';if(scale){scale.value=cfg.patternScale;scale.disabled=cfg.pattern==='plain'}if(scaleValue)scaleValue.textContent=cfg.patternScale+'%'}
   function setBackgroundValue(key,value){if(!editBackground)return;const sides=bgTarget==='both'?['left','right']:[bgTarget];for(const side of sides)editBackground[side]={...editBackground[side],[key]:value,imageUrl:null};applyPageBackground();recordEdit()}
   function setBackgroundOpacity(value,saveHistory=false){if(!editBackground)return;const opacity=Math.max(5,Math.min(100,Number(value)||35)),sides=bgTarget==='both'?['left','right']:[bgTarget];for(const side of sides)editBackground[side]={...editBackground[side],opacity,imageUrl:null};applyPageBackground();if(saveHistory)recordEdit()}
   function setBackgroundScale(value,saveHistory=false){if(!editBackground)return;const patternScale=Math.max(50,Math.min(200,Number(value)||100)),sides=bgTarget==='both'?['left','right']:[bgTarget];for(const side of sides)editBackground[side]={...editBackground[side],patternScale,imageUrl:null};applyPageBackground();if(saveHistory)recordEdit()}
