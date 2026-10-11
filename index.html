@@ -439,6 +439,12 @@
     .screen.editor #textPanel .addTextBtn{flex:0 0 auto;touch-action:manipulation}
     .screen.editor #textPanel .textTools{flex:1 1 auto;overflow-y:auto!important;overscroll-behavior:contain}
     .screen.editor #textPanel .textCurveControl{min-height:125px}
+    /* Unified persistent panel: identical visible shell across every editor tab. */
+    .screen.editor .piconPanel{border:1px solid #efdec8!important;background:#fff0dc!important;border-radius:0 0 19px 19px!important;box-shadow:none!important;transform:none!important}
+    .screen.editor #textPanel .textTools{overflow-y:auto!important;min-height:0;display:flex;flex-direction:column}
+    .screen.editor #textPanel .textCurveControl{order:0;min-height:120px;flex-shrink:0;background:#fffafc}
+    .screen.editor #textPanel .addTextBtn{order:-1;min-height:44px;flex-shrink:0}
+    .screen.editor #textPanel .fontChoices{flex-shrink:0}
 </style>
 </head>
 <body>
@@ -1049,6 +1055,9 @@
   $('#closePageCreate').addEventListener('click',()=>show('classWorkspace'));
   $('#cancelPage').addEventListener('click',()=>show('classWorkspace'));
   $('#savePage').addEventListener('click',async()=>{const title=$('#pageTitle').value.trim();if(!title){toast('ページタイトルを入力してください');$('#pageTitle').focus();return}if(!pageDraft.length){toast('写真を1枚以上追加してください');return}if(pageDraft.some(p=>!p.childId)){toast('すべての写真を園児に振り分けてください');return}const pageId=crypto.randomUUID();const button=$('#savePage');button.disabled=true;button.textContent='保存中…';try{for(const photo of pageDraft)await putImage(`page:${pageId}:${photo.id}`,photo.file);state.pages.push({id:pageId,classId:state.selectedClassId,title,type:$('input[name="pageType"]:checked').value,photos:pageDraft.map(p=>({id:p.id,childId:p.childId})),photoCount:pageDraft.length,assignedCount:pageDraft.filter(p=>p.childId).length,createdAt:Date.now()});saveState();pageDraft=[];show('classWorkspace');toast('ページを保存しました')}finally{button.disabled=false;button.textContent='ページを保存'}});
+  // Keep curvature controls visible near the top of the text tab.
+  const textTools=$('#textPanel .textTools'),curveControl=$('#textPanel .textCurveControl');
+  if(textTools&&curveControl){const hint=textTools.querySelector('.textHint');textTools.insertBefore(curveControl,hint||textTools.firstChild);}
   // Background removal remains functional inside the Crop tab.
   const cropPanel=$('#cropPanel'),backgroundTools=$('#bgRemovePanel .bgBtns');
   if(cropPanel&&backgroundTools){
