@@ -157,6 +157,22 @@
     .sectionKind{display:inline-block;background:#fce4eb;border-radius:30px;padding:3px 10px;font-size:11px;font-weight:900;margin-bottom:3px}
     .sectionDelete{margin-top:8px;border:1px solid #f6c9cc;background:#fff7f7;color:#b74f60;border-radius:12px;min-height:42px;padding:8px 14px;font-weight:850}
     .sectionEmpty{padding:27px 15px;text-align:center;color:#716a65;border:2px dashed #efcbbf;border-radius:19px;background:#fffcf8}
+    /* Canva section cards: class workspace only, existing open/delete handlers stay intact. */
+    [data-screen="classWorkspace"] .classWorkspaceTop{margin:12px 2px 14px}
+    [data-screen="classWorkspace"] .sectionListTitle{margin:4px 0 16px}
+    [data-screen="classWorkspace"] .sectionListTitle h2{font-size:21px}
+    [data-screen="classWorkspace"] .sectionList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    [data-screen="classWorkspace"] .sectionEntry{min-width:0;min-height:156px;background:#fbdcea;border:0;border-radius:23px;padding:12px 7px 7px;box-shadow:none;display:flex;flex-direction:column}
+    [data-screen="classWorkspace"] .sectionOpen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;min-height:108px;padding:4px 2px}
+    [data-screen="classWorkspace"] .sectionVisual{display:none}
+    [data-screen="classWorkspace"] .sectionData{width:100%;flex:none}
+    [data-screen="classWorkspace"] .sectionData b{font-size:clamp(12px,3.5vw,16px);font-weight:750;line-height:1.35;overflow-wrap:anywhere}
+    [data-screen="classWorkspace"] .sectionData small{font-size:10px;line-height:1.5;margin-top:7px}
+    [data-screen="classWorkspace"] .sectionKind{font-size:10px;background:#ffffffa8;margin-bottom:4px;padding:2px 8px}
+    [data-screen="classWorkspace"] .sectionOpen>span:last-child{display:none}
+    [data-screen="classWorkspace"] .sectionDelete{margin-top:auto;padding:4px 6px;min-height:31px;font-size:10px;background:#ffffffac;border:0;border-radius:10px}
+    [data-screen="classWorkspace"] #sectionList>.sectionNew{display:flex;align-items:center;justify-content:center;width:100%;min-height:156px;border:0;border-radius:23px;background:#d2ffc5;color:#353a30;font-size:15px;box-shadow:none;padding:15px}
+    [data-screen="classWorkspace"] .sectionEmpty{grid-column:1/-1}
     .photoManageTop{position:sticky;top:0;z-index:11;background:#fbfaf7;padding:12px 0}
     .photoManageBar{display:flex;align-items:center;gap:12px}.photoManageBar h1{font-size:23px;margin:0}
     .photoManageCount{font-weight:900;margin:12px 0}.photoManageActions{display:flex;gap:8px;flex-wrap:wrap}
@@ -461,13 +477,14 @@
 
   function renderSectionList(pages){
     const target=$('#sectionList');if(!target)return;
-    if(!pages.length){target.innerHTML='<div class="sectionEmpty">まだセクションがありません。<br>「＋ 新規作成」から追加しましょう 🌷</div>';return}
+    if(!pages.length){target.innerHTML='';target.appendChild($('#sectionNew'));return}
     const childCount=state.children.filter(c=>c.classId===state.selectedClassId).length;
     target.innerHTML=pages.map(p=>{
       const count=Array.isArray(p.photos)?p.photos.length:(p.photoCount||0);
       const participants=p.type==='event'&&Array.isArray(p.participantIds)?p.participantIds.length:childCount;
       return '<article class="sectionEntry"><button type="button" class="sectionOpen" data-section-open="'+p.id+'"><span class="sectionVisual" aria-hidden="true">'+(p.type==='event'?'🎈':'🌼')+'</span><span class="sectionData"><span class="sectionKind">'+(p.type==='event'?'行事':'月')+'</span><b>'+escapeHtml(p.title)+'</b><small>参加園児 '+participants+'名 ・ 候補写真 '+count+'枚</small></span><span aria-hidden="true">❯</span></button><button type="button" class="sectionDelete" data-section-delete="'+p.id+'">🗑 このセクションを削除</button></article>';
     }).join('');
+    target.appendChild($('#sectionNew'));
     target.querySelectorAll('[data-section-open]').forEach(b=>b.addEventListener('click',()=>openPhotoManagement(b.dataset.sectionOpen)));
     target.querySelectorAll('[data-section-delete]').forEach(b=>b.addEventListener('click',async()=>{
       const page=state.pages.find(p=>p.id===b.dataset.sectionDelete);
