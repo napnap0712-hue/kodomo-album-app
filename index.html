@@ -1350,6 +1350,27 @@
   const stickerTapArea=$('#stickerPanel');
   stickerTapArea.addEventListener('pointerup',handleBuiltinStickerTap,true);
   stickerTapArea.addEventListener('click',handleBuiltinStickerTap,true);
+  // iOS fallback: hit-test the gallery by coordinates, not only the event target.
+  // A sibling/overlay can intercept a tap while the visible sticker is beneath it.
+  let stickerTouchStart=null,stickerCoordinateLast=0;
+  document.addEventListener('pointerdown',e=>{
+    stickerTouchStart=null;
+    const panel=$('#stickerPanel');
+    if(!panel?.classList.contains('open')||!$('.screen.editor')?.classList.contains('active'))return;
+    const buttons=[...panel.querySelectorAll('[data-builtin-stamp]')];
+    const btn=buttons.find(b=>{const r=b.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom});
+    if(btn)stickerTouchStart={pointerId:e.pointerId,x:e.clientX,y:e.clientY,path:btn.dataset.builtinStamp};
+  },true);
+  document.addEventListener('pointerup',e=>{
+    const start=stickerTouchStart;stickerTouchStart=null;
+    if(!start||start.pointerId!==e.pointerId||Math.hypot(e.clientX-start.x,e.clientY-start.y)>14)return;
+    if(Date.now()-stickerCoordinateLast<450)return;
+    stickerCoordinateLast=Date.now();
+    // Defer so this capture listener cannot interfere with the existing button.
+    queueMicrotask(()=>{if(!$('#stickerPanel').classList.contains('open'))return;
+      try{addStickerAsset(start.path)}catch(err){console.error('sticker coordinate tap failed',err);toast('スタンプ追加エラー: '+err.message)}
+    });
+  },true);
   backgroundLibrary=bgLibraryRead();
   $$('#backgroundPanel [data-bg-mode]').forEach(b=>b.addEventListener('click',()=>setBgMode(b.dataset.bgMode)));
   $('#bgImageInput').addEventListener('change',async e=>{
