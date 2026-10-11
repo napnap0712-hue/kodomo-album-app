@@ -683,6 +683,12 @@
       scrollbar-width:none!important;-ms-overflow-style:none!important;
     }
     .screen.editor #stickerPanel .stickerGrid::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
+
+    .screen.editor #stickerPanel.open,.screen.editor #stickerPanel.open .stickerScrollBody,
+    .screen.editor #stickerPanel.open .stickerGrid,.screen.editor #stickerPanel.open .stickerPick{
+      pointer-events:auto!important
+    }
+    .screen.editor #stickerPanel .stickerPick{touch-action:manipulation!important;cursor:pointer!important}
 </style>
 </head>
 <body>
@@ -1328,7 +1334,22 @@
   $('#bgOpacity').addEventListener('change',e=>setBackgroundOpacity(e.target.value,true));
   $('#bgPatternScale').addEventListener('input',e=>setBackgroundScale(e.target.value,false));
   $('#bgPatternScale').addEventListener('change',e=>setBackgroundScale(e.target.value,true));
-  $$('[data-builtin-stamp]').forEach(b=>{const path=b.dataset.builtinStamp,preview=b.querySelector('[data-builtin-preview]');if(preview)sharedDisplayUrl(path).then(url=>{preview.src=url});let lastTap=0;const addFromButton=()=>{if(Date.now()-lastTap<400)return;lastTap=Date.now();try{addStickerAsset(path)}catch(error){console.error('sticker tap failure',error);toast('スタンプ追加エラー: '+(error.message||'不明'))}};b.addEventListener('pointerup',e=>{if(e.pointerType==='touch'){e.preventDefault();addFromButton()}});b.addEventListener('click',addFromButton)});
+  $('[data-builtin-stamp]').forEach(b=>{const path=b.dataset.builtinStamp,preview=b.querySelector('[data-builtin-preview]');if(preview)sharedDisplayUrl(path).then(url=>{preview.src=url})});
+  // Delegate through the editor stage: Safari may suppress a button click after a horizontal touch gesture.
+  let lastStickerTap=0,lastStickerPath='';
+  function handleBuiltinStickerTap(event){
+    const button=event.target.closest?.('[data-builtin-stamp]');
+    if(!button||!$('#stickerPanel').classList.contains('open'))return;
+    if(event.type==='pointerup'&&event.pointerType==='mouse')return;
+    const path=button.dataset.builtinStamp,now=Date.now();
+    if(path===lastStickerPath&&now-lastStickerTap<500)return;
+    lastStickerPath=path;lastStickerTap=now;
+    if(event.cancelable&&event.type!=='click')event.preventDefault();
+    try{addStickerAsset(path)}catch(error){console.error('sticker add error',error);toast('スタンプ追加エラー: '+(error?.message||'不明'))}
+  }
+  const stickerTapArea=$('#stickerPanel');
+  stickerTapArea.addEventListener('pointerup',handleBuiltinStickerTap,true);
+  stickerTapArea.addEventListener('click',handleBuiltinStickerTap,true);
   backgroundLibrary=bgLibraryRead();
   $$('#backgroundPanel [data-bg-mode]').forEach(b=>b.addEventListener('click',()=>setBgMode(b.dataset.bgMode)));
   $('#bgImageInput').addEventListener('change',async e=>{
