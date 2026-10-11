@@ -792,6 +792,30 @@
     .screen.editor #photoPanel .candidateActions{display:flex!important;align-items:center;justify-content:space-between;gap:6px;flex:0 0 29px!important;padding:2px 0 0!important;margin:0!important}
     .screen.editor #photoPanel .candidateDone{min-height:26px!important;font-size:10px!important;padding:4px 8px!important}
     .screen.editor #photoPanel #candidateSelectionCount{font-size:10px}
+
+    /* Full-width two-column child folders; overflow continues horizontally. */
+    .screen.editor #photoPanel .editorFolderGrid{
+      box-sizing:border-box!important;width:100%!important;min-width:100%!important;
+      align-self:stretch!important;justify-self:stretch!important;
+      grid-template-rows:repeat(2, minmax(0,61px))!important;
+      grid-auto-columns:calc((100% - 10px)/2)!important;
+      grid-auto-flow:column!important;gap:7px 10px!important;
+      height:132px!important;min-height:132px!important;max-height:132px!important;
+      flex:1 1 auto!important;overflow-x:auto!important;overflow-y:hidden!important;
+    }
+    .screen.editor #photoPanel .editorFolderCard{
+      box-sizing:border-box!important;width:100%!important;min-width:0!important;
+      height:61px!important;max-height:61px!important;
+      padding:7px!important;gap:7px!important;
+    }
+    .screen.editor #photoPanel .editorFolderAvatar{
+      flex:0 0 39px!important;width:39px!important;height:39px!important;
+    }
+    .screen.editor #photoPanel .editorFolderMeta b{font-size:12px!important}
+    .screen.editor #photoPanel .editorFolderMeta small{font-size:9px!important}
+    .screen.editor #photoPanel .editorFolderStatus{
+      top:auto!important;bottom:3px!important;right:7px!important;font-size:9px!important;
+    }
 </style>
 </head>
 <body>
