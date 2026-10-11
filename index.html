@@ -545,6 +545,21 @@
     .screen.editor #stickerPanel #sharedStickerGrid{
       flex:0 0 auto!important;overflow-x:auto!important;overflow-y:hidden!important;
     }
+
+    /* iOS Safari: allow vertical swipes starting on sticker galleries. */
+    .screen.editor #stickerPanel{
+      overflow-y:scroll!important;overflow-x:hidden!important;
+      touch-action:auto!important;overscroll-behavior-y:contain!important;
+      padding-bottom:18px!important;
+    }
+    .screen.editor #stickerPanel .stickerGrid{
+      grid-template-rows:repeat(2,53px)!important;
+      min-height:114px!important;max-height:114px!important;flex:0 0 114px!important;
+      touch-action:auto!important;
+    }
+    .screen.editor #stickerPanel .stickerPick{height:53px!important}
+    .screen.editor #stickerPanel #sharedStickerGrid{touch-action:auto!important}
+    .screen.editor #stickerPanel .sharedAssetTools{padding-bottom:22px!important}
 </style>
 </head>
 <body>
