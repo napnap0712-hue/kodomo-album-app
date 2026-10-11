@@ -574,6 +574,65 @@
     .screen.editor #stickerPanel .stickerScrollBody .stickerGrid{touch-action:pan-y pan-x!important}
     .screen.editor #stickerPanel .stickerScrollBody .sharedAssetTools{display:grid!important}
     .screen.editor #stickerPanel .stickerScrollBody #sharedStickerGrid{touch-action:pan-y pan-x!important}
+
+    /* Compact sticker tab: everything fits the shared 213px panel; horizontal browsing only. */
+    .screen.editor #stickerPanel{overflow:hidden!important;padding:0!important}
+    .screen.editor #stickerPanel .stickerScrollBody{
+      box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+      gap:3px!important;width:100%!important;height:100%!important;
+      padding:5px 10px 6px!important;overflow:hidden!important;touch-action:auto!important
+    }
+    .screen.editor #stickerPanel .panelHead{flex:0 0 17px!important;height:17px!important;margin:0!important}
+    .screen.editor #stickerPanel .panelHead b{font-size:12px!important;line-height:17px!important}
+    .screen.editor #stickerPanel .stickerGrid{
+      display:grid!important;grid-template-rows:repeat(2,45px)!important;
+      grid-auto-columns:calc((100% - 32px)/5)!important;
+      gap:3px 8px!important;flex:0 0 93px!important;
+      min-height:93px!important;max-height:93px!important;
+      padding:0 1px!important;overflow-x:auto!important;overflow-y:hidden!important;
+      touch-action:pan-x!important
+    }
+    .screen.editor #stickerPanel .stickerPick{
+      height:45px!important;min-height:45px!important;padding:1px!important;
+      border:0!important;background:transparent!important
+    }
+    .screen.editor #stickerPanel .sharedAssetTools{
+      display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;
+      grid-template-rows:24px minmax(0,1fr)!important;
+      gap:2px 6px!important;flex:1 1 0!important;
+      min-height:0!important;margin:0!important;padding:2px 0 0!important;
+      overflow:hidden!important;border-top:1px solid #ead9c7!important
+    }
+    .screen.editor #stickerPanel .sharedAssetTools .bgGroupTitle{
+      grid-column:1!important;grid-row:1!important;
+      font-size:11px!important;line-height:24px!important;margin:0!important;
+      padding:0!important;white-space:nowrap!important
+    }
+    .screen.editor #stickerPanel #addSharedSticker{
+      grid-column:2!important;grid-row:1!important;
+      min-height:24px!important;height:24px!important;padding:0 9px!important;
+      border-radius:10px!important;font-size:10px!important;white-space:nowrap!important
+    }
+    .screen.editor #stickerPanel #sharedStickerGrid{
+      grid-column:1/-1!important;grid-row:2!important;
+      display:flex!important;flex-direction:row!important;align-items:center!important;
+      gap:6px!important;min-height:0!important;max-height:none!important;height:100%!important;
+      padding:0 2px!important;overflow-x:auto!important;overflow-y:hidden!important;
+      touch-action:pan-x!important
+    }
+    .screen.editor #stickerPanel #sharedStickerGrid .sharedAssetTile{
+      flex:0 0 43px!important;width:43px!important;height:43px!important;
+      min-width:43px!important;position:relative!important
+    }
+    .screen.editor #stickerPanel #sharedStickerGrid .sharedAssetCard{
+      width:43px!important;height:43px!important;min-height:0!important;padding:1px!important
+    }
+    .screen.editor #stickerPanel #sharedStickerGrid .sharedAssetCard img{
+      width:100%!important;height:100%!important;object-fit:contain!important
+    }
+    .screen.editor #stickerPanel #sharedStickerGrid .sharedAssetEmpty{
+      width:100%!important;font-size:11px!important;text-align:left!important;padding:4px!important
+    }
 </style>
 </head>
 <body>
