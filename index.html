@@ -505,6 +505,30 @@
     .screen.editor #textPanel.open{display:flex!important;visibility:visible!important;pointer-events:auto!important;z-index:110!important;transform:none!important}
     .screen.editor #textPanel.open .textTools{pointer-events:auto!important}
     .screen.editor #textPanel.open button,.screen.editor #textPanel.open input{pointer-events:auto!important}
+
+    /* Canva-style sticker gallery: illustrations without individual tiles. */
+    .screen.editor #stickerPanel .stickerGrid{
+      grid-template-rows:repeat(2,65px)!important;
+      grid-auto-columns:calc((100% - 32px)/5)!important;
+      gap:7px 8px!important;padding:3px 2px 5px!important;
+      min-height:140px!important;max-height:140px!important;
+      flex:0 0 140px!important;
+    }
+    .screen.editor #stickerPanel .stickerPick{
+      height:65px!important;min-height:0!important;
+      border:0!important;border-radius:0!important;
+      background:transparent!important;box-shadow:none!important;
+      padding:3px!important;overflow:visible!important;
+    }
+    .screen.editor #stickerPanel .stickerPick img{
+      width:100%!important;height:100%!important;max-height:none!important;
+      object-fit:contain!important;filter:none!important;
+    }
+    .screen.editor #stickerPanel .stickerPick:active{transform:scale(.94);background:transparent!important}
+    .screen.editor #stickerPanel .sharedAssetCard{
+      border:0!important;background:transparent!important;box-shadow:none!important;
+    }
+    .screen.editor #stickerPanel .sharedAssetTile{background:transparent!important}
 </style>
 </head>
 <body>
