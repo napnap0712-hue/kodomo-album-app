@@ -212,6 +212,11 @@
     [data-screen="pageCreate"] #cancelPage{background:#ffd0d1;color:#d6535d;border-radius:999px;flex:1}
     [data-screen="pageCreate"] #savePage{position:static;right:auto;top:auto;min-height:44px;padding:8px 20px;border-radius:999px;background:#ffb0df;color:#222;z-index:auto;flex:1}
     [data-screen="pageCreate"] .notice{background:#fff9e4;border-color:#f3eccd}
+    /* Page creation: keep all three actions above the growing photo list. */
+    [data-screen="pageCreate"] .pageCreateActionsTop{display:grid;gap:9px;margin:14px 0 18px}
+    [data-screen="pageCreate"] .pageCreateActionsTop>.fileBtn.wide{width:100%;margin:0!important;min-height:44px}
+    [data-screen="pageCreate"] .pageCreateActionsTop>.createActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0}
+    [data-screen="pageCreate"] .pageCreateActionsTop>.createActions>button{min-height:44px}
     .photoManageTop{position:sticky;top:0;z-index:11;background:#fbfaf7;padding:12px 0}
     .photoManageBar{display:flex;align-items:center;gap:12px}.photoManageBar h1{font-size:23px;margin:0}
     .photoManageCount{font-weight:900;margin:12px 0}.photoManageActions{display:flex;gap:8px;flex-wrap:wrap}
@@ -364,11 +369,13 @@
         <div class="field"><label for="pageTitle">ページタイトル</label><input id="pageTitle" type="text" maxlength="40" placeholder="例：4月の思い出" autocomplete="off"></div>
         <div class="field"><label>ページの種類</label><div class="typeChoices"><label class="typeChoice"><input type="radio" name="pageType" value="month" checked><span>月</span></label><label class="typeChoice"><input type="radio" name="pageType" value="event"><span>イベント</span></label></div></div>
       </div>
+      <div class="pageCreateActionsTop">
+        <label class="fileBtn wide">＋ 写真を追加<input id="pagePhotoInput" type="file" accept="image/*" multiple></label>
+        <div class="createActions"><button class="ghost" id="cancelPage" type="button">キャンセル</button><button class="primary" id="savePage" type="button">ページを保存</button></div>
+      </div>
       <div class="sectionTitle"><h2>写真</h2><span class="pill" id="pagePhotoCount">0枚</span></div>
       <div class="notice" id="pageChildNotice">写真を追加し、それぞれ園児を選んでください。</div>
       <div class="stack" id="pagePhotos" style="margin-top:12px"></div>
-      <label class="fileBtn wide" style="margin-top:12px">＋ 写真を追加<input id="pagePhotoInput" type="file" accept="image/*" multiple></label>
-      <div class="createActions"><button class="ghost" id="cancelPage" type="button">キャンセル</button><button class="primary" id="savePage" type="button">ページを保存</button></div>
     </section>
 
     <section class="screen" data-screen="admin">
