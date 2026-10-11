@@ -193,6 +193,25 @@
     [data-screen="classWorkspace"] .sectionDelete{align-self:center;min-height:28px;max-width:100%;font-size:9px;margin:0;padding:3px 5px;background:rgba(255,255,255,.55);color:#a56d7b}
     [data-screen="classWorkspace"] #sectionList>.sectionNew{aspect-ratio:1/1;min-height:0;height:auto;border-radius:23px;background:#d4ffc9;font-size:16px}
     @media(max-width:360px){[data-screen="classWorkspace"] .sectionList{gap:10px}[data-screen="classWorkspace"]{padding-left:2px;padding-right:2px}}
+    /* Canva page creation styling only. Existing photo assignment and save handlers unchanged. */
+    .app:has([data-screen="pageCreate"].active)>.header{display:none}
+    [data-screen="pageCreate"]{max-width:440px;margin:0 auto;position:relative;padding:15px 4px 22px}
+    [data-screen="pageCreate"] .topbar{display:flex;align-items:end;margin:0 0 19px;padding-top:38px;position:relative}
+    [data-screen="pageCreate"] .topbar:before{content:"";position:absolute;left:0;top:0;width:154px;height:34px;background:url("./logo.png") left center/contain no-repeat}
+    [data-screen="pageCreate"] .topbar h2{font-size:23px;font-weight:900}
+    [data-screen="pageCreate"] .topbar .back{margin-left:auto;order:2;font-size:22px;background:#fff;border-color:#e9e1e4}
+    [data-screen="pageCreate"]>.card{background:transparent;box-shadow:none;border:0;padding:0;display:flex;flex-direction:column-reverse;gap:12px}
+    [data-screen="pageCreate"]>.card>.field>label{display:none}
+    [data-screen="pageCreate"] .typeChoices{display:flex;justify-content:center;gap:12px}
+    [data-screen="pageCreate"] .typeChoice span{min-height:39px;padding:5px 17px;border:2px solid #999;border-radius:999px;background:#fff;color:#282828}
+    [data-screen="pageCreate"] .typeChoice input:checked+span{background:#fbddea;border-color:#f0a6c7;color:#333}
+    [data-screen="pageCreate"] #pageTitle{height:50px;border:2px solid #888;border-radius:17px;background:rgba(255,255,255,.75);text-align:center}
+    [data-screen="pageCreate"]>.sectionTitle{margin:15px 0 4px}
+    [data-screen="pageCreate"] .fileBtn.wide{display:flex;background:#bcffc7;border:0;border-radius:999px;width:49%;min-height:43px;margin-top:12px!important}
+    [data-screen="pageCreate"] .createActions{display:flex;gap:9px;margin-top:10px}
+    [data-screen="pageCreate"] #cancelPage{background:#ffd0d1;color:#d6535d;border-radius:999px;flex:1}
+    [data-screen="pageCreate"] #savePage{position:absolute;right:6px;top:39px;min-height:38px;padding:5px 20px;border-radius:999px;background:#ffb0df;color:#222;z-index:2}
+    [data-screen="pageCreate"] .notice{background:#fff9e4;border-color:#f3eccd}
     .photoManageTop{position:sticky;top:0;z-index:11;background:#fbfaf7;padding:12px 0}
     .photoManageBar{display:flex;align-items:center;gap:12px}.photoManageBar h1{font-size:23px;margin:0}
     .photoManageCount{font-weight:900;margin:12px 0}.photoManageActions{display:flex;gap:8px;flex-wrap:wrap}
