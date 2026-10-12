@@ -2158,7 +2158,10 @@
         if(left!==offset)continue;
         const copy=child.cloneNode(true);copy.style.left='0';copy.style.width='100%';copy.style.height='100%';
         leaf.append(copy);
-      }else if(child.matches('.archivePlaced,.archiveText')){
+      }else if(child.classList.contains('archivePreviewFrame')){
+        // The full-spread frame remains aligned to the chosen A4 half.
+        const copy=child.cloneNode(true);copy.style.left=side==='right'?'-100%':'0';copy.style.width='200%';copy.style.height='100%';leaf.append(copy);
+      }else if(child.matches('.archivePlaced,.archiveText,.archivePreviewSticker')){
         const left=Number.isFinite(x)?x:0,width=Number.isFinite(w)?w:20;
         if(left+width<=offset||left>=offset+50)continue;
         const copy=child.cloneNode(true);copy.style.left=((left-offset)*2)+'%';copy.style.width=(width*2)+'%';
@@ -2551,7 +2554,7 @@
         ctx.fillStyle=color;ctx.fill();
       };
       ctx.fillStyle='#fff';ctx.fillRect(0,0,target.width,target.height);
-      const pageElements=[...source.querySelectorAll('.archiveHalf,.archivePlaced,.archivePlaced img,.archiveText,.growthAlbumPage,.growthAlbumPage *')];
+      const pageElements=[...source.querySelectorAll('.archivePreviewFrame,.archiveHalf,.archivePlaced,.archivePlaced img,.archiveText,.archivePreviewSticker,.archivePreviewSticker img,.archivePreviewSticker span,.growthAlbumPage,.growthAlbumPage *')];
       // The placed photo is a child <img>; ensure it is decoded before drawing.
       const photos=pageElements.filter(el=>el instanceof HTMLImageElement);
       await Promise.all(photos.map(img=>new Promise((resolve,reject)=>{
