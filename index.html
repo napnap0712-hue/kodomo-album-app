@@ -163,6 +163,12 @@
     .albumChildCover .coverTitleArtwork{width:90%;height:auto;max-height:17%;object-fit:contain;flex:0 0 auto}
     [data-screen="coverEdit"] .coverWhitePanel b,[data-screen="coverEdit"] .coverWhitePanel strong{flex:0 0 auto;line-height:1.35}
     [data-screen="coverEdit"] .coverWhitePanel img{width:76%;height:auto;max-height:55%;min-height:0;flex:1 1 auto;object-fit:contain}
+    /* Align title, class illustration and child name as one centered group. */
+    [data-screen="coverEdit"] .coverWhitePanel,.albumChildCover .coverWhitePanel{justify-content:center;gap:clamp(10px,3vw,22px)}
+    [data-screen="coverEdit"] .coverWhitePanel .coverTitleArtwork,.albumChildCover .coverWhitePanel .coverTitleArtwork{width:88%;max-height:none;height:auto;flex:0 0 auto}
+    [data-screen="coverEdit"] .coverWhitePanel #coverEditorIcon,.albumChildCover .coverWhitePanel img:not(.coverTitleArtwork){width:74%;height:36%;max-height:36%;flex:0 1 auto;object-fit:contain}
+    [data-screen="coverEdit"] .coverWhitePanel #coverEditorName,.albumChildCover .coverWhitePanel b{flex:0 0 auto}
+
     [data-screen="coverEdit"] .coverBackgroundCard h3{margin:0 0 12px;font-size:17px}
     [data-screen="coverEdit"] .coverBackgroundCard{padding:15px;border-radius:20px}
         .yearOverview{display:grid;gap:14px}
@@ -1506,7 +1512,7 @@
     panel.style.fontFamily='"'+(settings.font||'Kosugi Maru')+'","Hiragino Maru Gothic ProN",sans-serif';
     const clsId=state.selectedClassId;icon.src='./'+clsId+'.png';
     const custom=await getImage('classIcon:'+clsId);if(token!==coverRenderToken)return;if(custom)icon.src=fileUrl(custom);
-    name.textContent=state.children.find(c=>c.classId===clsId)?.name||'園児の名前';
+    name.textContent=(state.children.find(c=>c.classId===clsId)?.name||'園児の名前').replace(/\s*さん$/,'')+' さん';
   }
   async function renderCoverPatternChoices(){
     const wrap=$('#coverPatternChoices');wrap.replaceChildren();
