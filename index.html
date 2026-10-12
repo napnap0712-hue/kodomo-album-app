@@ -2158,6 +2158,14 @@
     host.append(leaf);document.body.append(host);
     const origin={left:0,top:0};
     try{
+      // Cloned preview images may not have loaded by the time PDF drawing starts.
+      await Promise.all([...leaf.querySelectorAll('img')].map(img=>new Promise(resolve=>{
+        if(img.complete){resolve();return}
+        const done=()=>resolve();
+        img.addEventListener('load',done,{once:true});
+        img.addEventListener('error',done,{once:true});
+        setTimeout(done,5000);
+      })));
       // Temporarily leave element in layout; visibility hidden retains measurable geometry.
       const rootRect=leaf.getBoundingClientRect();origin.left=rootRect.left;origin.top=rootRect.top;
       pdf.setFillColor(255,255,255);pdf.rect(0,0,210,297,'F');
@@ -2171,7 +2179,7 @@
         const bg=albumPdfColor(cs.backgroundColor);
         if(bg&&bg[3]!==0){pdf.setFillColor(bg[0],bg[1],bg[2]);pdf.rect(Math.max(0,x),Math.max(0,y),Math.min(w,210-Math.max(0,x)),Math.min(h,297-Math.max(0,y)),'F')}
         if(el instanceof HTMLImageElement){
-          if(!el.complete||!el.naturalWidth)continue;
+          if(!el.naturalWidth){console.warn('PDF画像を読み込めませんでした',el.src);continue}
           const crop=document.createElement('canvas');
           // Draw only the source image, never rasterize an entire A4 page.
           const cw=Math.min(2000,Math.max(1,Math.round(rect.width*2))),ch=Math.min(2000,Math.max(1,Math.round(rect.height*2)));
