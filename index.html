@@ -188,6 +188,17 @@
     .backPositionControls label{display:grid;gap:3px;font-size:13px;font-weight:700}
     .backPositionControls input{width:100%;accent-color:#e67d9e}
     .backPositionControls output{float:right}
+    .growthEditor{display:grid;gap:14px;padding:16px;border-radius:22px}
+    .growthPagePreview{background:#dfedf9;border-radius:10px;aspect-ratio:4/5;width:min(78%,350px);padding:6%;margin:0 auto;display:flex;box-shadow:0 7px 17px #0001}
+    .growthPageInner{background:white;border-radius:20px;width:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:20px;padding:16px}
+    .growthPageInner h3{font-size:clamp(14px,4vw,22px);color:#5785aa;margin:0}
+    #growthPreviewName{font-weight:900;font-size:clamp(14px,4vw,20px)}
+    .growthPreviewMeasures{display:grid;gap:12px;width:100%}
+    .growthPreviewMeasures>div{display:grid;gap:4px;background:#f3f9ff;border-radius:14px;padding:12px}
+    .growthPreviewMeasures b{font-size:13px;color:#6483a4}.growthPreviewMeasures strong{font-size:clamp(19px,5.5vw,28px);color:#405e79}
+    .growthEntryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .growthEntryGrid label{display:grid;gap:7px;font-size:14px;font-weight:800}
+    .growthEntryGrid input{width:100%;min-width:0;box-sizing:border-box;height:47px;padding:10px;border:1px solid #d7dfeb;border-radius:12px;background:white;font-size:16px}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
     .yearCurrentCard span{font-size:14px;font-weight:800}
@@ -1092,6 +1103,13 @@
   <p class="coverFixedHint">ⓘ 裏表紙の基本レイアウトは固定です</p>
  </div>
 </section>
+<section class="screen" data-screen="growthEdit">
+ <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>身長・体重</h2><button type="button" id="growthSave" class="coverSaveTop">保存</button></div>
+ <div class="yearGuideCard growthEditor"><label class="albumChildChooser">編集する園児<select id="growthChild"></select></label>
+ <div class="growthPagePreview"><div class="growthPageInner"><h3>🌱 せいちょうのきろく</h3><div id="growthPreviewName"></div><div class="growthPreviewMeasures"><div><b>📏 しんちょう</b><strong id="growthPreviewHeight">— cm</strong></div><div><b>⚖️ たいじゅう</b><strong id="growthPreviewWeight">— kg</strong></div></div></div></div>
+ <div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div>
+ <p class="hint">園児ごとに保存します。空欄は「—」で表示されます。</p></div>
+</section>
     <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
@@ -1300,7 +1318,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview')renderAlbumPreview(); if(screen==='coverEdit')renderCoverEditor(); if(screen==='backCoverEdit')renderBackCoverEditor(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview')renderAlbumPreview(); if(screen==='coverEdit')renderCoverEditor(); if(screen==='backCoverEdit')renderBackCoverEditor(); if(screen==='growthEdit')renderGrowthEditor(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1569,7 +1587,7 @@
     paintCover($('#coverEditorCanvas'),panel,$('#coverEditorIcon'),$('#coverEditorName'),settings,coverPreviewFile).catch(console.warn);
   }
   document.querySelectorAll('[data-special]').forEach(b=>b.addEventListener('click',()=>{
-    if(b.dataset.special==='cover')show('coverEdit');else if(b.dataset.special==='group')show('backCoverEdit');else toast(b.textContent.trim()+'の編集画面は準備中です');
+    if(b.dataset.special==='cover')show('coverEdit');else if(b.dataset.special==='group')show('backCoverEdit');else if(b.dataset.special==='growth')show('growthEdit');else toast(b.textContent.trim()+'の編集画面は準備中です');
   }));
   document.querySelectorAll('input[name="coverBgMode"]').forEach(r=>r.addEventListener('change',e=>{coverDraft.mode=e.target.value;updateCoverEditor()}));
   $('#coverOpacity').addEventListener('input',e=>{coverDraft.opacity=Number(e.target.value);updateCoverEditor()});
@@ -1622,6 +1640,39 @@
   $('#backPhotoInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){toast('画像を選択してください');return}backPhotoDraft=file;backPhotoRemoved=false;updateBackCoverEditor();e.target.value=''});
   $('#backPhotoRemove').addEventListener('click',()=>{backPhotoDraft=null;backPhotoRemoved=true;updateBackCoverEditor()});
   $('#backCoverSave').addEventListener('click',async()=>{try{if(backPhotoRemoved)await deleteImage(backKey());else if(backPhotoDraft)await putImage(backKey(),backPhotoDraft);state.backCoverStyles={...(state.backCoverStyles||{}),[state.year+':'+state.selectedClassId]:{...backDraft}};saveState();toast('裏表紙を保存しました');show('classWorkspace')}catch(e){console.error(e);toast('裏表紙を保存できませんでした')}});
+  let growthChildId=null;
+  function growthDataKey(id){return state.year+':'+state.selectedClassId+':'+id}
+  function growthEntry(id){return state.growthRecords?.[growthDataKey(id)]||{}}
+  function growthChildren(){return state.children.filter(x=>x.classId===state.selectedClassId)}
+  function renderGrowthEditor(){
+    const select=$('#growthChild');const children=growthChildren();select.replaceChildren();
+    for(const child of children){const opt=document.createElement('option');opt.value=child.id;opt.textContent=child.name;select.append(opt)}
+    if(!children.some(c=>c.id===growthChildId))growthChildId=children[0]?.id||null;
+    select.value=growthChildId||'';refreshGrowthEditor();
+  }
+  function refreshGrowthEditor(){
+    const child=growthChildren().find(c=>c.id===growthChildId),entry=child?growthEntry(child.id):{};
+    $('#growthHeight').value=entry.height??'';$('#growthWeight').value=entry.weight??'';
+    $('#growthPreviewName').textContent=child?child.name.replace(/\s*さん$/,'')+' さん':'園児を登録してください';
+    updateGrowthPreview();
+    $('#growthSave').disabled=!child;
+  }
+  function updateGrowthPreview(){
+    $('#growthPreviewHeight').textContent=($('#growthHeight').value||'—')+' cm';
+    $('#growthPreviewWeight').textContent=($('#growthWeight').value||'—')+' kg';
+  }
+  function saveGrowthChild(){
+    if(!growthChildId)return false;
+    const height=$('#growthHeight').value,weight=$('#growthWeight').value;
+    if((height!==''&&(!Number.isFinite(+height)||+height<0||+height>250))||(weight!==''&&(!Number.isFinite(+weight)||+weight<0||+weight>150))){toast('身長・体重の数値を確認してください');return false}
+    const key=growthDataKey(growthChildId);
+    state.growthRecords={...(state.growthRecords||{}),[key]:{height,weight}};
+    saveState();return true;
+  }
+  $('#growthChild').addEventListener('change',e=>{if(!saveGrowthChild()){$('#growthChild').value=growthChildId||'';return}growthChildId=e.target.value;refreshGrowthEditor()});
+  $('#growthHeight').addEventListener('input',updateGrowthPreview);
+  $('#growthWeight').addEventListener('input',updateGrowthPreview);
+  $('#growthSave').addEventListener('click',()=>{if(saveGrowthChild()){toast('身長・体重を保存しました');show('classWorkspace')}});
   let albumPreviewIndex=0,albumPreviewToken=0,albumPreviewChildId='';
   async function renderAlbumPreview(){
     const c=cls(state.selectedClassId),pages=state.pages.filter(p=>p.classId===state.selectedClassId),spread=$('#albumPreviewSpread');
@@ -1648,7 +1699,12 @@
         box.append(label,note);spread.append(box);
       };
       if(entry.kind==='growth'){
-        special('身長・体重','left','成長記録のページ（準備中）');
+        const record=state.growthRecords?.[state.year+':'+c.id+':'+albumPreviewChildId]||{};
+        const growth=document.createElement('div');growth.className='albumSpecialPreview';growth.style.cssText='width:50%;left:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;background:#f3f9ff;text-align:center';
+        const growthTitle=document.createElement('strong');growthTitle.textContent='🌱 せいちょうのきろく';
+        const height=document.createElement('b');height.textContent='📏 '+(record.height||'—')+' cm';
+        const weight=document.createElement('b');weight.textContent='⚖️ '+(record.weight||'—')+' kg';
+        growth.append(growthTitle,height,weight);spread.append(growth);
         special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
       }else if(entry.kind==='cover'){
         const cover=document.createElement('div');cover.className='albumChildCover';spread.append(cover);
