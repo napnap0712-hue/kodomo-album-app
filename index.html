@@ -122,6 +122,21 @@
     .coverWhitePanel b{font-size:clamp(12px,3vw,23px)}.coverWhitePanel img{width:82%;height:50%;object-fit:contain}.coverWhitePanel strong{font-size:clamp(12px,3.2vw,23px)}
     .coverColorSwatches{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:12px 0}.coverColorSwatches button{height:36px;min-width:0;border:2px solid #ddd;border-radius:50%}.coverColorSwatches button.active{outline:3px solid #e995b6;outline-offset:2px}
     .coverEditorSheet input[type=range]{width:100%}.coverFontSelect{width:100%;height:48px;border:1px solid #e8d3db;border-radius:14px;background:white;padding:9px}
+    .coverEditHeader{display:grid;grid-template-columns:52px 1fr 86px;align-items:center;gap:10px;margin:0 0 16px}.coverEditHeader h2{text-align:center;font-size:22px;margin:0}.coverEditHeader .back{width:50px;height:50px;border-radius:50%;background:#fff0f3}.coverSaveTop{min-height:48px;background:#f46a98;color:white;border:0;border-radius:999px;font-weight:900;font-size:17px;box-shadow:0 3px 0 #e5a7ba}
+    .coverPatternChoices{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:14px 0}
+    .coverPatternOption{border:0;background:transparent;min-width:0;padding:0;position:relative;color:#574f54}
+    .coverPatternThumb{width:100%;aspect-ratio:1;border:2px solid #e9dfe0;border-radius:13px;background:white;display:block;background-position:center;background-size:cover}
+    .coverPatternOption.active .coverPatternThumb{border:3px solid #f26b98}
+    .coverPatternOption.active:after{content:"✓";position:absolute;right:-3px;top:-5px;border-radius:50%;background:#f46a98;color:#fff;width:23px;height:23px;font-weight:900;display:grid;place-items:center}
+    .coverPatternOption small{font-size:11px;display:block;margin-top:6px}
+    .coverUploadBtn{display:flex;margin:10px 0 0;min-height:42px;justify-content:center;align-items:center}
+    .coverFontChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+    .coverFontChoice{position:relative;background:#fff;border:2px solid #e7e2e1;border-radius:14px;min-height:86px;padding:9px 5px;text-align:center;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px}
+    .coverFontChoice.active{border-color:#f36a9b}.coverFontChoice.active:after{content:"✓";position:absolute;right:-4px;top:-8px;background:#f46a98;color:#fff;border-radius:50%;width:25px;height:25px;display:grid;place-items:center}
+    .coverFontChoice b{font-size:clamp(13px,3.8vw,22px)}.coverFontChoice small{font-size:11px;color:#8f8989}
+    .coverFixedHint{text-align:center;color:#8a8282;font-size:12px;margin:5px 0 16px}
+    .coverEditorCanvas{box-shadow:-6px 3px 0 #f7eef0,0 9px 18px #0002!important}
+    .coverWhitePanel{border:1px dashed #f1ccd8}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
     .yearCurrentCard span{font-size:14px;font-weight:800}
@@ -1006,16 +1021,15 @@
       <div id="sectionList" class="sectionList"></div>
     </section>
     <section class="screen" data-screen="coverEdit">
-      <div class="topbar"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>表紙編集</h2></div>
+      <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>表紙編集</h2><button type="button" id="coverSave" class="coverSaveTop">保存</button></div>
       <div class="coverEditorSheet">
         <div id="coverEditorCanvas" class="coverEditorCanvas"><div class="coverWhitePanel"><b id="coverEditorHeading">おもいでブック</b><img id="coverEditorIcon" alt="クラスアイコン"><strong id="coverEditorName">園児の名前</strong></div></div>
         <div class="yearGuideCard"><h3>🎨 背景選択</h3>
           <div class="typeChoices"><label class="typeChoice"><input type="radio" name="coverBgMode" value="solid" checked><span>単色</span></label><label class="typeChoice"><input type="radio" name="coverBgMode" value="image"><span>背景画像</span></label></div>
           <div id="coverColorControls"><div id="coverColors" class="coverColorSwatches"></div><label>色の薄さ <output id="coverOpacityNumber">100%</output><input type="range" id="coverOpacity" min="5" max="100" step="5" value="100"></label></div>
-          <div id="coverImageControls" hidden><label class="fileBtn">＋ 背景画像を選択<input type="file" id="coverBgFile" accept="image/*"></label><p class="hint">お送りいただいた画像を端末から選んで登録できます。</p></div>
+          <div id="coverImageControls" hidden><div id="coverPatternChoices" class="coverPatternChoices"></div><p class="hint">画像をタップして選択。各柄に元画像を登録すると、その画像が表紙に使われます。</p><label class="fileBtn coverUploadBtn">＋ 選択中の柄に元画像を登録<input type="file" id="coverBgFile" accept="image/*"></label></div>
         </div>
-        <div class="yearGuideCard"><h3>✏️ 文字フォント</h3><select id="coverFont" class="coverFontSelect"><option value="Kosugi Maru">丸ゴシック</option><option value="HaniHani">ぷっくり丸文字</option><option value="Futehodo">手書き丸文字</option><option value="DokiDoki">ポップ文字</option></select></div>
-        <button id="coverSave" class="primary wide" type="button">表紙デザインを保存</button>
+        <div class="yearGuideCard"><h3>文字フォント選択</h3><div id="coverFontChoices" class="coverFontChoices"></div></div><p class="coverFixedHint">ⓘ 表紙の基本レイアウトは固定です</p>
       </div>
     </section>
     <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
@@ -1430,46 +1444,81 @@
     renderSectionList(pages);
   }
 
-  let coverDraft=null,coverPreviewFile=null;
+  let coverDraft=null,coverPreviewFile=null,coverRenderToken=0;
   const coverPalette=['#ffffff','#ffd5e5','#ffc9af','#fff2a9','#cff3d4','#c9eafa','#ddcefa','#ef9bbb','#86c8f1','#f4b8c7','#90cfac','#f4ddb3','#e5e5e5','#444444'];
-  function coverSettings(){return state.coverStyles?.[state.selectedClassId]||{mode:'solid',color:'#ffd5e5',opacity:100,font:'Kosugi Maru'}}
+  const coverPatterns=[{id:'stars',name:'星（A）'},{id:'dots',name:'ドット（B）'},{id:'flowers',name:'お花（C）'},{id:'sakura',name:'さくら（D）'},{id:'bears',name:'くま（E）'}];
+  const coverFonts=[{id:'Kosugi Maru',name:'小杉丸'},{id:'HaniHani',name:'ぷっくり丸文字'},{id:'Futehodo',name:'やさしい手書き'},{id:'DokiDoki',name:'しっかりゴシック'}];
+  function coverSettings(){return state.coverStyles?.[state.selectedClassId]||{mode:'solid',color:'#ffd5e5',opacity:100,font:'Kosugi Maru',pattern:'dots'}}
+  function coverPatternFallback(id){
+    if(id==='dots')return 'radial-gradient(circle,#f4afc1 17%,transparent 19%),radial-gradient(circle,#bfe1df 17%,transparent 19%),radial-gradient(circle,#ffe8a5 17%,transparent 19%)';
+    if(id==='stars')return 'radial-gradient(circle,#addbeb 12%,transparent 14%)';
+    if(id==='flowers')return 'radial-gradient(circle,#ef9cbc 19%,transparent 21%),radial-gradient(circle,#f5e89a 15%,transparent 17%)';
+    if(id==='sakura')return 'radial-gradient(circle,#f7c5d9 24%,transparent 26%)';
+    return 'radial-gradient(circle,#bf9d80 16%,transparent 18%)';
+  }
+  async function coverImageForPattern(pattern,clsId=state.selectedClassId){
+    return await getImage('coverPattern:'+pattern)||await getImage('coverBg:'+state.year+':'+clsId);
+  }
   async function paintCover(canvas,panel,icon,name,settings,previewFile){
+    const token=++coverRenderToken;
     const color=settings.color||'#ffd5e5',amount=Math.max(0,Math.min(100,Number(settings.opacity??100)))/100;
     canvas.style.backgroundColor='rgb('+[0,1,2].map(i=>Math.round(255*(1-amount)+parseInt(color.slice(1+i*2,3+i*2),16)*amount)).join(',')+')';
-    canvas.style.backgroundImage='none';
-    if(settings.mode==='image'){const blob=previewFile||await getImage('coverBg:'+state.year+':'+state.selectedClassId);if(blob)canvas.style.backgroundImage='url("'+fileUrl(blob)+'")'}
-    panel.style.fontFamily='"'+(settings.font||'Kosugi Maru')+'", "Hiragino Maru Gothic ProN", sans-serif';
-    const clsId=state.selectedClassId;
-    icon.src='./'+clsId+'.png';
-    const custom=await getImage('classIcon:'+clsId);if(custom)icon.src=fileUrl(custom);
-    name.textContent=state.children.find(c=>c.id===albumPreviewChildId)?.name||'園児の名前';
+    canvas.style.backgroundImage='none';canvas.style.backgroundSize='cover';canvas.style.backgroundPosition='center';
+    if(settings.mode==='image'){
+      const blob=previewFile||await coverImageForPattern(settings.pattern||'dots');
+      if(token!==coverRenderToken)return;
+      if(blob)canvas.style.backgroundImage='url("'+fileUrl(blob)+'")';
+      else{canvas.style.backgroundImage=coverPatternFallback(settings.pattern||'dots');canvas.style.backgroundSize='31px 31px'}
+    }
+    panel.style.fontFamily='"'+(settings.font||'Kosugi Maru')+'","Hiragino Maru Gothic ProN",sans-serif';
+    const clsId=state.selectedClassId;icon.src='./'+clsId+'.png';
+    const custom=await getImage('classIcon:'+clsId);if(token!==coverRenderToken)return;if(custom)icon.src=fileUrl(custom);
+    name.textContent=state.children.find(c=>c.classId===clsId)?.name||'園児の名前';
+  }
+  async function renderCoverPatternChoices(){
+    const wrap=$('#coverPatternChoices');wrap.replaceChildren();
+    for(const item of coverPatterns){
+      const btn=document.createElement('button');btn.type='button';btn.className='coverPatternOption'+(item.id===(coverDraft.pattern||'dots')?' active':'');
+      const thumb=document.createElement('span');thumb.className='coverPatternThumb';thumb.style.backgroundImage=coverPatternFallback(item.id);
+      thumb.style.backgroundSize='30px 30px';
+      try{const file=await getImage('coverPattern:'+item.id);if(file){thumb.style.backgroundImage='url("'+fileUrl(file)+'")';thumb.style.backgroundSize='cover'}}catch(e){console.warn(e)}
+      const caption=document.createElement('small');caption.textContent=item.name;btn.append(thumb,caption);
+      btn.onclick=()=>{coverDraft.pattern=item.id;coverPreviewFile=null;updateCoverEditor()};
+      wrap.append(btn);
+    }
   }
   function renderCoverEditor(){
     coverDraft={...coverSettings()};coverPreviewFile=null;
     const colors=$('#coverColors');colors.replaceChildren();
     for(const color of coverPalette){const b=document.createElement('button');b.type='button';b.style.backgroundColor=color;b.setAttribute('aria-label',color);b.onclick=()=>{coverDraft.color=color;updateCoverEditor()};colors.append(b)}
-    updateCoverEditor();
+    const fonts=$('#coverFontChoices');fonts.replaceChildren();
+    for(const item of coverFonts){
+      const btn=document.createElement('button');btn.type='button';btn.className='coverFontChoice';btn.dataset.font=item.id;
+      const example=document.createElement('b');example.textContent='おもいでブック';example.style.fontFamily='"'+item.id+'",sans-serif';
+      const caption=document.createElement('small');caption.textContent=item.name;btn.append(example,caption);btn.onclick=()=>{coverDraft.font=item.id;updateCoverEditor()};fonts.append(btn);
+    }
+    ensureCustomFonts().catch(console.warn);
+    renderCoverPatternChoices().catch(console.warn);updateCoverEditor();
   }
   function updateCoverEditor(){
     const settings=coverDraft,mode=settings.mode;
     const radio=document.querySelector('input[name="coverBgMode"][value="'+mode+'"]');if(radio)radio.checked=true;
     $('#coverColorControls').hidden=mode!=='solid';$('#coverImageControls').hidden=mode!=='image';
     $('#coverOpacity').value=settings.opacity;$('#coverOpacityNumber').textContent=settings.opacity+'%';
-    $('#coverFont').value=settings.font;[...$('#coverColors').children].forEach(b=>b.classList.toggle('active',b.getAttribute('aria-label')===settings.color));
-    const child=state.children.find(c=>c.classId===state.selectedClassId);
-    const panel=$('#coverEditorCanvas .coverWhitePanel');const canvas=$('#coverEditorCanvas');
-    paintCover(canvas,panel,$('#coverEditorIcon'),$('#coverEditorName'),settings,coverPreviewFile).then(()=>{$('#coverEditorName').textContent=child?.name||'園児の名前'}).catch(console.warn);
+    [...$('#coverColors').children].forEach(b=>b.classList.toggle('active',b.getAttribute('aria-label')===settings.color));
+    [...$('#coverPatternChoices').children].forEach((b,i)=>b.classList.toggle('active',coverPatterns[i].id===(settings.pattern||'dots')));
+    [...$('#coverFontChoices').children].forEach(b=>b.classList.toggle('active',b.dataset.font===settings.font));
+    const panel=$('#coverEditorCanvas .coverWhitePanel');
+    paintCover($('#coverEditorCanvas'),panel,$('#coverEditorIcon'),$('#coverEditorName'),settings,coverPreviewFile).catch(console.warn);
   }
   document.querySelectorAll('[data-special]').forEach(b=>b.addEventListener('click',()=>{
-    if(b.dataset.special==='cover')show('coverEdit');
-    else toast(b.textContent.trim()+'の編集画面は準備中です');
+    if(b.dataset.special==='cover')show('coverEdit');else toast(b.textContent.trim()+'の編集画面は準備中です');
   }));
   document.querySelectorAll('input[name="coverBgMode"]').forEach(r=>r.addEventListener('change',e=>{coverDraft.mode=e.target.value;updateCoverEditor()}));
   $('#coverOpacity').addEventListener('input',e=>{coverDraft.opacity=Number(e.target.value);updateCoverEditor()});
-  $('#coverFont').addEventListener('change',e=>{coverDraft.font=e.target.value;updateCoverEditor()});
   $('#coverBgFile').addEventListener('change',e=>{coverPreviewFile=e.target.files?.[0]||null;updateCoverEditor()});
   $('#coverSave').addEventListener('click',async()=>{
-    try{if(coverPreviewFile)await putImage('coverBg:'+state.year+':'+state.selectedClassId,coverPreviewFile);
+    try{if(coverPreviewFile)await putImage('coverPattern:'+(coverDraft.pattern||'dots'),coverPreviewFile);
       state.coverStyles={...(state.coverStyles||{}),[state.selectedClassId]:{...coverDraft}};saveState();toast('表紙のデザインを保存しました');show('classWorkspace');
     }catch(e){console.error(e);toast('表紙を保存できませんでした')}
   });
