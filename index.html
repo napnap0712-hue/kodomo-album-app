@@ -229,7 +229,8 @@
     .messageEditor .messageBlock[hidden]{display:none}
     .messageEditor .messageCounter{font-size:12px;color:#826f77;text-align:right}
     .messageFontControl{display:grid;gap:6px;background:#fff;border-radius:12px;padding:10px;font-size:13px;font-weight:750}
-    .messageFontControl input{width:100%;accent-color:#b77996}
+    .messageFontControl input{width:100%;height:34px;min-height:34px;accent-color:#b77996;touch-action:pan-x;pointer-events:auto;-webkit-appearance:auto;appearance:auto}
+    .messageFontControl{position:relative;z-index:1}
     .messageBlock .messageInlineWarning{color:#a13453;font-size:12px;font-weight:800}
     .messageBlock .messageInlineWarning[hidden]{display:none}
     .messageSheet{background:#fff0f5;padding:6%;aspect-ratio:210/297;width:min(82%,350px);box-sizing:border-box;margin:auto;display:flex;border-radius:9px}
@@ -1846,7 +1847,9 @@
     for(let i=0;i<2;i++){
       $('#messagePreviewPanel'+(i+1)).hidden=i===1&&!names[1];
       $('#messagePreviewTeacher'+(i+1)).textContent=messageTeacherLabel(names[i]);
-      $('#messagePreviewText'+(i+1)).textContent=texts[i];
+      const previewText=$('#messagePreviewText'+(i+1));
+      previewText.textContent=texts[i];
+      previewText.style.setProperty('font-size',(16*fontSize/100)+'px','important');
       $('#messageCount'+(i+1)).textContent=Array.from(texts[i]).length+'文字';
     }
     requestAnimationFrame(()=>{
@@ -1865,7 +1868,9 @@
     saveState();return true;
   }
   $('#messageChild').addEventListener('change',e=>{saveMessageChild();messageChildId=e.target.value;loadMessageChild()});
-  ['#messageTeacher1','#messageTeacher2','#messageText1','#messageText2','#messageFontSize'].forEach(id=>$(id).addEventListener('input',updateMessageEditor));
+  ['#messageTeacher1','#messageTeacher2','#messageText1','#messageText2'].forEach(id=>$(id).addEventListener('input',updateMessageEditor));
+  $('#messageFontSize').addEventListener('input',updateMessageEditor);
+  $('#messageFontSize').addEventListener('change',updateMessageEditor);
   $('#messageSave').addEventListener('click',()=>{saveMessageChild();toast('メッセージを保存しました');show('classWorkspace')});
   function appendAlbumMessagePage(spread,childId,classId,year){
     const names=state.messageTeachers?.[year+':'+classId]||['',''],texts=state.messageRecords?.[year+':'+classId+':'+childId]||['',''];
