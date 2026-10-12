@@ -2362,9 +2362,15 @@
           const textRoot=el.closest('.placedText')||el;
           const tr=textRoot.getBoundingClientRect();
           const glyphs=[...el.querySelectorAll('span')];
+          const glyphRects=glyphs.map(g=>g.getBoundingClientRect());
+          const pad=12;
+          const left=Math.min(tr.left,...glyphRects.map(g=>g.left))-pad;
+          const top=Math.min(tr.top,...glyphRects.map(g=>g.top))-pad;
+          const right=Math.max(tr.right,...glyphRects.map(g=>g.right))+pad;
+          const bottom=Math.max(tr.bottom,...glyphRects.map(g=>g.bottom))+pad;
           const canvas=document.createElement('canvas');
-          canvas.width=Math.max(1,Math.ceil(tr.width*2));
-          canvas.height=Math.max(1,Math.ceil(tr.height*2));
+          canvas.width=Math.max(1,Math.ceil((right-left)*2));
+          canvas.height=Math.max(1,Math.ceil((bottom-top)*2));
           const ctx=canvas.getContext('2d');
           ctx.scale(2,2);
           for(const glyph of glyphs){
@@ -2373,14 +2379,14 @@
             const matrix=gs.transform.match(/^matrix\\(([^)]+)\\)$/);
             const parts=matrix?matrix[1].split(',').map(Number):null;
             const angle=parts?Math.atan2(parts[1],parts[0]):0;
-            const gx=gr.left+gr.width/2-tr.left,gy=gr.top+gr.height/2-tr.top;
+            const gx=gr.left+gr.width/2-left,gy=gr.top+gr.height/2-top;
             ctx.save();ctx.translate(gx,gy);ctx.rotate(angle);
             ctx.font=(gs.fontWeight||'400')+' '+fs+'px '+gs.fontFamily;
             ctx.fillStyle=gs.color;ctx.textAlign='center';ctx.textBaseline='middle';
             ctx.fillText(glyph.textContent,0,0);ctx.restore();
           }
-          const tx=(tr.left-origin.left)*210/W,ty=(tr.top-origin.top)*297/H;
-          pdf.addImage(canvas.toDataURL('image/png'),'PNG',tx,ty,tr.width*210/W,tr.height*297/H,undefined,'FAST');
+          const tx=(left-origin.left)*210/W,ty=(top-origin.top)*297/H;
+          pdf.addImage(canvas.toDataURL('image/png'),'PNG',tx,ty,(right-left)*210/W,(bottom-top)*297/H,undefined,'FAST');
           canvas.width=canvas.height=0;
         }else if(el.children.length===0&&el.textContent?.trim()&&cs.display!=='none'&&!el.closest('.curvedGlyphLayer')){
           const pl=parseFloat(cs.paddingLeft)||0,pt=parseFloat(cs.paddingTop)||0;
