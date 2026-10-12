@@ -1225,7 +1225,7 @@
  <div class="growthInputs"><div class="growthPeriod"><h3>4月・年度初め</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthStartPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthStartPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthStartScaleValue">100%</output><input id="growthStartScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthStartX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthStartY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthStartHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthStartWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div></div><div class="growthPeriod"><h3>3月・年度末</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthEndPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthEndPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthEndScaleValue">100%</output><input id="growthEndScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthEndX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthEndY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：92.3"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：14.1"></label></div></div></div>
  <p class="hint">園児ごとに保存します。未入力の項目や比較できない成長差は「—」で表示されます。</p></div>
 </section>
-    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。A4縦ページをJPEG画像にしてZIP保存します。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📸 この園児のJPEGをZIPで作成</button><button id="albumZipPdf" type="button">📦 クラス全員分のJPEGをZIPで作成</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
+    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。A4縦のPDFを直接生成します。写真と文字を個別に描画する方式です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📄 この園児のPDFを作成</button><button id="albumZipPdf" type="button">📦 クラス全員分のPDFをZIPで作成</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
       <div class="photoManageTop">
@@ -2099,12 +2099,11 @@
       document.head.append(script);
     });
   }
-  async function ensureAlbumPdfLibraries(onStep){
-    onStep?.('画像作成エンジンを読み込み中…');
-    await loadAlbumPdfLibrary('./vendor/html2canvas.min.js',()=>typeof window.html2canvas==='function');
-    onStep?.('ZIPエンジンを読み込み中…');
-    await loadAlbumPdfLibrary('./vendor/jszip.min.js',()=>!!window.JSZip);
-    onStep?.('準備完了。画像を作成中…');
+  async function ensureAlbumPdfLibraries(all,onStep){
+    onStep?.('PDFエンジンを読み込み中…');
+    await loadAlbumPdfLibrary('./vendor/jspdf.umd.min.js',()=>!!window.jspdf?.jsPDF);
+    if(all){onStep?.('ZIPエンジンを読み込み中…');await loadAlbumPdfLibrary('./vendor/jszip.min.js',()=>!!window.JSZip)}
+    onStep?.('PDFページを作成中…');
   }
   function albumPdfFilename(child){
     const safe=x=>String(x||'').replace(/[\\/:*?"<>|\\x00-\\x1f]/g,'_').trim();
@@ -2118,39 +2117,106 @@
     const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();
     setTimeout(()=>URL.revokeObjectURL(url),60000);
   }
-  async function addChildJpegsToZip(childId,folder,progress){
-    const originalIndex=albumPreviewIndex,originalChild=albumPreviewChildId;
+  function albumPdfColor(css){
+    const m=String(css||'').match(/rgba?\\(([^)]+)\\)/);
+    if(!m)return null;
+    const c=m[1].split(',').map(Number);
+    return c.length>=3&&c.slice(0,3).every(Number.isFinite)?c:null;
+  }
+  function albumPdfAddText(pdf,text,style,x,y,w,h){
+    if(!text.trim()||w<2||h<2)return;
+    const fontSize=Math.max(7,parseFloat(style.fontSize)||14);
+    const font=style.font||style.fontFamily||'sans-serif';
+    const ratio=2;
+    const canvas=document.createElement('canvas');canvas.width=Math.ceil(w*ratio);canvas.height=Math.ceil(h*ratio);
+    const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);
+    ctx.font=(style.fontWeight||'400')+' '+fontSize+'px '+font;
+    ctx.textBaseline='top';ctx.fillStyle=style.color||'#333';
+    const lh=(parseFloat(style.lineHeight)||fontSize*1.35);
+    const lines=[];
+    for(const raw of String(text).split('\\n')){
+      let line='';
+      for(const char of raw){
+        if(ctx.measureText(line+char).width>w&&line){lines.push(line);line=char}else line+=char;
+      }
+      lines.push(line);
+    }
+    const maxLines=Math.floor(h/lh);
+    for(let i=0;i<Math.min(lines.length,maxLines);i++){
+      const width=ctx.measureText(lines[i]).width;
+      const tx=style.textAlign==='center'?(w-width)/2:style.textAlign==='right'?(w-width):0;
+      ctx.fillText(lines[i],Math.max(0,tx),i*lh);
+    }
+    pdf.addImage(canvas.toDataURL('image/png'),'PNG',x,y,w*210/794,h*297/1123,undefined,'FAST');
+    canvas.width=canvas.height=0;
+  }
+  async function albumPdfDrawLeaf(pdf,leaf,pageNo){
+    const W=794,H=1123;
+    leaf.style.cssText='position:relative;inset:auto;width:'+W+'px;height:'+H+'px;overflow:hidden;background:white;box-sizing:border-box';
     const host=document.createElement('div');
-    host.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;pointer-events:none;z-index:-1;overflow:hidden';
-    document.body.append(host);
+    host.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;visibility:hidden;pointer-events:none;z-index:-1';
+    host.append(leaf);document.body.append(host);
+    const origin={left:0,top:0};
+    try{
+      // Temporarily leave element in layout; visibility hidden retains measurable geometry.
+      const rootRect=leaf.getBoundingClientRect();origin.left=rootRect.left;origin.top=rootRect.top;
+      pdf.setFillColor(255,255,255);pdf.rect(0,0,210,297,'F');
+      const elements=[leaf,...leaf.querySelectorAll('*')];
+      for(const el of elements){
+        const rect=el.getBoundingClientRect();if(!rect.width||!rect.height)continue;
+        const x=(rect.left-origin.left)*210/W,y=(rect.top-origin.top)*297/H;
+        const w=rect.width*210/W,h=rect.height*297/H;
+        if(x>=210||y>=297||x+w<=0||y+h<=0)continue;
+        const cs=getComputedStyle(el);
+        const bg=albumPdfColor(cs.backgroundColor);
+        if(bg&&bg[3]!==0){pdf.setFillColor(bg[0],bg[1],bg[2]);pdf.rect(Math.max(0,x),Math.max(0,y),Math.min(w,210-Math.max(0,x)),Math.min(h,297-Math.max(0,y)),'F')}
+        if(el instanceof HTMLImageElement){
+          if(!el.complete||!el.naturalWidth)continue;
+          const crop=document.createElement('canvas');
+          // Draw only the source image, never rasterize an entire A4 page.
+          const cw=Math.min(2000,Math.max(1,Math.round(rect.width*2))),ch=Math.min(2000,Math.max(1,Math.round(rect.height*2)));
+          crop.width=cw;crop.height=ch;
+          const ctx=crop.getContext('2d');
+          const iw=el.naturalWidth,ih=el.naturalHeight,fit=cs.objectFit;
+          if(fit==='contain'){
+            const z=Math.min(cw/iw,ch/ih),dw=iw*z,dh=ih*z;
+            ctx.drawImage(el,(cw-dw)/2,(ch-dh)/2,dw,dh);
+          }else{
+            const z=Math.max(cw/iw,ch/ih),sw=cw/z,sh=ch/z;
+            const pos=cs.objectPosition.split(' ').map(v=>parseFloat(v)/100);
+            const px=Number.isFinite(pos[0])?pos[0]:.5,py=Number.isFinite(pos[1])?pos[1]:.5;
+            ctx.drawImage(el,Math.max(0,(iw-sw)*px),Math.max(0,(ih-sh)*py),Math.min(iw,sw),Math.min(ih,sh),0,0,cw,ch);
+          }
+          pdf.addImage(crop.toDataURL('image/jpeg',.94),'JPEG',x,y,w,h,undefined,'FAST');
+          crop.width=crop.height=0;
+        }else if(el.children.length===0&&el.textContent?.trim()&&cs.display!=='none'){
+          const pl=parseFloat(cs.paddingLeft)||0,pt=parseFloat(cs.paddingTop)||0;
+          albumPdfAddText(pdf,el.textContent,cs,x+pl*210/W,y+pt*297/H,Math.max(1,rect.width-pl-(parseFloat(cs.paddingRight)||0)),Math.max(1,rect.height-pt-(parseFloat(cs.paddingBottom)||0)));
+        }
+      }
+    }catch(e){throw new Error('ページ'+pageNo+'の描画：'+(e.message||e))}
+    finally{host.remove()}
+  }
+  async function createChildDirectPdf(childId,progress){
+    const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+    const originalChild=albumPreviewChildId,originalIndex=albumPreviewIndex;
+    let count=0;
     try{
       albumPreviewChildId=childId;
-      let pageNo=0;
-      for(let index=0;index<=14;index++){
+      for(let index=0;index<15;index++){
         albumPreviewIndex=index;
         await renderAlbumPreview();
-        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         const source=$('#albumPreviewSpread'),sides=index===0?['right']:index===14?['left']:['left','right'];
         for(const side of sides){
-          const page=albumPrintLeafFromSpread(source,side);
-          page.style.cssText='position:relative;width:794px;height:1123px;inset:auto;overflow:hidden;background:white;box-sizing:border-box';
-          host.append(page);
-          try{
-            await Promise.all([...page.querySelectorAll('img')].map(img=>img.decode?.().catch(()=>{})||Promise.resolve()));
-            const canvas=await window.html2canvas(page,{backgroundColor:'#ffffff',scale:1,useCORS:true,logging:false,width:794,height:1123,removeContainer:true});
-            const blob=await new Promise((resolve,reject)=>canvas.toBlob(result=>result?resolve(result):reject(new Error('JPEG変換に失敗しました')),'image/jpeg',0.9));
-            folder.file(String(pageNo+1).padStart(2,'0')+'_'+(index===0?'表紙':index===14?'裏表紙':index===13?(side==='left'?'身長体重':'メッセージ'):'見開き'+index+(side==='left'?'左':'右'))+'.jpg',blob);
-            canvas.width=canvas.height=0;
-          }catch(error){throw new Error((pageNo+1)+'ページ目：'+(error?.message||String(error)))}
-          finally{page.remove()}
-          pageNo++;progress?.(pageNo,28);
+          const leaf=albumPrintLeafFromSpread(source,side);
+          if(count)pdf.addPage('a4','portrait');
+          await albumPdfDrawLeaf(pdf,leaf,count+1);
+          count++;progress?.(count,28);
           await new Promise(resolve=>setTimeout(resolve,0));
         }
       }
-    }finally{
-      host.remove();albumPreviewChildId=originalChild;albumPreviewIndex=originalIndex;
-      await renderAlbumPreview();
-    }
+      return pdf.output('blob');
+    }finally{albumPreviewChildId=originalChild;albumPreviewIndex=originalIndex;await renderAlbumPreview()}
   }
   let albumPdfBusy=false;
   async function exportAlbumPdf(all){
@@ -2162,23 +2228,25 @@
     const buttons=[$('#albumPrintPdf'),$('#albumZipPdf')],status=$('#albumPrintStatus');
     buttons.forEach(b=>b.disabled=true);
     try{
-      status.style.color='';status.textContent='JPEG書き出し準備中…';
-      await ensureAlbumPdfLibraries(message=>{status.textContent=message});
-      const zip=new window.JSZip();
-      for(let i=0;i<targets.length;i++){
-        const child=targets[i];
-        const folder=all?zip.folder(albumPdfFilename(child)):zip;
-        await addChildJpegsToZip(child.id,folder,(page,total)=>{status.textContent=(i+1)+'/'+targets.length+'人目：'+page+'/'+total+'ページ'});
+      status.style.color='';status.textContent='PDF生成の準備中…';
+      await ensureAlbumPdfLibraries(all,message=>status.textContent=message);
+      if(all){
+        const zip=new window.JSZip();
+        for(let i=0;i<targets.length;i++){
+          const child=targets[i];
+          const blob=await createChildDirectPdf(child.id,(page,total)=>status.textContent=(i+1)+'/'+targets.length+'人目：'+page+'/'+total+'ページ');
+          zip.file(albumPdfFilename(child)+'.pdf',blob);
+        }
+        status.textContent='ZIPファイルにまとめています…';
+        await albumPdfSave(await zip.generateAsync({type:'blob',compression:'STORE'}),state.year+'年度_'+cls(state.selectedClassId).name+'_全員PDF.zip');
+      }else{
+        const blob=await createChildDirectPdf(targets[0].id,(page,total)=>status.textContent='PDF生成中 '+page+'/'+total+'ページ');
+        await albumPdfSave(blob,albumPdfFilename(targets[0])+'.pdf');
       }
-      status.textContent='ZIPにまとめています…';
-      const output=await zip.generateAsync({type:'blob',compression:'STORE'});
-      const name=all?state.year+'年度_'+cls(state.selectedClassId).name+'_全員JPEG.zip':albumPdfFilename(targets[0])+'_JPEG.zip';
-      await albumPdfSave(output,name);
-      status.textContent='作成完了。共有またはダウンロードで保存してください。';
+      status.textContent='PDF作成完了。';
     }catch(error){
-      console.error('album jpeg export',error);
-      const reason=error?.message||String(error)||'不明なエラー';
-      status.textContent='JPEG作成エラー：'+reason;status.style.color='#a13453';toast('JPEG作成エラー：'+reason);
+      console.error('direct pdf export',error);
+      const reason=error?.message||String(error);status.style.color='#a13453';status.textContent='PDF作成エラー：'+reason;toast('PDF作成エラー：'+reason);
     }finally{albumPdfBusy=false;buttons.forEach(b=>b.disabled=false)}
   }
   $('#albumPrintPdf').addEventListener('click',()=>exportAlbumPdf(false));
