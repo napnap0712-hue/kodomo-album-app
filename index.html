@@ -2357,21 +2357,31 @@
           // The editor already positioned and rotated every glyph. Rasterize
           // the complete glyph layer once, retaining its exact DOM geometry.
           // This avoids separately re-scaling rotated bounding rectangles.
-          try{
-            if(document.fonts?.ready)await document.fonts.ready;
-            if(typeof html2canvas==='function'){
-              const textRoot=el.closest('.placedText')||el;
-              const shot=await html2canvas(textRoot,{
-                backgroundColor:null,scale:2,useCORS:true,logging:false,
-                ignoreElements:node=>node.classList?.contains('textEditable')
-              });
-              const tr=textRoot.getBoundingClientRect();
-              const tx=(tr.left-origin.left)*210/W,ty=(tr.top-origin.top)*297/H;
-              const tw=tr.width*210/W,th=tr.height*297/H;
-              if(shot.width&&shot.height)pdf.addImage(shot.toDataURL('image/png'),'PNG',tx,ty,tw,th,undefined,'FAST');
-              shot.width=shot.height=0;
-            }
-          }catch(error){console.warn('PDF曲線文字',error)}
+          // Avoid html2canvas here: on iPhone Safari its clone/font wait can
+          // stall the entire PDF job. Paint glyphs directly on a small canvas.
+          const textRoot=el.closest('.placedText')||el;
+          const tr=textRoot.getBoundingClientRect();
+          const glyphs=[...el.querySelectorAll('span')];
+          const canvas=document.createElement('canvas');
+          canvas.width=Math.max(1,Math.ceil(tr.width*2));
+          canvas.height=Math.max(1,Math.ceil(tr.height*2));
+          const ctx=canvas.getContext('2d');
+          ctx.scale(2,2);
+          for(const glyph of glyphs){
+            const gs=getComputedStyle(glyph),gr=glyph.getBoundingClientRect();
+            const fs=parseFloat(gs.fontSize)||28;
+            const matrix=gs.transform.match(/^matrix\\(([^)]+)\\)$/);
+            const parts=matrix?matrix[1].split(',').map(Number):null;
+            const angle=parts?Math.atan2(parts[1],parts[0]):0;
+            const gx=gr.left+gr.width/2-tr.left,gy=gr.top+gr.height/2-tr.top;
+            ctx.save();ctx.translate(gx,gy);ctx.rotate(angle);
+            ctx.font=(gs.fontWeight||'400')+' '+fs+'px '+gs.fontFamily;
+            ctx.fillStyle=gs.color;ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.fillText(glyph.textContent,0,0);ctx.restore();
+          }
+          const tx=(tr.left-origin.left)*210/W,ty=(tr.top-origin.top)*297/H;
+          pdf.addImage(canvas.toDataURL('image/png'),'PNG',tx,ty,tr.width*210/W,tr.height*297/H,undefined,'FAST');
+          canvas.width=canvas.height=0;
         }else if(el.children.length===0&&el.textContent?.trim()&&cs.display!=='none'&&!el.closest('.curvedGlyphLayer')){
           const pl=parseFloat(cs.paddingLeft)||0,pt=parseFloat(cs.paddingTop)||0;
           albumPdfAddText(pdf,el.textContent,cs,x+pl*210/W,y+pt*297/H,Math.max(1,rect.width-pl-(parseFloat(cs.paddingRight)||0)),Math.max(1,rect.height-pt-(parseFloat(cs.paddingBottom)||0)));
