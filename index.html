@@ -117,25 +117,29 @@
     .albumPrintToolbar{position:sticky;top:0;z-index:10;display:flex;gap:8px;align-items:center;background:#fff;padding:12px;border-radius:12px;margin-bottom:12px;box-shadow:0 2px 10px #0002}
     .albumPrintToolbar button{border:0;background:#e4edf9;border-radius:10px;padding:12px;font-weight:800;font-size:14px}
     .albumPrintToolbar button:first-child{background:#ffddeb}
-    .albumPrintStage.previewReady .albumPrintPage{position:relative;width:min(100%,420px);height:auto;aspect-ratio:210/297;margin:0 auto 14px;background:white;box-shadow:0 3px 12px #0002;overflow:hidden}
-    .albumPrintStage.previewReady .albumPrintSpread{position:absolute;width:200%!important;height:100%!important;aspect-ratio:420/297;left:0;top:0;max-width:none!important}
-    .albumPrintStage.previewReady .albumPrintPage.rightSide .albumPrintSpread{left:0;transform:translateX(-50%)}
-    .albumPrintStage.previewReady .albumPrintPage.leftSide .albumPrintSpread{left:0;transform:none}
-    .albumPrintStage.previewReady .albumPrintPage.singleCover>.albumChildCover{position:absolute;left:0!important;top:0;width:100%!important;height:100%!important;box-sizing:border-box}
     .albumPrintToolbarNote{font-size:12px;color:#555;line-height:1.5}
+    .albumPrintStage.previewReady .albumPrintPage{position:relative;width:min(100%,420px);aspect-ratio:210/297;margin:0 auto 14px;background:white;box-shadow:0 3px 12px #0002;overflow:hidden}
+    .albumPrintLeaf{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background:white;isolation:isolate;box-sizing:border-box}
+    .albumPrintLeaf .albumChildCover,.albumPrintLeaf .backAlbumCover,.albumPrintLeaf .growthAlbumPage,.albumPrintLeaf .messageAlbumPage{position:absolute;left:0!important;top:0!important;width:100%!important;height:100%!important;box-sizing:border-box}
+    .albumPrintLeaf .albumChildCover,.albumPrintLeaf .backAlbumCover{padding:6%}
+    .albumPrintLeaf .coverWhitePanel{width:100%;height:100%;box-sizing:border-box}
+    .albumPrintLeaf .backAlbumCover{display:flex;justify-content:center;align-items:center;background-size:cover;background-position:center}
+    .albumPrintLeaf .backAlbumCover>.coverWhitePanel{display:flex;justify-content:center;align-items:center;padding:8%;border:0;border-radius:7%;overflow:hidden;background:white}
+    .albumPrintLeaf .backCoverPhotoFrame{width:100%;height:auto;aspect-ratio:4/3;flex:none}
+    .albumPrintLeaf .backCoverPhotoFrame>img{width:100%!important;height:100%!important;max-width:none!important;object-fit:cover!important}
+    .albumPrintLeaf .growthAlbumPage{display:flex;padding:6%;container-type:inline-size;background:#dfedf9}
+    .albumPrintLeaf .messageAlbumPage{display:flex;padding:6%;container-type:inline-size;background:#fff0f5}
+    .albumPrintLeaf .archiveHalf{width:100%!important;left:0!important}
+    .albumPrintLeaf .albumSpecialPreview{width:100%!important;left:0!important;box-sizing:border-box}
     @media print{
       @page{size:A4 portrait;margin:0}
       html,body{margin:0!important;padding:0!important;background:white!important}
       body>*:not(.albumPrintStage){display:none!important}
       .albumPrintStage,.albumPrintStage.previewReady{display:block!important;position:static!important;margin:0!important;padding:0!important;background:white!important;overflow:visible!important}
       .albumPrintToolbar{display:none!important}
-      .albumPrintPage{width:210mm;height:297mm;overflow:hidden;position:relative;page-break-after:always;break-after:page;background:white}
-      .albumPrintSpread{width:420mm!important;height:297mm!important;max-width:none!important;min-width:420mm!important;position:absolute!important;left:0;top:0;border:0!important;border-radius:0!important;overflow:hidden!important}
-      .albumPrintPage.rightSide .albumPrintSpread{left:0!important;transform:translateX(-50%)!important}
-      .albumPrintPage.leftSide .albumPrintSpread{left:0!important;transform:none!important}
-      .albumPrintPage.singleCover>.albumChildCover{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;box-sizing:border-box!important}
-      .albumPrintSpread .albumChildCover,.albumPrintSpread .growthAlbumPage,.albumPrintSpread .messageAlbumPage,.albumPrintSpread .backAlbumCover{container-type:inline-size}
+      .albumPrintPage,.albumPrintStage.previewReady .albumPrintPage{width:210mm!important;height:297mm!important;aspect-ratio:auto!important;overflow:hidden!important;position:relative!important;margin:0!important;box-shadow:none!important;page-break-after:always;break-after:page;background:white}
       .albumPrintPage:last-child{page-break-after:auto;break-after:auto}
+      .albumPrintLeaf{width:210mm!important;height:297mm!important;inset:0!important}
     }
     .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
     .albumPreviewEntry b,.albumPreviewEntry small{display:block}.albumPreviewEntry small{margin-top:6px;color:#766c70}
@@ -2061,6 +2065,25 @@
   }
   $('#albumPreviewChild').addEventListener('change',e=>{albumPreviewChildId=e.target.value;albumPreviewIndex=0;renderAlbumPreview()});
   $('#albumPreviewPrev').addEventListener('click',()=>turnAlbumPreview(-1));
+  function albumPrintLeafFromSpread(source,side){
+    const leaf=document.createElement('div');leaf.className='albumPrintLeaf';
+    const offset=side==='right'?50:0;
+    for(const child of [...source.children]){
+      const x=parseFloat(child.style.left),w=parseFloat(child.style.width);
+      if(child.matches('.albumChildCover,.growthAlbumPage,.messageAlbumPage,.albumSpecialPreview,.archiveHalf')){
+        const left=Number.isFinite(x)?x:(child.classList.contains('growthAlbumPage')?0:50);
+        if(left!==offset)continue;
+        const copy=child.cloneNode(true);copy.style.left='0';copy.style.width='100%';copy.style.height='100%';
+        leaf.append(copy);
+      }else if(child.matches('.archivePlaced,.archiveText')){
+        const left=Number.isFinite(x)?x:0,width=Number.isFinite(w)?w:20;
+        if(left+width<=offset||left>=offset+50)continue;
+        const copy=child.cloneNode(true);copy.style.left=((left-offset)*2)+'%';copy.style.width=(width*2)+'%';
+        leaf.append(copy);
+      }else if(child.classList.contains('albumPreviewEmpty'))leaf.append(child.cloneNode(true));
+    }
+    return leaf;
+  }
   async function printChildAlbum(){
     const button=$('#albumPrintPdf'),status=$('#albumPrintStatus'),chosen=albumPreviewChildId;
     if(!chosen){toast('園児を選択してください');return}
@@ -2086,21 +2109,11 @@
         albumPreviewIndex=index;
         await renderAlbumPreview();
         await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-        const spread=$('#albumPreviewSpread').cloneNode(true);
-        spread.removeAttribute('id');spread.classList.add('albumPrintSpread');
+        const spread=$('#albumPreviewSpread');
         const sides=index===0?['right']:index===14?['left']:['left','right'];
         for(const side of sides){
-          const sheet=document.createElement('div');
-          sheet.className='albumPrintPage '+(side==='right'?'rightSide':'leftSide');
-          if(index===0||index===14){
-            // A single cover belongs to one A4 leaf; no spread cropping needed.
-            sheet.classList.add('singleCover');
-            const cover=spread.querySelector('.albumChildCover');
-            if(cover){const leaf=cover.cloneNode(true);leaf.style.left='0';leaf.style.width='100%';leaf.style.height='100%';leaf.style.boxSizing='border-box';sheet.append(leaf)}
-          }else{
-            sheet.append(spread.cloneNode(true));
-          }
-          stage.append(sheet);
+          const sheet=document.createElement('div');sheet.className='albumPrintPage';
+          sheet.append(albumPrintLeafFromSpread(spread,side));stage.append(sheet);
         }
       }
       stage.classList.add('previewReady');
