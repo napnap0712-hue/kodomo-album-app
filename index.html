@@ -3376,8 +3376,8 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
     try{
       const pageId=editingPage.id,source=$('#spread');
       if(!source?.getBoundingClientRect().width)throw new Error('編集画面を読み込めません');
-      await ensureCustomFonts();
-      if(document.fonts?.ready)await document.fonts.ready;
+      // iOS requires printing to originate from a direct user gesture.
+      // Fonts are already requested when opening the editor; do not await here.
       // Save while the editor is still present, without invoking the navigation button.
       source.querySelectorAll('.placedText').forEach(el=>{
         const item=textItems.find(t=>String(t.id)===String(el.dataset.textItem));
@@ -3395,19 +3395,13 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       page.stickers=stickerItems.map(x=>({...x}));
       page.updatedAt=Date.now();
       saveState();checkpointPage(page);
-      const warnings=await preflightPagePhotos(page);
-      if(warnings.length&&!confirm('印刷前チェック：'+warnings.join('、')+'。続けますか？'))return;
       removeNativePrintHost();
       nativePrintHost=document.createElement('div');
       nativePrintHost.id='nativePrintHost';
       nativePrintHost.append(makeNativePrintLeaf(source,'left'),makeNativePrintLeaf(source,'right'));
       document.body.append(nativePrintHost);
-      const imgs=[...nativePrintHost.querySelectorAll('img')];
-      await Promise.all(imgs.map(img=>img.decode?img.decode():new Promise((resolve,reject)=>{
-        if(img.complete)return img.naturalWidth?resolve():reject(new Error('写真を読み込めません'));
-        img.onload=resolve;img.onerror=()=>reject(new Error('写真を読み込めません'));
-      })));
-      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      // Call print synchronously in the original button gesture on iPhone.
+      if(typeof window.print!=='function')throw new Error('このブラウザは印刷に対応していません');
       window.print();
     }catch(error){console.error('native editor print',error);toast('印刷準備エラー：'+(error?.message||String(error)))}
     finally{button.disabled=false}
