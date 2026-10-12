@@ -1841,7 +1841,7 @@
     $('#messagePreviewChild').textContent=child?child.name.replace(/\s*さん$/,'')+' さんへ':'園児を選択してください';
     $('#messageSheet').dataset.teachers=names[1]?'2':'1';
     const fontSize=Number($('#messageFontSize').value)||85;
-    const previewPixels=(18*fontSize/100);
+    const previewPixels=(13*fontSize/100);
     $('#messageSheet').style.setProperty('--message-text-size',previewPixels+'px');
     $('#messageFontSizeLabel').textContent=fontSize+'%';
     $('#messageBlock2').hidden=!names[1];
@@ -1883,7 +1883,7 @@
   function appendAlbumMessagePage(spread,childId,classId,year){
     const names=state.messageTeachers?.[year+':'+classId]||['',''],texts=state.messageRecords?.[year+':'+classId+':'+childId]||['',''];
     const page=document.createElement('div');page.className='messageAlbumPage';
-    page.style.setProperty('--message-text-size',(18*messageFontSize(childId)/100)+'px');
+    page.style.setProperty('--message-text-size',(13*messageFontSize(childId)/100)+'px');
     const sheet=document.createElement('div');sheet.className='messageSheetInner';
     const heading=document.createElement('h3');heading.textContent='せんせいからのメッセージ';
     const who=document.createElement('div');who.className='messageAddressee';
