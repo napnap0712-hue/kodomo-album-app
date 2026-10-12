@@ -3295,7 +3295,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
     if(!img.naturalWidth||w>3600||h>3600)return null;
     const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
     const ctx=canvas.getContext('2d');if(!ctx)return null;
-    const percentages=part=>(part.match(/-?\\d+(?:\\.\\d+)?/g)||[]).map(Number);
+    const percentages=part=>(part.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number);
     ctx.beginPath();
     if(clip.startsWith('circle(')){
       const [radius,cx,cy]=percentages(clip);ctx.arc(w*(cx||50)/100,h*(cy||50)/100,Math.min(w,h)*(radius||50)/100,0,Math.PI*2);
