@@ -2078,6 +2078,9 @@
       }
       return;
     }
+    // Render the same saved font faces and custom typography as the editor.
+    await ensureCustomFonts();
+    if(token!==albumPreviewToken)return;
     // Read the exact persisted editor properties when opening the album preview.
     const bgSettings=p.background||{};
     const frameCfg=['left','right'].map(side=>bgSettings[side]).find(cfg=>cfg?.pattern==='frame'&&cfg.imageUrl);
@@ -2113,7 +2116,32 @@
     for(const t of (p.texts||[])){
       const el=document.createElement('div');el.className='archiveText';el.textContent=t.text||'';
       el.style.cssText='left:'+(t.x||0)+'%;top:'+(t.y||0)+'%;width:'+(t.width||28)+'%;height:'+(t.height||12)+'%;color:'+(t.color||'#333')+';z-index:'+(t.zIndex||100)+';font-size:'+Math.max(6,(Number(t.size)||28)*.36)+'px';
-      el.style.fontFamily=fontStack(t.font||'HaniHani');spread.append(el);
+      el.style.fontFamily=fontStack(t.font||'HaniHani');
+      if(Number(t.curve)){
+        // Preserve the editor's curved text, rather than silently dropping the saved curve.
+        const layer=document.createElement('div');layer.className='curvedGlyphLayer';
+        const value=t.text||'',size=Math.max(6,(Number(t.size)||28)*.36),curve=Math.max(-100,Math.min(100,Number(t.curve)||0));
+        const canvas=document.createElement('canvas'),context=canvas.getContext('2d');
+        if(context){
+          context.font=size+'px '+fontStack(t.font||'HaniHani');
+          const chars=Array.from(value.replaceAll('\n',' '));
+          const widths=chars.map(ch=>Math.max(1,context.measureText(ch).width||size));
+          const total=widths.reduce((a,b)=>a+b,0),extent=Math.abs(curve)/100*Math.PI*1.8;
+          const radius=Math.max(1,total/Math.max(.001,extent)),sign=curve>0?1:-1;
+          let pos=0;
+          chars.forEach((ch,i)=>{
+            const angle=(pos+widths[i]/2-total/2)/radius,span=document.createElement('span');
+            span.textContent=ch;
+            span.style.cssText='position:absolute;left:50%;top:50%;white-space:pre;';
+            span.style.fontFamily=fontStack(t.font||'HaniHani');
+            span.style.fontSize=size+'px';span.style.color=t.color||'#4f4944';
+            span.style.transform='translate(-50%,-50%) translate('+radius*Math.sin(angle)+'px,'+sign*radius*(1-Math.cos(angle))+'px) rotate('+sign*angle*180/Math.PI+'deg)';
+            layer.append(span);pos+=widths[i];
+          });
+          el.classList.add('curved');el.append(layer);
+        }
+      }
+      spread.append(el);
     }
     for(const item of (p.stickers||[])){
       const box=document.createElement('div');box.className='archivePreviewSticker';
@@ -3217,7 +3245,15 @@
   $('#candidateDone').addEventListener('click',async()=>await addPhotosToSpread([...candidateSelection]));
   $('#deletePhoto').addEventListener('click',()=>{if(selectedEditId){editItems=editItems.filter(x=>x.id!==selectedEditId);selectedEditId=null}else if(selectedTextId){textItems=textItems.filter(x=>x.id!==selectedTextId);selectedTextId=null}else if(selectedStickerId){stickerItems=stickerItems.filter(x=>x.id!==selectedStickerId);selectedStickerId=null}else return;recordEdit();renderSpread();syncTextPanel()});
   $('#closeEditor').addEventListener('click',()=>show('photoManage'));
-  $('#saveEdit').addEventListener('click',()=>{if(!editingPage)return;const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,curve,zIndex})=>({id,text,x,y,width,height,font,size,color,curve:curve||0,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();editingPage=state.pages.find(p=>p.id===pageId)||editingPage;albumPreviewToken++;show('photoManage');toast('見開きの配置を保存しました')});
+  $('#saveEdit').addEventListener('click',()=>{
+    if(!editingPage)return;
+    // Commit even the currently focused contenteditable before serializing.
+    $('#spread').querySelectorAll('.placedText').forEach(el=>{
+      const item=textItems.find(t=>String(t.id)===String(el.dataset.textItem));
+      const edit=el.querySelector('.textEditable');
+      if(item&&edit&&!el.classList.contains('curved'))item.text=edit.innerText.replace(/\n$/,'');
+    });
+const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,curve,zIndex})=>({id,text,x,y,width,height,font,size,color,curve:curve||0,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();editingPage=state.pages.find(p=>p.id===pageId)||editingPage;albumPreviewToken++;show('photoManage');toast('見開きの配置を保存しました')});
   $('#spread').addEventListener('pointerdown',e=>{if(e.target===$('#spread')){selectedEditId=null;selectedTextId=null;selectedStickerId=null;$$('.placedPhoto').forEach(x=>x.classList.remove('selected'));$$('.placedText').forEach(x=>x.classList.remove('selected'));$$('.placedSticker').forEach(x=>x.classList.remove('selected'));syncTextPanel();updateEditControls()}});
   $('#resetBtn').addEventListener('click',()=>{if(!confirm('土台版の設定・園児データを初期化しますか？'))return;localStorage.removeItem(STORE_KEY);indexedDB.deleteDatabase('omoide_book_assets');location.reload()});
 
