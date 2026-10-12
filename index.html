@@ -28,7 +28,7 @@
     .app{max-width:760px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top)) 16px calc(108px + env(safe-area-inset-bottom))}
     .header{display:flex;align-items:center;gap:12px;margin:0 2px 18px}
     .flower{width:46px;height:46px;border-radius:18px;background:#fff;display:grid;place-items:center;font-size:26px;border:1px solid var(--line);box-shadow:var(--shadow)}
-    .grow{flex:1;min-width:0}.brand{font-weight:950;font-size:24px;letter-spacing:.03em}.hint{font-size:12px;color:var(--muted);line-height:1.45}
+    .grow{flex:1;min-width:0}.brand{font-weight:950;font-size:24px;letter-spacing:.03em}.headerLogo{display:block;width:min(100%,300px);height:64px;object-fit:contain;object-position:left center}.hint{font-size:12px;color:var(--muted);line-height:1.45}
     .pill{border:1px solid var(--line);background:#fff;padding:8px 12px;border-radius:999px;color:var(--muted);font-size:12px;font-weight:800}
     .screen{display:none}.screen.active{display:block}
     .hero,.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -880,8 +880,7 @@
 <body>
   <main class="app" id="app">
     <div class="header">
-      <div class="flower">📖</div>
-      <div class="grow"><div class="brand">おもいでブック</div><div class="hint" id="headerSub">Canva UI版 v0.2</div></div>
+      <div class="grow"><div class="brand"><img src="./logo.png" alt="おもいでぶっく" class="headerLogo"></div><div class="hint" id="headerSub">Canva UI版 v0.2</div></div>
       <button class="pill" id="resetBtn" type="button">初期化</button>
     </div>
 
