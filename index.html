@@ -1178,6 +1178,20 @@
     .adminTileBottom b{display:none}
     .adminTileArrow{position:absolute;right:0;top:0;width:28px;height:28px;border-radius:50%;background:var(--tile-accent);color:white;font-size:26px;font-weight:700;line-height:24px;text-align:center}
     @media(max-width:350px){.adminTile{height:155px;padding:6px 5px 5px}.adminTileIcon{height:110px;width:128px}.adminTileArrow{height:23px;width:23px;font-size:21px;line-height:20px}}
+
+    /* Native A4 print: two pages from the exact same editable spread. */
+    #nativePrintHost{display:none}
+    @page{size:A4 portrait;margin:0}
+    @media print{
+      html,body{margin:0!important;padding:0!important;background:#fff!important;width:210mm!important}
+      body>#app{display:none!important}
+      #nativePrintHost{display:block!important;position:static!important;margin:0!important;padding:0!important;width:210mm!important}
+      #nativePrintHost .nativePrintLeaf{position:relative!important;display:block!important;width:210mm!important;height:297mm!important;overflow:hidden!important;margin:0!important;padding:0!important;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid}
+      #nativePrintHost .nativePrintLeaf:last-child{break-after:auto;page-break-after:auto}
+      #nativePrintHost .nativePrintSpread,#nativePrintHost .nativePrintSpread *{print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important}
+      #nativePrintHost .nativePrintSpread{display:block!important;visibility:visible!important}
+      #nativePrintHost .nativePrintSpread:after{display:none!important}
+    }
 </style>
 </head>
 <body>
@@ -1409,7 +1423,7 @@
         <h2 id="editorTitle">見開き編集</h2><span class="grow"></span>
         <button class="editorIcon" id="undoEdit" type="button" aria-label="元に戻す">↶</button>
         <button class="editorIcon" id="redoEdit" type="button" aria-label="やり直す">↷</button>
-        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="編集した見開きを左右A4の2ページPDFにする">見開きPDF</button><button class="editorSave" id="saveEdit" type="button">保存</button>
+        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="ブラウザの印刷機能で左右A4の2ページを保存する">見開きPDF</button><button class="editorSave" id="saveEdit" type="button">保存</button>
       </div>
       <div class="editorStage" id="editorStage">
         <div class="spreadViewport" id="spreadViewport"><div class="spread" id="spread"><span class="pageLabel left">LEFT / A4</span><span class="pageLabel right">RIGHT / A4</span></div></div>
@@ -3311,78 +3325,94 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
     const png=canvas.toDataURL('image/png');canvas.width=canvas.height=0;return png;
   }
   // Export the actual editor spread. No album preview or second renderer is involved.
+  // Native A4 printing: reuse the actual editor DOM and CSS, never html2canvas.
+  let nativePrintHost=null;
+  function removeNativePrintHost(){
+    if(nativePrintHost){nativePrintHost.remove();nativePrintHost=null}
+  }
+  function makeNativePrintLeaf(source,side){
+    const leaf=document.createElement('section');
+    leaf.className='nativePrintLeaf';
+    const spread=source.cloneNode(true);
+    spread.removeAttribute('id');
+    spread.classList.add('nativePrintSpread');
+    spread.querySelectorAll('.selectionFrame,.cropGuide,.pageLabel,.resizeHandle,.trimHandle,.cropGuideHandle,.textResize').forEach(el=>el.remove());
+    spread.querySelectorAll('.selected,.crop-preview').forEach(el=>el.classList.remove('selected','crop-preview'));
+    // Resize CSS px typography to match the fixed-size printed spread.
+    const scale=(420*96/25.4)/source.getBoundingClientRect().width;
+    const originals=source.querySelectorAll('*'),copies=spread.querySelectorAll('*');
+    // Use matching text item IDs instead of element index (selection controls were removed).
+    for(const old of source.querySelectorAll('.placedText')){
+      const copy=[...spread.querySelectorAll('.placedText')].find(el=>el.dataset.textItem===old.dataset.textItem);
+      if(!copy)continue;
+      const oldText=old.querySelector('.textEditable'),newText=copy.querySelector('.textEditable');
+      if(oldText&&newText){
+        newText.textContent=oldText.innerText.replace(/\\n$/,'');
+        newText.contentEditable='false';
+        newText.style.fontSize=(parseFloat(getComputedStyle(oldText).fontSize)*scale)+'px';
+        newText.style.outline='none';
+      }
+      const curved=copy.querySelector('.curvedGlyphLayer');
+      if(curved){
+        curved.remove();
+        const item=textItems.find(t=>String(t.id)===String(old.dataset.textItem));
+        if(item)updateCurvedText(copy,{...item,size:(Number(item.size)||28)*scale});
+      }
+    }
+    for(const old of source.querySelectorAll('.placedSticker')){
+      const copy=[...spread.querySelectorAll('.placedSticker')].find(el=>el.dataset.stickerItem===old.dataset.stickerItem);
+      if(!copy)continue;
+      const oldLabel=old.querySelector('span'),newLabel=copy.querySelector('span');
+      if(oldLabel&&newLabel)newLabel.style.fontSize=(parseFloat(getComputedStyle(oldLabel).fontSize)*scale)+'px';
+    }
+    spread.style.cssText='position:absolute;top:0;left:'+(side==='right'?'-210mm':'0')+';width:420mm;height:297mm;aspect-ratio:auto;max-width:none;min-width:420mm;transform:none;margin:0;box-shadow:none;border:0;border-radius:0;overflow:hidden;';
+    leaf.append(spread);
+    return leaf;
+  }
   $('#savePdfTrial').addEventListener('click',async()=>{
     const button=$('#savePdfTrial');
     if(!editingPage||button.disabled)return;
-    const pageId=editingPage.id,source=$('#spread');
     button.disabled=true;
-    let capture=null;
     try{
-      if(!source?.getBoundingClientRect().width)throw new Error('編集画面を描画できません');
-      await ensureAlbumPdfLibraries(false);
+      const pageId=editingPage.id,source=$('#spread');
+      if(!source?.getBoundingClientRect().width)throw new Error('編集画面を読み込めません');
       await ensureCustomFonts();
       if(document.fonts?.ready)await document.fonts.ready;
-      // Wait for all edited photo and stamp images to decode.
-      await Promise.all([...source.querySelectorAll('img')].map(async img=>{
-        if(!img.complete)await new Promise((resolve,reject)=>{
-          img.addEventListener('load',resolve,{once:true});
-          img.addEventListener('error',()=>reject(new Error('画像を読み込めません')),{once:true});
-        });
-        if(!img.naturalWidth)throw new Error('写真・スタンプの読み込みに失敗しました');
-      }));
-      const clippedSources=new Map();
-      for(const img of source.querySelectorAll('.placedPhoto img')){
-        const item=img.closest('[data-edit-item]');
-        const data=printableClippedPhoto(img);
-        if(item&&data)clippedSources.set(item.dataset.editItem,data);
-      }
-      // Capture the rendered spread before Save navigates away from the editor.
-      const bounds=source.getBoundingClientRect(),ratio=Math.min(4,Math.max(2,2100/bounds.width));
-      capture=await window.html2canvas(source,{
-        backgroundColor:'#ffffff',scale:ratio,useCORS:true,logging:false,
-        width:Math.round(bounds.width),height:Math.round(bounds.height),imageTimeout:15000,
-        onclone:doc=>{
-          const spread=doc.querySelector('#spread');
-          if(!spread)return;
-          spread.querySelectorAll('.selectionFrame,.cropGuide,.pageLabel,.resizeHandle,.trimHandle,.cropGuideHandle').forEach(el=>el.remove());
-          spread.querySelectorAll('.selected,.crop-preview').forEach(el=>el.classList.remove('selected','crop-preview'));
-          spread.querySelectorAll('.textEditable').forEach(el=>{el.setAttribute('contenteditable','false');el.style.outline='none'});
-          spread.querySelectorAll('.placedPhoto[data-edit-item]').forEach(box=>{
-            const png=clippedSources.get(box.dataset.editItem),img=box.querySelector('img');
-            if(!png||!img)return;
-            img.src=png;img.style.clipPath='none';img.style.objectFit='fill';
-          });
-        }
+      // Save while the editor is still present, without invoking the navigation button.
+      source.querySelectorAll('.placedText').forEach(el=>{
+        const item=textItems.find(t=>String(t.id)===String(el.dataset.textItem));
+        const text=el.querySelector('.textEditable');
+        if(item&&text&&!el.classList.contains('curved'))item.text=text.innerText.replace(/\\n$/,'');
       });
-      if(capture.width<2||capture.height<2)throw new Error('見開き画像の作成に失敗しました');
-      const savedBefore=state.pages.find(p=>p.id===pageId)?.updatedAt||0;
-      $('#saveEdit').click();
-      const saved=state.pages.find(p=>p.id===pageId);
-      if(!saved||saved.updatedAt===savedBefore)throw new Error('編集の保存に失敗しました');
-      const problems=await preflightPagePhotos(saved);
-      if(problems.length&&!confirm('印刷前チェック：'+problems.join('、')+'。続けますか？'))return;
-      const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
-      const split=Math.floor(capture.width/2);
-      for(let i=0;i<2;i++){
-        const side=document.createElement('canvas');
-        side.width=i===0?split:capture.width-split;side.height=capture.height;
-        const ctx=side.getContext('2d');
-        ctx.drawImage(capture,i===0?0:split,0,side.width,side.height,0,0,side.width,side.height);
-        if(i)pdf.addPage('a4','portrait');
-        pdf.addImage(side.toDataURL('image/jpeg',0.98),'JPEG',0,0,210,297,undefined,'FAST');
-        side.width=side.height=0;
-      }
-      const child=state.children.find(x=>x.id===albumPreviewChildId);
-      await albumPdfSave(pdf.output('blob'),state.year+'_'+cls(state.selectedClassId).name+'_'+(saved.title||'見開き')+'_左右2ページ.pdf');
-      toast('見開きを左右2ページのPDFにしました');
-    }catch(error){
-      console.error('editor two-page PDF',error);
-      toast('PDF作成エラー：'+(error?.message||String(error)));
-    }finally{
-      if(capture){capture.width=capture.height=0}
-      button.disabled=false;
-    }
+      const page=state.pages.find(p=>p.id===pageId);
+      if(!page)throw new Error('保存するページがありません');
+      page.photos=editingPage.photos.map(p=>({...p}));
+      page.photoCount=page.photos.length;
+      page.assignedCount=page.photos.filter(p=>p.childId).length;
+      page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));
+      page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,curve,zIndex})=>({id,text,x,y,width,height,font,size,color,curve:curve||0,zIndex}));
+      page.background=JSON.parse(JSON.stringify(editBackground));
+      page.stickers=stickerItems.map(x=>({...x}));
+      page.updatedAt=Date.now();
+      saveState();checkpointPage(page);
+      const warnings=await preflightPagePhotos(page);
+      if(warnings.length&&!confirm('印刷前チェック：'+warnings.join('、')+'。続けますか？'))return;
+      removeNativePrintHost();
+      nativePrintHost=document.createElement('div');
+      nativePrintHost.id='nativePrintHost';
+      nativePrintHost.append(makeNativePrintLeaf(source,'left'),makeNativePrintLeaf(source,'right'));
+      document.body.append(nativePrintHost);
+      const imgs=[...nativePrintHost.querySelectorAll('img')];
+      await Promise.all(imgs.map(img=>img.decode?img.decode():new Promise((resolve,reject)=>{
+        if(img.complete)return img.naturalWidth?resolve():reject(new Error('写真を読み込めません'));
+        img.onload=resolve;img.onerror=()=>reject(new Error('写真を読み込めません'));
+      })));
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      window.print();
+    }catch(error){console.error('native editor print',error);toast('印刷準備エラー：'+(error?.message||String(error)))}
+    finally{button.disabled=false}
   });
+  window.addEventListener('afterprint',removeNativePrintHost);
   $('#spread').addEventListener('pointerdown',e=>{if(e.target===$('#spread')){selectedEditId=null;selectedTextId=null;selectedStickerId=null;$$('.placedPhoto').forEach(x=>x.classList.remove('selected'));$$('.placedText').forEach(x=>x.classList.remove('selected'));$$('.placedSticker').forEach(x=>x.classList.remove('selected'));syncTextPanel();updateEditControls()}});
   $('#resetBtn').addEventListener('click',()=>{if(!confirm('土台版の設定・園児データを初期化しますか？'))return;localStorage.removeItem(STORE_KEY);indexedDB.deleteDatabase('omoide_book_assets');location.reload()});
 
