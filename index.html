@@ -2435,7 +2435,7 @@
         return {x:(r.left-bounds.left)*sx,y:(r.top-bounds.top)*sy,w:r.width*sx,h:r.height*sy};
       };
       const fillRect=(r,color)=>{
-        const m=String(color).match(/rgba?\\(([^)]+)\\)/);
+        const m=String(color).match(/rgba?\(([^)]+)\)/);
         if(!m)return;
         const vals=m[1].split(',').map(Number);if(vals[3]===0)return;
         ctx.fillStyle=color;ctx.fillRect(r.x,r.y,r.w,r.h);
