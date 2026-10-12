@@ -111,6 +111,19 @@
     .albumChildCover{position:absolute;left:50%;top:0;width:50%;height:100%;background:#ffe3ed;border:1px solid #eed0dc;display:flex;flex-direction:column;align-items:center;justify-content:space-around;text-align:center;padding:4% 3%;color:#8e536c}
     .albumChildCover strong{font-size:clamp(10px,3vw,23px)}.albumChildCover span{font-size:clamp(8px,2vw,14px)}.albumChildCover img{width:50%;height:43%;object-fit:contain}.albumChildCover b{font-size:clamp(10px,3vw,21px)}
     .albumSpecialPreview{position:absolute;top:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:#fff2f7;border:1px solid #efd5df;padding:12px;color:#735166}.albumSpecialPreview strong{font-size:clamp(12px,4vw,22px)}.albumSpecialPreview small{font-size:10px}    [data-screen="albumPreview"]{min-width:0;overflow-x:clip}#albumPreviewSpread{max-width:100%;touch-action:pan-y;contain:layout paint}.albumPreviewControls button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.albumPreviewControls #albumPreviewPosition{min-width:0;flex:1;text-align:center;font-size:12px;overflow-wrap:anywhere}
+    .albumPdfActions{display:grid;gap:6px;margin-top:14px}.albumPdfActions button{border:0;border-radius:15px;padding:14px;background:#f9dce9;color:#79546a;font-weight:800}.albumPdfActions button:disabled{opacity:.5}.albumPdfActions small{color:#766e73}
+    .albumPrintStage{display:none}
+    @media print{
+      @page{size:A4 portrait;margin:0}
+      html,body{margin:0!important;padding:0!important;background:white!important}
+      body>*:not(.albumPrintStage){display:none!important}
+      .albumPrintStage{display:block!important;position:static!important;margin:0!important;padding:0!important}
+      .albumPrintPage{width:210mm;height:297mm;overflow:hidden;position:relative;page-break-after:always;break-after:page;background:white}
+      .albumPrintSpread{width:420mm!important;height:297mm!important;max-width:none!important;min-width:420mm!important;position:absolute!important;left:0;top:0;border:0!important;border-radius:0!important;overflow:hidden!important}
+      .albumPrintPage.rightSide .albumPrintSpread{left:-210mm!important}
+      .albumPrintSpread .albumChildCover,.albumPrintSpread .growthAlbumPage,.albumPrintSpread .messageAlbumPage,.albumPrintSpread .backAlbumCover{container-type:inline-size}
+      .albumPrintPage:last-child{page-break-after:auto;break-after:auto}
+    }
     .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
     .albumPreviewEntry b,.albumPreviewEntry small{display:block}.albumPreviewEntry small{margin-top:6px;color:#766c70}
     .specialPageCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
@@ -1193,7 +1206,7 @@
  <div class="growthInputs"><div class="growthPeriod"><h3>4月・年度初め</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthStartPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthStartPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthStartScaleValue">100%</output><input id="growthStartScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthStartX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthStartY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthStartHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthStartWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div></div><div class="growthPeriod"><h3>3月・年度末</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthEndPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthEndPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthEndScaleValue">100%</output><input id="growthEndScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthEndX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthEndY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：92.3"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：14.1"></label></div></div></div>
  <p class="hint">園児ごとに保存します。未入力の項目や比較できない成長差は「—」で表示されます。</p></div>
 </section>
-    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
+    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDFは「A4印刷・PDF保存」から作成できます。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📄 この園児をA4印刷・PDF保存</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
       <div class="photoManageTop">
@@ -2035,6 +2048,44 @@
   }
   $('#albumPreviewChild').addEventListener('change',e=>{albumPreviewChildId=e.target.value;albumPreviewIndex=0;renderAlbumPreview()});
   $('#albumPreviewPrev').addEventListener('click',()=>turnAlbumPreview(-1));
+  async function printChildAlbum(){
+    const button=$('#albumPrintPdf'),status=$('#albumPrintStatus'),chosen=albumPreviewChildId;
+    if(!chosen){toast('園児を選択してください');return}
+    if(document.querySelector('.albumPrintStage'))return;
+    const originalIndex=albumPreviewIndex;
+    button.disabled=true;
+    const stage=document.createElement('div');stage.className='albumPrintStage';
+    document.body.append(stage);
+    try{
+      // Each preview is rendered by the same routine as the visible album.
+      // Copy the finalized DOM only after pending image loads have settled.
+      const maxIndex=14;
+      for(let index=0;index<=maxIndex;index++){
+        status.textContent='印刷ページを準備しています… '+(index+1)+'/15';
+        albumPreviewIndex=index;
+        await renderAlbumPreview();
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        const spread=$('#albumPreviewSpread').cloneNode(true);
+        spread.removeAttribute('id');spread.classList.add('albumPrintSpread');
+        // Cover occupies the right leaf, back cover the left leaf.
+        const sides=index===0?['right']:index===14?['left']:['left','right'];
+        for(const side of sides){
+          const sheet=document.createElement('div');
+          sheet.className='albumPrintPage '+(side==='right'?'rightSide':'leftSide');
+          sheet.append(spread.cloneNode(true));stage.append(sheet);
+        }
+      }
+      status.textContent='印刷画面で「PDFとして保存」を選んでください。';
+      window.print();
+    }catch(error){console.error('album print',error);toast('印刷ページを準備できませんでした');status.textContent='出力エラーが発生しました';}
+    finally{
+      stage.remove();
+      albumPreviewIndex=originalIndex;
+      await renderAlbumPreview();
+      button.disabled=false;
+    }
+  }
+  $('#albumPrintPdf').addEventListener('click',printChildAlbum);
   $('#albumPreviewNext').addEventListener('click',()=>turnAlbumPreview(1));
   $('#classAlbumPreviewOpen').addEventListener('click',()=>{albumPreviewIndex=0;show('albumPreview')});
   $('#albumPreviewBack').addEventListener('click',()=>show('classWorkspace'));
