@@ -3286,6 +3286,30 @@
       if(item&&edit&&!el.classList.contains('curved'))item.text=edit.innerText.replace(/\n$/,'');
     });
 const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,curve,zIndex})=>({id,text,x,y,width,height,font,size,color,curve:curve||0,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();checkpointPage(page);editingPage=state.pages.find(p=>p.id===pageId)||editingPage;albumPreviewToken++;show('photoManage');toast('見開きの配置を保存しました')});
+  // html2canvas does not consistently reproduce CSS clip-path on iOS Safari.
+  // Rasterize only clipped images as transparent PNGs at their final print position.
+  function printableClippedPhoto(img){
+    const clip=img.style.clipPath||getComputedStyle(img).clipPath;
+    if(!clip||clip==='none')return null;
+    const rect=img.getBoundingClientRect(),w=Math.max(1,Math.round(rect.width*3)),h=Math.max(1,Math.round(rect.height*3));
+    if(!img.naturalWidth||w>3600||h>3600)return null;
+    const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+    const ctx=canvas.getContext('2d');if(!ctx)return null;
+    const percentages=part=>(part.match(/-?\\d+(?:\\.\\d+)?/g)||[]).map(Number);
+    ctx.beginPath();
+    if(clip.startsWith('circle(')){
+      const [radius,cx,cy]=percentages(clip);ctx.arc(w*(cx||50)/100,h*(cy||50)/100,Math.min(w,h)*(radius||50)/100,0,Math.PI*2);
+    }else if(clip.startsWith('polygon(')){
+      const coords=percentages(clip);for(let i=0;i+1<coords.length;i+=2){const x=w*coords[i]/100,y=h*coords[i+1]/100;if(!i)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.closePath();
+    }else if(clip.startsWith('inset(')){
+      const [top,right,bottom,left]=percentages(clip);ctx.rect(w*(left||0)/100,h*(top||0)/100,w*(1-(left||0)/100-(right||0)/100),h*(1-(top||0)/100-(bottom||0)/100));
+    }else return null;
+    ctx.clip();
+    const iw=img.naturalWidth,ih=img.naturalHeight,fit=img.style.objectFit||'cover';
+    const scale=fit==='contain'?Math.min(w/iw,h/ih):Math.max(w/iw,h/ih);
+    ctx.drawImage(img,(w-iw*scale)/2,(h-ih*scale)/2,iw*scale,ih*scale);
+    const png=canvas.toDataURL('image/png');canvas.width=canvas.height=0;return png;
+  }
   // Export the actual editor spread. No album preview or second renderer is involved.
   $('#savePdfTrial').addEventListener('click',async()=>{
     const button=$('#savePdfTrial');
@@ -3306,6 +3330,12 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
         });
         if(!img.naturalWidth)throw new Error('写真・スタンプの読み込みに失敗しました');
       }));
+      const clippedSources=new Map();
+      for(const img of source.querySelectorAll('.placedPhoto img')){
+        const item=img.closest('[data-edit-item]');
+        const data=printableClippedPhoto(img);
+        if(item&&data)clippedSources.set(item.dataset.editItem,data);
+      }
       // Capture the rendered spread before Save navigates away from the editor.
       const bounds=source.getBoundingClientRect(),ratio=Math.min(4,Math.max(2,2100/bounds.width));
       capture=await window.html2canvas(source,{
@@ -3317,6 +3347,11 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
           spread.querySelectorAll('.selectionFrame,.cropGuide,.pageLabel,.resizeHandle,.trimHandle,.cropGuideHandle').forEach(el=>el.remove());
           spread.querySelectorAll('.selected,.crop-preview').forEach(el=>el.classList.remove('selected','crop-preview'));
           spread.querySelectorAll('.textEditable').forEach(el=>{el.setAttribute('contenteditable','false');el.style.outline='none'});
+          spread.querySelectorAll('.placedPhoto[data-edit-item]').forEach(box=>{
+            const png=clippedSources.get(box.dataset.editItem),img=box.querySelector('img');
+            if(!png||!img)return;
+            img.src=png;img.style.clipPath='none';img.style.objectFit='fill';
+          });
         }
       });
       if(capture.width<2||capture.height<2)throw new Error('見開き画像の作成に失敗しました');
