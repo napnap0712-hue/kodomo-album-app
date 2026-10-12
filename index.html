@@ -983,7 +983,7 @@
         <button class="adminTile adminTile-rose" type="button" data-go="photoAdmin" aria-label="写真管理"><img class="adminTileIcon" src="./assets/admin-icons/photos.jpg" alt="" loading="eager" decoding="async"><span class="adminTileBottom"><b>写真管理</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
         <button class="adminTile adminTile-green" type="button" data-go="classIcons" aria-label="クラスアイコン"><img class="adminTileIcon" src="./assets/admin-icons/class-icons.jpg" alt="" loading="eager" decoding="async"><span class="adminTileBottom"><b>クラスアイコン</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
         <button class="adminTile adminTile-purple" type="button" data-go="yearAdmin" aria-label="年度管理"><img class="adminTileIcon" src="./assets/admin-icons/year.jpg" alt="" loading="eager" decoding="async"><span class="adminTileBottom"><b>年度管理</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
-        <button class="adminTile adminTile-yellow" type="button" id="adminBackupComingSoon" aria-label="データ保存"><img class="adminTileIcon" src="./assets/admin-icons/backup.jpg" alt="" loading="eager" decoding="async"><span class="adminTileBottom"><b>データ保存</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
+        <button class="adminTile adminTile-yellow" type="button" data-go="backupAdmin" aria-label="データ保存"><img class="adminTileIcon" src="./assets/admin-icons/backup.jpg" alt="" loading="eager" decoding="async"><span class="adminTileBottom"><b>データ保存</b><span class="adminTileArrow" aria-hidden="true">›</span></span></button>
       </div>
     </section>
 
@@ -1068,6 +1068,15 @@
       </div>
     </section>
 
+    <section class="screen" data-screen="backupAdmin">
+      <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>データ保存・復元</h2></div>
+      <div class="yearOverview">
+        <div class="yearGuideCard"><h3>💾 バックアップを作成</h3><p>園児情報・顔写真・候補写真・アルバム編集データと、端末に保存されている画像素材をまとめてファイルに保存します。</p><button type="button" class="primary wide" id="backupExport">バックアップファイルを保存</button><p class="hint">端末の空き容量にご注意ください。バックアップには園児の写真が含まれるため、安全な場所に保管してください。外部サーバーには送信しません。</p></div>
+        <div class="yearGuideCard"><h3>📂 バックアップから復元</h3><p>復元すると現在のデータが置き換わります。現在のバックアップを作成してから復元してください。</p><label class="fileBtn">バックアップファイルを選択<input type="file" accept=".json,application/json" id="backupImport"></label><div class="hint" id="backupPreview">ファイルはまだ選択されていません</div><button type="button" class="danger wide" id="backupRestore" disabled>確認して復元する</button></div>
+        <p class="hint" id="backupStatus" role="status"></p>
+      </div>
+    </section>
+
     <section class="screen editor" data-screen="editor" aria-label="見開き編集画面">
       <div class="editorBar">
         <button class="editorIcon" id="closeEditor" type="button" aria-label="ホームへ戻る">‹</button>
@@ -1109,7 +1118,7 @@
 <script>
 (() => {
   // Backup and restore require a separate reviewed implementation.
-  document.getElementById('adminBackupComingSoon')?.addEventListener('click',()=>toast('データ保存は準備中です'));
+  
   const CLASSES = [
     {id:'tanpopo',name:'たんぽぽ組',age:'0歳'}, {id:'tulip',name:'ちゅうりっぷ組',age:'1歳'},
     {id:'cosmos',name:'コスモス組',age:'2歳'}, {id:'canna',name:'カンナ組',age:'3歳'},
@@ -1133,7 +1142,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='yearAdmin')renderYearAdmin(); if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='yearAdmin')renderYearAdmin(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1657,6 +1666,70 @@
   function applyLayout(kind){const n=editItems.length;if(!n)return;const leftCount=Math.ceil(n/2),leftItems=editItems.slice(0,leftCount),rightItems=editItems.slice(leftCount);let leftSlots,rightSlots,fit='cover';if(kind==='equal'){const appliedMode=equalLayoutMode;leftSlots=equalPageSlots(leftItems.length,pageBounds('left'),appliedMode);rightSlots=equalPageSlots(rightItems.length,pageBounds('right'),appliedMode);equalLayoutMode=appliedMode==='rect'?'square':'rect';const title=$('[data-layout="equal"] .layoutCardTitle');if(title)title.textContent=appliedMode==='rect'?'均等配置・長方形':'均等配置・正方形'}else{const variant=randomLayoutCycle++;leftSlots=comicPageSlots(leftItems.length,pageBounds('left'),variant);rightSlots=comicPageSlots(rightItems.length,pageBounds('right'),variant+1);fit='contain'}[[leftItems,leftSlots],[rightItems,rightSlots]].forEach(([items,slots])=>items.forEach((item,i)=>{const slot=slots[i];if(!slot)return;item.rotation=0;item.width=slot.w;item.height=slot.h;item.x=slot.x;item.y=slot.y;item.layoutFit=fit}));editItems.forEach((item,i)=>item.zIndex=i+1);recordEdit();renderSpread()}
   function setPanel(name){if(!name)name='photos';openPanel=name;$('#photoPanel').classList.toggle('open',name==='photos');$('#layoutPanel').classList.toggle('open',name==='layout');$('#cropPanel').classList.toggle('open',name==='crop');$('#bgRemovePanel').classList.toggle('open',name==='bgremove');$('#backgroundPanel').classList.toggle('open',name==='background');$('#textPanel').classList.toggle('open',name==='text');$('#stickerPanel').classList.toggle('open',name==='stickers');$$('.piconPanel').forEach(panel=>{const active=panel.classList.contains('open');if(active){panel.removeAttribute('inert');panel.inert=false}else{panel.setAttribute('inert','');panel.inert=true}});if(name==='text')syncTextPanel();if(name==='background')syncBackgroundPanel();$$('.piconTab').forEach(x=>x.classList.toggle('active',x.dataset.panel===name))}
 
+  // Local-only backup: preserve every entry from the IndexedDB image store, including shared assets.
+  let pendingBackup=null;
+  async function backupImages(){
+    const db=await openDB();
+    const entries=await new Promise((resolve,reject)=>{
+      const tx=db.transaction('images','readonly'),store=tx.objectStore('images'),out=[];
+      const req=store.openCursor();
+      req.onsuccess=()=>{const cursor=req.result;if(cursor){out.push([cursor.key,cursor.value]);cursor.continue();}};
+      req.onerror=()=>reject(req.error);
+      tx.oncomplete=()=>resolve(out);tx.onerror=()=>reject(tx.error);
+    });
+    const images=[];
+    for(const [key,value] of entries){
+      if(!(value instanceof Blob))throw new Error('画像データの形式が不正です: '+key);
+      const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(value);});
+      images.push({key:String(key),data});
+    }
+    return images;
+  }
+  $('#backupExport').addEventListener('click',async()=>{
+    const btn=$('#backupExport');btn.disabled=true;$('#backupStatus').textContent='バックアップを作成しています…';
+    try{
+      const data={format:'omoide-book-backup',version:1,createdAt:new Date().toISOString(),state:JSON.parse(localStorage.getItem(STORE_KEY)||'{}'),images:await backupImages()};
+      if(!data.state||!Array.isArray(data.state.children)||!Array.isArray(data.state.pages))throw new Error('アルバムデータを取得できません');
+      const blob=new Blob([JSON.stringify(data)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download='omoide-book-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+      $('#backupStatus').textContent='ファイルの保存を開始しました。端末の「ファイル」で保存結果を確認してください。';
+    }catch(e){console.error(e);$('#backupStatus').textContent='バックアップに失敗しました：'+e.message}finally{btn.disabled=false}
+  });
+  $('#backupImport').addEventListener('change',async e=>{
+    pendingBackup=null;$('#backupRestore').disabled=true;
+    const file=e.target.files?.[0];if(!file)return;
+    $('#backupPreview').textContent='ファイルを確認しています…';
+    try{
+      const data=JSON.parse(await file.text());
+      if(data.format!=='omoide-book-backup'||data.version!==1||!data.state||!Array.isArray(data.state.children)||!Array.isArray(data.state.pages)||!Array.isArray(data.images)||data.images.some(x=>typeof x.key!=='string'||!/^data:[^,]*;base64,/.test(x.data)))throw Error('対応していないバックアップ形式です');
+      pendingBackup=data;
+      $('#backupPreview').textContent='作成日：'+new Date(data.createdAt).toLocaleString('ja-JP')+' ／ 園児'+data.state.children.length+'名 ／ アルバム'+data.state.pages.length+'件 ／ 画像'+data.images.length+'件';
+      $('#backupRestore').disabled=false;
+    }catch(error){$('#backupPreview').textContent='読み込めません：'+error.message}
+  });
+  $('#backupRestore').addEventListener('click',async()=>{
+    const data=pendingBackup;if(!data)return;
+    if(!confirm('現在の園児・写真・アルバムのデータを復元ファイルの内容で置き換えます。現在のバックアップは保存済みですか？'))return;
+    if(!confirm('最終確認：現在のデータは上書きされます。復元を実行しますか？'))return;
+    const btn=$('#backupRestore');btn.disabled=true;$('#backupStatus').textContent='画像を復元しています。画面を閉じないでください…';
+    try{
+      const decoded=[];
+      for(const item of data.images){
+        const blob=await (await fetch(item.data)).blob();decoded.push([item.key,blob]);
+      }
+      const db=await openDB();
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction('images','readwrite'),store=tx.objectStore('images');
+        store.clear();
+        for(const [key,blob] of decoded)store.put(blob,key);
+        tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('画像保存が中断されました'));
+      });
+      localStorage.setItem(STORE_KEY,JSON.stringify(data.state));
+      $('#backupStatus').textContent='復元が完了しました。';
+      location.reload();
+    }catch(e){console.error(e);$('#backupStatus').textContent='復元に失敗しました：'+e.message;btn.disabled=false}
+  });
   function renderYearAdmin(){
     $('#yearLabel').textContent=state.year+'年度';
     const wrap=$('#yearPromotionList');wrap.replaceChildren();
