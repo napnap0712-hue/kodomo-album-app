@@ -208,6 +208,19 @@
     .growthDiff strong{color:#426782;font-size:clamp(13px,3.3vw,19px)}
     .growthDiffRow{display:flex;align-items:center;justify-content:space-around;gap:6px}
     .growthInputs{display:grid;gap:10px}
+    .growthFaces{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;width:100%}
+    .growthFace{aspect-ratio:1;width:min(100%,125px);margin:auto;overflow:hidden;background:#eef1f5;border:1px solid #dce5ef;border-radius:9px;position:relative}
+    .growthFace img{width:100%;height:100%;object-fit:cover;display:block}
+    .growthFace span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#789;font-size:11px}
+    .growthFaceControls{display:grid;gap:8px}
+    .growthFaceActions{display:flex;flex-wrap:wrap;gap:8px}
+    .growthFaceActions .fileBtn{font-size:13px;padding:9px;border-radius:10px}
+    .growthFaceActions button{min-height:38px;border:1px solid #ddd;border-radius:10px;background:white;padding:8px 12px}
+    .growthFaceControls label:not(.fileBtn){display:grid;gap:2px;font-size:12px}
+    .growthFaceControls input[type=range]{width:100%;accent-color:#799cbb}
+    .growthFaceSmall{width:42%;max-width:110px;aspect-ratio:1;overflow:hidden;background:#e8eef3;border-radius:6px;flex-shrink:0}
+    .growthFaceSmall img{width:100%;height:100%;object-fit:cover;display:block}
+    .growthAlbumFaces{display:flex;justify-content:center;gap:6px;width:100%}
     .growthEntryGrid label{display:grid;gap:7px;font-size:14px;font-weight:800}
     .growthEntryGrid input{width:100%;min-width:0;box-sizing:border-box;height:47px;padding:10px;border:1px solid #d7dfeb;border-radius:12px;background:white;font-size:16px}
     .yearOverview{display:grid;gap:14px}
@@ -1117,8 +1130,8 @@
 <section class="screen" data-screen="growthEdit">
  <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>身長・体重</h2><button type="button" id="growthSave" class="coverSaveTop">保存</button></div>
  <div class="yearGuideCard growthEditor"><label class="albumChildChooser">編集する園児<select id="growthChild"></select></label>
- <div class="growthPagePreview"><div class="growthPageInner"><h3>せいちょうのきろく</h3><div id="growthPreviewName"></div><div class="growthPreviewMeasures"><div><b>4月・年度初め</b><strong id="growthPreviewStartHeight">— cm</strong><strong id="growthPreviewStartWeight">— kg</strong></div><div><b>3月・年度末</b><strong id="growthPreviewEndHeight">— cm</strong><strong id="growthPreviewEndWeight">— kg</strong></div></div><div class="growthDiff"><span>こんなに大きくなりました</span><div class="growthDiffRow"><strong id="growthPreviewHeightDiff">身長 —</strong><strong id="growthPreviewWeightDiff">体重 —</strong></div></div></div></div>
- <div class="growthInputs"><div class="growthPeriod"><h3>4月・年度初め</h3><div class="growthEntryGrid"><label>身長（cm）<input id="growthStartHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthStartWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div></div><div class="growthPeriod"><h3>3月・年度末</h3><div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：92.3"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：14.1"></label></div></div></div>
+ <div class="growthPagePreview"><div class="growthPageInner"><h3>せいちょうのきろく</h3><div id="growthPreviewName"></div><div class="growthFaces"><div class="growthFace" id="growthStartFace"><span>4月の写真</span></div><div class="growthFace" id="growthEndFace"><span>3月の写真</span></div></div><div class="growthPreviewMeasures"><div><b>4月・年度初め</b><strong id="growthPreviewStartHeight">— cm</strong><strong id="growthPreviewStartWeight">— kg</strong></div><div><b>3月・年度末</b><strong id="growthPreviewEndHeight">— cm</strong><strong id="growthPreviewEndWeight">— kg</strong></div></div><div class="growthDiff"><span>こんなに大きくなりました</span><div class="growthDiffRow"><strong id="growthPreviewHeightDiff">身長 —</strong><strong id="growthPreviewWeightDiff">体重 —</strong></div></div></div></div>
+ <div class="growthInputs"><div class="growthPeriod"><h3>4月・年度初め</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthStartPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthStartPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthStartScaleValue">100%</output><input id="growthStartScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthStartX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthStartY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthStartHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthStartWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div></div><div class="growthPeriod"><h3>3月・年度末</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthEndPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthEndPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthEndScaleValue">100%</output><input id="growthEndScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthEndX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthEndY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：92.3"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：14.1"></label></div></div></div>
  <p class="hint">園児ごとに保存します。未入力の項目や比較できない成長差は「—」で表示されます。</p></div>
 </section>
     <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
@@ -1651,7 +1664,49 @@
   $('#backPhotoInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){toast('画像を選択してください');return}backPhotoDraft=file;backPhotoRemoved=false;updateBackCoverEditor();e.target.value=''});
   $('#backPhotoRemove').addEventListener('click',()=>{backPhotoDraft=null;backPhotoRemoved=true;updateBackCoverEditor()});
   $('#backCoverSave').addEventListener('click',async()=>{try{if(backPhotoRemoved)await deleteImage(backKey());else if(backPhotoDraft)await putImage(backKey(),backPhotoDraft);state.backCoverStyles={...(state.backCoverStyles||{}),[state.year+':'+state.selectedClassId]:{...backDraft}};saveState();toast('裏表紙を保存しました');show('classWorkspace')}catch(e){console.error(e);toast('裏表紙を保存できませんでした')}});
-  let growthChildId=null;
+  let growthChildId=null,growthFaceToken=0;
+  function growthPhotoKey(period,id){return 'growthFace:'+state.year+':'+state.selectedClassId+':'+id+':'+period}
+  function growthPhotoConfig(period,id){return growthEntry(id).faces?.[period]||{scale:100,x:50,y:50}}
+  function growthPhotoStyle(img,cfg){img.style.objectPosition=(cfg.x??50)+'% '+(cfg.y??50)+'%';img.style.transform='scale('+((cfg.scale??100)/100)+')';img.style.transformOrigin='center'}
+  async function renderGrowthFaces(){
+    const token=++growthFaceToken,id=growthChildId;
+    for(const period of ['Start','End']){
+      const box=$('#growth'+period+'Face');box.replaceChildren();
+      if(!id){box.textContent='園児を選択';continue}
+      const cfg=growthPhotoConfig(period,id);
+      for(const key of ['Scale','X','Y'])$('#growth'+period+key).value=cfg[key.toLowerCase()]??(key==='Scale'?100:50);
+      $('#growth'+period+'ScaleValue').textContent=(cfg.scale??100)+'%';
+      try{
+        const file=await getImage(growthPhotoKey(period,id));
+        if(token!==growthFaceToken)return;
+        if(file){const img=document.createElement('img');img.alt=(period==='Start'?'4月':'3月')+'の顔写真';img.src=fileUrl(file);growthPhotoStyle(img,cfg);box.append(img)}
+        else{const msg=document.createElement('span');msg.textContent=(period==='Start'?'4月':'3月')+'の写真';box.append(msg)}
+      }catch(e){console.error(e);if(token===growthFaceToken)box.textContent='写真を読み込めません'}
+    }
+  }
+  async function changeGrowthPhoto(period,file,remove=false){
+    if(!growthChildId)return;
+    const id=growthChildId,key=growthPhotoKey(period,id);
+    try{
+      if(remove)await deleteImage(key);
+      else if(file&&file.type.startsWith('image/'))await putImage(key,file);
+      else{toast('画像を選択してください');return}
+      if(growthChildId===id){await renderGrowthFaces();toast(remove?'写真を削除しました':'写真を保存しました')}
+    }catch(e){console.error(e);toast('写真を保存できませんでした')}
+  }
+  for(const period of ['Start','End']){
+    $('#growth'+period+'PhotoInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(file)changeGrowthPhoto(period,file);e.target.value=''});
+    $('#growth'+period+'PhotoRemove').addEventListener('click',()=>changeGrowthPhoto(period,null,true));
+    for(const prop of ['Scale','X','Y'])$('#growth'+period+prop).addEventListener('input',e=>{
+      if(!growthChildId)return;
+      const key=growthDataKey(growthChildId),cfg={...growthPhotoConfig(period,growthChildId),[prop.toLowerCase()]:Number(e.target.value)};
+      const entry=growthEntry(growthChildId);
+      state.growthRecords={...(state.growthRecords||{}),[key]:{...entry,faces:{...(entry.faces||{}),[period]:cfg}}};
+      saveState();
+      const img=$('#growth'+period+'Face img');if(img)growthPhotoStyle(img,cfg);
+      if(prop==='Scale')$('#growth'+period+'ScaleValue').textContent=cfg.scale+'%';
+    });
+  }
   function growthDataKey(id){return state.year+':'+state.selectedClassId+':'+id}
   function growthEntry(id){return state.growthRecords?.[growthDataKey(id)]||{}}
   function growthChildren(){return state.children.filter(x=>x.classId===state.selectedClassId)}
@@ -1669,6 +1724,7 @@
     $('#growthWeight').value=entry.endWeight??entry.weight??'';
     $('#growthPreviewName').textContent=child?child.name.replace(/\\s*さん$/,'')+' さん':'園児を登録してください';
     updateGrowthPreview();
+    renderGrowthFaces();
     $('#growthSave').disabled=!child;
   }
   function growthDifference(start,end,unit){
@@ -1731,7 +1787,15 @@
         const ending=document.createElement('small');ending.textContent='3月　身長 '+(record.endHeight??record.height??'—')+' cm ／ 体重 '+(record.endWeight??record.weight??'—')+' kg';
         const height=document.createElement('b');height.textContent='身長 '+growthDifference(record.startHeight,record.endHeight??record.height,'cm');
         const weight=document.createElement('b');weight.textContent='体重 '+growthDifference(record.startWeight,record.endWeight??record.weight,'kg');
-        growth.append(growthTitle,beginning,ending,height,weight);spread.append(growth);
+        const photos=document.createElement('div');photos.className='growthAlbumFaces';
+        for(const period of ['Start','End']){
+          const frame=document.createElement('div');frame.className='growthFaceSmall';
+          const file=await getImage('growthFace:'+state.year+':'+c.id+':'+albumPreviewChildId+':'+period).catch(()=>null);
+          if(token!==albumPreviewToken)return;
+          if(file){const img=document.createElement('img');img.src=fileUrl(file);img.alt=(period==='Start'?'4月':'3月')+'の顔写真';growthPhotoStyle(img,record.faces?.[period]||{});frame.append(img)}
+          photos.append(frame);
+        }
+        growth.append(growthTitle,photos,beginning,ending,height,weight);spread.append(growth);
         special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
       }else if(entry.kind==='cover'){
         const cover=document.createElement('div');cover.className='albumChildCover';spread.append(cover);
