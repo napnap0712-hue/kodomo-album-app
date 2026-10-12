@@ -1051,7 +1051,7 @@
     <section class="screen" data-screen="coverEdit">
       <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>表紙編集</h2><button type="button" id="coverSave" class="coverSaveTop">保存</button></div>
       <div class="coverEditorSheet">
-        <div id="coverEditorCanvas" class="coverEditorCanvas"><div class="coverWhitePanel"><img class="coverTitleArtwork" src="./assets/cover-title.png" alt="おもいでブック" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><b class="coverTitleFallback" hidden>おもいでブック</b><img id="coverEditorIcon" alt="クラスアイコン"><strong id="coverEditorName">園児の名前</strong></div></div>
+        <div id="coverEditorCanvas" class="coverEditorCanvas"><div class="coverWhitePanel"><img class="coverTitleArtwork" src="./assets/cover-title.PNG" alt="おもいでブック" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><b class="coverTitleFallback" hidden>おもいでブック</b><img id="coverEditorIcon" alt="クラスアイコン"><strong id="coverEditorName">園児の名前</strong></div></div>
         <div class="yearGuideCard coverBackgroundCard"><h3>🎨 背景選択</h3>
           <div class="typeChoices"><label class="typeChoice"><input type="radio" name="coverBgMode" value="solid" checked><span>単色</span></label><label class="typeChoice"><input type="radio" name="coverBgMode" value="image"><span>背景画像</span></label></div>
           <div id="coverColorControls"><div id="coverColors" class="coverColorSwatches"></div><div class="coverOpacityLabel">色の薄さ <output id="coverOpacityNumber">100%</output></div><div class="coverOpacityAdjust"><button type="button" id="coverOpacityMinus" aria-label="色を薄くする">－</button><input type="range" id="coverOpacity" min="5" max="100" step="5" value="100"><button type="button" id="coverOpacityPlus" aria-label="色を濃くする">＋</button></div></div>
@@ -1475,7 +1475,7 @@
   let coverDraft=null,coverPreviewFile=null,coverRenderToken=0;
   const coverPalette=['#ffffff','#ffd5e5','#ffc9af','#fff2a9','#cff3d4','#c9eafa','#ddcefa','#ef9bbb','#86c8f1','#f4b8c7','#90cfac','#f4ddb3','#e5e5e5','#444444'];
   const coverPatterns=[{id:'stars',name:'星（A）'},{id:'dots',name:'ドット（B）'},{id:'flowers',name:'お花（C）'},{id:'sakura',name:'さくら（D）'},{id:'bears',name:'くま（E）'}];
-  const coverPatternFiles={stars:'./assets/cover-stars.png',dots:'./assets/cover-dots.png',flowers:'./assets/cover-flowers.png',sakura:'./assets/cover-sakura.png',bears:'./assets/cover-bears.png'};
+  const coverPatternFiles={stars:'./assets/cover-stars.PNG',dots:'./assets/cover-dots.PNG',flowers:'./assets/cover-flowers.PNG',sakura:'./assets/cover-sakura.PNG',bears:'./assets/cover-bears.PNG'};
   function useCoverPatternCss(el,id,blob){
     const url=blob?fileUrl(blob):(coverPatternFiles[id]||coverPatternFiles.dots);
     el.style.backgroundImage='url("'+url+'")';el.style.backgroundSize='cover';
@@ -1578,7 +1578,7 @@
         special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
       }else if(entry.kind==='cover'){
         const cover=document.createElement('div');cover.className='albumChildCover';spread.append(cover);
-        const heading=document.createElement('img');heading.src='./assets/cover-title.png';heading.alt='おもいでブック';heading.className='coverTitleArtwork';heading.onerror=()=>{heading.replaceWith(Object.assign(document.createElement('strong'),{textContent:'おもいでブック'}))};
+        const heading=document.createElement('img');heading.src='./assets/cover-title.PNG';heading.alt='おもいでブック';heading.className='coverTitleArtwork';heading.onerror=()=>{heading.replaceWith(Object.assign(document.createElement('strong'),{textContent:'おもいでブック'}))};
         const year=document.createElement('span');year.textContent=state.year+'年度・'+c.name;
         const icon=document.createElement('img');icon.alt=c.name+'のアイコン';icon.src='./'+({tanpopo:'tanpopo',tulip:'tulip',cosmos:'cosmos',canna:'canna',deigo:'deigo',sakura:'sakura'}[c.id]||c.id)+'.png';
         const child=children.find(x=>x.id===albumPreviewChildId);
