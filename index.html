@@ -3461,31 +3461,17 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
         button.textContent='PDF機能を準備中…';
         await bounded(ensureAlbumPdfLibraries(false),15000,'PDF機能の読込');
       }
-      // A detached/hidden element cannot be reliably captured by html2canvas on iOS.
-      // Render in an on-document offscreen stage at full opacity instead.
-      stage=document.createElement('div');
-      stage.style.cssText='position:fixed;left:0;top:0;width:210mm;background:white;pointer-events:none;overflow:visible;z-index:-1;opacity:1';
-      const sides=['left','right'];
+      // Draw individual elements into jsPDF; do not rasterize the full page.
+      const sourceWidth=source.getBoundingClientRect().width;
       const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
-      document.body.append(stage);
-      button.textContent='文字を準備中…';
-      if(document.fonts?.ready)await bounded(document.fonts.ready,4000,'フォントの読込');
-      for(let i=0;i<sides.length;i++){
-        stage.replaceChildren();
-        const leaf=makeNativePrintLeaf(source,sides[i]);
-        leaf.style.cssText='position:relative;display:block;width:209.8mm;height:296.7mm;overflow:hidden;margin:0;padding:0;contain:layout paint';
-        stage.append(leaf);
-        button.textContent=(i+1)+'/2 ページの画像を準備中…';
-        // Some iOS Safari image decodes never settle for cloned/offscreen nodes.
-        // html2canvas handles image loading itself; avoid blocking on decode().
-        await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
-        button.textContent=(i+1)+'/2 ページをPDF化中…';
-        const canvas=await bounded(window.html2canvas(leaf,{scale:1,backgroundColor:'#fff',useCORS:true,logging:false,imageTimeout:7000,scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,820),onclone:doc=>{const el=doc.querySelector('.nativePrintLeaf');if(el)el.style.contain='none'}}),14000,'ページの画像化');
-        try{
-          if(!canvas.width||!canvas.height)throw new Error('画像化に失敗しました');
-          if(i)pdf.addPage('a4','portrait');
-          pdf.addImage(canvas.toDataURL('image/jpeg',0.94),'JPEG',0,0,210,297,undefined,'FAST');
-        }finally{canvas.width=canvas.height=0}
+      for(let i=0;i<2;i++){
+        button.textContent=(i+1)+'/2 ページを描画中…';
+        if(i)pdf.addPage('a4','portrait');
+        const side=i?'right':'left';
+        const leaf=makeNativePrintLeaf(source,side);
+        // The existing direct-draw helper operates on measured DOM rectangles.
+        // Use a hidden, layout-participating host and draw each photo separately.
+        await bounded(albumPdfDrawLeaf(pdf,leaf,i+1),18000,'PDFへの直接描画');
       }
       const blob=pdf.output('blob');
       if(blob.size<1000)throw new Error('PDFファイルの生成に失敗しました');
