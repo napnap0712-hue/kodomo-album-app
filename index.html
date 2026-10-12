@@ -2310,9 +2310,13 @@
           if(clip&&clip!=='none'){
             const mask=document.createElement('canvas');mask.width=cw;mask.height=ch;
             const mc=mask.getContext('2d');mc.save();
-            if(clip.startsWith('circle(')||clip.startsWith('ellipse(')){
-              mc.beginPath();mc.ellipse(cw/2,ch/2,cw/2,ch/2,0,0,Math.PI*2);mc.clip();
-            }
+            const shape=clip.trim();
+            const radius=shape.match(/^circle\(\s*([0-9.]+)%/);
+            const ellipse=shape.match(/^ellipse\(\s*([0-9.]+)%\s+([0-9.]+)%/);
+            const polygon=shape.match(/^polygon\((.*)\)$/);
+            if(radius){mc.beginPath();mc.arc(cw/2,ch/2,Math.min(cw,ch)*Number(radius[1])/100,0,Math.PI*2);mc.clip()}
+            else if(ellipse){mc.beginPath();mc.ellipse(cw/2,ch/2,cw*Number(ellipse[1])/100,ch*Number(ellipse[2])/100,0,0,Math.PI*2);mc.clip()}
+            else if(polygon){const pts=polygon[1].split(',').map(p=>p.trim().split(/\s+/).map(v=>parseFloat(v)/100));if(pts.length>=3&&pts.every(p=>p.length===2&&p.every(Number.isFinite))){mc.beginPath();pts.forEach((p,i)=>i?mc.lineTo(p[0]*cw,p[1]*ch):mc.moveTo(p[0]*cw,p[1]*ch));mc.closePath();mc.clip()}}
             mc.drawImage(crop,0,0);mc.restore();
             pdf.addImage(mask.toDataURL('image/png'),'PNG',x,y,w,h,undefined,'FAST');
             mask.width=mask.height=0;
