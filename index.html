@@ -3441,7 +3441,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       }
       if(original.classList.contains('pageBgFrame')){
         const frame=document.createElement('div');
-        frame.style.cssText='position:absolute;left:-4mm;top:-4mm;width:calc(100% + 8mm);height:calc(100% + 8mm);z-index:0;background-repeat:no-repeat;background-size:calc(200% - 8mm) 100%;background-position:'+(side==='right'?'right':'left')+' center;';
+        frame.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;z-index:0;background-repeat:no-repeat;background-size:200% 100%;background-position:'+(side==='right'?'right':'left')+' center;';
         frame.style.backgroundImage=original.style.backgroundImage;
         spread.append(frame);
         // The editor frame uses an inset white panel over the decorations.
