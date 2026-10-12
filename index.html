@@ -178,7 +178,7 @@
     #albumPreviewSpread .backAlbumCover{left:0;top:0;width:50%;height:100%;box-sizing:border-box;padding:3%;display:flex;align-items:center;justify-content:center;background-position:center;background-size:cover}
     #albumPreviewSpread .backAlbumCover>.coverWhitePanel{width:100%;height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:8%;border:0;border-radius:7%;overflow:hidden;background:white}
     #albumPreviewSpread .backAlbumCover .backCoverPhotoFrame{width:100%;height:auto;aspect-ratio:4/3;flex:none;position:relative;border-radius:8px;overflow:hidden;background:#f8f7f8;display:flex;align-items:center;justify-content:center}
-    #albumPreviewSpread .backAlbumCover .backCoverPhotoFrame>img{width:100%;height:100%;object-fit:cover;display:block}
+    #albumPreviewSpread .backAlbumCover .backCoverPhotoFrame>img{width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;display:block;flex:none}
     #albumPreviewSpread .backAlbumCover .backCoverPhotoFrame>span{font-size:11px}
     .backCoverPhotoFrame>img{width:100%;height:100%;object-fit:cover;display:block}
     .backCoverPhotoFrame>img[hidden]{display:none}
@@ -2004,7 +2004,7 @@
         const white=document.createElement('div');white.className='coverWhitePanel';white.style.cssText='width:100%;height:100%;box-sizing:border-box;background:white;border:0;border-radius:7%;display:flex;justify-content:center;align-items:center;padding:8%';
         const frame=document.createElement('div');frame.className='backCoverPhotoFrame';white.append(frame);back.append(white);
         const photo=await getImage('backCoverPhoto:'+state.year+':'+c.id);
-        if(token===albumPreviewToken){if(photo){const img=document.createElement('img');img.src=fileUrl(photo);backPhotoStyle(img,cfg);frame.append(img)}else{const label=document.createElement('span');label.textContent='集合写真 未設定';frame.append(label)}}
+        if(token===albumPreviewToken){if(photo){const img=document.createElement('img');img.src=fileUrl(photo);img.style.width='100%';img.style.height='100%';img.style.maxWidth='none';img.style.maxHeight='none';img.style.objectFit='cover';img.style.display='block';img.style.flex='none';backPhotoStyle(img,cfg);frame.append(img)}else{const label=document.createElement('span');label.textContent='集合写真 未設定';frame.append(label)}}
       }else{
         special(entry.name,'left','この見開きはまだ作成されていません');
         special(entry.name,'right','ページ作成後に写真を表示します');
