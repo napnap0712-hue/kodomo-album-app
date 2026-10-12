@@ -159,6 +159,8 @@
     /* Keep the white cover inset inside the A4 preview, including its padding. */
     [data-screen="coverEdit"] .coverEditorCanvas{width:min(78%,350px);max-height:none;aspect-ratio:4/5;padding:6%;display:flex;align-items:center;justify-content:center}
     [data-screen="coverEdit"] .coverWhitePanel{box-sizing:border-box;flex:0 0 100%;width:100%;height:100%;min-height:0;min-width:0;padding:9% 7%;gap:8px;border:0;border-radius:22px;overflow:hidden}
+    .coverWhitePanel .coverTitleArtwork{display:block;width:90%;max-width:100%;height:auto;max-height:18%;flex:0 0 auto;object-fit:contain;align-self:center}
+    .albumChildCover .coverTitleArtwork{width:90%;height:auto;max-height:17%;object-fit:contain;flex:0 0 auto}
     [data-screen="coverEdit"] .coverWhitePanel b,[data-screen="coverEdit"] .coverWhitePanel strong{flex:0 0 auto;line-height:1.35}
     [data-screen="coverEdit"] .coverWhitePanel img{width:76%;height:auto;max-height:55%;min-height:0;flex:1 1 auto;object-fit:contain}
     [data-screen="coverEdit"] .coverBackgroundCard h3{margin:0 0 12px;font-size:17px}
@@ -1049,7 +1051,7 @@
     <section class="screen" data-screen="coverEdit">
       <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>表紙編集</h2><button type="button" id="coverSave" class="coverSaveTop">保存</button></div>
       <div class="coverEditorSheet">
-        <div id="coverEditorCanvas" class="coverEditorCanvas"><div class="coverWhitePanel"><b id="coverEditorHeading">おもいでブック</b><img id="coverEditorIcon" alt="クラスアイコン"><strong id="coverEditorName">園児の名前</strong></div></div>
+        <div id="coverEditorCanvas" class="coverEditorCanvas"><div class="coverWhitePanel"><img class="coverTitleArtwork" src="./assets/cover-title.png" alt="おもいでブック" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><b class="coverTitleFallback" hidden>おもいでブック</b><img id="coverEditorIcon" alt="クラスアイコン"><strong id="coverEditorName">園児の名前</strong></div></div>
         <div class="yearGuideCard coverBackgroundCard"><h3>🎨 背景選択</h3>
           <div class="typeChoices"><label class="typeChoice"><input type="radio" name="coverBgMode" value="solid" checked><span>単色</span></label><label class="typeChoice"><input type="radio" name="coverBgMode" value="image"><span>背景画像</span></label></div>
           <div id="coverColorControls"><div id="coverColors" class="coverColorSwatches"></div><div class="coverOpacityLabel">色の薄さ <output id="coverOpacityNumber">100%</output></div><div class="coverOpacityAdjust"><button type="button" id="coverOpacityMinus" aria-label="色を薄くする">－</button><input type="range" id="coverOpacity" min="5" max="100" step="5" value="100"><button type="button" id="coverOpacityPlus" aria-label="色を濃くする">＋</button></div></div>
@@ -1473,6 +1475,12 @@
   let coverDraft=null,coverPreviewFile=null,coverRenderToken=0;
   const coverPalette=['#ffffff','#ffd5e5','#ffc9af','#fff2a9','#cff3d4','#c9eafa','#ddcefa','#ef9bbb','#86c8f1','#f4b8c7','#90cfac','#f4ddb3','#e5e5e5','#444444'];
   const coverPatterns=[{id:'stars',name:'星（A）'},{id:'dots',name:'ドット（B）'},{id:'flowers',name:'お花（C）'},{id:'sakura',name:'さくら（D）'},{id:'bears',name:'くま（E）'}];
+  const coverPatternFiles={stars:'./assets/cover-stars.png',dots:'./assets/cover-dots.png',flowers:'./assets/cover-flowers.png',sakura:'./assets/cover-sakura.png',bears:'./assets/cover-bears.png'};
+  function useCoverPatternCss(el,id,blob){
+    const url=blob?fileUrl(blob):(coverPatternFiles[id]||coverPatternFiles.dots);
+    el.style.backgroundImage='url("'+url+'")';el.style.backgroundSize='cover';
+    if(!blob){const test=new Image();test.onerror=()=>{if(el.style.backgroundImage.includes(url)){el.style.backgroundImage=coverPatternFallback(id);el.style.backgroundSize='31px 31px'}};test.src=url}
+  }
   const coverFonts=[{id:'Kosugi Maru',name:'小杉丸'},{id:'HaniHani',name:'ぷっくり丸文字'},{id:'Futehodo',name:'やさしい手書き'},{id:'DokiDoki',name:'しっかりゴシック'}];
   function coverSettings(){return state.coverStyles?.[state.selectedClassId]||{mode:'solid',color:'#ffd5e5',opacity:100,font:'Kosugi Maru',pattern:'dots'}}
   function coverPatternFallback(id){
@@ -1493,8 +1501,7 @@
     if(settings.mode==='image'){
       const blob=previewFile||await coverImageForPattern(settings.pattern||'dots');
       if(token!==coverRenderToken)return;
-      if(blob)canvas.style.backgroundImage='url("'+fileUrl(blob)+'")';
-      else{canvas.style.backgroundImage=coverPatternFallback(settings.pattern||'dots');canvas.style.backgroundSize='31px 31px'}
+      useCoverPatternCss(canvas,settings.pattern||'dots',blob);
     }
     panel.style.fontFamily='"'+(settings.font||'Kosugi Maru')+'","Hiragino Maru Gothic ProN",sans-serif';
     const clsId=state.selectedClassId;icon.src='./'+clsId+'.png';
@@ -1505,8 +1512,7 @@
     const wrap=$('#coverPatternChoices');wrap.replaceChildren();
     for(const item of coverPatterns){
       const btn=document.createElement('button');btn.type='button';btn.className='coverPatternOption'+(item.id===(coverDraft.pattern||'dots')?' active':'');
-      const thumb=document.createElement('span');thumb.className='coverPatternThumb';thumb.style.backgroundImage=coverPatternFallback(item.id);
-      thumb.style.backgroundSize='30px 30px';
+      const thumb=document.createElement('span');thumb.className='coverPatternThumb';useCoverPatternCss(thumb,item.id,null);
       try{const file=await getImage('coverPattern:'+item.id);if(file){thumb.style.backgroundImage='url("'+fileUrl(file)+'")';thumb.style.backgroundSize='cover'}}catch(e){console.warn(e)}
       const caption=document.createElement('small');caption.textContent=item.name;btn.append(thumb,caption);
       btn.onclick=()=>{coverDraft.pattern=item.id;coverPreviewFile=null;updateCoverEditor()};
@@ -1572,7 +1578,7 @@
         special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
       }else if(entry.kind==='cover'){
         const cover=document.createElement('div');cover.className='albumChildCover';spread.append(cover);
-        const heading=document.createElement('strong');heading.textContent='おもいでブック';
+        const heading=document.createElement('img');heading.src='./assets/cover-title.png';heading.alt='おもいでブック';heading.className='coverTitleArtwork';heading.onerror=()=>{heading.replaceWith(Object.assign(document.createElement('strong'),{textContent:'おもいでブック'}))};
         const year=document.createElement('span');year.textContent=state.year+'年度・'+c.name;
         const icon=document.createElement('img');icon.alt=c.name+'のアイコン';icon.src='./'+({tanpopo:'tanpopo',tulip:'tulip',cosmos:'cosmos',canna:'canna',deigo:'deigo',sakura:'sakura'}[c.id]||c.id)+'.png';
         const child=children.find(x=>x.id===albumPreviewChildId);
@@ -1584,7 +1590,7 @@
         cover.style.backgroundSize='cover';cover.style.backgroundPosition='center';
         white.style.fontFamily='"'+(settings.font||'Kosugi Maru')+'",sans-serif';
         try{
-          if(settings.mode==='image'){const bg=await coverImageForPattern(settings.pattern||'dots',c.id);if(token===albumPreviewToken){if(bg)cover.style.backgroundImage='url("'+fileUrl(bg)+'")';else{cover.style.backgroundImage=coverPatternFallback(settings.pattern||'dots');cover.style.backgroundSize='31px 31px'}}}
+          if(settings.mode==='image'){const bg=await coverImageForPattern(settings.pattern||'dots',c.id);if(token===albumPreviewToken){useCoverPatternCss(cover,settings.pattern||'dots',bg)}}
           const blob=await getImage('classIcon:'+c.id);if(token===albumPreviewToken&&blob)icon.src=fileUrl(blob)
         }catch(e){console.warn('表紙素材の読込失敗',e)}
       }else if(entry.kind==='back'){
