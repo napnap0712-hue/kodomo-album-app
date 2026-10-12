@@ -2428,23 +2428,37 @@
     ])));
   }
   function drawPdfPreviewText(ctx,el,r,sx,sy,spreadBounds){
-    const cs=getComputedStyle(el);
+    const cs=getComputedStyle(el),fontPx=parseFloat(cs.fontSize)||12;
     ctx.fillStyle=cs.color||'#333';
     ctx.textAlign='left';ctx.textBaseline='alphabetic';
-    const fontPx=parseFloat(cs.fontSize)||12;
-    ctx.font=(cs.fontStyle||'normal')+' '+(cs.fontWeight||'400')+' '+(fontPx*sy)+'px '+(cs.fontFamily||'sans-serif');
+    ctx.font=(cs.fontStyle||'normal')+' '+(cs.fontVariant||'normal')+' '+(cs.fontWeight||'400')+' '+(fontPx*sy)+'px '+(cs.fontFamily||'sans-serif');
+    // Position complete browser-wrapped lines: drawing glyphs individually loses kerning,
+    // ligatures and the original font's letter spacing.
     const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
     while(walker.nextNode()){
-      const node=walker.currentNode,value=node.textContent||'',range=document.createRange();
+      const node=walker.currentNode,value=node.textContent||'';
+      const range=document.createRange(),lines=[];
+      let previous=null;
       for(let i=0;i<value.length;i++){
-        const ch=value[i];
-        if(ch==='\n'||ch==='\r')continue;
+        if(value[i]==='\r'||value[i]==='\n')continue;
         range.setStart(node,i);range.setEnd(node,i+1);
-        const glyph=range.getBoundingClientRect();
-        if(!glyph.width||!glyph.height)continue;
-        const x=(glyph.left-spreadBounds.left)*sx;
-        const y=(glyph.top-spreadBounds.top)*sy;
-        ctx.fillText(ch,x,y+(fontPx*sy)*0.86);
+        const rect=range.getBoundingClientRect();
+        if(!rect.width||!rect.height)continue;
+        if(!previous||Math.abs(previous.top-rect.top)>1.5){
+          previous={top:rect.top,left:rect.left,chars:[]};lines.push(previous);
+        }
+        previous.chars.push(value[i]);
+      }
+      for(const line of lines){
+        const x=(line.left-spreadBounds.left)*sx;
+        const y=(line.top-spreadBounds.top)*sy;
+        const spacing=parseFloat(cs.letterSpacing);
+        if(Number.isFinite(spacing)&&spacing!==0){
+          let dx=x;
+          for(const character of line.chars){ctx.fillText(character,dx,y+fontPx*sy*.86);dx+=ctx.measureText(character).width+spacing*sx}
+        }else{
+          ctx.fillText(line.chars.join(''),x,y+fontPx*sy*.86);
+        }
       }
       range.detach?.();
     }
@@ -2470,11 +2484,17 @@
         const r=el.getBoundingClientRect();
         return {x:(r.left-bounds.left)*sx,y:(r.top-bounds.top)*sy,w:r.width*sx,h:r.height*sy};
       };
-      const fillRect=(r,color)=>{
-        const m=String(color).match(/rgba?\(([^)]+)\)/);
-        if(!m)return;
-        const vals=m[1].split(',').map(Number);if(vals[3]===0)return;
-        ctx.fillStyle=color;ctx.fillRect(r.x,r.y,r.w,r.h);
+      const fillRect=(r,style)=>{
+        const color=style.backgroundColor;
+        if(!color||color==='transparent'||/rgba?\\([^)]*,\\s*0(?:\\.0+)?\\)/.test(color))return;
+        const radii=['borderTopLeftRadius','borderTopRightRadius','borderBottomRightRadius','borderBottomLeftRadius'].map(prop=>{
+          const value=parseFloat(style[prop])||0;
+          return Math.max(0,value*Math.min(sx,sy));
+        });
+        ctx.beginPath();
+        if(typeof ctx.roundRect==='function')ctx.roundRect(r.x,r.y,r.w,r.h,radii);
+        else ctx.rect(r.x,r.y,r.w,r.h);
+        ctx.fillStyle=color;ctx.fill();
       };
       ctx.fillStyle='#fff';ctx.fillRect(0,0,target.width,target.height);
       const pageElements=[...source.querySelectorAll('.archiveHalf,.archivePlaced,.archivePlaced img,.archiveText,.growthAlbumPage,.growthAlbumPage *')];
@@ -2497,7 +2517,7 @@
         const isText=el.children.length===0&&el.textContent?.trim()&&!(el instanceof HTMLImageElement);
         ctx.save();
         if(!isText){ctx.beginPath();ctx.rect(Math.max(0,r.x),Math.max(0,r.y),Math.max(0,Math.min(r.w,2480-r.x)),Math.max(0,Math.min(r.h,3508-r.y)));ctx.clip();}
-        fillRect(r,style.backgroundColor);
+        fillRect(r,style);
         if(el instanceof HTMLImageElement && el.complete && el.naturalWidth){
           const fit=style.objectFit;
           const z=fit==='contain'?Math.min(r.w/el.naturalWidth,r.h/el.naturalHeight):Math.max(r.w/el.naturalWidth,r.h/el.naturalHeight);
