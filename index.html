@@ -2359,20 +2359,25 @@
           for(const glyph of el.querySelectorAll('span')){
             const gr=glyph.getBoundingClientRect(),gs=getComputedStyle(glyph);
             if(!glyph.textContent||!gr.width||!gr.height)continue;
-            const side=Math.ceil(Math.max(gr.width,gr.height)*2+24);
-            const c=document.createElement('canvas');c.width=c.height=Math.min(512,side*2);
-            const ctx=c.getContext('2d'),fontSize=parseFloat(gs.fontSize)||24;
-            ctx.font=gs.fontWeight+' '+fontSize+'px '+gs.fontFamily;
+            const fontSize=parseFloat(gs.fontSize)||24;
+            const c=document.createElement('canvas');
+            const side=Math.min(512,Math.ceil(Math.max(fontSize*3,gr.width*2,gr.height*2)));
+            c.width=c.height=side;
+            const ctx=c.getContext('2d');
+            ctx.font=(gs.fontWeight||'400')+' '+fontSize+'px '+gs.fontFamily;
             ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=gs.color;
             const transform=gs.transform;
             const match=transform&&transform!=='none'?transform.match(/^matrix\\(([^)]+)\\)$/):null;
             const values=match?match[1].split(',').map(Number):null;
             const angle=values?Math.atan2(values[1],values[0]):0;
-            ctx.translate(c.width/2,c.height/2);ctx.rotate(angle);
+            ctx.translate(side/2,side/2);ctx.rotate(angle);
             ctx.fillText(glyph.textContent,0,0);
-            const gx=(gr.left-origin.left)*210/W,gy=(gr.top-origin.top)*297/H;
-            const gw=gr.width*210/W,gh=gr.height*297/H;
-            pdf.addImage(c.toDataURL('image/png'),'PNG',gx,gy,gw,gh,undefined,'FAST');
+            // Keep the raster's physical dimensions; do not squeeze a large
+            // transparent glyph canvas into the text bounding rectangle.
+            const cx=(gr.left+gr.width/2-origin.left)*210/W;
+            const cy=(gr.top+gr.height/2-origin.top)*297/H;
+            const gw=side*210/W,gh=side*297/H;
+            pdf.addImage(c.toDataURL('image/png'),'PNG',cx-gw/2,cy-gh/2,gw,gh,undefined,'FAST');
             c.width=c.height=0;
           }
         }else if(el.children.length===0&&el.textContent?.trim()&&cs.display!=='none'&&!el.closest('.curvedGlyphLayer')){
