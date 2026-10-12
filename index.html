@@ -1409,7 +1409,7 @@
         <h2 id="editorTitle">見開き編集</h2><span class="grow"></span>
         <button class="editorIcon" id="undoEdit" type="button" aria-label="元に戻す">↶</button>
         <button class="editorIcon" id="redoEdit" type="button" aria-label="やり直す">↷</button>
-        <button class="editorSave" id="savePdfTrial" type="button" title="保存して左ページPDFを試作">保存→PDF試作</button><button class="editorSave" id="saveEdit" type="button">保存</button>
+        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="保存して左ページPDFを試作">保存→PDF試作</button><button class="editorSave" id="saveEdit" type="button">保存</button>
       </div>
       <div class="editorStage" id="editorStage">
         <div class="spreadViewport" id="spreadViewport"><div class="spread" id="spread"><span class="pageLabel left">LEFT / A4</span><span class="pageLabel right">RIGHT / A4</span></div></div>
@@ -2355,7 +2355,9 @@
     buttons.forEach(b=>b.disabled=true);
     try{
       status.style.color='';status.textContent='PDF生成の準備中…';
-      await ensureAlbumPdfLibraries(all,message=>status.textContent=message);
+      const problems=[];for(const page of state.pages.filter(p=>p.classId===state.selectedClassId).slice(0,12)){const issues=await preflightPagePhotos(page);if(issues.length)problems.push((page.title||'見開き')+'：'+issues.join('、'))}
+       if(problems.length&&!confirm('印刷前チェックで問題があります。\\n'+problems.slice(0,5).join('\\n')+'\\n続けますか？')){status.textContent='PDF出力を中止しました';return}
+       await ensureAlbumPdfLibraries(all,message=>status.textContent=message);
       if(all){
         const zip=new window.JSZip();
         for(let i=0;i<targets.length;i++){
@@ -2629,10 +2631,54 @@
   function renderBulk(){const c=cls(currentClassId);$('#bulkTitle').textContent=`${c.name} に登録`;if(!bulkDraft.length)bulkDraft=[freshRow(),freshRow(),freshRow()];const wrap=$('#bulkRows');wrap.innerHTML='';bulkDraft.forEach((r,i)=>{const el=document.createElement('div');el.className='bulkRow';el.innerHTML=`<label class="photoPick"><span>${r.file?'':'📷'}</span>${r.file?`<img src="${fileUrl(r.file)}" alt="写真プレビュー">`:''}<input type="file" accept="image/*" data-bulk-file="${r.id}" aria-label="${i+1}人目の写真"></label><div class="field"><label>${i+1}人目 フルネーム</label><input type="text" value="${escapeHtml(r.name)}" data-bulk-name="${r.id}" placeholder="例：幸地 かりん" autocomplete="off"></div><button class="removeRow" type="button" data-remove-row="${r.id}" aria-label="この入力欄を削除">×</button>`;wrap.appendChild(el)});$('#bulkCount').textContent=`${bulkDraft.length} / 30`;$$('[data-bulk-name]').forEach(inp=>inp.addEventListener('input',()=>{const r=bulkDraft.find(x=>x.id===inp.dataset.bulkName);if(r)r.name=inp.value}));$$('[data-bulk-file]').forEach(inp=>inp.addEventListener('change',()=>{const r=bulkDraft.find(x=>x.id===inp.dataset.bulkFile);if(r)r.file=inp.files?.[0]||null;renderBulk()}));$$('[data-remove-row]').forEach(b=>b.addEventListener('click',()=>{bulkDraft=bulkDraft.filter(x=>x.id!==b.dataset.removeRow);if(!bulkDraft.length)bulkDraft=[freshRow()];renderBulk()}));}
 
   function snapshotEdit(){return {photos:editItems.map(item=>({...item})),texts:textItems.map(item=>({...item})),stickers:stickerItems.map(item=>({...item})),background:JSON.parse(JSON.stringify(editBackground||{left:{pattern:'plain',color:'#ffffff',imageUrl:null},right:{pattern:'plain',color:'#ffffff',imageUrl:null}}))}}
-  function recordEdit(){editHistory=editHistory.slice(0,editHistoryIndex+1);editHistory.push(snapshotEdit());editHistoryIndex=editHistory.length-1;updateEditControls()}
-  function restoreEdit(index){if(index<0||index>=editHistory.length)return;editHistoryIndex=index;const snap=editHistory[index];editItems=(snap.photos||[]).map(item=>({...item}));textItems=(snap.texts||[]).map(item=>({...item}));stickerItems=(snap.stickers||[]).map(item=>({...item}));editBackground=JSON.parse(JSON.stringify(snap.background||{left:{pattern:'plain',color:'#ffffff',imageUrl:null},right:{pattern:'plain',color:'#ffffff',imageUrl:null}}));if(!editItems.some(x=>x.id===selectedEditId))selectedEditId=null;if(!textItems.some(x=>x.id===selectedTextId))selectedTextId=null;if(!stickerItems.some(x=>x.id===selectedStickerId))selectedStickerId=null;renderSpread();renderEditorCandidates();syncTextPanel();updateEditControls()}
+
+  const DRAFT_PREFIX='omoide-edit-draft:', HISTORY_PREFIX='omoide-save-history:';
+  let draftTimer=null;
+  function editKey(prefix,page){return prefix+state.year+':'+page.id}
+  function persistDraft(){
+    if(!editingPage||!document.body.classList.contains('editing')||TEST_MODE)return;
+    try{localStorage.setItem(editKey(DRAFT_PREFIX,editingPage),JSON.stringify({time:Date.now(),snapshot:snapshotEdit()}))}
+    catch(e){console.warn('Draft backup',e)}
+  }
+  function queueDraft(){clearTimeout(draftTimer);draftTimer=setTimeout(persistDraft,700)}
+  function checkpointPage(page){
+    if(TEST_MODE)return;
+    try{
+      const key=editKey(HISTORY_PREFIX,page),old=JSON.parse(localStorage.getItem(key)||'[]');
+      const history=Array.isArray(old)?old:[];
+      history.push({time:Date.now(),layout:page.layout,texts:page.texts,stickers:page.stickers,background:page.background});
+      localStorage.setItem(key,JSON.stringify(history.slice(-5)));
+      localStorage.removeItem(editKey(DRAFT_PREFIX,page));clearTimeout(draftTimer);
+    }catch(e){console.warn('Save history',e)}
+  }
+  function restorePreviousSave(){
+    if(!editingPage)return;
+    try{
+      const history=JSON.parse(localStorage.getItem(editKey(HISTORY_PREFIX,editingPage))||'[]');
+      if(!Array.isArray(history)||history.length<2){toast('以前の保存履歴はありません');return}
+      if(!confirm('1つ前の保存状態を復元しますか？ 保存するまで確定されません。'))return;
+      const old=history[history.length-2];
+      editItems=(old.layout||[]).map(x=>({...x}));textItems=(old.texts||[]).map(x=>({...x}));
+      stickerItems=(old.stickers||[]).map(x=>({...x}));
+      editBackground=JSON.parse(JSON.stringify(old.background||editBackground));
+      selectedEditId=selectedTextId=selectedStickerId=null;
+      recordEdit();renderSpread();syncTextPanel();
+    }catch(e){console.warn('Restore history',e);toast('保存履歴の復元に失敗しました')}
+  }
+  async function preflightPagePhotos(page){
+    const warnings=[];
+    if(!page)return ['ページが見つかりません'];
+    for(const item of page.layout||[]){
+      const photo=await getImage('page:'+page.id+':'+item.photoId).catch(()=>null);
+      const isolated=item.bgRemoved?await getImage('bg:'+page.id+':'+item.id).catch(()=>null):null;
+      if(!photo&&!isolated)warnings.push('写真素材を読み込めません');
+    }
+    return [...new Set(warnings)];
+  }
+  function recordEdit(){editHistory=editHistory.slice(0,editHistoryIndex+1);editHistory.push(snapshotEdit());editHistoryIndex=editHistory.length-1;updateEditControls();queueDraft()}
+  function restoreEdit(index){if(index<0||index>=editHistory.length)return;editHistoryIndex=index;const snap=editHistory[index];editItems=(snap.photos||[]).map(item=>({...item}));textItems=(snap.texts||[]).map(item=>({...item}));stickerItems=(snap.stickers||[]).map(item=>({...item}));editBackground=JSON.parse(JSON.stringify(snap.background||{left:{pattern:'plain',color:'#ffffff',imageUrl:null},right:{pattern:'plain',color:'#ffffff',imageUrl:null}}));if(!editItems.some(x=>x.id===selectedEditId))selectedEditId=null;if(!textItems.some(x=>x.id===selectedTextId))selectedTextId=null;if(!stickerItems.some(x=>x.id===selectedStickerId))selectedStickerId=null;renderSpread();renderEditorCandidates();syncTextPanel();updateEditControls();queueDraft()}
   function updateEditControls(){const selectedPhoto=editItems.some(x=>x.id===selectedEditId),selectedText=textItems.some(x=>x.id===selectedTextId),selectedSticker=stickerItems.some(x=>x.id===selectedStickerId),selected=selectedPhoto||selectedText||selectedSticker;$('#undoEdit').disabled=editHistoryIndex<=0;$('#redoEdit').disabled=editHistoryIndex>=editHistory.length-1;$('#deletePhoto').disabled=!selected;['layerFront','layerForward','layerBackward','layerBack'].forEach(id=>$('#'+id).disabled=!selected);$('#editQuick').classList.toggle('show',selected)}
-  async function openEditor(pageId){editorFreshBlobs.clear();editingPage=state.pages.find(p=>p.id===pageId);if(!editingPage)return;selectedEditId=null;selectedTextId=null;selectedStickerId=null;openPanel=null;equalLayoutMode='rect';randomLayoutCycle=0;cropDraft=null;candidateSelection.clear();editorPhotoFolder=null;viewScale=1;viewX=0;viewY=0;applyViewTransform();editItems=(editingPage.layout||[]).map(x=>({...x}));textItems=(editingPage.texts||[]).map(x=>({...x}));stickerItems=(editingPage.stickers||[]).map(x=>({...x}));editBackground=JSON.parse(JSON.stringify(editingPage.background||{left:{pattern:'plain',color:'#ffffff',imageUrl:null},right:{pattern:'plain',color:'#ffffff',imageUrl:null}}));editHistory=[snapshotEdit()];editHistoryIndex=0;$('#editorTitle').textContent=editingPage.title;show('editor');await ensureCustomFonts();await renderEditorCandidates();await renderSpread();setPanel('photos');loadSharedAssets().catch(()=>{})}
+  async function openEditor(pageId){editorFreshBlobs.clear();editingPage=state.pages.find(p=>p.id===pageId);if(!editingPage)return;selectedEditId=null;selectedTextId=null;selectedStickerId=null;openPanel=null;equalLayoutMode='rect';randomLayoutCycle=0;cropDraft=null;candidateSelection.clear();editorPhotoFolder=null;viewScale=1;viewX=0;viewY=0;applyViewTransform();editItems=(editingPage.layout||[]).map(x=>({...x}));textItems=(editingPage.texts||[]).map(x=>({...x}));stickerItems=(editingPage.stickers||[]).map(x=>({...x}));editBackground=JSON.parse(JSON.stringify(editingPage.background||{left:{pattern:'plain',color:'#ffffff',imageUrl:null},right:{pattern:'plain',color:'#ffffff',imageUrl:null}}));editHistory=[snapshotEdit()];editHistoryIndex=0;$('#editorTitle').textContent=editingPage.title;show('editor');await ensureCustomFonts();await renderEditorCandidates();await renderSpread();setPanel('photos');loadSharedAssets().catch(()=>{});try{const backup=JSON.parse(localStorage.getItem(editKey(DRAFT_PREFIX,editingPage))||'null');if(backup?.snapshot&&backup.time>Number(editingPage.updatedAt||0)&&confirm('保存前の編集バックアップを復元しますか？')){editItems=(backup.snapshot.photos||[]).map(x=>({...x}));textItems=(backup.snapshot.texts||[]).map(x=>({...x}));stickerItems=(backup.snapshot.stickers||[]).map(x=>({...x}));editBackground=backup.snapshot.background||editBackground;recordEdit();await renderSpread();syncTextPanel()}}catch(e){console.warn('Restore draft',e)}}
   function updateCandidateDone(){const n=candidateSelection.size;$('#candidateSelectionCount').textContent=`${n}枚選択`;$('#candidateDone').disabled=!n}
   function syncEditingPageState(){if(!editingPage)return;const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));saveState();editingPage=state.pages.find(p=>p.id===pageId)||editingPage}
   async function addEditorPhotoFiles(files){
@@ -3218,11 +3264,12 @@
   $('#layerForward').addEventListener('click',()=>moveLayer('forward'));
   $('#layerBackward').addEventListener('click',()=>moveLayer('backward'));
   $('#layerBack').addEventListener('click',()=>moveLayer('back'));
+  $('#restoreEditSave').addEventListener('click',restorePreviousSave);
   $('#undoEdit').addEventListener('click',()=>restoreEdit(editHistoryIndex-1));
   $('#redoEdit').addEventListener('click',()=>restoreEdit(editHistoryIndex+1));
   $('#candidateDone').addEventListener('click',async()=>await addPhotosToSpread([...candidateSelection]));
   $('#deletePhoto').addEventListener('click',()=>{if(selectedEditId){editItems=editItems.filter(x=>x.id!==selectedEditId);selectedEditId=null}else if(selectedTextId){textItems=textItems.filter(x=>x.id!==selectedTextId);selectedTextId=null}else if(selectedStickerId){stickerItems=stickerItems.filter(x=>x.id!==selectedStickerId);selectedStickerId=null}else return;recordEdit();renderSpread();syncTextPanel()});
-  $('#closeEditor').addEventListener('click',()=>show('photoManage'));
+  $('#closeEditor').addEventListener('click',()=>{persistDraft();show('photoManage')});
   $('#saveEdit').addEventListener('click',()=>{
     if(!editingPage)return;
     // Commit even the currently focused contenteditable before serializing.
@@ -3231,7 +3278,7 @@
       const edit=el.querySelector('.textEditable');
       if(item&&edit&&!el.classList.contains('curved'))item.text=edit.innerText.replace(/\n$/,'');
     });
-const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,curve,zIndex})=>({id,text,x,y,width,height,font,size,color,curve:curve||0,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();editingPage=state.pages.find(p=>p.id===pageId)||editingPage;albumPreviewToken++;show('photoManage');toast('見開きの配置を保存しました')});
+const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,curve,zIndex})=>({id,text,x,y,width,height,font,size,color,curve:curve||0,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();checkpointPage(page);editingPage=state.pages.find(p=>p.id===pageId)||editingPage;albumPreviewToken++;show('photoManage');toast('見開きの配置を保存しました')});
   $('#savePdfTrial').addEventListener('click',async()=>{
     const button=$('#savePdfTrial');
     if(!editingPage||button.disabled)return;
@@ -3248,6 +3295,8 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       albumPreviewIndex=pageIndex+1;
       show('albumPreview');
       await renderAlbumPreview();
+      const problems=await preflightPagePhotos(saved);
+      if(problems.length&&!confirm('印刷前チェック：'+problems.join('、')+'。続けますか？'))return;
       await exportPdfLibPageTest();
     }catch(error){
       console.error('save-to-pdf-trial',error);
