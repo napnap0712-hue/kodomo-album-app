@@ -107,7 +107,7 @@
     [data-screen="photoManage"] .photoManageBottom .editGo{background:#e1f9de;border-color:#d3ebd0;box-shadow:0 3px 0 #c6dbc3}
     [data-screen="photoManage"] .photoManageGrid{margin:13px 0 18px;gap:9px}
     .classAlbumPreviewOpen{display:block;width:100%;margin:12px 0 16px;padding:15px;min-height:54px;border:1px solid #ecd8df;border-radius:20px;background:#ffe3f0;color:#543848;font-weight:900;box-shadow:0 3px 0 #e3cbd4}
-    .albumPreviewEntry{display:block;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
+    .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
     .albumPreviewEntry b,.albumPreviewEntry small{display:block}.albumPreviewEntry small{margin-top:6px;color:#766c70}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
@@ -986,7 +986,7 @@
       <button type="button" id="classAlbumPreviewOpen" class="classAlbumPreviewOpen">📖 アルバムをプレビュー　›</button>
       <div id="sectionList" class="sectionList"></div>
     </section>
-    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><p class="hint">保存済みセクションの一覧です。実際の見開き表示・印刷PDFは次の段階で追加します。</p><div id="albumPreviewList"></div></div></section>
+    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
       <div class="photoManageTop">
@@ -1398,14 +1398,33 @@
     renderSectionList(pages);
   }
 
-  function renderAlbumPreview(){
-    const target=$('#albumPreviewList');target.replaceChildren();
-    const c=cls(state.selectedClassId);$('#albumPreviewTitle').textContent=state.year+'年度 '+c.name;
-    const pages=state.pages.filter(p=>p.classId===state.selectedClassId);
-    if(!pages.length){target.textContent='まだセクションがありません';return}
-    pages.forEach((p,i)=>{const btn=document.createElement('button');btn.type='button';btn.className='albumPreviewEntry';const title=document.createElement('b');title.textContent=(i+1)+' / '+pages.length+'　'+p.title;const detail=document.createElement('small');detail.textContent=(p.type==='event'?'行事':'月')+'・写真'+(p.photos||[]).length+'枚';btn.append(title,detail);btn.addEventListener('click',()=>openPhotoManagement(p.id));target.append(btn)});
+  let albumPreviewIndex=0,albumPreviewToken=0;
+  async function renderAlbumPreview(){
+    const c=cls(state.selectedClassId),pages=state.pages.filter(p=>p.classId===state.selectedClassId),spread=$('#albumPreviewSpread');
+    $('#albumPreviewTitle').textContent=state.year+'年度 '+c.name;spread.replaceChildren();$('#albumPreviewList').replaceChildren();
+    const token=++albumPreviewToken;
+    if(!pages.length){spread.textContent='まだセクションがありません';$('#albumPreviewPosition').textContent='0 / 0';$('#albumPreviewPrev').disabled=true;$('#albumPreviewNext').disabled=true;return}
+    albumPreviewIndex=Math.min(Math.max(albumPreviewIndex,0),pages.length-1);
+    const p=pages[albumPreviewIndex];
+    $('#albumPreviewPosition').textContent=(albumPreviewIndex+1)+' / '+pages.length+'　'+p.title;
+    $('#albumPreviewPrev').disabled=albumPreviewIndex===0;$('#albumPreviewNext').disabled=albumPreviewIndex===pages.length-1;
+    for(const [side,i] of [['left',0],['right',1]]){
+      const cfg=p.background?.[side]||{},bg=document.createElement('div');bg.className='archiveHalf';bg.style.left=i*50+'%';bg.style.backgroundColor=cfg.color||'#fff';spread.append(bg);
+    }
+    for(const item of (p.layout||[])){
+      try{const blob=await getImage(item.bgRemoved?'bg:'+p.id+':'+item.id:'page:'+p.id+':'+item.photoId)|| (item.bgRemoved?await getImage('page:'+p.id+':'+item.photoId):null);
+        if(token!==albumPreviewToken)return;if(!blob)continue;
+        const box=document.createElement('div');box.className='archivePlaced';
+        box.style.cssText='left:'+(item.x||0)+'%;top:'+(item.y||0)+'%;width:'+(item.width||20)+'%;height:'+(item.height||20)+'%;transform:rotate('+(item.rotation||0)+'deg);z-index:'+(item.zIndex||1);
+        const img=document.createElement('img');img.src=fileUrl(blob);img.alt='配置済み写真';img.style.objectFit=item.layoutFit||'cover';img.style.clipPath=item.clipPath||'none';box.append(img);spread.append(box);
+      }catch(e){console.warn('プレビュー画像の読込失敗',e)}
+    }
+    for(const t of (p.texts||[])){const el=document.createElement('div');el.className='archiveText';el.textContent=t.text||'';el.style.cssText='left:'+(t.x||0)+'%;top:'+(t.y||0)+'%;width:'+(t.width||28)+'%;height:'+(t.height||12)+'%;color:'+(t.color||'#333')+';z-index:'+(t.zIndex||100)+';font-size:'+Math.max(6,(Number(t.size)||28)*.36)+'px';spread.append(el)}
+    if(!(p.layout||[]).length){const note=document.createElement('p');note.className='albumPreviewEmpty';note.textContent='見開きに写真がまだ配置されていません';spread.append(note)}
   }
-  $('#classAlbumPreviewOpen').addEventListener('click',()=>show('albumPreview'));
+  $('#albumPreviewPrev').addEventListener('click',()=>{albumPreviewIndex--;renderAlbumPreview()});
+  $('#albumPreviewNext').addEventListener('click',()=>{albumPreviewIndex++;renderAlbumPreview()});
+  $('#classAlbumPreviewOpen').addEventListener('click',()=>{albumPreviewIndex=0;show('albumPreview')});
   $('#albumPreviewBack').addEventListener('click',()=>show('classWorkspace'));
   function openPageCreate(){pageDraft=[];$('#pageTitle').value='';const preferred=state.creationMode==='event'?'event':'month';const radio=$(`input[name="pageType"][value="${preferred}"]`);if(radio)radio.checked=true;show('pageCreate')}
   function renderPageDraft(){const children=state.children.filter(x=>x.classId===state.selectedClassId);const wrap=$('#pagePhotos');wrap.innerHTML='';$('#pagePhotoCount').textContent=`${pageDraft.length}枚`;$('#pageChildNotice').textContent=children.length?'写真を追加し、それぞれ園児を選んでください。':'先に管理画面で園児を登録すると、写真を振り分けできます。';pageDraft.forEach((photo,i)=>{const el=document.createElement('div');el.className='pagePhoto';const options=['<option value="">園児を選択</option>',...children.map(child=>`<option value="${child.id}" ${photo.childId===child.id?'selected':''}>${escapeHtml(child.name)}</option>`)].join('');el.innerHTML=`<img src="${fileUrl(photo.file)}" alt="追加した写真 ${i+1}"><div class="photoDetails"><div class="photoName">${escapeHtml(photo.file.name)}</div><select data-photo-child="${photo.id}" aria-label="${i+1}枚目を園児に振り分け">${options}</select></div><button class="removeRow" type="button" data-remove-photo="${photo.id}" aria-label="写真を削除">×</button>`;wrap.appendChild(el)});$$('[data-photo-child]').forEach(s=>s.addEventListener('change',()=>{const p=pageDraft.find(x=>x.id===s.dataset.photoChild);if(p)p.childId=s.value}));$$('[data-remove-photo]').forEach(b=>b.addEventListener('click',()=>{pageDraft=pageDraft.filter(x=>x.id!==b.dataset.removePhoto);renderPageDraft()}));}
