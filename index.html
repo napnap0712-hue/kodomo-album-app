@@ -107,7 +107,8 @@
     [data-screen="photoManage"] .photoManageBottom .editGo{background:#e1f9de;border-color:#d3ebd0;box-shadow:0 3px 0 #c6dbc3}
     [data-screen="photoManage"] .photoManageGrid{margin:13px 0 18px;gap:9px}
     .classAlbumPreviewOpen{display:block;width:100%;margin:12px 0 16px;padding:15px;min-height:54px;border:1px solid #ecd8df;border-radius:20px;background:#ffe3f0;color:#543848;font-weight:900;box-shadow:0 3px 0 #e3cbd4}
-    .albumSpecialPreview{position:absolute;top:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:#fff2f7;border:1px solid #efd5df;padding:12px;color:#735166}.albumSpecialPreview strong{font-size:clamp(12px,4vw,22px)}.albumSpecialPreview small{font-size:10px}    .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
+    .albumSpecialPreview{position:absolute;top:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:#fff2f7;border:1px solid #efd5df;padding:12px;color:#735166}.albumSpecialPreview strong{font-size:clamp(12px,4vw,22px)}.albumSpecialPreview small{font-size:10px}    [data-screen="albumPreview"]{min-width:0;overflow-x:clip}#albumPreviewSpread{max-width:100%;touch-action:pan-y;contain:layout paint}.albumPreviewControls button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.albumPreviewControls #albumPreviewPosition{min-width:0;flex:1;text-align:center;font-size:12px;overflow-wrap:anywhere}
+    .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
     .albumPreviewEntry b,.albumPreviewEntry small{display:block}.albumPreviewEntry small{margin-top:6px;color:#766c70}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
@@ -1431,8 +1432,16 @@
     for(const t of (p.texts||[])){const el=document.createElement('div');el.className='archiveText';el.textContent=t.text||'';el.style.cssText='left:'+(t.x||0)+'%;top:'+(t.y||0)+'%;width:'+(t.width||28)+'%;height:'+(t.height||12)+'%;color:'+(t.color||'#333')+';z-index:'+(t.zIndex||100)+';font-size:'+Math.max(6,(Number(t.size)||28)*.36)+'px';spread.append(el)}
     if(!(p.layout||[]).length){const note=document.createElement('p');note.className='albumPreviewEmpty';note.textContent='見開きに写真がまだ配置されていません';spread.append(note)}
   }
-  $('#albumPreviewPrev').addEventListener('click',()=>{albumPreviewIndex--;renderAlbumPreview()});
-  $('#albumPreviewNext').addEventListener('click',()=>{albumPreviewIndex++;renderAlbumPreview()});
+  function turnAlbumPreview(direction){
+    const top=window.scrollY;
+    const focused=document.activeElement;
+    if(focused&&typeof focused.blur==='function')focused.blur();
+    albumPreviewIndex+=direction;
+    renderAlbumPreview();
+    requestAnimationFrame(()=>window.scrollTo({top,behavior:'instant'}));
+  }
+  $('#albumPreviewPrev').addEventListener('click',()=>turnAlbumPreview(-1));
+  $('#albumPreviewNext').addEventListener('click',()=>turnAlbumPreview(1));
   $('#classAlbumPreviewOpen').addEventListener('click',()=>{albumPreviewIndex=0;show('albumPreview')});
   $('#albumPreviewBack').addEventListener('click',()=>show('classWorkspace'));
   function openPageCreate(){pageDraft=[];$('#pageTitle').value='';const preferred=state.creationMode==='event'?'event':'month';const radio=$(`input[name="pageType"][value="${preferred}"]`);if(radio)radio.checked=true;show('pageCreate')}
