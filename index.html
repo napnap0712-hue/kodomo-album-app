@@ -1564,7 +1564,7 @@
         cover.style.backgroundSize='cover';cover.style.backgroundPosition='center';
         white.style.fontFamily='"'+(settings.font||'Kosugi Maru')+'",sans-serif';
         try{
-          if(settings.mode==='image'){const bg=await getImage('coverBg:'+state.year+':'+c.id);if(token===albumPreviewToken&&bg)cover.style.backgroundImage='url("'+fileUrl(bg)+'")'}
+          if(settings.mode==='image'){const bg=await coverImageForPattern(settings.pattern||'dots',c.id);if(token===albumPreviewToken){if(bg)cover.style.backgroundImage='url("'+fileUrl(bg)+'")';else{cover.style.backgroundImage=coverPatternFallback(settings.pattern||'dots');cover.style.backgroundSize='31px 31px'}}}
           const blob=await getImage('classIcon:'+c.id);if(token===albumPreviewToken&&blob)icon.src=fileUrl(blob)
         }catch(e){console.warn('表紙素材の読込失敗',e)}
       }else if(entry.kind==='back'){
