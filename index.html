@@ -2427,25 +2427,27 @@
       new Promise(resolve=>setTimeout(resolve,3000))
     ])));
   }
-  function drawPdfPreviewText(ctx,el,r,sx,sy){
-    const cs=getComputedStyle(el),size=parseFloat(cs.fontSize)||12;
-    const px=size*sy;
-    ctx.font=(cs.fontStyle||'normal')+' '+(cs.fontWeight||'400')+' '+px+'px '+(cs.fontFamily||'sans-serif');
-    ctx.fillStyle=cs.color||'#333';ctx.textBaseline='top';
-    const left=(parseFloat(cs.paddingLeft)||0)*sx,top=(parseFloat(cs.paddingTop)||0)*sy,right=(parseFloat(cs.paddingRight)||0)*sx;
-    const maxWidth=Math.max(1,r.w-left-right),lhValue=parseFloat(cs.lineHeight);
-    const lineHeight=Number.isFinite(lhValue)?(cs.lineHeight.includes('px')?lhValue*sy:lhValue<4?px*lhValue:lhValue*sy):px*1.35;
-    const lines=[];
-    for(const paragraph of (el.textContent||'').split('\n')){
-      let line='';
-      for(const char of paragraph){
-        if(line&&ctx.measureText(line+char).width>maxWidth){lines.push(line);line=char}else line+=char;
+  function drawPdfPreviewText(ctx,el,r,sx,sy,spreadBounds){
+    const cs=getComputedStyle(el);
+    ctx.fillStyle=cs.color||'#333';
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    const fontPx=parseFloat(cs.fontSize)||12;
+    ctx.font=(cs.fontStyle||'normal')+' '+(cs.fontWeight||'400')+' '+(fontPx*sy)+'px '+(cs.fontFamily||'sans-serif');
+    const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+    while(walker.nextNode()){
+      const node=walker.currentNode,value=node.textContent||'',range=document.createRange();
+      for(let i=0;i<value.length;i++){
+        const ch=value[i];
+        if(ch==='\n'||ch==='\r')continue;
+        range.setStart(node,i);range.setEnd(node,i+1);
+        const glyph=range.getBoundingClientRect();
+        if(!glyph.width||!glyph.height)continue;
+        const x=(glyph.left-spreadBounds.left)*sx;
+        const y=(glyph.top-spreadBounds.top)*sy;
+        ctx.fillText(ch,x,y+(fontPx*sy)*0.86);
       }
-      lines.push(line);
+      range.detach?.();
     }
-    ctx.textAlign=cs.textAlign==='center'?'center':cs.textAlign==='right'?'right':'left';
-    const tx=cs.textAlign==='center'?r.x+left+maxWidth/2:cs.textAlign==='right'?r.x+left+maxWidth:r.x+left;
-    lines.forEach((line,i)=>{if(top+i*lineHeight<r.h)ctx.fillText(line,tx,r.y+top+i*lineHeight)});
   }
   async function exportPdfLibPageTest(){
     const button=$('#albumPdfLibPageTest'),status=$('#albumPrintStatus');
@@ -2492,14 +2494,16 @@
         if(r.x>=2480||r.x+r.w<=0||r.y>=3508||r.y+r.h<=0)continue;
         const style=getComputedStyle(el);
         if(style.display==='none'||style.visibility==='hidden')continue;
-        ctx.save();ctx.beginPath();ctx.rect(Math.max(0,r.x),Math.max(0,r.y),Math.max(0,Math.min(r.w,2480-r.x)),Math.max(0,Math.min(r.h,3508-r.y)));ctx.clip();
+        const isText=el.children.length===0&&el.textContent?.trim()&&!(el instanceof HTMLImageElement);
+        ctx.save();
+        if(!isText){ctx.beginPath();ctx.rect(Math.max(0,r.x),Math.max(0,r.y),Math.max(0,Math.min(r.w,2480-r.x)),Math.max(0,Math.min(r.h,3508-r.y)));ctx.clip();}
         fillRect(r,style.backgroundColor);
         if(el instanceof HTMLImageElement && el.complete && el.naturalWidth){
           const fit=style.objectFit;
           const z=fit==='contain'?Math.min(r.w/el.naturalWidth,r.h/el.naturalHeight):Math.max(r.w/el.naturalWidth,r.h/el.naturalHeight);
           ctx.drawImage(el,r.x+(r.w-el.naturalWidth*z)/2,r.y+(r.h-el.naturalHeight*z)/2,el.naturalWidth*z,el.naturalHeight*z);
         }else if(el.children.length===0&&el.textContent?.trim()){
-          drawPdfPreviewText(ctx,el,r,sx,sy);
+          drawPdfPreviewText(ctx,el,r,sx,sy,bounds);
         }
         ctx.restore();
       }
