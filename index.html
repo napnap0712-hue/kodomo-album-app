@@ -117,7 +117,7 @@
     .specialPageCards button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:104px;border:1px solid #efdde4;border-radius:21px;background:#ffedf4;font-size:26px;box-shadow:0 3px 0 #e6d4dc}
     .specialPageCards button:nth-child(2){background:#e7f2ff}.specialPageCards button:nth-child(3){background:#fff4d5}.specialPageCards button:nth-child(4){background:#e8f7e2}
     .specialPageCards b{font-size:15px;color:#50454b}
-    .coverEditorSheet{display:grid;gap:14px}.coverEditorCanvas{box-sizing:border-box;position:relative;width:min(72%,270px);aspect-ratio:210/297;margin:5px auto 12px;background:#ffdce7;padding:8%;border:1px solid #e4d3d8;border-radius:6px;box-shadow:0 5px 14px #0002;background-position:center;background-size:cover}
+    .coverEditorSheet{display:grid;gap:14px}.coverEditorCanvas{box-sizing:border-box;position:relative;width:min(59%,220px);aspect-ratio:210/297;margin:2px auto 7px;background:#ffdce7;padding:8%;border:1px solid #e4d3d8;border-radius:6px;box-shadow:0 5px 14px #0002;background-position:center;background-size:cover}
     .coverWhitePanel{height:100%;border-radius:22px;background:white;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;padding:16% 6%;gap:12px;color:#584851}
     .coverWhitePanel b{font-size:clamp(12px,3vw,23px)}.coverWhitePanel img{width:82%;height:50%;object-fit:contain}.coverWhitePanel strong{font-size:clamp(12px,3.2vw,23px)}
     .coverColorSwatches{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin:12px 0}.coverColorSwatches button{height:36px;min-width:0;border:2px solid #ddd;border-radius:50%}.coverColorSwatches button.active{outline:3px solid #e995b6;outline-offset:2px}
@@ -1046,7 +1046,7 @@
           <div id="coverColorControls"><div id="coverColors" class="coverColorSwatches"></div><div class="coverOpacityLabel">色の薄さ <output id="coverOpacityNumber">100%</output></div><div class="coverOpacityAdjust"><button type="button" id="coverOpacityMinus" aria-label="色を薄くする">－</button><input type="range" id="coverOpacity" min="5" max="100" step="5" value="100"><button type="button" id="coverOpacityPlus" aria-label="色を濃くする">＋</button></div></div>
           <div id="coverImageControls" hidden><div id="coverPatternChoices" class="coverPatternChoices"></div><p class="hint">画像をタップして選択。各柄に元画像を登録すると、その画像が表紙に使われます。</p><label class="fileBtn coverUploadBtn">＋ 選択中の柄に元画像を登録<input type="file" id="coverBgFile" accept="image/*"></label></div>
         </details>
-        <details class="yearGuideCard coverAccordion" id="coverFontAccordion"><summary>✏️ 文字フォント選択 <span class="coverChevron">⌄</span></summary><div id="coverFontChoices" class="coverFontChoices"></div></details><p class="coverFixedHint">ⓘ 表紙の基本レイアウトは固定です</p>
+        <p class="coverFixedHint">ⓘ 表紙の基本レイアウトは固定です</p>
       </div>
     </section>
     <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
@@ -1508,13 +1508,6 @@
     coverDraft={...coverSettings()};coverPreviewFile=null;
     const colors=$('#coverColors');colors.replaceChildren();
     for(const color of coverPalette){const b=document.createElement('button');b.type='button';b.style.backgroundColor=color;b.setAttribute('aria-label',color);b.onclick=()=>{coverDraft.color=color;updateCoverEditor()};colors.append(b)}
-    const fonts=$('#coverFontChoices');fonts.replaceChildren();
-    for(const item of coverFonts){
-      const btn=document.createElement('button');btn.type='button';btn.className='coverFontChoice';btn.dataset.font=item.id;
-      const example=document.createElement('b');example.textContent='おもいでブック';example.style.fontFamily='"'+item.id+'",sans-serif';
-      const caption=document.createElement('small');caption.textContent=item.name;btn.append(example,caption);btn.onclick=()=>{coverDraft.font=item.id;updateCoverEditor()};fonts.append(btn);
-    }
-    ensureCustomFonts().catch(console.warn);
     renderCoverPatternChoices().catch(console.warn);updateCoverEditor();
   }
   function updateCoverEditor(){
@@ -1524,7 +1517,6 @@
     $('#coverOpacity').value=settings.opacity;$('#coverOpacityNumber').textContent=settings.opacity+'%';
     [...$('#coverColors').children].forEach(b=>b.classList.toggle('active',b.getAttribute('aria-label')===settings.color));
     [...$('#coverPatternChoices').children].forEach((b,i)=>b.classList.toggle('active',coverPatterns[i].id===(settings.pattern||'dots')));
-    [...$('#coverFontChoices').children].forEach(b=>b.classList.toggle('active',b.dataset.font===settings.font));
     const panel=$('#coverEditorCanvas .coverWhitePanel');
     paintCover($('#coverEditorCanvas'),panel,$('#coverEditorIcon'),$('#coverEditorName'),settings,coverPreviewFile).catch(console.warn);
   }
