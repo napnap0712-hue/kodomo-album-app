@@ -2326,7 +2326,11 @@
           }
           // JPEG replaces transparency with black on iOS. Use a white-backed PNG
           // for clipped/transparent photos, preserving their alpha channel.
-          const clip=cs.clipPath||cs.webkitClipPath||'';
+          const ownClip=cs.clipPath||cs.webkitClipPath||'';
+          const parent=el.closest('.placedPhoto');
+          const parentCss=parent?getComputedStyle(parent):null;
+          const parentClip=parentCss?(parentCss.clipPath||parentCss.webkitClipPath||''):'';
+          const clip=ownClip&&ownClip!=='none'?ownClip:parentClip;
           if(clip&&clip!=='none'){
             const mask=document.createElement('canvas');mask.width=cw;mask.height=ch;
             const mc=mask.getContext('2d');mc.save();
