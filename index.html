@@ -1234,7 +1234,7 @@
       const photos=sortPhotos().filter(p=>unassigned?!photoLinks(p).length:photoLinks(p).includes(sortChildId));
       const caption=document.createElement('p');caption.textContent='候補 '+photos.length+'枚（写真をタップして選択）';wrap.appendChild(caption);
       const buttons=document.createElement('div');buttons.className='sortActions';
-      const add=document.createElement('button');add.textContent='＋ 写真を追加・紐づけ';add.onclick=()=>{sortView='assign';renderPhotoSorting()};
+      const add=document.createElement('button');add.textContent='＋ 写真を追加・紐づけ';add.onclick=()=>{sortSelection.clear();sortView='assign';renderPhotoSorting()};
       const remove=document.createElement('button');remove.textContent=unassigned?'写真の詳細で園児を選ぶ':'選択した写真の紐づけを解除（'+sortSelection.size+'）';
       remove.dataset.sortRemove='1';remove.disabled=unassigned||!sortSelection.size;remove.onclick=()=>{if(!sortSelection.size)return;photos.filter(p=>sortSelection.has(p.id)).forEach(p=>setPhotoLinks(p,photoLinks(p).filter(id=>id!==sortChildId)));saveState();sortSelection.clear();renderPhotoSorting();toast('紐づけを解除しました')};
       buttons.append(add,remove);wrap.appendChild(buttons);
@@ -1291,7 +1291,7 @@
       btn.ondblclick=()=>sortOpenDetail(photo.id);
       btn.addEventListener('contextmenu',e=>{e.preventDefault();sortOpenDetail(photo.id)});
     }
-    const detail=document.createElement('div');detail.className='sortActions';const open=document.createElement('button');open.textContent='選択した写真の詳細を見る';open.dataset.sortDetailOpen='1';open.disabled=!sortSelection.size;open.onclick=()=>sortOpenDetail([...sortSelection][0]);detail.appendChild(open);wrap.appendChild(detail);
+    if(allowDetail){const detail=document.createElement('div');detail.className='sortActions';const open=document.createElement('button');open.textContent='選択した写真の詳細を見る';open.dataset.sortDetailOpen='1';open.disabled=!sortSelection.size;open.onclick=()=>sortOpenDetail([...sortSelection][0]);detail.appendChild(open);wrap.appendChild(detail);}
     if(!photos.length)grid.innerHTML='<div class="sectionEmpty" style="grid-column:1/-1">写真はありません</div>';
   }
 
