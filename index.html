@@ -1184,7 +1184,7 @@
     @page{size:A4 portrait;margin:0}
     @media print{
       html,body{margin:0!important;padding:0!important;background:#fff!important;width:210mm!important}
-      body>#app{display:none!important}
+      body > :not(#nativePrintHost){display:none!important}
       #nativePrintHost{display:block!important;position:static!important;margin:0!important;padding:0!important;width:210mm!important}
       #nativePrintHost .nativePrintLeaf{position:relative!important;display:block!important;width:210mm!important;height:297mm!important;overflow:hidden!important;margin:0!important;padding:0!important;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid}
       #nativePrintHost .nativePrintLeaf:last-child{break-after:auto;page-break-after:auto}
@@ -3331,41 +3331,57 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
     if(nativePrintHost){nativePrintHost.remove();nativePrintHost=null}
   }
   function makeNativePrintLeaf(source,side){
+    // Each printed A4 page contains only A4-width children. No 420mm
+    // descendant is allowed to trigger Safari's extra print sheets.
     const leaf=document.createElement('section');
     leaf.className='nativePrintLeaf';
-    const spread=source.cloneNode(true);
-    spread.removeAttribute('id');
-    spread.classList.add('nativePrintSpread');
-    spread.querySelectorAll('.selectionFrame,.cropGuide,.pageLabel,.resizeHandle,.trimHandle,.cropGuideHandle,.textResize').forEach(el=>el.remove());
-    spread.querySelectorAll('.selected,.crop-preview').forEach(el=>el.classList.remove('selected','crop-preview'));
-    // Resize CSS px typography to match the fixed-size printed spread.
-    const scale=(420*96/25.4)/source.getBoundingClientRect().width;
-    const originals=source.querySelectorAll('*'),copies=spread.querySelectorAll('*');
-    // Use matching text item IDs instead of element index (selection controls were removed).
-    for(const old of source.querySelectorAll('.placedText')){
-      const copy=[...spread.querySelectorAll('.placedText')].find(el=>el.dataset.textItem===old.dataset.textItem);
-      if(!copy)continue;
-      const oldText=old.querySelector('.textEditable'),newText=copy.querySelector('.textEditable');
-      if(oldText&&newText){
-        newText.textContent=oldText.innerText.replace(/\\n$/,'');
-        newText.contentEditable='false';
-        newText.style.fontSize=(parseFloat(getComputedStyle(oldText).fontSize)*scale)+'px';
-        newText.style.outline='none';
+    const offset=side==='right'?50:0;
+    const spread=document.createElement('div');
+    spread.className='nativePrintSpread';
+    spread.style.cssText='position:absolute;inset:0;width:210mm;height:297mm;overflow:hidden;background:white;isolation:isolate';
+    const scale=(210*96/25.4)/(source.getBoundingClientRect().width/2);
+    for(const original of source.children){
+      if(original.matches('.pageLabel,.selectionFrame,.cropGuide'))continue;
+      if(original.classList.contains('pageBgLayer')){
+        if(!original.classList.contains(side))continue;
+        const bg=original.cloneNode(true);
+        bg.style.cssText+=';left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;height:100%!important;display:block';
+        spread.append(bg);continue;
       }
-      const curved=copy.querySelector('.curvedGlyphLayer');
-      if(curved){
-        curved.remove();
-        const item=textItems.find(t=>String(t.id)===String(old.dataset.textItem));
-        if(item)updateCurvedText(copy,{...item,size:(Number(item.size)||28)*scale});
+      if(original.classList.contains('pageBgFrame')){
+        const frame=document.createElement('div');
+        frame.style.cssText='position:absolute;inset:0;z-index:0;background-repeat:no-repeat;background-size:420mm 297mm;background-position:'+(side==='right'?'right':'left')+' center;';
+        frame.style.backgroundImage=original.style.backgroundImage;
+        spread.append(frame);
+        // The editor frame uses an inset white panel over the decorations.
+        const white=document.createElement('div');
+        white.style.cssText='position:absolute;top:9%;bottom:9%;background:white;z-index:0;'+(side==='right'?'left:0;right:16%':'left:16%;right:0');
+        spread.append(white);continue;
       }
+      if(!original.matches('.placedPhoto,.placedText,.placedSticker'))continue;
+      const x=parseFloat(original.style.left)||0,w=parseFloat(original.style.width)||0;
+      if(x+w<=offset||x>=offset+50)continue;
+      const copy=original.cloneNode(true);
+      copy.classList.remove('selected','crop-preview');
+      copy.querySelectorAll('.selectionFrame,.cropGuide,.resizeHandle,.trimHandle,.cropGuideHandle,.textResize').forEach(el=>el.remove());
+      copy.style.left=((x-offset)*2)+'%';
+      copy.style.width=(w*2)+'%';
+      if(copy.classList.contains('placedText')){
+        const edit=copy.querySelector('.textEditable');
+        const originalText=original.querySelector('.textEditable');
+        if(edit&&originalText){
+          edit.contentEditable='false';edit.style.fontSize=(parseFloat(getComputedStyle(originalText).fontSize)*scale)+'px';
+          edit.style.outline='none';edit.style.background='transparent';
+        }
+        const glyph=copy.querySelector('.curvedGlyphLayer');
+        if(glyph){
+          glyph.remove();
+          const item=textItems.find(t=>String(t.id)===String(original.dataset.textItem));
+          if(item)updateCurvedText(copy,{...item,size:(Number(item.size)||28)*scale});
+        }
+      }
+      spread.append(copy);
     }
-    for(const old of source.querySelectorAll('.placedSticker')){
-      const copy=[...spread.querySelectorAll('.placedSticker')].find(el=>el.dataset.stickerItem===old.dataset.stickerItem);
-      if(!copy)continue;
-      const oldLabel=old.querySelector('span'),newLabel=copy.querySelector('span');
-      if(oldLabel&&newLabel)newLabel.style.fontSize=(parseFloat(getComputedStyle(oldLabel).fontSize)*scale)+'px';
-    }
-    spread.style.cssText='position:absolute;top:0;left:'+(side==='right'?'-210mm':'0')+';width:420mm;height:297mm;aspect-ratio:auto;max-width:none;min-width:420mm;transform:none;margin:0;box-shadow:none;border:0;border-radius:0;overflow:hidden;';
     leaf.append(spread);
     return leaf;
   }
