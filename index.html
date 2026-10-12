@@ -70,6 +70,17 @@
     .childPhotoSlot .childDetailPhoto{width:min(100%,136px);height:auto;aspect-ratio:1;font-size:48px}
     .childPhotoSlot b{font-size:13px;text-align:center}
     .childPhotoButton{width:100%;display:grid;place-items:center;min-height:46px;padding:9px 5px;text-align:center;font-size:12px;cursor:pointer}
+    .yearOverview{display:grid;gap:14px}
+    .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
+    .yearCurrentCard span{font-size:14px;font-weight:800}
+    .yearCurrentCard strong{font-size:32px}
+    .yearCurrentCard small{color:#6f777a;font-size:12px}
+    .yearGuideCard{background:#fff;border:1px solid #e9e5dd;border-radius:22px;padding:17px;display:grid;gap:10px}
+    .yearGuideCard h3{font-size:17px;margin:0}
+    .yearGuideCard p{font-size:13px;line-height:1.7;margin:0}
+    .yearPromotionList{display:grid;gap:8px}
+    .yearPromotionRow{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:10px 12px;border-radius:15px;background:#f9f7f4;font-size:13px}
+    .yearPromotionRow strong{font-size:13px}
     .albumSettingSections{display:grid;gap:11px}
     .albumSettingSection{background:#fff;border:1px solid #eee6e1;border-radius:20px;overflow:hidden}
     .albumSettingSection summary{list-style:none;cursor:pointer;padding:17px 16px;background:var(--setting-tint);font-weight:900;font-size:16px}
@@ -1042,7 +1053,19 @@
 
     <section class="screen" data-screen="yearAdmin">
       <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>年度管理</h2></div>
-      <div class="card stack"><div class="row"><div class="grow"><div class="hint">現在年度</div><b id="yearLabel" style="font-size:24px">2026年度</b></div><span class="pill">使用中</span></div><div class="notice">新年度開始・自動進級は、園児データとページ保存が安定してから有効化します。</div></div>
+      <div class="yearOverview">
+        <div class="yearCurrentCard"><span>📅 現在の年度</span><strong id="yearLabel">2026年度</strong><small>現在使用中のアルバム年度</small></div>
+        <div class="yearGuideCard">
+          <h3>🌷 新年度への進級プレビュー</h3>
+          <p class="hint">次の年度への進級先と登録人数を確認できます。下の表示は確認用で、園児や写真のデータは変更されません。</p>
+          <div id="yearPromotionList" class="yearPromotionList"></div>
+        </div>
+        <div class="yearGuideCard">
+          <h3>📖 過去年度の保存について</h3>
+          <p>写真・作成済みアルバムを残したまま、新年度のアルバムを扱える仕組みを準備します。</p>
+          <p class="hint">現在は安全のため年度切り替えを実行できません。バックアップと年度別閲覧が実装されるまで、園児データの進級・削除は行いません。</p>
+        </div>
+      </div>
     </section>
 
     <section class="screen editor" data-screen="editor" aria-label="見開き編集画面">
@@ -1110,7 +1133,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='yearAdmin')renderYearAdmin(); if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1634,6 +1657,18 @@
   function applyLayout(kind){const n=editItems.length;if(!n)return;const leftCount=Math.ceil(n/2),leftItems=editItems.slice(0,leftCount),rightItems=editItems.slice(leftCount);let leftSlots,rightSlots,fit='cover';if(kind==='equal'){const appliedMode=equalLayoutMode;leftSlots=equalPageSlots(leftItems.length,pageBounds('left'),appliedMode);rightSlots=equalPageSlots(rightItems.length,pageBounds('right'),appliedMode);equalLayoutMode=appliedMode==='rect'?'square':'rect';const title=$('[data-layout="equal"] .layoutCardTitle');if(title)title.textContent=appliedMode==='rect'?'均等配置・長方形':'均等配置・正方形'}else{const variant=randomLayoutCycle++;leftSlots=comicPageSlots(leftItems.length,pageBounds('left'),variant);rightSlots=comicPageSlots(rightItems.length,pageBounds('right'),variant+1);fit='contain'}[[leftItems,leftSlots],[rightItems,rightSlots]].forEach(([items,slots])=>items.forEach((item,i)=>{const slot=slots[i];if(!slot)return;item.rotation=0;item.width=slot.w;item.height=slot.h;item.x=slot.x;item.y=slot.y;item.layoutFit=fit}));editItems.forEach((item,i)=>item.zIndex=i+1);recordEdit();renderSpread()}
   function setPanel(name){if(!name)name='photos';openPanel=name;$('#photoPanel').classList.toggle('open',name==='photos');$('#layoutPanel').classList.toggle('open',name==='layout');$('#cropPanel').classList.toggle('open',name==='crop');$('#bgRemovePanel').classList.toggle('open',name==='bgremove');$('#backgroundPanel').classList.toggle('open',name==='background');$('#textPanel').classList.toggle('open',name==='text');$('#stickerPanel').classList.toggle('open',name==='stickers');$$('.piconPanel').forEach(panel=>{const active=panel.classList.contains('open');if(active){panel.removeAttribute('inert');panel.inert=false}else{panel.setAttribute('inert','');panel.inert=true}});if(name==='text')syncTextPanel();if(name==='background')syncBackgroundPanel();$$('.piconTab').forEach(x=>x.classList.toggle('active',x.dataset.panel===name))}
 
+  function renderYearAdmin(){
+    $('#yearLabel').textContent=state.year+'年度';
+    const wrap=$('#yearPromotionList');wrap.replaceChildren();
+    CLASSES.forEach((c,i)=>{
+      const n=state.children.filter(child=>child.classId===c.id).length;
+      const next=CLASSES[i+1];
+      const row=document.createElement('div');row.className='yearPromotionRow';
+      const current=document.createElement('span');current.textContent=c.name+'（'+n+'名）';
+      const dest=document.createElement('strong');dest.textContent=next?'→ '+next.name:'→ 卒園';
+      row.append(current,dest);wrap.appendChild(row);
+    });
+  }
   function renderPageSettings(){$('#adminClass').innerHTML=CLASSES.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}（${c.age}）</option>`).join('');$('#adminClass').value=state.selectedClassId;$('#adminMode').value=state.creationMode;$('#adminCount').value=String(state.photosPerChild);$('#adminCandidateLimit').value=String([10,15,20].includes(Number(state.candidateLimit))?state.candidateLimit:20);$('#adminPhotoWarning').checked=state.photoShortageAlert!==false;renderPageSettingsSummary()}
   function renderPageSettingsSummary(){$('#adminSettingsSummary').textContent=`現在の設定：${$('#adminClass').selectedOptions[0].textContent}・${$('#adminMode').selectedOptions[0].textContent}・1人${$('#adminCount').value}枚・候補上限${$('#adminCandidateLimit').value}枚`}
 
