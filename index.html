@@ -1508,8 +1508,16 @@
         const icon=document.createElement('img');icon.alt=c.name+'のアイコン';icon.src='./'+({tanpopo:'tanpopo',tulip:'tulip',cosmos:'cosmos',canna:'canna',deigo:'deigo',sakura:'sakura'}[c.id]||c.id)+'.png';
         const child=children.find(x=>x.id===albumPreviewChildId);
         const name=document.createElement('b');name.textContent=child?child.name+' さん':'園児を選択してください';
-        cover.append(heading,year,icon,name);
-        try{const blob=await getImage('classIcon:'+c.id);if(token===albumPreviewToken&&blob)icon.src=fileUrl(blob)}catch(e){console.warn('クラスアイコン読込失敗',e)}
+        const white=document.createElement('div');white.className='coverWhitePanel';white.style.cssText='width:100%;height:100%;border-radius:18px';
+        white.append(heading,year,icon,name);cover.replaceChildren(white);
+        const settings=coverSettings(),hex=settings.color||'#ffd5e5',opacity=Math.max(0,Math.min(100,Number(settings.opacity??100)))/100;
+        cover.style.backgroundColor='rgb('+[0,1,2].map(i=>Math.round(255*(1-opacity)+parseInt(hex.slice(1+2*i,3+2*i),16)*opacity)).join(',')+')';
+        cover.style.backgroundSize='cover';cover.style.backgroundPosition='center';
+        white.style.fontFamily='"'+(settings.font||'Kosugi Maru')+'",sans-serif';
+        try{
+          if(settings.mode==='image'){const bg=await getImage('coverBg:'+state.year+':'+c.id);if(token===albumPreviewToken&&bg)cover.style.backgroundImage='url("'+fileUrl(bg)+'")'}
+          const blob=await getImage('classIcon:'+c.id);if(token===albumPreviewToken&&blob)icon.src=fileUrl(blob)
+        }catch(e){console.warn('表紙素材の読込失敗',e)}
       }else if(entry.kind==='back'){
         special('裏表紙・集合写真','left','集合写真のページ（準備中）');
       }else{
