@@ -137,9 +137,11 @@
       body>*:not(.albumPrintStage){display:none!important}
       .albumPrintStage,.albumPrintStage.previewReady{display:block!important;position:static!important;margin:0!important;padding:0!important;background:white!important;overflow:visible!important}
       .albumPrintToolbar{display:none!important}
-      .albumPrintPage,.albumPrintStage.previewReady .albumPrintPage{width:210mm!important;height:297mm!important;aspect-ratio:auto!important;overflow:hidden!important;position:relative!important;margin:0!important;box-shadow:none!important;page-break-after:always;break-after:page;background:white}
-      .albumPrintPage:last-child{page-break-after:auto;break-after:auto}
-      .albumPrintLeaf{width:210mm!important;height:297mm!important;inset:0!important}
+      /* iOS AirPrint may paginate an edge-to-edge 297mm box onto two sheets.
+         Keep the entire proportional A4 canvas inside the physical print area. */
+      .albumPrintPage,.albumPrintStage.previewReady .albumPrintPage{width:204mm!important;height:288.5mm!important;aspect-ratio:auto!important;overflow:hidden!important;position:relative!important;margin:0 auto!important;padding:0!important;border:0!important;box-shadow:none!important;page-break-inside:avoid!important;break-inside:avoid-page!important;page-break-after:always;break-after:page;background:white}
+      .albumPrintPage:last-child{page-break-after:auto!important;break-after:auto!important}
+      .albumPrintLeaf{width:204mm!important;height:288.5mm!important;inset:0!important}
     }
     .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
     .albumPreviewEntry b,.albumPreviewEntry small{display:block}.albumPreviewEntry small{margin-top:6px;color:#766c70}
