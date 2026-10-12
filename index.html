@@ -1181,6 +1181,14 @@
 
     /* Native A4 print: two pages from the exact same editable spread. */
     #nativePrintHost{display:none}
+    /* Isolate printed leaves without changing live editor geometry. */
+    @media print{
+      #nativePrintHost .nativePrintLeaf{contain:layout paint!important;box-sizing:border-box!important}
+      #nativePrintHost .nativePrintSpread{contain:paint!important}
+      #nativePrintHost .nativePrintSpread .placedText{min-width:0!important;min-height:0!important}
+      #nativePrintHost .nativePrintSpread .textEditable{overflow:hidden!important}
+      #nativePrintHost .nativePrintSpread .placedPhoto{box-sizing:border-box!important}
+    }
     @page{size:A4 portrait;margin:0}
     @media print{
       html,body{margin:0!important;padding:0!important;background:#fff!important;width:210mm!important}
@@ -3382,6 +3390,10 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       }
       spread.append(copy);
     }
+    // Keep only page-local painting; Safari otherwise fragments overflowing
+    // curved glyphs and frame decorations into the neighboring sheet.
+    leaf.style.contain='layout paint';
+    spread.style.contain='paint';
     leaf.append(spread);
     return leaf;
   }
