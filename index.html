@@ -3446,7 +3446,8 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
         spread.append(frame);
         // The editor frame uses an inset white panel over the decorations.
         const white=document.createElement('div');
-        white.style.cssText='position:absolute;top:9%;bottom:9%;background:white;z-index:0;'+(side==='right'?'left:0;right:16%':'left:16%;right:0');
+        white.className='pageBgFrameCenter';
+        white.style.cssText='position:absolute;top:9%;bottom:9%;background:white;border-radius:7mm;z-index:0;'+(side==='right'?'left:0;right:16%':'left:16%;right:0');
         spread.append(white);continue;
       }
       if(!original.matches('.placedPhoto,.placedText,.placedSticker'))continue;
