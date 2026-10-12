@@ -3439,7 +3439,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       removeNativePrintHost();
       nativePrintHost=document.createElement('div');
       nativePrintHost.id='nativePrintHost';
-      nativePrintHost.style.cssText='display:block;position:fixed;left:0;top:0;width:210mm;opacity:0.01;pointer-events:none;z-index:-1;overflow:visible';
+      nativePrintHost.style.cssText='display:block;position:fixed;left:0;top:0;width:210mm;opacity:1;pointer-events:none;z-index:-1;overflow:visible';
       nativePrintHost.append(makeNativePrintLeaf(source,'left'),makeNativePrintLeaf(source,'right'));
       document.body.append(nativePrintHost);
       const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
