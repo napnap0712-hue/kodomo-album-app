@@ -68,6 +68,21 @@
     .childPhotoSlot .childDetailPhoto{width:min(100%,136px);height:auto;aspect-ratio:1;font-size:48px}
     .childPhotoSlot b{font-size:13px;text-align:center}
     .childPhotoButton{width:100%;display:grid;place-items:center;min-height:46px;padding:9px 5px;text-align:center;font-size:12px;cursor:pointer}
+    .albumSettingSections{display:grid;gap:11px}
+    .albumSettingSection{background:#fff;border:1px solid #eee6e1;border-radius:20px;overflow:hidden}
+    .albumSettingSection summary{list-style:none;cursor:pointer;padding:17px 16px;background:var(--setting-tint);font-weight:900;font-size:16px}
+    .albumSettingSection summary::-webkit-details-marker{display:none}
+    .albumSettingSection summary::after{content:"⌄";float:right}
+    .albumSettingSection[open] summary::after{content:"⌃"}
+    .albumSettingSection summary small{display:block;margin-top:5px;font-weight:400;font-size:12px;color:#7a7370}
+    .albumSettingBody{display:grid;gap:13px;padding:16px}
+    .albumSettingBody p{margin:0;line-height:1.65;font-size:13px}
+    .albumSettingStats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .albumSettingStats div{background:#f7f6f3;padding:14px;text-align:center;border-radius:15px}
+    .albumSettingStats b{display:block;font-size:29px}
+    .albumSettingStats small{font-size:12px}
+    .albumSettingCheck{display:flex;align-items:center;gap:10px;font-size:14px}
+    .albumSettingCheck input{width:20px;height:20px}
     .classCard{display:grid;gap:10px;text-align:center}.classIcon{width:104px;height:104px;margin:auto;border-radius:26px;background:#faf7f2;border:1px dashed #d6ccc3;display:grid;place-items:center;overflow:hidden;font-size:34px}.classIcon img{width:100%;height:100%;object-fit:cover}
     .fileBtn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:15px;background:#fff;border:1px solid var(--line);font-weight:900}.fileBtn input{display:none}
     .bulkRow{display:grid;grid-template-columns:82px 1fr 46px;gap:10px;align-items:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 5px 14px rgba(70,58,47,.03)}
@@ -993,12 +1008,29 @@
     </section>
 
     <section class="screen" data-screen="pageSettings">
-      <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>ページ設定</h2></div>
-      <div class="card stack">
-        <div class="field"><label>ページ作成方式</label><select id="adminMode"><option value="monthly">月ごと</option><option value="event">イベントごと</option><option value="mixed">月・イベント両方</option></select></div>
-        <div class="field"><label>1人あたり使用する写真枚数</label><select id="adminCount"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
-        <button class="primary wide" id="savePageSettings" type="button">設定を保存</button>
+      <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>アルバム設定</h2></div>
+      <div class="albumSettingSections">
+        <details class="albumSettingSection" open><summary style="--setting-tint:#fff1f5">🌷 基本設定 <small>ページ作成方式・写真枚数</small></summary><div class="albumSettingBody">
+          <div class="field"><label for="adminMode">ページ作成方式</label><select id="adminMode"><option value="monthly">月ごと</option><option value="event">行事ごと</option><option value="mixed">月・行事の両方</option></select></div>
+          <div class="field"><label for="adminCount">1人あたりの写真枚数</label><select id="adminCount"><option value="1">1枚</option><option value="2">2枚</option><option value="3">3枚</option><option value="4">4枚</option></select></div>
+        </div></details>
+        <details class="albumSettingSection"><summary style="--setting-tint:#eff9f1">👧 対象園児 <small>月ページ・行事ページの参加者</small></summary><div class="albumSettingBody">
+          <p><b>月ページ：</b>クラスの園児全員が対象</p>
+          <p><b>行事ページ：</b>ページ作成時に参加者を選択</p>
+          <p class="hint">行事に参加しない園児は対象から外せます。参加者の指定は個別のページ作成時に行います。</p>
+        </div></details>
+        <details class="albumSettingSection"><summary style="--setting-tint:#eef5ff">📖 アルバム構成 <small>ページ数・印刷サイズ</small></summary><div class="albumSettingBody">
+          <div class="albumSettingStats"><div><b>12</b><small>通常見開き</small></div><div><b>29</b><small>A4単ページ合計</small></div></div>
+          <p>通常ページ：12見開き＝24ページ</p><p>特別ページ：表紙・表紙裏・先生メッセージ見開き・裏表紙＝5ページ</p>
+          <p class="hint">1ページはA4縦、見開きはA3横相当。この項目は確定仕様の確認用です。</p>
+        </div></details>
+        <details class="albumSettingSection"><summary style="--setting-tint:#f5eeff">🖼️ 写真候補設定 <small>園児別の上限・不足のお知らせ</small></summary><div class="albumSettingBody">
+          <div class="field"><label for="adminCandidateLimit">園児1人あたりの候補写真上限</label><select id="adminCandidateLimit"><option value="10">10枚</option><option value="15">15枚</option><option value="20">20枚</option></select></div>
+          <label class="albumSettingCheck"><input type="checkbox" id="adminPhotoWarning"> 写真が不足している園児をお知らせ</label>
+          <p class="hint">既存の候補写真は削除しません。設定上限を超えた園児には新たな写真を紐づけません。写真不足でもページ作成できます。</p>
+        </div></details>
       </div>
+      <div class="card stack" style="margin-top:14px"><div id="adminSettingsSummary" class="hint"></div><button class="primary wide" id="savePageSettings" type="button">設定を保存</button></div>
     </section>
 
     <section class="screen" data-screen="photoAdmin">
@@ -1063,7 +1095,7 @@
   const SUPABASE_URL='https://qlvuayqevkmtpkjstkmd.supabase.co';
   const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsdnVheXFldmttdHBranN0a21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNDA4ODYsImV4cCI6MjEwNTgxNjg4Nn0.QdLaqAuSPO9wyqWbmbMyDKxS_sdd4nfW5aPlvspTu5c';
   const DATA_SCHEMA=12;
-  const defaultState={schemaVersion:DATA_SCHEMA,setupCompleted:false,year:2026,selectedClassId:'tulip',creationMode:'mixed',photosPerChild:3,children:[],pages:[]};
+  const defaultState={schemaVersion:DATA_SCHEMA,setupCompleted:false,year:2026,selectedClassId:'tulip',creationMode:'mixed',photosPerChild:3,candidateLimit:20,photoShortageAlert:true,children:[],pages:[]};
   let state=loadState(); let currentClassId=state.selectedClassId; let bulkDraft=[]; let pageDraft=[];
   let editingPage=null, editItems=[], textItems=[], stickerItems=[], editBackground=null, selectedEditId=null, selectedTextId=null, selectedStickerId=null, editHistory=[], editHistoryIndex=-1, openPanel=null, equalLayoutMode='rect', randomLayoutCycle=0;
   let candidateSelection=new Set(),viewScale=1,viewX=0,viewY=0,cropDraft=null,sharedAssets=[],backgroundRemovalBusy=false,segmentationInstance=null;const sharedBlobUrls=new Map(),editorFreshBlobs=new Map();
@@ -1177,7 +1209,7 @@
   function sortChildren(){return state.children.filter(c=>c.classId===state.selectedClassId)}
   function sortPhotos(){return sortPage()?.photos||[]}
   function sortCount(id){return sortPhotos().filter(p=>photoLinks(p).includes(id)).length}
-  function sortStatus(count){return count<state.photosPerChild?'不足':count>20?'多い':'適正'}
+  function sortStatus(count){return count<state.photosPerChild?'不足':count>(Number(state.candidateLimit)||20)?'多い':'適正'}
   function sortOpenPhotos(id){sortChildId=id;sortSelection.clear();sortView='photos';renderPhotoSorting()}
   function sortOpenDetail(id){sortPhotoId=id;sortPreviousView=sortView;sortView='detail';renderPhotoSorting()}
   async function sortThumb(blob){const img=document.createElement('img');img.src=fileUrl(blob);img.alt='写真';return img}
@@ -1197,7 +1229,7 @@
       for(const child of children){
         const count=sortCount(child.id),status=sortStatus(count);
         const btn=document.createElement('button');btn.type='button';btn.className='sortChild';
-        btn.innerHTML='<span class="sortAvatar">🌼</span><span class="sortChildMain"><b>'+escapeHtml(child.name)+'</b><small>候補 '+count+'枚</small></span><span class="sortStatus '+(status==='不足'?'low':status==='多い'?'high':'')+'">'+status+'</span><span>›</span>';
+        btn.innerHTML='<span class="sortAvatar">🌼</span><span class="sortChildMain"><b>'+escapeHtml(child.name)+'</b><small>候補 '+count+'枚</small></span>'+(status==='不足'&&state.photoShortageAlert===false?'':'<span class="sortStatus '+(status==='不足'?'low':status==='多い'?'high':'')+'">'+status+'</span>')+'<span>›</span>';
         btn.onclick=()=>sortOpenPhotos(child.id);list.appendChild(btn);
         try{const blob=await getImage('child:'+child.id);if(token!==sortRenderVersion)return;if(blob){const avatar=btn.querySelector('.sortAvatar');avatar.replaceChildren(await sortThumb(blob))}}catch(e){console.warn(e)}
       }
@@ -1221,7 +1253,7 @@
       const tip=document.createElement('p');tip.textContent='写真を複数選択して、園児に追加できます';wrap.appendChild(tip);
       const bar=document.createElement('div');bar.className='sortActions';
       const save=document.createElement('button');save.textContent='選択した写真を紐づけ（'+sortSelection.size+'）';
-      save.dataset.sortAssign='1';save.onclick=()=>{for(const p of sortPhotos().filter(p=>sortSelection.has(p.id)))setPhotoLinks(p,[...photoLinks(p),sortChildId].filter(Boolean));saveState();sortSelection.clear();sortView='photos';renderPhotoSorting();toast('写真を紐づけました')};
+      save.dataset.sortAssign='1';save.onclick=()=>{const chosen=sortPhotos().filter(p=>sortSelection.has(p.id));if(sortChildId&&sortCount(sortChildId)+chosen.length>(Number(state.candidateLimit)||20)){toast('候補写真の上限を超えます');return}for(const p of chosen)setPhotoLinks(p,[...photoLinks(p),sortChildId].filter(Boolean));saveState();sortSelection.clear();sortView='photos';renderPhotoSorting();toast('写真を紐づけました')};
       bar.appendChild(save);wrap.appendChild(bar);
       await renderSortTiles(sortPhotos().filter(p=>!photoLinks(p).includes(sortChildId)),wrap,token,false);return;
     }
@@ -1238,7 +1270,7 @@
       const selected=new Set(photoLinks(photo));
       sortChildren().forEach(c=>{const label=document.createElement('label');const input=document.createElement('input');input.type='checkbox';input.checked=selected.has(c.id);input.onchange=()=>input.checked?selected.add(c.id):selected.delete(c.id);label.append(input,document.createTextNode(c.name));checks.appendChild(label)});
       const bar=document.createElement('div');bar.className='sortActions';
-      const save=document.createElement('button');save.textContent='✓ 紐づけを保存';save.onclick=()=>{setPhotoLinks(photo,[...selected]);saveState();toast('保存しました');renderPhotoSorting()};
+      const save=document.createElement('button');save.textContent='✓ 紐づけを保存';save.onclick=()=>{const added=[...selected].filter(id=>!photoLinks(photo).includes(id));if(added.some(id=>sortCount(id)>=(Number(state.candidateLimit)||20))){toast('候補写真の上限を超えます');return}setPhotoLinks(photo,[...selected]);saveState();toast('保存しました');renderPhotoSorting()};
       const clear=document.createElement('button');clear.textContent='未振り分けに戻す';clear.onclick=()=>{setPhotoLinks(photo,[]);saveState();toast('未振り分けに戻しました');renderPhotoSorting()};
       bar.append(save,clear);wrap.appendChild(bar);
     }
@@ -1591,7 +1623,8 @@
   function applyLayout(kind){const n=editItems.length;if(!n)return;const leftCount=Math.ceil(n/2),leftItems=editItems.slice(0,leftCount),rightItems=editItems.slice(leftCount);let leftSlots,rightSlots,fit='cover';if(kind==='equal'){const appliedMode=equalLayoutMode;leftSlots=equalPageSlots(leftItems.length,pageBounds('left'),appliedMode);rightSlots=equalPageSlots(rightItems.length,pageBounds('right'),appliedMode);equalLayoutMode=appliedMode==='rect'?'square':'rect';const title=$('[data-layout="equal"] .layoutCardTitle');if(title)title.textContent=appliedMode==='rect'?'均等配置・長方形':'均等配置・正方形'}else{const variant=randomLayoutCycle++;leftSlots=comicPageSlots(leftItems.length,pageBounds('left'),variant);rightSlots=comicPageSlots(rightItems.length,pageBounds('right'),variant+1);fit='contain'}[[leftItems,leftSlots],[rightItems,rightSlots]].forEach(([items,slots])=>items.forEach((item,i)=>{const slot=slots[i];if(!slot)return;item.rotation=0;item.width=slot.w;item.height=slot.h;item.x=slot.x;item.y=slot.y;item.layoutFit=fit}));editItems.forEach((item,i)=>item.zIndex=i+1);recordEdit();renderSpread()}
   function setPanel(name){if(!name)name='photos';openPanel=name;$('#photoPanel').classList.toggle('open',name==='photos');$('#layoutPanel').classList.toggle('open',name==='layout');$('#cropPanel').classList.toggle('open',name==='crop');$('#bgRemovePanel').classList.toggle('open',name==='bgremove');$('#backgroundPanel').classList.toggle('open',name==='background');$('#textPanel').classList.toggle('open',name==='text');$('#stickerPanel').classList.toggle('open',name==='stickers');$$('.piconPanel').forEach(panel=>{const active=panel.classList.contains('open');if(active){panel.removeAttribute('inert');panel.inert=false}else{panel.setAttribute('inert','');panel.inert=true}});if(name==='text')syncTextPanel();if(name==='background')syncBackgroundPanel();$$('.piconTab').forEach(x=>x.classList.toggle('active',x.dataset.panel===name))}
 
-  function renderPageSettings(){$('#adminMode').value=state.creationMode;$('#adminCount').value=String(state.photosPerChild)}
+  function renderPageSettings(){$('#adminMode').value=state.creationMode;$('#adminCount').value=String(state.photosPerChild);$('#adminCandidateLimit').value=String([10,15,20].includes(Number(state.candidateLimit))?state.candidateLimit:20);$('#adminPhotoWarning').checked=state.photoShortageAlert!==false;renderPageSettingsSummary()}
+  function renderPageSettingsSummary(){$('#adminSettingsSummary').textContent=`現在の設定：${$('#adminMode').selectedOptions[0].textContent}・1人${$('#adminCount').value}枚・候補上限${$('#adminCandidateLimit').value}枚`}
 
   $$('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
   $('#backToClassHome').addEventListener('click',()=>show('home'));
@@ -1606,7 +1639,8 @@
   $('#openBulk').addEventListener('click',()=>{bulkDraft=[];show('bulkRegister')});
   $('#addBulkRow').addEventListener('click',()=>{if(bulkDraft.length>=30){toast('1回で登録できるのは最大30名です');return}bulkDraft.push(freshRow());renderBulk()});
   $('#saveBulk').addEventListener('click',async()=>{const valid=bulkDraft.filter(r=>r.name.trim()||r.file);if(!valid.length){toast('園児情報を入力してください');return}if(valid.some(r=>!r.name.trim()||!r.file)){toast('写真とフルネームを両方入力してください');return}for(const r of valid){const childId=crypto.randomUUID();state.children.push({id:childId,classId:currentClassId,name:r.name.trim(),createdAt:Date.now()});await putImage(`child:${childId}`,r.file)}saveState();bulkDraft=[];show('childList');toast(`${valid.length}名を一括登録しました`)});
-  $('#savePageSettings').addEventListener('click',()=>{state.creationMode=$('#adminMode').value;state.photosPerChild=Number($('#adminCount').value);saveState();toast('ページ設定を保存しました')});
+  ['adminMode','adminCount','adminCandidateLimit'].forEach(id=>$('#'+id).addEventListener('change',renderPageSettingsSummary));
+  $('#savePageSettings').addEventListener('click',()=>{state.creationMode=$('#adminMode').value;state.photosPerChild=Number($('#adminCount').value);state.candidateLimit=Number($('#adminCandidateLimit').value);state.photoShortageAlert=$('#adminPhotoWarning').checked;saveState();toast('アルバム設定を保存しました')});
   $('#footerCreate').addEventListener('click',openPageCreate);
   $('#pagePhotoInput').addEventListener('change',e=>{const files=[...(e.target.files||[])];pageDraft.push(...files.map(file=>({id:crypto.randomUUID(),file,childId:''})));e.target.value='';renderPageDraft()});
   $('#closePageCreate').addEventListener('click',()=>show('classWorkspace'));
