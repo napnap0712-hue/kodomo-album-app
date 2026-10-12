@@ -2102,7 +2102,7 @@
     return safe(state.year+'年度_'+cls(state.selectedClassId).name+'_'+child.name+'さん');
   }
   async function albumPdfSave(blob,name){
-    const file=new File([blob],name,{type:blob.type||'application/pdf'});
+    const file=new File([blob],name,{type:name.endsWith('.zip')?'application/zip':'application/pdf'});
     if(navigator.canShare?.({files:[file]})&&navigator.share){
       try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return;console.warn('Share PDF fallback',e)}
     }
@@ -2128,7 +2128,12 @@
           page.style.cssText='position:relative;width:794px;height:1123px;inset:auto;overflow:hidden;background:white;box-sizing:border-box';
           host.append(page);
           await Promise.all([...page.querySelectorAll('img')].map(img=>img.decode?.().catch(()=>{})||Promise.resolve()));
-          const canvas=await window.html2canvas(page,{backgroundColor:'#ffffff',scale:1.5,useCORS:true,logging:false,width:794,height:1123});
+          let canvas;
+          try{
+            canvas=await window.html2canvas(page,{backgroundColor:'#ffffff',scale:1,useCORS:true,allowTaint:false,logging:false,width:794,height:1123,removeContainer:true});
+          }catch(error){
+            throw new Error('ページ'+(pageNo+1)+'の画像化：'+(error?.message||String(error)));
+          }
           page.remove();
           if(pageNo)pdf.addPage('a4','portrait');
           pdf.addImage(canvas.toDataURL('image/jpeg',.91),'JPEG',0,0,210,297,undefined,'FAST');
@@ -2153,6 +2158,7 @@
     const buttons=[$('#albumPrintPdf'),$('#albumZipPdf')],status=$('#albumPrintStatus');
     buttons.forEach(b=>b.disabled=true);
     try{
+      status.style.color='';
       status.textContent='PDF作成の準備中…';
       await ensureAlbumPdfLibraries(all);
       if(all){
@@ -2172,8 +2178,10 @@
       status.textContent='作成完了。共有またはダウンロードで保存してください。';
     }catch(error){
       console.error('album pdf export',error);
-      status.textContent='PDF作成に失敗しました：'+(error?.message||'不明なエラー');
-      toast('PDFを作成できませんでした');
+      const reason=error?.message||String(error)||'不明なエラー';
+      status.textContent='PDF作成エラー：'+reason;
+      status.style.color='#a13453';
+      toast('PDF作成エラー：'+reason);
     }finally{albumPdfBusy=false;buttons.forEach(b=>b.disabled=false)}
   }
   $('#albumPrintPdf').addEventListener('click',()=>exportAlbumPdf(false));
