@@ -2235,7 +2235,7 @@
     const originalChild=albumPreviewChildId,originalIndex=albumPreviewIndex;
     const captureHost=document.createElement('div');
     // Render an A4 page at a fixed size, independent of the iPhone viewport.
-    captureHost.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;overflow:hidden;pointer-events:none;z-index:-1';
+    captureHost.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;overflow:hidden;pointer-events:none;opacity:0.01;z-index:99999;background:white';
     document.body.append(captureHost);
     let count=0;
     try{
@@ -2248,7 +2248,8 @@
         for(const side of sides){
           const leaf=albumPrintLeafFromSpread(source,side);
           leaf.style.cssText='position:relative;inset:auto;width:794px;height:1123px;overflow:hidden;background:white;box-sizing:border-box';
-          captureHost.append(leaf);
+          captureHost.replaceChildren(leaf);
+          await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
           progress?.(count,28,'写真の読み込み中');
           try{
             await Promise.all([...leaf.querySelectorAll('img')].map(img=>new Promise(resolve=>{
@@ -2265,8 +2266,8 @@
             let canvas;
             try{
               progress?.(count,28,'ページの画像化中');
-              canvas=await window.html2canvas(leaf,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false,width:794,height:1123,scrollX:0,scrollY:0,removeContainer:true});
-              // Blob -> bytes avoids keeping a large base64 data URL in iPhone memory.
+              canvas=await window.html2canvas(leaf,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false,width:794,height:1123,scrollX:0,scrollY:0,removeContainer:true,imageTimeout:15000});
+              // Keep JPEG encoding internal; the user receives only a PDF.
               progress?.(count,28,'JPEG変換中');
               const jpeg=canvas.toDataURL('image/jpeg',0.97);
               progress?.(count,28,'PDFに追加中');
@@ -2277,9 +2278,9 @@
             }
           }catch(error){
             throw new Error((count+1)+'ページ目のプレビュー変換：'+(error?.message||String(error)));
-          }finally{leaf.remove()}
+          }finally{leaf.remove();captureHost.replaceChildren()}
           count++;progress?.(count,28,'完了');
-          await new Promise(resolve=>setTimeout(resolve,35));
+          await new Promise(resolve=>setTimeout(resolve,50));
         }
       }
       return pdf.output('blob');
