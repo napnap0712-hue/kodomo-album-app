@@ -1061,7 +1061,7 @@
         <div class="yearGuideCard coverBackgroundCard"><h3>🎨 背景選択</h3>
           <div class="typeChoices"><label class="typeChoice"><input type="radio" name="coverBgMode" value="solid" checked><span>単色</span></label><label class="typeChoice"><input type="radio" name="coverBgMode" value="image"><span>背景画像</span></label></div>
           <div id="coverColorControls"><div id="coverColors" class="coverColorSwatches"></div><div class="coverOpacityLabel">色の薄さ <output id="coverOpacityNumber">100%</output></div><div class="coverOpacityAdjust"><button type="button" id="coverOpacityMinus" aria-label="色を薄くする">－</button><input type="range" id="coverOpacity" min="5" max="100" step="5" value="100"><button type="button" id="coverOpacityPlus" aria-label="色を濃くする">＋</button></div></div>
-          <div id="coverImageControls" hidden><div id="coverPatternChoices" class="coverPatternChoices"></div><p class="hint">画像をタップして選択。各柄に元画像を登録すると、その画像が表紙に使われます。</p><label class="fileBtn coverUploadBtn">＋ 選択中の柄に元画像を登録<input type="file" id="coverBgFile" accept="image/*"></label></div>
+          <div id="coverImageControls" hidden><div id="coverPatternChoices" class="coverPatternChoices"></div></div>
         </div>
         <p class="coverFixedHint">ⓘ 表紙の基本レイアウトは固定です</p>
       </div>
@@ -1503,6 +1503,7 @@
     const token=++coverRenderToken;
     const color=settings.color||'#ffd5e5',amount=Math.max(0,Math.min(100,Number(settings.opacity??100)))/100;
     canvas.style.backgroundColor='rgb('+[0,1,2].map(i=>Math.round(255*(1-amount)+parseInt(color.slice(1+i*2,3+i*2),16)*amount)).join(',')+')';
+    if(settings.mode==='image')canvas.style.backgroundColor='#ffffff';
     canvas.style.backgroundImage='none';canvas.style.backgroundSize='cover';canvas.style.backgroundPosition='center';
     if(settings.mode==='image'){
       const blob=previewFile||await coverImageForPattern(settings.pattern||'dots');
@@ -1518,7 +1519,7 @@
     const wrap=$('#coverPatternChoices');wrap.replaceChildren();
     for(const item of coverPatterns){
       const btn=document.createElement('button');btn.type='button';btn.className='coverPatternOption'+(item.id===(coverDraft.pattern||'dots')?' active':'');
-      const thumb=document.createElement('span');thumb.className='coverPatternThumb';useCoverPatternCss(thumb,item.id,null);
+      const thumb=document.createElement('span');thumb.className='coverPatternThumb';thumb.style.backgroundColor='#ffffff';useCoverPatternCss(thumb,item.id,null);
       try{const file=await getImage('coverPattern:'+item.id);if(file){thumb.style.backgroundImage='url("'+fileUrl(file)+'")';thumb.style.backgroundSize='cover'}}catch(e){console.warn(e)}
       const caption=document.createElement('small');caption.textContent=item.name;btn.append(thumb,caption);
       btn.onclick=()=>{coverDraft.pattern=item.id;coverPreviewFile=null;updateCoverEditor()};
@@ -1548,7 +1549,6 @@
   $('#coverOpacity').addEventListener('input',e=>{coverDraft.opacity=Number(e.target.value);updateCoverEditor()});
   $('#coverOpacityMinus').addEventListener('click',()=>{coverDraft.opacity=Math.max(5,Number(coverDraft.opacity)-5);updateCoverEditor()});
   $('#coverOpacityPlus').addEventListener('click',()=>{coverDraft.opacity=Math.min(100,Number(coverDraft.opacity)+5);updateCoverEditor()});
-  $('#coverBgFile').addEventListener('change',e=>{coverPreviewFile=e.target.files?.[0]||null;updateCoverEditor()});
   $('#coverSave').addEventListener('click',async()=>{
     try{if(coverPreviewFile)await putImage('coverPattern:'+(coverDraft.pattern||'dots'),coverPreviewFile);
       state.coverStyles={...(state.coverStyles||{}),[state.selectedClassId]:{...coverDraft}};saveState();toast('表紙のデザインを保存しました');show('classWorkspace');
@@ -1593,6 +1593,7 @@
         white.append(heading,year,icon,name);cover.replaceChildren(white);
         const settings=coverSettings(),hex=settings.color||'#ffd5e5',opacity=Math.max(0,Math.min(100,Number(settings.opacity??100)))/100;
         cover.style.backgroundColor='rgb('+[0,1,2].map(i=>Math.round(255*(1-opacity)+parseInt(hex.slice(1+2*i,3+2*i),16)*opacity)).join(',')+')';
+        if(settings.mode==='image')cover.style.backgroundColor='#ffffff';
         cover.style.backgroundSize='cover';cover.style.backgroundPosition='center';
         white.style.fontFamily='"'+(settings.font||'Kosugi Maru')+'",sans-serif';
         try{
