@@ -221,6 +221,21 @@
     .growthFaceSmall{width:42%;max-width:110px;aspect-ratio:1;overflow:hidden;background:#e8eef3;border-radius:6px;flex-shrink:0}
     .growthFaceSmall img{width:100%;height:100%;object-fit:cover;display:block}
     .growthAlbumFaces{display:flex;justify-content:center;gap:6px;width:100%}
+    /* Match the growth editor sheet on the left album page only. */
+    #albumPreviewSpread .growthAlbumPage{position:absolute;left:0;top:0;width:50%;height:100%;box-sizing:border-box;background:#dfedf9;border:0;border-radius:0;padding:6%;padding-left:3%;padding-right:3%;container-type:inline-size;display:flex;align-items:stretch;justify-content:center;color:#405e79}
+    #albumPreviewSpread .growthAlbumPage .growthPageInner{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;padding:5cqw 4cqw;gap:3.3cqw;justify-content:center;border-radius:6cqw;overflow:hidden}
+    #albumPreviewSpread .growthAlbumPage h3{margin:0;font-size:7cqw;line-height:1.25;color:#5785aa}
+    #albumPreviewSpread .growthAlbumPage .growthAlbumName{font-weight:900;font-size:6.5cqw;line-height:1.2;overflow-wrap:anywhere}
+    #albumPreviewSpread .growthAlbumPage .growthFaces{gap:4cqw}
+    #albumPreviewSpread .growthAlbumPage .growthFace{width:100%;border-radius:3cqw}
+    #albumPreviewSpread .growthAlbumPage .growthFace span{font-size:3.5cqw}
+    #albumPreviewSpread .growthAlbumPage .growthPreviewMeasures{gap:3cqw}
+    #albumPreviewSpread .growthAlbumPage .growthPreviewMeasures>div{padding:3cqw 1cqw;gap:2cqw;border-radius:5cqw}
+    #albumPreviewSpread .growthAlbumPage .growthPreviewMeasures b{font-size:4.5cqw;line-height:1.2}
+    #albumPreviewSpread .growthAlbumPage .growthPreviewMeasures strong{font-size:5.4cqw;line-height:1.1}
+    #albumPreviewSpread .growthAlbumPage .growthDiff{gap:2cqw;padding-top:3cqw;font-size:4.3cqw;line-height:1.25}
+    #albumPreviewSpread .growthAlbumPage .growthDiff strong{font-size:4.7cqw;line-height:1.2}
+    #albumPreviewSpread .growthAlbumPage .growthDiffRow{flex-wrap:wrap}
     .growthEntryGrid label{display:grid;gap:7px;font-size:14px;font-weight:800}
     .growthEntryGrid input{width:100%;min-width:0;box-sizing:border-box;height:47px;padding:10px;border:1px solid #d7dfeb;border-radius:12px;background:white;font-size:16px}
     .yearOverview{display:grid;gap:14px}
@@ -1781,21 +1796,36 @@
       };
       if(entry.kind==='growth'){
         const record=state.growthRecords?.[state.year+':'+c.id+':'+albumPreviewChildId]||{};
-        const growth=document.createElement('div');growth.className='albumSpecialPreview';growth.style.cssText='width:50%;left:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;background:#f3f9ff;text-align:center';
-        const growthTitle=document.createElement('strong');growthTitle.textContent='せいちょうのきろく';
-        const beginning=document.createElement('small');beginning.textContent='4月　身長 '+(record.startHeight||'—')+' cm ／ 体重 '+(record.startWeight||'—')+' kg';
-        const ending=document.createElement('small');ending.textContent='3月　身長 '+(record.endHeight??record.height??'—')+' cm ／ 体重 '+(record.endWeight??record.weight??'—')+' kg';
-        const height=document.createElement('b');height.textContent='身長 '+growthDifference(record.startHeight,record.endHeight??record.height,'cm');
-        const weight=document.createElement('b');weight.textContent='体重 '+growthDifference(record.startWeight,record.endWeight??record.weight,'kg');
-        const photos=document.createElement('div');photos.className='growthAlbumFaces';
+        const growth=document.createElement('div');growth.className='growthAlbumPage';
+        const inner=document.createElement('div');inner.className='growthPageInner';
+        const title=document.createElement('h3');title.textContent='せいちょうのきろく';
+        const name=document.createElement('div');name.className='growthAlbumName';
+        const selectedChild=children.find(child=>child.id===albumPreviewChildId);
+        name.textContent=selectedChild?selectedChild.name.replace(/\\s*さん$/,'')+' さん':'園児を選択してください';
+        const faces=document.createElement('div');faces.className='growthFaces';
         for(const period of ['Start','End']){
-          const frame=document.createElement('div');frame.className='growthFaceSmall';
+          const face=document.createElement('div');face.className='growthFace';
           const file=await getImage('growthFace:'+state.year+':'+c.id+':'+albumPreviewChildId+':'+period).catch(()=>null);
           if(token!==albumPreviewToken)return;
-          if(file){const img=document.createElement('img');img.src=fileUrl(file);img.alt=(period==='Start'?'4月':'3月')+'の顔写真';growthPhotoStyle(img,record.faces?.[period]||{});frame.append(img)}
-          photos.append(frame);
+          if(file){const img=document.createElement('img');img.src=fileUrl(file);img.alt=(period==='Start'?'4月':'3月')+'の顔写真';growthPhotoStyle(img,record.faces?.[period]||{});face.append(img)}
+          else{const placeholder=document.createElement('span');placeholder.textContent=(period==='Start'?'4月':'3月')+'の写真';face.append(placeholder)}
+          faces.append(face);
         }
-        growth.append(growthTitle,photos,beginning,ending,height,weight);spread.append(growth);
+        const measures=document.createElement('div');measures.className='growthPreviewMeasures';
+        for(const [label,h,w] of [['4月・年度初め',record.startHeight,record.startWeight],['3月・年度末',record.endHeight??record.height,record.endWeight??record.weight]]){
+          const cell=document.createElement('div');
+          const heading=document.createElement('b');heading.textContent=label;
+          const height=document.createElement('strong');height.textContent=(h??'—')+' cm';
+          const weight=document.createElement('strong');weight.textContent=(w??'—')+' kg';
+          cell.append(heading,height,weight);measures.append(cell);
+        }
+        const difference=document.createElement('div');difference.className='growthDiff';
+        const differenceTitle=document.createElement('span');differenceTitle.textContent='こんなに大きくなりました';
+        const differenceRow=document.createElement('div');differenceRow.className='growthDiffRow';
+        const heightDiff=document.createElement('strong');heightDiff.textContent='身長 '+growthDifference(record.startHeight,record.endHeight??record.height,'cm');
+        const weightDiff=document.createElement('strong');weightDiff.textContent='体重 '+growthDifference(record.startWeight,record.endWeight??record.weight,'kg');
+        differenceRow.append(heightDiff,weightDiff);difference.append(differenceTitle,differenceRow);
+        inner.append(title,name,faces,measures,difference);growth.append(inner);spread.append(growth);
         special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
       }else if(entry.kind==='cover'){
         const cover=document.createElement('div');cover.className='albumChildCover';spread.append(cover);
