@@ -1404,19 +1404,31 @@
     const c=cls(state.selectedClassId),pages=state.pages.filter(p=>p.classId===state.selectedClassId),spread=$('#albumPreviewSpread');
     $('#albumPreviewTitle').textContent=state.year+'年度 '+c.name;spread.replaceChildren();$('#albumPreviewList').replaceChildren();
     const token=++albumPreviewToken;
-    const entries=[{kind:'cover',name:'表紙'},{kind:'inside',name:'表紙裏'},{kind:'message',name:'先生からのメッセージ'},...Array.from({length:12},(_,i)=>({kind:'section',name:pages[i]?.title||((i+1)+'番目のセクション（未作成）'),page:pages[i]})),{kind:'back',name:'裏表紙'}];
+    const entries=[{kind:'cover',name:'表紙'},...Array.from({length:12},(_,i)=>({kind:'section',name:pages[i]?.title||('見開き'+(i+1)+'（未作成）'),page:pages[i]})),{kind:'growth',name:'身長・体重 ／ 担任からのメッセージ'},{kind:'back',name:'裏表紙・集合写真'}];
     albumPreviewIndex=Math.min(Math.max(albumPreviewIndex,0),entries.length-1);
     const entry=entries[albumPreviewIndex],p=entry.page;
     $('#albumPreviewPosition').textContent=(albumPreviewIndex+1)+' / '+entries.length+'　'+entry.name;
     $('#albumPreviewPrev').disabled=albumPreviewIndex===0;$('#albumPreviewNext').disabled=albumPreviewIndex===entries.length-1;
     if(entry.kind!=='section'||!p){
-      const placeholder=document.createElement('div');placeholder.className='albumSpecialPreview';
-      const single=entry.kind==='cover'||entry.kind==='inside'||entry.kind==='back';
-      placeholder.style.width=single?'50%':'100%';
-      placeholder.style.left=entry.kind==='cover'?'50%':'0';
-      const label=document.createElement('strong');label.textContent=entry.name;
-      const detail=document.createElement('small');detail.textContent=entry.kind==='section'?'このセクションはまだ作成されていません':'この特別ページはまだ編集機能がありません';
-      placeholder.append(label,detail);spread.append(placeholder);return;
+      const special=(name,side,description)=>{
+        const box=document.createElement('div');box.className='albumSpecialPreview';
+        box.style.width='50%';box.style.left=side==='right'?'50%':'0';
+        const label=document.createElement('strong');label.textContent=name;
+        const note=document.createElement('small');note.textContent=description;
+        box.append(label,note);spread.append(box);
+      };
+      if(entry.kind==='growth'){
+        special('身長・体重','left','成長記録のページ（準備中）');
+        special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
+      }else if(entry.kind==='cover'){
+        special('表紙','right','表紙をめくると見開き1ページ目が始まります');
+      }else if(entry.kind==='back'){
+        special('裏表紙・集合写真','left','集合写真のページ（準備中）');
+      }else{
+        special(entry.name,'left','この見開きはまだ作成されていません');
+        special(entry.name,'right','ページ作成後に写真を表示します');
+      }
+      return;
     }
     for(const [side,i] of [['left',0],['right',1]]){
       const cfg=p.background?.[side]||{},bg=document.createElement('div');bg.className='archiveHalf';bg.style.left=i*50+'%';bg.style.backgroundColor=cfg.color||'#fff';spread.append(bg);
