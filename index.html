@@ -123,6 +123,13 @@
     .albumPrintLeaf .albumChildCover,.albumPrintLeaf .backAlbumCover,.albumPrintLeaf .growthAlbumPage,.albumPrintLeaf .messageAlbumPage{position:absolute;left:0!important;top:0!important;width:100%!important;height:100%!important;box-sizing:border-box}
     .albumPrintLeaf .albumChildCover,.albumPrintLeaf .backAlbumCover{padding:6%}
     .albumPrintLeaf .coverWhitePanel{width:100%;height:100%;box-sizing:border-box}
+    .albumPrintLeaf.pdfCoverTrial .albumChildCover{left:0!important;top:0!important;width:100%!important;height:100%!important;box-sizing:border-box;padding:6%}
+    .albumPrintLeaf.pdfCoverTrial .coverWhitePanel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px!important;box-sizing:border-box;padding:12% 6%;border-radius:6%;overflow:hidden}
+    .albumPrintLeaf.pdfCoverTrial .coverWhitePanel .coverTitleArtwork{display:block;width:88%;height:auto;max-height:17%;flex:0 0 auto;object-fit:contain}
+    .albumPrintLeaf.pdfCoverTrial .coverWhitePanel img:not(.coverTitleArtwork){display:block;width:74%;height:36%;max-height:36%;object-fit:contain;flex:0 1 auto}
+    .albumPrintLeaf.pdfCoverTrial .coverWhitePanel span{font-size:25px;line-height:1.3}
+    .albumPrintLeaf.pdfCoverTrial .coverWhitePanel b{font-size:32px;line-height:1.3}
+
     .albumPrintLeaf .backAlbumCover{display:flex;justify-content:center;align-items:center;background-size:cover;background-position:center}
     .albumPrintLeaf .backAlbumCover>.coverWhitePanel{display:flex;justify-content:center;align-items:center;padding:8%;border:0;border-radius:7%;overflow:hidden;background:white}
     .albumPrintLeaf .backCoverPhotoFrame{width:100%;height:auto;aspect-ratio:4/3;flex:none}
@@ -2320,6 +2327,25 @@
       const reason=error?.message||String(error);status.style.color='#a13453';status.textContent='PDF作成エラー：'+reason;toast('PDF作成エラー：'+reason);
     }finally{albumPdfBusy=false;buttons.forEach(b=>b.disabled=false)}
   }
+  async function inlineCoverTrialImages(root){
+    const images=[...root.querySelectorAll('img')];
+    for(const img of images){
+      const url=img.currentSrc||img.src;
+      if(!url)continue;
+      try{
+        const response=await fetch(url);
+        if(!response.ok)throw new Error('HTTP '+response.status);
+        const blob=await response.blob();
+        const data=await new Promise((resolve,reject)=>{
+          const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob);
+        });
+        img.src=data;
+        await img.decode?.();
+      }catch(error){
+        throw new Error('表紙画像の取り込み失敗：'+(img.alt||url)+' '+(error?.message||error));
+      }
+    }
+  }
   async function exportPdfLibCoverTest(){
     const button=$('#albumPdfLibCoverTest'),status=$('#albumPrintStatus');
     if(!albumPreviewChildId){toast('園児を選択してください');return}
@@ -2335,8 +2361,10 @@
       albumPreviewIndex=0;
       await renderAlbumPreview();
       const leaf=albumPrintLeafFromSpread($('#albumPreviewSpread'),'right');
+      leaf.classList.add('pdfCoverTrial');
       leaf.style.cssText='position:relative;inset:auto;width:794px;height:1123px;overflow:hidden;background:white;box-sizing:border-box';
       host.append(leaf);
+      await inlineCoverTrialImages(leaf);
       await Promise.all([...leaf.querySelectorAll('img')].map(img=>new Promise(resolve=>{if(img.complete)return resolve();const done=()=>resolve();img.addEventListener('load',done,{once:true});img.addEventListener('error',done,{once:true});setTimeout(done,4000)})));
       if(document.fonts?.ready)await Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,2500))]);
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
