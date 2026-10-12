@@ -2259,15 +2259,22 @@
             await document.fonts?.ready;
             // Capture the actual preview DOM as a whole; retain masks, text and decorations.
             // Limit scale for iPhone memory; one page is released before rendering the next.
-            const canvas=await window.html2canvas(leaf,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false,width:794,height:1123,scrollX:0,scrollY:0});
-            if(count)pdf.addPage('a4','portrait');
-            pdf.addImage(canvas.toDataURL('image/jpeg',0.97),'JPEG',0,0,210,297,undefined,'FAST');
-            canvas.width=canvas.height=0;
+            let canvas;
+            try{
+              canvas=await window.html2canvas(leaf,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false,width:794,height:1123,scrollX:0,scrollY:0,removeContainer:true});
+              // Blob -> bytes avoids keeping a large base64 data URL in iPhone memory.
+              const jpeg=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('JPEG変換に失敗しました')),'image/jpeg',0.97));
+              const bytes=new Uint8Array(await jpeg.arrayBuffer());
+              if(count)pdf.addPage('a4','portrait');
+              pdf.addImage(bytes,'JPEG',0,0,210,297,undefined,'FAST');
+            }finally{
+              if(canvas){canvas.width=0;canvas.height=0;canvas.remove()}
+            }
           }catch(error){
             throw new Error((count+1)+'ページ目のプレビュー変換：'+(error?.message||String(error)));
           }finally{leaf.remove()}
           count++;progress?.(count,28);
-          await new Promise(resolve=>setTimeout(resolve,0));
+          await new Promise(resolve=>setTimeout(resolve,35));
         }
       }
       return pdf.output('blob');
