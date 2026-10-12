@@ -1431,7 +1431,7 @@
         <h2 id="editorTitle">見開き編集</h2><span class="grow"></span>
         <button class="editorIcon" id="undoEdit" type="button" aria-label="元に戻す">↶</button>
         <button class="editorIcon" id="redoEdit" type="button" aria-label="やり直す">↷</button>
-        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="ブラウザの印刷機能で左右A4の2ページを保存する">見開きPDF</button><button class="editorSave" id="saveEdit" type="button">保存</button>
+        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="ブラウザの印刷機能で左右A4の2ページを保存する">見開きPDF</button><button class="editorSave" id="savePdfBleedTrial" type="button" title="印刷画面を通さずPDFファイルを作成">余白なしPDF（お試し）</button><button class="editorSave" id="saveEdit" type="button">保存</button>
       </div>
       <div class="editorStage" id="editorStage">
         <div class="spreadViewport" id="spreadViewport"><div class="spread" id="spread"><span class="pageLabel left">LEFT / A4</span><span class="pageLabel right">RIGHT / A4</span></div></div>
@@ -3444,6 +3444,52 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       window.print();
     }catch(error){console.error('editor print',error);alert('PDFを開けませんでした：'+(error?.message||String(error)))}
     finally{button.disabled=false}
+  });
+  // Experimental direct PDF export; leave the existing iPhone print button untouched.
+  $('#savePdfBleedTrial').addEventListener('click',async()=>{
+    const button=$('#savePdfBleedTrial');
+    if(!editingPage||button.disabled)return;
+    button.disabled=true;
+    const previousText=button.textContent;
+    let stage=null;
+    try{
+      button.textContent='PDF作成中…';
+      const source=$('#spread');
+      if(!source||!source.getBoundingClientRect().width)throw new Error('編集画面を開いてください');
+      if(!window.jspdf?.jsPDF||typeof window.html2canvas!=='function'){
+        await ensureAlbumPdfLibraries(false);
+      }
+      // A detached/hidden element cannot be reliably captured by html2canvas on iOS.
+      // Render in an on-document offscreen stage at full opacity instead.
+      stage=document.createElement('div');
+      stage.style.cssText='position:absolute;left:-1200px;top:0;width:210mm;background:white;pointer-events:none;overflow:visible';
+      const sides=['left','right'];
+      const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+      document.body.append(stage);
+      if(document.fonts?.ready)await document.fonts.ready;
+      for(let i=0;i<sides.length;i++){
+        stage.replaceChildren();
+        const leaf=makeNativePrintLeaf(source,sides[i]);
+        leaf.style.cssText='position:relative;display:block;width:209.8mm;height:296.7mm;overflow:hidden;margin:0;padding:0;contain:layout paint';
+        stage.append(leaf);
+        await Promise.all([...leaf.querySelectorAll('img')].map(img=>img.decode?img.decode().catch(()=>{}):Promise.resolve()));
+        const canvas=await window.html2canvas(leaf,{scale:1.5,backgroundColor:'#fff',useCORS:true,logging:false,imageTimeout:12000,scrollX:0,scrollY:0});
+        try{
+          if(!canvas.width||!canvas.height)throw new Error('画像化に失敗しました');
+          if(i)pdf.addPage('a4','portrait');
+          pdf.addImage(canvas.toDataURL('image/jpeg',0.94),'JPEG',0,0,210,297,undefined,'FAST');
+        }finally{canvas.width=canvas.height=0}
+      }
+      const blob=pdf.output('blob');
+      if(blob.size<1000)throw new Error('PDFファイルの生成に失敗しました');
+      const page=state.pages.find(p=>p.id===editingPage.id);
+      const filename='思い出ブック_'+(page?.title||'見開き')+'_A4左右.pdf';
+      await albumPdfSave(blob,filename);
+      toast('左右A4のPDFを作成しました');
+    }catch(err){
+      console.error('experimental direct PDF export',err);
+      alert('余白なしPDFの作成に失敗しました：'+(err?.message||String(err))+'\n従来の「見開きPDF」は引き続き使えます。');
+    }finally{stage?.remove();button.disabled=false;button.textContent=previousText}
   });
   window.addEventListener('afterprint',removeNativePrintHost);
   $('#spread').addEventListener('pointerdown',e=>{if(e.target===$('#spread')){selectedEditId=null;selectedTextId=null;selectedStickerId=null;$$('.placedPhoto').forEach(x=>x.classList.remove('selected'));$$('.placedText').forEach(x=>x.classList.remove('selected'));$$('.placedSticker').forEach(x=>x.classList.remove('selected'));syncTextPanel();updateEditControls()}});
