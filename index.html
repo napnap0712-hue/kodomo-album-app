@@ -1254,7 +1254,7 @@
  <div class="growthInputs"><div class="growthPeriod"><h3>4月・年度初め</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthStartPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthStartPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthStartScaleValue">100%</output><input id="growthStartScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthStartX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthStartY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthStartHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthStartWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div></div><div class="growthPeriod"><h3>3月・年度末</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthEndPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthEndPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthEndScaleValue">100%</output><input id="growthEndScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthEndX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthEndY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：92.3"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：14.1"></label></div></div></div>
  <p class="hint">園児ごとに保存します。未入力の項目や比較できない成長差は「—」で表示されます。</p></div>
 </section>
-    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。A4縦のPDFを直接生成します。写真と文字を個別に描画する方式です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📄 この園児のPDFを作成</button><button id="albumPdfLibCoverTest" type="button">🧪 プレビューどおりの表紙PDFを試す</button><button id="albumZipPdf" type="button">📦 クラス全員分のPDFをZIPで作成</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
+    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。A4縦のPDFを直接生成します。写真と文字を個別に描画する方式です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📄 この園児のPDFを作成</button><button id="albumPdfLibCoverTest" type="button">🧪 プレビューどおりの表紙PDFを試す</button><button id="albumPdfLibPageTest" type="button">🧪 今の見開き左ページPDFを試す</button><button id="albumZipPdf" type="button">📦 クラス全員分のPDFをZIPで作成</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
       <div class="photoManageTop">
@@ -2413,6 +2413,68 @@
     }finally{albumPreviewIndex=originalIndex;await renderAlbumPreview();button.disabled=false}
   }
   $('#albumPdfLibCoverTest').addEventListener('click',exportPdfLibCoverTest);
+  async function exportPdfLibPageTest(){
+    const button=$('#albumPdfLibPageTest'),status=$('#albumPrintStatus');
+    const index=albumPreviewIndex;
+    if(index===0||index===14){status.textContent='通常の見開き、または身長・体重ページでお試しください';return}
+    button.disabled=true;status.style.color='';
+    try{
+      status.textContent='左A4ページを準備中…';
+      await loadAlbumPdfLibrary('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',()=>!!window.PDFLib?.PDFDocument);
+      await renderAlbumPreview();
+      const source=$('#albumPreviewSpread');
+      const bounds=source.getBoundingClientRect();
+      if(!bounds.width||!bounds.height)throw new Error('プレビューを表示できません');
+      const target=document.createElement('canvas');
+      target.width=2480;target.height=3508;
+      const ctx=target.getContext('2d');
+      const sheetWidth=bounds.width/2;
+      const sx=target.width/sheetWidth,sy=target.height/bounds.height;
+      const relativeRect=el=>{
+        const r=el.getBoundingClientRect();
+        return {x:(r.left-bounds.left)*sx,y:(r.top-bounds.top)*sy,w:r.width*sx,h:r.height*sy};
+      };
+      const fillRect=(r,color)=>{
+        const m=String(color).match(/rgba?\\(([^)]+)\\)/);
+        if(!m)return;
+        const vals=m[1].split(',').map(Number);if(vals[3]===0)return;
+        ctx.fillStyle=color;ctx.fillRect(r.x,r.y,r.w,r.h);
+      };
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,target.width,target.height);
+      const pageElements=[...source.querySelectorAll('.archiveHalf,.archivePlaced,.archiveText,.growthAlbumPage,.growthAlbumPage *')];
+      for(const el of pageElements){
+        const r=relativeRect(el);
+        if(r.x>=2480||r.x+r.w<=0||r.y>=3508||r.y+r.h<=0)continue;
+        const style=getComputedStyle(el);
+        if(style.display==='none'||style.visibility==='hidden')continue;
+        ctx.save();ctx.beginPath();ctx.rect(Math.max(0,r.x),Math.max(0,r.y),Math.max(0,Math.min(r.w,2480-r.x)),Math.max(0,Math.min(r.h,3508-r.y)));ctx.clip();
+        fillRect(r,style.backgroundColor);
+        if(el instanceof HTMLImageElement && el.complete && el.naturalWidth){
+          const fit=style.objectFit;
+          const z=fit==='contain'?Math.min(r.w/el.naturalWidth,r.h/el.naturalHeight):Math.max(r.w/el.naturalWidth,r.h/el.naturalHeight);
+          ctx.drawImage(el,r.x+(r.w-el.naturalWidth*z)/2,r.y+(r.h-el.naturalHeight*z)/2,el.naturalWidth*z,el.naturalHeight*z);
+        }else if(el.children.length===0&&el.textContent?.trim()){
+          const size=parseFloat(style.fontSize)||12;
+          ctx.font=style.fontWeight+' '+(size*sy)+'px '+style.fontFamily;
+          ctx.fillStyle=style.color;ctx.textBaseline='middle';ctx.textAlign=style.textAlign==='center'?'center':'left';
+          const x=r.x+(style.textAlign==='center'?r.w/2:0);
+          ctx.fillText(el.textContent.trim(),x,r.y+r.h/2,r.w);
+        }
+        ctx.restore();
+      }
+      const png=await new Promise((resolve,reject)=>target.toBlob(b=>b?resolve(b):reject(new Error('PNG書き出し失敗')),'image/png'));
+      target.width=target.height=0;
+      const doc=await window.PDFLib.PDFDocument.create();
+      const page=doc.addPage([595.276,841.89]);const img=await doc.embedPng(await png.arrayBuffer());
+      page.drawImage(img,{x:0,y:0,width:595.276,height:841.89});
+      const child=state.children.find(c=>c.id===albumPreviewChildId);
+      await albumPdfSave(new Blob([await doc.save()],{type:'application/pdf'}),albumPdfFilename(child)+'_左ページ試作.pdf');
+      status.textContent='左ページの試作PDFを作成しました。プレビューとの違いを確認してください。';
+    }catch(e){console.error('left leaf trial',e);status.style.color='#a13453';status.textContent='左ページ試作エラー：'+(e?.message||String(e))}
+    finally{button.disabled=false}
+  }
+  $('#albumPdfLibPageTest').addEventListener('click',exportPdfLibPageTest);
+
   $('#albumPrintPdf').addEventListener('click',()=>exportAlbumPdf(false));
   $('#albumZipPdf').addEventListener('click',()=>exportAlbumPdf(true));
   $('#albumPreviewNext').addEventListener('click',()=>turnAlbumPreview(1));
