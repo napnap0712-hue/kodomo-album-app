@@ -1409,7 +1409,7 @@
         <h2 id="editorTitle">見開き編集</h2><span class="grow"></span>
         <button class="editorIcon" id="undoEdit" type="button" aria-label="元に戻す">↶</button>
         <button class="editorIcon" id="redoEdit" type="button" aria-label="やり直す">↷</button>
-        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="保存して左ページPDFを試作">保存→PDF試作</button><button class="editorSave" id="saveEdit" type="button">保存</button>
+        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="編集した見開きを左右A4の2ページPDFにする">見開きPDF</button><button class="editorSave" id="saveEdit" type="button">保存</button>
       </div>
       <div class="editorStage" id="editorStage">
         <div class="spreadViewport" id="spreadViewport"><div class="spread" id="spread"><span class="pageLabel left">LEFT / A4</span><span class="pageLabel right">RIGHT / A4</span></div></div>
@@ -3286,29 +3286,67 @@
       if(item&&edit&&!el.classList.contains('curved'))item.text=edit.innerText.replace(/\n$/,'');
     });
 const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)return;page.photos=editingPage.photos.map(p=>({...p}));page.photoCount=page.photos.length;page.assignedCount=page.photos.filter(p=>p.childId).length;page.layout=editItems.map(({id,photoId,x,y,width,height,rotation,zIndex,clipPath,bgRemoved,trimLeft,trimRight,trimTop,trimBottom,layoutFit})=>({id,photoId,x,y,width,height,rotation,zIndex,clipPath:clipPath||'none',bgRemoved:!!bgRemoved,trimLeft:trimLeft||0,trimRight:trimRight||0,trimTop:trimTop||0,trimBottom:trimBottom||0,layoutFit:layoutFit||'cover'}));page.texts=textItems.map(({id,text,x,y,width,height,font,size,color,curve,zIndex})=>({id,text,x,y,width,height,font,size,color,curve:curve||0,zIndex}));page.background=JSON.parse(JSON.stringify(editBackground));page.stickers=stickerItems.map(({id,symbol,assetUrl,x,y,width,height,rotation,zIndex})=>({id,symbol,assetUrl:assetUrl||null,x,y,width,height,rotation,zIndex}));page.updatedAt=Date.now();saveState();checkpointPage(page);editingPage=state.pages.find(p=>p.id===pageId)||editingPage;albumPreviewToken++;show('photoManage');toast('見開きの配置を保存しました')});
+  // Export the actual editor spread. No album preview or second renderer is involved.
   $('#savePdfTrial').addEventListener('click',async()=>{
     const button=$('#savePdfTrial');
     if(!editingPage||button.disabled)return;
-    const pageId=editingPage.id;
+    const pageId=editingPage.id,source=$('#spread');
     button.disabled=true;
+    let capture=null;
     try{
-      // Use the exact same saving logic as the editor's normal Save button.
+      if(!source?.getBoundingClientRect().width)throw new Error('編集画面を描画できません');
+      await ensureAlbumPdfLibraries(false);
+      await ensureCustomFonts();
+      if(document.fonts?.ready)await document.fonts.ready;
+      // Wait for all edited photo and stamp images to decode.
+      await Promise.all([...source.querySelectorAll('img')].map(async img=>{
+        if(!img.complete)await new Promise((resolve,reject)=>{
+          img.addEventListener('load',resolve,{once:true});
+          img.addEventListener('error',()=>reject(new Error('画像を読み込めません')),{once:true});
+        });
+        if(!img.naturalWidth)throw new Error('写真・スタンプの読み込みに失敗しました');
+      }));
+      // Capture the rendered spread before Save navigates away from the editor.
+      const bounds=source.getBoundingClientRect(),ratio=Math.min(4,Math.max(2,2100/bounds.width));
+      capture=await window.html2canvas(source,{
+        backgroundColor:'#ffffff',scale:ratio,useCORS:true,logging:false,
+        width:Math.round(bounds.width),height:Math.round(bounds.height),imageTimeout:15000,
+        onclone:doc=>{
+          const spread=doc.querySelector('#spread');
+          if(!spread)return;
+          spread.querySelectorAll('.selectionFrame,.cropGuide,.pageLabel,.resizeHandle,.trimHandle,.cropGuideHandle').forEach(el=>el.remove());
+          spread.querySelectorAll('.selected,.crop-preview').forEach(el=>el.classList.remove('selected','crop-preview'));
+          spread.querySelectorAll('.textEditable').forEach(el=>{el.setAttribute('contenteditable','false');el.style.outline='none'});
+        }
+      });
+      if(capture.width<2||capture.height<2)throw new Error('見開き画像の作成に失敗しました');
+      const savedBefore=state.pages.find(p=>p.id===pageId)?.updatedAt||0;
       $('#saveEdit').click();
       const saved=state.pages.find(p=>p.id===pageId);
-      if(!saved?.updatedAt)throw new Error('ページを保存できませんでした');
-      const pages=state.pages.filter(p=>p.classId===state.selectedClassId);
-      const pageIndex=pages.findIndex(p=>p.id===pageId);
-      if(pageIndex<0||pageIndex>=12)throw new Error('このページは印刷プレビューの12見開き内にありません');
-      albumPreviewIndex=pageIndex+1;
-      show('albumPreview');
-      await renderAlbumPreview();
+      if(!saved||saved.updatedAt===savedBefore)throw new Error('編集の保存に失敗しました');
       const problems=await preflightPagePhotos(saved);
       if(problems.length&&!confirm('印刷前チェック：'+problems.join('、')+'。続けますか？'))return;
-      await exportPdfLibPageTest();
+      const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+      const split=Math.floor(capture.width/2);
+      for(let i=0;i<2;i++){
+        const side=document.createElement('canvas');
+        side.width=i===0?split:capture.width-split;side.height=capture.height;
+        const ctx=side.getContext('2d');
+        ctx.drawImage(capture,i===0?0:split,0,side.width,side.height,0,0,side.width,side.height);
+        if(i)pdf.addPage('a4','portrait');
+        pdf.addImage(side.toDataURL('image/jpeg',0.98),'JPEG',0,0,210,297,undefined,'FAST');
+        side.width=side.height=0;
+      }
+      const child=state.children.find(x=>x.id===albumPreviewChildId);
+      await albumPdfSave(pdf.output('blob'),state.year+'_'+cls(state.selectedClassId).name+'_'+(saved.title||'見開き')+'_左右2ページ.pdf');
+      toast('見開きを左右2ページのPDFにしました');
     }catch(error){
-      console.error('save-to-pdf-trial',error);
-      toast('PDF試作エラー：'+(error?.message||String(error)));
-    }finally{button.disabled=false}
+      console.error('editor two-page PDF',error);
+      toast('PDF作成エラー：'+(error?.message||String(error)));
+    }finally{
+      if(capture){capture.width=capture.height=0}
+      button.disabled=false;
+    }
   });
   $('#spread').addEventListener('pointerdown',e=>{if(e.target===$('#spread')){selectedEditId=null;selectedTextId=null;selectedStickerId=null;$$('.placedPhoto').forEach(x=>x.classList.remove('selected'));$$('.placedText').forEach(x=>x.classList.remove('selected'));$$('.placedSticker').forEach(x=>x.classList.remove('selected'));syncTextPanel();updateEditControls()}});
   $('#resetBtn').addEventListener('click',()=>{if(!confirm('土台版の設定・園児データを初期化しますか？'))return;localStorage.removeItem(STORE_KEY);indexedDB.deleteDatabase('omoide_book_assets');location.reload()});
