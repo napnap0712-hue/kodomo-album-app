@@ -2351,44 +2351,66 @@
     if(!albumPreviewChildId){toast('園児を選択してください');return}
     button.disabled=true;status.style.color='';
     const originalIndex=albumPreviewIndex;
-    const host=document.createElement('div');
-    host.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;pointer-events:none;opacity:0.99;z-index:-1';
-    document.body.append(host);
     try{
-      status.textContent='プレビュー再現エンジンを準備中…';
+      status.textContent='表紙PDFエンジンを準備しています…';
       await loadAlbumPdfLibrary('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',()=>!!window.PDFLib?.PDFDocument);
-      await loadAlbumPdfLibrary('./vendor/dom-to-image.min.js',()=>!!window.domtoimage?.toBlob);
       albumPreviewIndex=0;
       await renderAlbumPreview();
-      const leaf=albumPrintLeafFromSpread($('#albumPreviewSpread'),'right');
-      leaf.classList.add('pdfCoverTrial');
-      leaf.style.cssText='position:relative;inset:auto;width:794px;height:1123px;overflow:hidden;background:white;box-sizing:border-box';
-      host.append(leaf);
-      await inlineCoverTrialImages(leaf);
-      await Promise.all([...leaf.querySelectorAll('img')].map(img=>new Promise(resolve=>{if(img.complete)return resolve();const done=()=>resolve();img.addEventListener('load',done,{once:true});img.addEventListener('error',done,{once:true});setTimeout(done,4000)})));
-      if(document.fonts?.ready)await Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,2500))]);
-      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-      status.textContent='表紙プレビューの見た目を取り込み中…';
-      const imageBlob=await Promise.race([
-        window.domtoimage.toBlob(leaf,{width:794,height:1123,bgcolor:'#ffffff',cacheBust:false}),
-        new Promise((_,reject)=>setTimeout(()=>reject(new Error('画像取り込みが20秒以内に完了しませんでした')),20000))
-      ]);
+      const cover=$('#albumPreviewSpread .albumChildCover');
+      const white=cover?.querySelector('.coverWhitePanel');
+      if(!cover||!white)throw new Error('表紙プレビューが見つかりません');
+      const images=[...white.querySelectorAll('img')];
+      await Promise.all(images.map(img=>new Promise((resolve,reject)=>{
+        if(img.complete&&img.naturalWidth){resolve();return}
+        const done=()=>img.naturalWidth?resolve():reject(new Error('表紙画像が読み込めません：'+img.alt));
+        img.addEventListener('load',done,{once:true});img.addEventListener('error',done,{once:true});
+        setTimeout(done,5000);
+      })));
+      status.textContent='表紙プレビューを高解像度で描画中…';
+      const canvas=document.createElement('canvas');
+      canvas.width=2480;canvas.height=3508;
+      const ctx=canvas.getContext('2d');
+      const coverRect=cover.getBoundingClientRect(),panelRect=white.getBoundingClientRect();
+      const sx=canvas.width/coverRect.width,sy=canvas.height/coverRect.height;
+      const roundRect=(x,y,w,h,r,fill)=>{
+        const radius=Math.min(r,w/2,h/2);
+        ctx.beginPath();ctx.roundRect(x,y,w,h,radius);ctx.fillStyle=fill;ctx.fill();
+      };
+      const computed=getComputedStyle(cover);
+      ctx.fillStyle=computed.backgroundColor||'#ffd5e5';ctx.fillRect(0,0,canvas.width,canvas.height);
+      const rectOf=el=>{const r=el.getBoundingClientRect();return {x:(r.left-coverRect.left)*sx,y:(r.top-coverRect.top)*sy,w:r.width*sx,h:r.height*sy}};
+      const panel=rectOf(white);
+      roundRect(panel.x,panel.y,panel.w,panel.h,parseFloat(getComputedStyle(white).borderTopLeftRadius)*sx||25,'#ffffff');
+      for(const element of white.children){
+        const r=rectOf(element),style=getComputedStyle(element);
+        if(element instanceof HTMLImageElement){
+          const naturalW=element.naturalWidth,naturalH=element.naturalHeight;
+          const fit=style.objectFit||'contain';
+          const factor=fit==='cover'?Math.max(r.w/naturalW,r.h/naturalH):Math.min(r.w/naturalW,r.h/naturalH);
+          const dw=naturalW*factor,dh=naturalH*factor;
+          ctx.drawImage(element,r.x+(r.w-dw)/2,r.y+(r.h-dh)/2,dw,dh);
+        }else{
+          ctx.fillStyle=style.color;ctx.textAlign='center';ctx.textBaseline='middle';
+          const size=parseFloat(style.fontSize)*sy;
+          ctx.font=style.fontWeight+' '+size+'px '+style.fontFamily;
+          const raw=element.textContent||'';
+          ctx.fillText(raw,r.x+r.w/2,r.y+r.h/2,r.w);
+        }
+      }
+      const png=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(new Error('表紙画像の変換に失敗')),'image/png'));
+      canvas.width=canvas.height=0;
       const doc=await window.PDFLib.PDFDocument.create();
       const page=doc.addPage([595.276,841.89]);
-      const png=await doc.embedPng(await imageBlob.arrayBuffer());
-      page.drawImage(png,{x:0,y:0,width:595.276,height:841.89});
-      status.textContent='表紙1ページのPDFを保存中…';
+      const image=await doc.embedPng(await png.arrayBuffer());
+      page.drawImage(image,{x:0,y:0,width:595.276,height:841.89});
       const bytes=await doc.save();
       const child=state.children.find(c=>c.id===albumPreviewChildId);
-      await albumPdfSave(new Blob([bytes],{type:'application/pdf'}),albumPdfFilename(child)+'_表紙再現テスト.pdf');
-      status.textContent='表紙PDFを生成しました。プレビューと一致するか確認してください。';
+      await albumPdfSave(new Blob([bytes],{type:'application/pdf'}),albumPdfFilename(child)+'_表紙テスト.pdf');
+      status.textContent='表紙PDFを作成しました。画像と文字の位置を確認してください。';
     }catch(e){
-      console.error('preview-faithful cover PDF',e);
-      status.style.color='#a13453';
-      status.textContent='表紙PDFテストエラー：'+(e?.message||String(e));
-    }finally{
-      host.remove();albumPreviewIndex=originalIndex;await renderAlbumPreview();button.disabled=false;
-    }
+      console.error('cover PDF',e);
+      status.style.color='#a13453';status.textContent='表紙PDFエラー：'+(e?.message||String(e));
+    }finally{albumPreviewIndex=originalIndex;await renderAlbumPreview();button.disabled=false}
   }
   $('#albumPdfLibCoverTest').addEventListener('click',exportPdfLibCoverTest);
   $('#albumPrintPdf').addEventListener('click',()=>exportAlbumPdf(false));
