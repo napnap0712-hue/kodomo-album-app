@@ -197,6 +197,17 @@
     .growthPreviewMeasures>div{display:grid;gap:4px;background:#f3f9ff;border-radius:14px;padding:12px}
     .growthPreviewMeasures b{font-size:13px;color:#6483a4}.growthPreviewMeasures strong{font-size:clamp(19px,5.5vw,28px);color:#405e79}
     .growthEntryGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .growthPeriod{display:grid;gap:9px;padding:12px;border:1px solid #e3e9f0;border-radius:15px;background:#fff}
+    .growthPeriod h3{margin:0;color:#56748c;font-size:15px}
+    .growthPeriod .growthEntryGrid{gap:8px}
+    .growthPageInner{gap:13px}
+    .growthPreviewMeasures{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .growthPreviewMeasures>div{padding:9px 5px;gap:6px}
+    .growthPreviewMeasures strong{font-size:clamp(12px,3vw,21px)}
+    .growthDiff{width:100%;display:grid;gap:5px;border-top:1px solid #dbe7ef;padding-top:10px;color:#56748c;font-size:12px;font-weight:700}
+    .growthDiff strong{color:#426782;font-size:clamp(13px,3.3vw,19px)}
+    .growthDiffRow{display:flex;align-items:center;justify-content:space-around;gap:6px}
+    .growthInputs{display:grid;gap:10px}
     .growthEntryGrid label{display:grid;gap:7px;font-size:14px;font-weight:800}
     .growthEntryGrid input{width:100%;min-width:0;box-sizing:border-box;height:47px;padding:10px;border:1px solid #d7dfeb;border-radius:12px;background:white;font-size:16px}
     .yearOverview{display:grid;gap:14px}
@@ -1106,9 +1117,9 @@
 <section class="screen" data-screen="growthEdit">
  <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>身長・体重</h2><button type="button" id="growthSave" class="coverSaveTop">保存</button></div>
  <div class="yearGuideCard growthEditor"><label class="albumChildChooser">編集する園児<select id="growthChild"></select></label>
- <div class="growthPagePreview"><div class="growthPageInner"><h3>🌱 せいちょうのきろく</h3><div id="growthPreviewName"></div><div class="growthPreviewMeasures"><div><b>📏 しんちょう</b><strong id="growthPreviewHeight">— cm</strong></div><div><b>⚖️ たいじゅう</b><strong id="growthPreviewWeight">— kg</strong></div></div></div></div>
- <div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div>
- <p class="hint">園児ごとに保存します。空欄は「—」で表示されます。</p></div>
+ <div class="growthPagePreview"><div class="growthPageInner"><h3>せいちょうのきろく</h3><div id="growthPreviewName"></div><div class="growthPreviewMeasures"><div><b>4月・年度初め</b><strong id="growthPreviewStartHeight">— cm</strong><strong id="growthPreviewStartWeight">— kg</strong></div><div><b>3月・年度末</b><strong id="growthPreviewEndHeight">— cm</strong><strong id="growthPreviewEndWeight">— kg</strong></div></div><div class="growthDiff"><span>こんなに大きくなりました</span><div class="growthDiffRow"><strong id="growthPreviewHeightDiff">身長 —</strong><strong id="growthPreviewWeightDiff">体重 —</strong></div></div></div></div>
+ <div class="growthInputs"><div class="growthPeriod"><h3>4月・年度初め</h3><div class="growthEntryGrid"><label>身長（cm）<input id="growthStartHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthStartWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div></div><div class="growthPeriod"><h3>3月・年度末</h3><div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：92.3"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：14.1"></label></div></div></div>
+ <p class="hint">園児ごとに保存します。未入力の項目や比較できない成長差は「—」で表示されます。</p></div>
 </section>
     <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
@@ -1652,26 +1663,40 @@
   }
   function refreshGrowthEditor(){
     const child=growthChildren().find(c=>c.id===growthChildId),entry=child?growthEntry(child.id):{};
-    $('#growthHeight').value=entry.height??'';$('#growthWeight').value=entry.weight??'';
-    $('#growthPreviewName').textContent=child?child.name.replace(/\s*さん$/,'')+' さん':'園児を登録してください';
+    $('#growthStartHeight').value=entry.startHeight??'';
+    $('#growthStartWeight').value=entry.startWeight??'';
+    $('#growthHeight').value=entry.endHeight??entry.height??'';
+    $('#growthWeight').value=entry.endWeight??entry.weight??'';
+    $('#growthPreviewName').textContent=child?child.name.replace(/\\s*さん$/,'')+' さん':'園児を登録してください';
     updateGrowthPreview();
     $('#growthSave').disabled=!child;
   }
+  function growthDifference(start,end,unit){
+    if(start===''||end===''||start==null||end==null)return '—';
+    const delta=Math.round((Number(end)-Number(start))*10)/10;
+    if(!Number.isFinite(delta))return '—';
+    return (delta>0?'+':'')+delta.toFixed(1)+' '+unit;
+  }
   function updateGrowthPreview(){
-    $('#growthPreviewHeight').textContent=($('#growthHeight').value||'—')+' cm';
-    $('#growthPreviewWeight').textContent=($('#growthWeight').value||'—')+' kg';
+    const get=id=>$(id).value;
+    for(const [target,input,unit] of [['#growthPreviewStartHeight','#growthStartHeight','cm'],['#growthPreviewStartWeight','#growthStartWeight','kg'],['#growthPreviewEndHeight','#growthHeight','cm'],['#growthPreviewEndWeight','#growthWeight','kg']]){
+      $(target).textContent=(get(input)||'—')+' '+unit;
+    }
+    $('#growthPreviewHeightDiff').textContent='身長 '+growthDifference(get('#growthStartHeight'),get('#growthHeight'),'cm');
+    $('#growthPreviewWeightDiff').textContent='体重 '+growthDifference(get('#growthStartWeight'),get('#growthWeight'),'kg');
   }
   function saveGrowthChild(){
     if(!growthChildId)return false;
+    const startHeight=$('#growthStartHeight').value,startWeight=$('#growthStartWeight').value;
     const height=$('#growthHeight').value,weight=$('#growthWeight').value;
-    if((height!==''&&(!Number.isFinite(+height)||+height<0||+height>250))||(weight!==''&&(!Number.isFinite(+weight)||+weight<0||+weight>150))){toast('身長・体重の数値を確認してください');return false}
+    const values=[[startHeight,250],[height,250],[startWeight,150],[weight,150]];
+    if(values.some(([value,max])=>value!==''&&(!Number.isFinite(+value)||+value<0||+value>max))){toast('身長・体重の数値を確認してください');return false}
     const key=growthDataKey(growthChildId);
-    state.growthRecords={...(state.growthRecords||{}),[key]:{height,weight}};
+    state.growthRecords={...(state.growthRecords||{}),[key]:{...growthEntry(growthChildId),startHeight,startWeight,endHeight:height,endWeight:weight,height,weight}};
     saveState();return true;
   }
   $('#growthChild').addEventListener('change',e=>{if(!saveGrowthChild()){$('#growthChild').value=growthChildId||'';return}growthChildId=e.target.value;refreshGrowthEditor()});
-  $('#growthHeight').addEventListener('input',updateGrowthPreview);
-  $('#growthWeight').addEventListener('input',updateGrowthPreview);
+  ['#growthStartHeight','#growthStartWeight','#growthHeight','#growthWeight'].forEach(id=>$(id).addEventListener('input',updateGrowthPreview));
   $('#growthSave').addEventListener('click',()=>{if(saveGrowthChild()){toast('身長・体重を保存しました');show('classWorkspace')}});
   let albumPreviewIndex=0,albumPreviewToken=0,albumPreviewChildId='';
   async function renderAlbumPreview(){
@@ -1701,10 +1726,12 @@
       if(entry.kind==='growth'){
         const record=state.growthRecords?.[state.year+':'+c.id+':'+albumPreviewChildId]||{};
         const growth=document.createElement('div');growth.className='albumSpecialPreview';growth.style.cssText='width:50%;left:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;background:#f3f9ff;text-align:center';
-        const growthTitle=document.createElement('strong');growthTitle.textContent='🌱 せいちょうのきろく';
-        const height=document.createElement('b');height.textContent='📏 '+(record.height||'—')+' cm';
-        const weight=document.createElement('b');weight.textContent='⚖️ '+(record.weight||'—')+' kg';
-        growth.append(growthTitle,height,weight);spread.append(growth);
+        const growthTitle=document.createElement('strong');growthTitle.textContent='せいちょうのきろく';
+        const beginning=document.createElement('small');beginning.textContent='4月　身長 '+(record.startHeight||'—')+' cm ／ 体重 '+(record.startWeight||'—')+' kg';
+        const ending=document.createElement('small');ending.textContent='3月　身長 '+(record.endHeight??record.height??'—')+' cm ／ 体重 '+(record.endWeight??record.weight??'—')+' kg';
+        const height=document.createElement('b');height.textContent='身長 '+growthDifference(record.startHeight,record.endHeight??record.height,'cm');
+        const weight=document.createElement('b');weight.textContent='体重 '+growthDifference(record.startWeight,record.endWeight??record.weight,'kg');
+        growth.append(growthTitle,beginning,ending,height,weight);spread.append(growth);
         special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
       }else if(entry.kind==='cover'){
         const cover=document.createElement('div');cover.className='albumChildCover';spread.append(cover);
