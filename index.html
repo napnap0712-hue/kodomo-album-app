@@ -2118,7 +2118,7 @@
     setTimeout(()=>URL.revokeObjectURL(url),60000);
   }
   function albumPdfColor(css){
-    const m=String(css||'').match(/rgba?\\(([^)]+)\\)/);
+    const m=String(css||'').match(/rgba?\(([^)]+)\)/);
     if(!m)return null;
     const c=m[1].split(',').map(Number);
     return c.length>=3&&c.slice(0,3).every(Number.isFinite)?c:null;
@@ -2126,7 +2126,7 @@
   function albumPdfAddText(pdf,text,style,x,y,w,h){
     if(!text.trim()||w<2||h<2)return;
     const fontSize=Math.max(7,parseFloat(style.fontSize)||14);
-    const font=style.font||style.fontFamily||'sans-serif';
+    const font=style.fontFamily||'sans-serif';
     const ratio=2;
     const canvas=document.createElement('canvas');canvas.width=Math.ceil(w*ratio);canvas.height=Math.ceil(h*ratio);
     const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);
