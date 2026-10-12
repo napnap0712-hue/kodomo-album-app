@@ -137,6 +137,23 @@
     .coverFixedHint{text-align:center;color:#8a8282;font-size:12px;margin:5px 0 16px}
     .coverEditorCanvas{box-shadow:-6px 3px 0 #f7eef0,0 9px 18px #0002!important}
     .coverWhitePanel{border:1px dashed #f1ccd8}
+    /* Cover editor: compact accordions and squared-out palette */
+    .coverEditorSheet{gap:10px}
+    [data-screen="coverEdit"] .yearGuideCard{padding:14px 15px;border-radius:20px}
+    .coverAccordion>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;min-height:35px;font-weight:900;font-size:17px}
+    .coverAccordion>summary::-webkit-details-marker{display:none}
+    .coverChevron{font-size:22px;transform:rotate(-90deg);transition:transform .15s}
+    .coverAccordion[open] .coverChevron{transform:rotate(0)}
+    .coverAccordion .typeChoices{margin-top:10px}
+    .coverColorSwatches{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin:13px 0}
+    .coverColorSwatches button{height:auto;aspect-ratio:1;border-radius:9px;border:2px solid #d9d3d5;box-shadow:0 2px 0 #ddd}
+    .coverColorSwatches button.active{outline:2px solid #e66c97;outline-offset:1px}
+    .coverOpacityLabel{display:flex;justify-content:space-between;margin:6px 0;font-size:14px;font-weight:800}
+    .coverOpacityAdjust{display:flex;align-items:center;gap:8px}
+    .coverOpacityAdjust input{flex:1;min-width:0;accent-color:#ee79a1}
+    .coverOpacityAdjust button{width:40px;height:40px;border:1px solid #eddce2;background:#fff4f7;border-radius:12px;font-size:20px;font-weight:900}
+    .coverFontChoices{gap:8px;margin-top:12px}.coverFontChoice{min-height:72px}
+    .coverPatternChoices{gap:5px}.coverPatternThumb{border-radius:9px}.coverPatternOption small{font-size:10px}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
     .yearCurrentCard span{font-size:14px;font-weight:800}
@@ -1024,12 +1041,12 @@
       <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>表紙編集</h2><button type="button" id="coverSave" class="coverSaveTop">保存</button></div>
       <div class="coverEditorSheet">
         <div id="coverEditorCanvas" class="coverEditorCanvas"><div class="coverWhitePanel"><b id="coverEditorHeading">おもいでブック</b><img id="coverEditorIcon" alt="クラスアイコン"><strong id="coverEditorName">園児の名前</strong></div></div>
-        <div class="yearGuideCard"><h3>🎨 背景選択</h3>
+        <details class="yearGuideCard coverAccordion" id="coverBackgroundAccordion" open><summary>🎨 背景選択 <span class="coverChevron">⌄</span></summary>
           <div class="typeChoices"><label class="typeChoice"><input type="radio" name="coverBgMode" value="solid" checked><span>単色</span></label><label class="typeChoice"><input type="radio" name="coverBgMode" value="image"><span>背景画像</span></label></div>
-          <div id="coverColorControls"><div id="coverColors" class="coverColorSwatches"></div><label>色の薄さ <output id="coverOpacityNumber">100%</output><input type="range" id="coverOpacity" min="5" max="100" step="5" value="100"></label></div>
+          <div id="coverColorControls"><div id="coverColors" class="coverColorSwatches"></div><div class="coverOpacityLabel">色の薄さ <output id="coverOpacityNumber">100%</output></div><div class="coverOpacityAdjust"><button type="button" id="coverOpacityMinus" aria-label="色を薄くする">－</button><input type="range" id="coverOpacity" min="5" max="100" step="5" value="100"><button type="button" id="coverOpacityPlus" aria-label="色を濃くする">＋</button></div></div>
           <div id="coverImageControls" hidden><div id="coverPatternChoices" class="coverPatternChoices"></div><p class="hint">画像をタップして選択。各柄に元画像を登録すると、その画像が表紙に使われます。</p><label class="fileBtn coverUploadBtn">＋ 選択中の柄に元画像を登録<input type="file" id="coverBgFile" accept="image/*"></label></div>
-        </div>
-        <div class="yearGuideCard"><h3>文字フォント選択</h3><div id="coverFontChoices" class="coverFontChoices"></div></div><p class="coverFixedHint">ⓘ 表紙の基本レイアウトは固定です</p>
+        </details>
+        <details class="yearGuideCard coverAccordion" id="coverFontAccordion"><summary>✏️ 文字フォント選択 <span class="coverChevron">⌄</span></summary><div id="coverFontChoices" class="coverFontChoices"></div></details><p class="coverFixedHint">ⓘ 表紙の基本レイアウトは固定です</p>
       </div>
     </section>
     <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
@@ -1516,6 +1533,8 @@
   }));
   document.querySelectorAll('input[name="coverBgMode"]').forEach(r=>r.addEventListener('change',e=>{coverDraft.mode=e.target.value;updateCoverEditor()}));
   $('#coverOpacity').addEventListener('input',e=>{coverDraft.opacity=Number(e.target.value);updateCoverEditor()});
+  $('#coverOpacityMinus').addEventListener('click',()=>{coverDraft.opacity=Math.max(5,Number(coverDraft.opacity)-5);updateCoverEditor()});
+  $('#coverOpacityPlus').addEventListener('click',()=>{coverDraft.opacity=Math.min(100,Number(coverDraft.opacity)+5);updateCoverEditor()});
   $('#coverBgFile').addEventListener('change',e=>{coverPreviewFile=e.target.files?.[0]||null;updateCoverEditor()});
   $('#coverSave').addEventListener('click',async()=>{
     try{if(coverPreviewFile)await putImage('coverPattern:'+(coverDraft.pattern||'dots'),coverPreviewFile);
