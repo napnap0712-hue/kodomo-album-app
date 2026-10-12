@@ -78,6 +78,18 @@
     .archiveText{position:absolute;white-space:pre-wrap;overflow:hidden;line-height:1.25;z-index:100}
     .archiveFallback{position:absolute;inset:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;overflow:hidden}
     .archiveFallback img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px}
+    .photoAdminClasses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+    .photoAdminClass{display:flex;align-items:center;gap:8px;text-align:left;min-height:78px;border:2px solid transparent;border-radius:20px;padding:10px;background:var(--photo-tint);font-weight:900;color:#444}
+    .photoAdminClass.active{border-color:#d284a1;box-shadow:0 0 0 2px #fff inset}
+    .photoAdminClass img{width:45px;height:45px;object-fit:contain;flex-shrink:0}
+    .photoAdminClass small{display:block;font-size:11px;margin-top:4px;font-weight:500}
+    .photoAdminSections{display:grid;gap:10px}
+    .photoAdminSection{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1px solid #eee4e6;border-radius:19px;padding:14px;min-height:74px}
+    .photoAdminSection>span:first-child{font-size:27px}
+    .photoAdminSection .meta{flex:1;min-width:0}
+    .photoAdminSection .meta b{display:block;font-size:15px}
+    .photoAdminSection .meta small{display:block;font-size:12px;color:#777;margin-top:5px}
+    .photoAdminEmpty{padding:24px 14px;background:#fff;border:1px dashed #e5d8dc;border-radius:20px;text-align:center;color:#776e6c;font-size:13px}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
     .yearCurrentCard span{font-size:14px;font-weight:800}
@@ -1056,7 +1068,10 @@
 
     <section class="screen" data-screen="photoAdmin">
       <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>写真管理</h2></div>
-      <div class="hero"><h1>📸 写真管理の土台</h1><p>AI仕分けはMacBook到着後に追加します。次フェーズでは、ページ写真の追加と手動での園児紐づけを先に実装します。</p></div>
+      <div class="sectionTitle"><h2>クラスを選択</h2></div>
+      <div class="photoAdminClasses" id="photoAdminClasses"></div>
+      <div class="sectionTitle"><h2 id="photoAdminSectionTitle">セクション一覧</h2></div>
+      <div class="photoAdminSections" id="photoAdminSections"></div>
     </section>
 
     <section class="screen" data-screen="yearAdmin">
@@ -1158,7 +1173,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1211,7 +1226,8 @@
   }
 
   let managingPhotoPageId=null,manageSelected=new Set(),manageRenderToken=0;
-  function openPhotoManagement(pageId){if(!state.pages.some(p=>p.id===pageId))return;managingPhotoPageId=pageId;manageSelected.clear();show('photoManage')}
+  let photoAdminClassId=null,photoManagementFromAdmin=false;
+  function openPhotoManagement(pageId,fromAdmin=false){if(!state.pages.some(p=>p.id===pageId))return;photoManagementFromAdmin=fromAdmin;managingPhotoPageId=pageId;manageSelected.clear();show('photoManage')}
   async function renderPhotoManagement(){
     const page=state.pages.find(p=>p.id===managingPhotoPageId);if(!page){show('classWorkspace');return}
     $('#photoManageTitle').textContent=page.title+' ・ 写真管理';
@@ -1798,6 +1814,34 @@
       }
     }
   }
+  function renderPhotoAdmin(){
+    if(!photoAdminClassId||!CLASSES.some(c=>c.id===photoAdminClassId))photoAdminClassId=state.selectedClassId;
+    const flowers={tanpopo:'tanpopo.png',tulip:'tulip.png',cosmos:'cosmos.png',canna:'canna.png',deigo:'deigo.png',sakura:'sakura.png'};
+    const palette={tanpopo:'#fbd4d8',tulip:'#ffe1bc',cosmos:'#ffffb5',canna:'#d4ffc2',deigo:'#beeefa',sakura:'#f5ccfa'};
+    const classes=$('#photoAdminClasses');classes.replaceChildren();
+    for(const c of CLASSES){
+      const button=document.createElement('button');button.type='button';button.className='photoAdminClass'+(c.id===photoAdminClassId?' active':'');
+      button.style.setProperty('--photo-tint',palette[c.id]);button.setAttribute('aria-pressed',String(c.id===photoAdminClassId));
+      const img=document.createElement('img');img.src='./'+flowers[c.id];img.alt='';
+      const label=document.createElement('span');label.textContent=c.name;
+      const count=document.createElement('small');count.textContent=state.pages.filter(p=>p.classId===c.id).length+'セクション';
+      label.append(count);button.append(img,label);button.onclick=()=>{photoAdminClassId=c.id;renderPhotoAdmin()};classes.append(button);
+    }
+    const clsName=CLASSES.find(c=>c.id===photoAdminClassId)?.name||'';
+    $('#photoAdminSectionTitle').textContent=clsName+'のセクション';
+    const list=$('#photoAdminSections');list.replaceChildren();
+    const pages=state.pages.filter(p=>p.classId===photoAdminClassId);
+    if(!pages.length){const empty=document.createElement('div');empty.className='photoAdminEmpty';empty.textContent='このクラスにはまだセクションがありません。ホームからページを作成すると、ここに表示されます。';list.append(empty);return}
+    for(const p of pages){
+      const button=document.createElement('button');button.type='button';button.className='photoAdminSection';
+      const icon=document.createElement('span');icon.textContent=p.type==='event'?'🎈':'🌼';
+      const meta=document.createElement('span');meta.className='meta';
+      const name=document.createElement('b');name.textContent=p.title;
+      const info=document.createElement('small');info.textContent=(p.type==='event'?'行事':'月')+' ・ 候補写真 '+(p.photos||[]).length+'枚';
+      meta.append(name,info);const arrow=document.createElement('span');arrow.textContent='›';
+      button.append(icon,meta,arrow);button.onclick=()=>openPhotoManagement(p.id,true);list.append(button);
+    }
+  }
   function renderYearAdmin(){
     $('#yearLabel').textContent=state.year+'年度';
     const archive=$('#yearArchiveList');archive.replaceChildren();
@@ -1819,7 +1863,7 @@
 
   $$('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
   $('#backToClassHome').addEventListener('click',()=>show('home'));
-  $('#photoBack').addEventListener('click',()=>show('classWorkspace'));
+  $('#photoBack').addEventListener('click',()=>show(photoManagementFromAdmin?'photoAdmin':'classWorkspace'));
   $('#photoManageInput').addEventListener('change',e=>{const files=[...(e.target.files||[])];e.target.value='';addManagedPhotos(files)});
   $('#photoManageRemove').addEventListener('click',removeManagedPhotos);
   $('#photoEditEntry').addEventListener('click',()=>{if(managingPhotoPageId)openEditor(managingPhotoPageId)});
