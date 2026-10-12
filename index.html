@@ -235,12 +235,12 @@
     .messageBlock .messageInlineWarning[hidden]{display:none}
     /* Shared A4-proportional typography for editor and album preview. */
     .messageSheet{background:#fff0f5;padding:6%;aspect-ratio:210/297;width:min(82%,350px);box-sizing:border-box;margin:auto;display:flex;border-radius:9px;container-type:inline-size}
-    .messageSheetInner{box-sizing:border-box;background:white;border-radius:5cqw;width:100%;min-height:0;padding:7cqw 5cqw;display:flex;flex-direction:column;gap:4cqw;text-align:center}
-    .messageSheetInner h3{font-size:7cqw;color:#a76a86;margin:0;line-height:1.3}
-    .messageSheetInner .messageAddressee{font-size:6cqw;font-weight:700;line-height:1.3}
-    .messagePanels{display:flex;flex-direction:column;gap:3cqw;flex:1;min-height:0}
-    .messagePanel{background:#fff7fa;border-radius:4cqw;padding:4cqw;min-height:0;flex:1 1 0;display:flex;flex-direction:column;text-align:left;gap:2cqw;overflow:hidden}
-    .messagePanel b{color:#a76a86;font-size:5cqw;line-height:1.3}
+    .messageSheetInner{box-sizing:border-box;background:white;border-radius:5cqw;width:100%;min-height:0;padding:5cqw 4cqw;display:flex;flex-direction:column;gap:2cqw;text-align:center}
+    .messageSheetInner h3{font-size:4.7cqw;color:#a76a86;margin:0;line-height:1.2;white-space:nowrap}
+    .messageSheetInner .messageAddressee{font-size:4.2cqw;font-weight:700;line-height:1.2}
+    .messagePanels{display:flex;flex-direction:column;gap:2cqw;flex:1;min-height:0}
+    .messagePanel{background:#fff7fa;border-radius:3cqw;padding:3cqw;min-height:0;flex:1 1 0;display:flex;flex-direction:column;text-align:left;gap:1cqw;overflow:hidden}
+    .messagePanel b{color:#a76a86;font-size:4cqw;line-height:1.2}
     .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;margin:0;font-size:calc(4.5cqw * var(--message-scale, .85));max-width:100%}
     .messagePanel[hidden]{display:none}
     .messageSheet[data-teachers="1"] .messagePanel:first-child{flex:1}
@@ -1839,8 +1839,8 @@
       paragraph.style.removeProperty('font-size');
       const computed=parseFloat(getComputedStyle(paragraph).fontSize)||12;
       let size=computed;
-      const fits=()=>paragraph.scrollHeight<=paragraph.clientHeight+1 && panel.scrollHeight<=panel.clientHeight+2;
-      const minSize=Math.max(3,root.getBoundingClientRect().width*.023);
+      const fits=()=>paragraph.getBoundingClientRect().bottom<=panel.getBoundingClientRect().bottom-parseFloat(getComputedStyle(panel).paddingBottom)+1 && panel.scrollHeight<=panel.clientHeight+2;
+      const minSize=Math.max(2,root.getBoundingClientRect().width*.014);
       while(!fits()&&size>minSize){
         size=Math.max(minSize,size-.25);
         paragraph.style.fontSize=size+'px';
