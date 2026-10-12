@@ -1063,7 +1063,10 @@
         <div class="yearGuideCard">
           <h3>📖 過去年度の保存について</h3>
           <p>写真・作成済みアルバムを残したまま、新年度のアルバムを扱える仕組みを準備します。</p>
-          <p class="hint">現在は安全のため年度切り替えを実行できません。バックアップと年度別閲覧が実装されるまで、園児データの進級・削除は行いません。</p>
+          <p class="hint">前年度の情報は年度別に保存され、元の写真ファイルも削除しません。切り替え前に必ず「データ保存」でバックアップファイルを保存してください。</p>
+          <button class="primary wide" type="button" id="yearBegin">新年度を開始する</button>
+        </div>
+        <div class="yearGuideCard"><h3>🗂️ 過去年度の記録</h3><div id="yearArchiveList" class="yearPromotionList"></div>
         </div>
       </div>
     </section>
@@ -1129,7 +1132,7 @@
   const SUPABASE_URL='https://qlvuayqevkmtpkjstkmd.supabase.co';
   const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsdnVheXFldmttdHBranN0a21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyNDA4ODYsImV4cCI6MjEwNTgxNjg4Nn0.QdLaqAuSPO9wyqWbmbMyDKxS_sdd4nfW5aPlvspTu5c';
   const DATA_SCHEMA=12;
-  const defaultState={schemaVersion:DATA_SCHEMA,setupCompleted:false,year:2026,selectedClassId:'tulip',creationMode:'mixed',photosPerChild:3,candidateLimit:20,photoShortageAlert:true,children:[],pages:[]};
+  const defaultState={schemaVersion:DATA_SCHEMA,setupCompleted:false,year:2026,selectedClassId:'tulip',creationMode:'mixed',photosPerChild:3,candidateLimit:20,photoShortageAlert:true,children:[],pages:[],yearArchives:[]};
   let state=loadState(); let currentClassId=state.selectedClassId; let bulkDraft=[]; let pageDraft=[];
   let editingPage=null, editItems=[], textItems=[], stickerItems=[], editBackground=null, selectedEditId=null, selectedTextId=null, selectedStickerId=null, editHistory=[], editHistoryIndex=-1, openPanel=null, equalLayoutMode='rect', randomLayoutCycle=0;
   let candidateSelection=new Set(),viewScale=1,viewX=0,viewY=0,cropDraft=null,sharedAssets=[],backgroundRemovalBusy=false,segmentationInstance=null;const sharedBlobUrls=new Map(),editorFreshBlobs=new Map();
@@ -1730,8 +1733,24 @@
       location.reload();
     }catch(e){console.error(e);$('#backupStatus').textContent='復元に失敗しました：'+e.message;btn.disabled=false}
   });
+  $('#yearBegin').addEventListener('click',()=>{
+    if(!confirm(state.year+'年度を保存し、'+(state.year+1)+'年度を開始します。現在の写真・アルバムの画像は削除しません。バックアップファイルを保存しましたか？'))return;
+    if(!confirm('最終確認：園児は1つ上のクラスへ進級し、さくら組は卒園扱いで過去年度の記録に残します。新年度のページ一覧は空から始まります。実行しますか？'))return;
+    const original=state;
+    try{
+      const archive={year:state.year,children:structuredClone(state.children),pages:structuredClone(state.pages),savedAt:new Date().toISOString()};
+      const ids=CLASSES.map(c=>c.id);
+      const nextChildren=state.children.filter(c=>ids.indexOf(c.classId)>=0&&ids.indexOf(c.classId)<ids.length-1).map(c=>({...c,classId:ids[ids.indexOf(c.classId)+1]}));
+      state={...state,year:state.year+1,yearArchives:[...(state.yearArchives||[]),archive],children:nextChildren,pages:[],selectedClassId:ids.includes(state.selectedClassId)&&ids.indexOf(state.selectedClassId)<ids.length-1?ids[ids.indexOf(state.selectedClassId)+1]:ids[0]};
+      saveState();currentClassId=state.selectedClassId;renderYearAdmin();toast('新年度を開始しました。前年度の写真・アルバムは保持されています');
+    }catch(e){state=original;console.error(e);toast('年度の切り替えに失敗しました');}
+  });
   function renderYearAdmin(){
     $('#yearLabel').textContent=state.year+'年度';
+    const archive=$('#yearArchiveList');archive.replaceChildren();
+    const archives=Array.isArray(state.yearArchives)?state.yearArchives:[];
+    if(!archives.length){archive.textContent='保存された過去年度はまだありません';}
+    for(const entry of [...archives].reverse()){const details=document.createElement('details');details.className='yearPromotionRow';const title=document.createElement('summary');title.textContent=entry.year+'年度（園児'+entry.children.length+'名・アルバム'+entry.pages.length+'件）';const body=document.createElement('div');body.className='hint';body.style.marginTop='9px';body.textContent='園児：'+entry.children.map(c=>c.name).join('、')+' ／ ページ：'+entry.pages.map(p=>p.title).join('、');details.append(title,body);archive.append(details);}
     const wrap=$('#yearPromotionList');wrap.replaceChildren();
     CLASSES.forEach((c,i)=>{
       const n=state.children.filter(child=>child.classId===c.id).length;
