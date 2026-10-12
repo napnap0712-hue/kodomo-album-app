@@ -2315,7 +2315,7 @@
           crop.width=cw;crop.height=ch;
           const ctx=crop.getContext('2d');
           const iw=el.naturalWidth,ih=el.naturalHeight,fit=cs.objectFit;
-          if(fit==='contain'){
+          if(fit==='contain' && !el.closest('.placedPhoto')){
             const z=Math.min(cw/iw,ch/ih),dw=iw*z,dh=ih*z;
             ctx.drawImage(el,(cw-dw)/2,(ch-dh)/2,dw,dh);
           }else{
