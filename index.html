@@ -240,7 +240,7 @@
     .messagePanels{display:flex;flex-direction:column;gap:4%;flex:1;min-height:0}
     .messagePanel{background:#fff7fa;border-radius:12px;padding:4%;min-height:0;flex:1 1 0;display:flex;flex-direction:column;text-align:left;gap:5px;overflow:hidden}
     .messagePanel b{color:#a76a86;font-size:clamp(11px,2.8vw,16px)}
-    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;margin:0;font-size:var(--message-text-size, 12px);max-width:100%}
+    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;margin:0;font-size:calc(4.5cqw * var(--message-scale, .85));max-width:100%}
     .messagePanel[hidden]{display:none}
     .messageSheet[data-teachers="1"] .messagePanel:first-child{flex:1}
     .messageOverflow{color:#a13453;font-size:12px;font-weight:700}
@@ -251,7 +251,7 @@
     #albumPreviewSpread .messagePanels{gap:3cqw}
     #albumPreviewSpread .messagePanel{border-radius:4cqw;padding:4cqw;gap:2cqw}
     #albumPreviewSpread .messagePanel b{font-size:5cqw}
-    #albumPreviewSpread .messagePanel p{font-size:var(--message-text-size, 12px);line-height:1.35}
+    #albumPreviewSpread .messagePanel p{font-size:calc(4.5cqw * var(--message-scale, .85));line-height:1.35}
     /* Match the growth editor sheet on the left album page only. */
     #albumPreviewSpread .growthAlbumPage{position:absolute;left:0;top:0;width:50%;height:100%;box-sizing:border-box;background:#dfedf9;border:0;border-radius:0;padding:6%;padding-left:3%;padding-right:3%;container-type:inline-size;display:flex;align-items:stretch;justify-content:center;color:#405e79}
     #albumPreviewSpread .growthAlbumPage .growthPageInner{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;padding:5cqw 4cqw;gap:3.3cqw;justify-content:center;border-radius:6cqw;overflow:hidden}
@@ -1836,13 +1836,32 @@
     $('#messageFontSize').value=messageChildId?messageFontSize(messageChildId):85;
     updateMessageEditor();
   }
+  function fitMessagePanels(root,warnings){
+    if(!root||!root.isConnected)return;
+    const panels=[...root.querySelectorAll('.messagePanel:not([hidden])')];
+    for(const [i,panel] of panels.entries()){
+      const paragraph=panel.querySelector('p');
+      if(!paragraph)continue;
+      paragraph.style.removeProperty('font-size');
+      const computed=parseFloat(getComputedStyle(paragraph).fontSize)||12;
+      let size=computed;
+      const fits=()=>paragraph.scrollHeight<=paragraph.clientHeight+1 && panel.scrollHeight<=panel.clientHeight+2;
+      while(!fits()&&size>6.5){
+        size=Math.max(6.5,size-.5);
+        paragraph.style.fontSize=size+'px';
+      }
+      if(warnings){
+        const warning=$('#messageWarning'+(panel.id.endsWith('2')?'2':'1'));
+        if(warning)warning.hidden=fits();
+      }
+    }
+  }
   function updateMessageEditor(){
     const names=[$('#messageTeacher1').value.trim(),$('#messageTeacher2').value.trim()],texts=[$('#messageText1').value,$('#messageText2').value],child=messageSelected();
     $('#messagePreviewChild').textContent=child?child.name.replace(/\s*さん$/,'')+' さんへ':'園児を選択してください';
     $('#messageSheet').dataset.teachers=names[1]?'2':'1';
     const fontSize=Number($('#messageFontSize').value)||85;
-    const previewPixels=(13*fontSize/100);
-    $('#messageSheet').style.setProperty('--message-text-size',previewPixels+'px');
+    $('#messageSheet').style.setProperty('--message-scale',String(fontSize/100));
     $('#messageFontSizeLabel').textContent=fontSize+'%';
     $('#messageBlock2').hidden=!names[1];
     for(let i=0;i<2;i++){
@@ -1850,7 +1869,7 @@
       $('#messagePreviewTeacher'+(i+1)).textContent=messageTeacherLabel(names[i]);
       const previewText=$('#messagePreviewText'+(i+1));
       previewText.textContent=texts[i];
-      previewText.style.setProperty('font-size',previewPixels+'px','important');
+      previewText.style.removeProperty('font-size');
       $('#messageCount'+(i+1)).textContent=Array.from(texts[i]).length+'文字';
     }
     const p1=$('#messagePreviewPanel1'),p2=$('#messagePreviewPanel2');
@@ -1860,12 +1879,7 @@
       p1.style.flex=''+firstShare+' 1 0';
       p2.style.flex=''+(1-firstShare)+' 1 0';
     }else{p1.style.flex='1 1 0';p2.style.flex='1 1 0'}
-    requestAnimationFrame(()=>{
-      for(let i=1;i<=2;i++){
-        const panel=$('#messagePreviewPanel'+i),warning=$('#messageWarning'+i);
-        warning.hidden=panel.hidden||!(panel.scrollHeight>panel.clientHeight+2||panel.querySelector('p').scrollHeight>panel.querySelector('p').clientHeight+2);
-      }
-    });
+    requestAnimationFrame(()=>fitMessagePanels($('#messageSheet'),true));
   }
   function saveMessageChild(){
     state.messageTeachers={...(state.messageTeachers||{}),[messageClassKey()]:[$('#messageTeacher1').value.trim(),$('#messageTeacher2').value.trim()]};
@@ -1883,7 +1897,7 @@
   function appendAlbumMessagePage(spread,childId,classId,year){
     const names=state.messageTeachers?.[year+':'+classId]||['',''],texts=state.messageRecords?.[year+':'+classId+':'+childId]||['',''];
     const page=document.createElement('div');page.className='messageAlbumPage';
-    page.style.setProperty('--message-text-size',(13*messageFontSize(childId)/100)+'px');
+    page.style.setProperty('--message-scale',String(messageFontSize(childId)/100));
     const sheet=document.createElement('div');sheet.className='messageSheetInner';
     const heading=document.createElement('h3');heading.textContent='せんせいからのメッセージ';
     const who=document.createElement('div');who.className='messageAddressee';
@@ -1902,6 +1916,7 @@
       panels.children[1].style.flex=(1-share)+' 1 0';
     }
     sheet.append(heading,who,panels);page.append(sheet);spread.append(page);
+    requestAnimationFrame(()=>fitMessagePanels(page,false));
   }
   let albumPreviewIndex=0,albumPreviewToken=0,albumPreviewChildId='';
   async function renderAlbumPreview(){
