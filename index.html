@@ -2154,9 +2154,10 @@
     const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);
     ctx.font=(style.fontWeight||'400')+' '+fontSize+'px '+font;
     ctx.textBaseline='top';ctx.fillStyle=style.color||'#333';
-    const lh=(parseFloat(style.lineHeight)||fontSize*1.35);
+    const rawLineHeight=parseFloat(style.lineHeight);
+    const lh=Number.isFinite(rawLineHeight)?(rawLineHeight<4?fontSize*rawLineHeight:rawLineHeight):fontSize*1.35;
     const lines=[];
-    for(const raw of String(text).split('\\n')){
+    for(const raw of String(text).split('\n')){
       let line='';
       for(const char of raw){
         if(ctx.measureText(line+char).width>w&&line){lines.push(line);line=char}else line+=char;
