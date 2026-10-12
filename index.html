@@ -3431,16 +3431,37 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       page.stickers=stickerItems.map(x=>({...x}));
       page.updatedAt=Date.now();
       saveState();checkpointPage(page);
+      // Render the already-working left/right A4 print leaves directly into a
+      // two-page PDF. This removes Safari's URL/date/page-number decorations.
+      const warnings=await preflightPagePhotos(page);
+      if(warnings.length&&!confirm('印刷前チェック：'+warnings.join('、')+'。続けますか？'))return;
+      await ensureAlbumPdfLibraries(false);
       removeNativePrintHost();
       nativePrintHost=document.createElement('div');
       nativePrintHost.id='nativePrintHost';
+      nativePrintHost.style.cssText='display:block;position:fixed;left:0;top:0;width:210mm;opacity:0.01;pointer-events:none;z-index:-1;overflow:visible';
       nativePrintHost.append(makeNativePrintLeaf(source,'left'),makeNativePrintLeaf(source,'right'));
       document.body.append(nativePrintHost);
-      // Call print synchronously in the original button gesture on iPhone.
-      if(typeof window.print!=='function')throw new Error('このブラウザは印刷に対応していません');
-      window.print();
-    }catch(error){console.error('native editor print',error);toast('印刷準備エラー：'+(error?.message||String(error)))}
-    finally{button.disabled=false}
+      const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+      const leaves=[...nativePrintHost.querySelectorAll('.nativePrintLeaf')];
+      for(let n=0;n<leaves.length;n++){
+        const leaf=leaves[n];
+        // Capture each A4 sheet alone to keep iPhone memory use bounded.
+        leaf.style.cssText+=';position:relative;display:block;margin:0;width:209.8mm;height:296.7mm;overflow:hidden';
+        await Promise.all([...leaf.querySelectorAll('img')].map(img=>img.decode?img.decode():Promise.resolve()));
+        if(document.fonts?.ready)await document.fonts.ready;
+        let canvas=null;
+        try{
+          canvas=await window.html2canvas(leaf,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false,scrollX:0,scrollY:0,imageTimeout:15000});
+          if(!canvas.width||!canvas.height)throw new Error('PDF用ページを作成できません');
+          if(n)pdf.addPage('a4','portrait');
+          pdf.addImage(canvas.toDataURL('image/jpeg',0.97),'JPEG',0,0,210,297,undefined,'FAST');
+        }finally{if(canvas){canvas.width=canvas.height=0;canvas.remove()}}
+      }
+      await albumPdfSave(pdf.output('blob'),state.year+'_'+cls(state.selectedClassId).name+'_'+(page.title||'見開き')+'_左右2ページ.pdf');
+      toast('余計な印字のない2ページPDFを作成しました');
+    }catch(error){console.error('direct editor PDF',error);toast('PDF作成エラー：'+(error?.message||String(error)))}
+    finally{removeNativePrintHost();button.disabled=false}
   });
   window.addEventListener('afterprint',removeNativePrintHost);
   $('#spread').addEventListener('pointerdown',e=>{if(e.target===$('#spread')){selectedEditId=null;selectedTextId=null;selectedStickerId=null;$$('.placedPhoto').forEach(x=>x.classList.remove('selected'));$$('.placedText').forEach(x=>x.classList.remove('selected'));$$('.placedSticker').forEach(x=>x.classList.remove('selected'));syncTextPanel();updateEditControls()}});
