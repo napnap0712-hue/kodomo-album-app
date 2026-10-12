@@ -1252,7 +1252,7 @@
     }
     if(sortView==='detail'){
       $('#sortTitle').textContent='写真の詳細';
-      const photos=sortPhotos(),idx=photos.findIndex(p=>p.id===sortPhotoId),photo=photos[idx];if(!photo){sortView='children';renderPhotoSorting();return}
+      const photos=sortPreviousView==='photos'?sortPhotos().filter(p=>sortChildId===null?!photoLinks(p).length:photoLinks(p).includes(sortChildId)):sortPhotos();const idx=photos.findIndex(p=>p.id===sortPhotoId),photo=photos[idx];if(!photo){sortView=sortPreviousView;renderPhotoSorting();return}
       const img=document.createElement('img');img.className='sortDetailImage';img.alt='選択した写真';wrap.appendChild(img);
       try{const blob=await getImage('page:'+p.id+':'+photo.id);if(blob&&token===sortRenderVersion)img.src=fileUrl(blob)}catch(e){console.warn(e)}
       const nav=document.createElement('div');nav.className='sortDetailNav';
