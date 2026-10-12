@@ -1247,7 +1247,7 @@
  <div class="growthInputs"><div class="growthPeriod"><h3>4月・年度初め</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthStartPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthStartPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthStartScaleValue">100%</output><input id="growthStartScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthStartX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthStartY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthStartHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthStartWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div></div><div class="growthPeriod"><h3>3月・年度末</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthEndPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthEndPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthEndScaleValue">100%</output><input id="growthEndScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthEndX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthEndY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：92.3"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：14.1"></label></div></div></div>
  <p class="hint">園児ごとに保存します。未入力の項目や比較できない成長差は「—」で表示されます。</p></div>
 </section>
-    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。A4縦のPDFを直接生成します。写真と文字を個別に描画する方式です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📄 この園児のPDFを作成</button><button id="albumZipPdf" type="button">📦 クラス全員分のPDFをZIPで作成</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
+    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。A4縦のPDFを直接生成します。写真と文字を個別に描画する方式です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📄 この園児のPDFを作成</button><button id="albumPdfLibCoverTest" type="button">🧪 pdf-libで表紙1枚を試す</button><button id="albumZipPdf" type="button">📦 クラス全員分のPDFをZIPで作成</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
       <div class="photoManageTop">
@@ -2320,6 +2320,62 @@
       const reason=error?.message||String(error);status.style.color='#a13453';status.textContent='PDF作成エラー：'+reason;toast('PDF作成エラー：'+reason);
     }finally{albumPdfBusy=false;buttons.forEach(b=>b.disabled=false)}
   }
+  async function exportPdfLibCoverTest(){
+    const button=$('#albumPdfLibCoverTest'),status=$('#albumPrintStatus');
+    if(!albumPreviewChildId){toast('園児を選択してください');return}
+    button.disabled=true;status.style.color='';
+    const originalIndex=albumPreviewIndex;
+    const host=document.createElement('div');
+    host.style.cssText='position:fixed;left:0;top:0;width:794px;height:1123px;opacity:0.01;pointer-events:none;z-index:99998';
+    document.body.append(host);
+    try{
+      status.textContent='pdf-libを準備しています…';
+      await loadAlbumPdfLibrary('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',()=>!!window.PDFLib?.PDFDocument);
+      const doc=await window.PDFLib.PDFDocument.create();
+      const page=doc.addPage([595.276,841.89]);
+      const P=window.PDFLib;
+      albumPreviewIndex=0;
+      await renderAlbumPreview();
+      const leaf=albumPrintLeafFromSpread($('#albumPreviewSpread'),'right');
+      leaf.style.cssText='position:relative;width:794px;height:1123px;inset:auto;background:#fff;overflow:hidden;box-sizing:border-box';
+      host.append(leaf);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const bounds=leaf.getBoundingClientRect();
+      for(const el of [leaf,...leaf.querySelectorAll('*')]){
+        const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
+        if(!r.width||!r.height||cs.display==='none')continue;
+        const x=(r.left-bounds.left)*595.276/794,y=841.89-(r.bottom-bounds.top)*841.89/1123;
+        const w=r.width*595.276/794,h=r.height*841.89/1123;
+        if(x<0||y<0||x+w>596||y+h>843)continue;
+        const bg=albumPdfColor(cs.backgroundColor);
+        if(bg&&bg[3]!==0)page.drawRectangle({x,y,width:w,height:h,color:P.rgb(bg[0]/255,bg[1]/255,bg[2]/255)});
+        if(el instanceof HTMLImageElement){
+          await new Promise(resolve=>{if(el.complete)return resolve();el.onload=resolve;el.onerror=resolve;setTimeout(resolve,3000)});
+          if(!el.naturalWidth)continue;
+          const canvas=document.createElement('canvas');canvas.width=Math.min(1600,Math.max(1,Math.round(r.width*2)));canvas.height=Math.min(1600,Math.max(1,Math.round(r.height*2)));
+          const ctx=canvas.getContext('2d');const z=cs.objectFit==='contain'?Math.min(canvas.width/el.naturalWidth,canvas.height/el.naturalHeight):Math.max(canvas.width/el.naturalWidth,canvas.height/el.naturalHeight);
+          ctx.drawImage(el,(canvas.width-el.naturalWidth*z)/2,(canvas.height-el.naturalHeight*z)/2,el.naturalWidth*z,el.naturalHeight*z);
+          const bytes=await new Promise((resolve,reject)=>canvas.toBlob(async blob=>blob?resolve(await blob.arrayBuffer()):reject(new Error('画像変換に失敗')),'image/png'));
+          const embedded=await doc.embedPng(bytes);page.drawImage(embedded,{x,y,width:w,height:h});canvas.width=canvas.height=0;
+        }else if(!el.children.length&&el.textContent?.trim()){
+          const canvas=document.createElement('canvas'),ratio=2;canvas.width=Math.ceil(r.width*ratio);canvas.height=Math.ceil(r.height*ratio);
+          const ctx=canvas.getContext('2d');ctx.scale(ratio,ratio);ctx.fillStyle=cs.color;ctx.font=cs.font;ctx.textBaseline='top';
+          const value=el.textContent||'',lineHeight=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.3;
+          const lines=[];let line='';for(const ch of value){if(ch==='\n'){lines.push(line);line='';continue}if(ctx.measureText(line+ch).width>r.width&&line){lines.push(line);line=ch}else line+=ch}lines.push(line);
+          lines.forEach((part,i)=>{const tx=cs.textAlign==='center'?Math.max(0,(r.width-ctx.measureText(part).width)/2):0;ctx.fillText(part,tx,i*lineHeight)});
+          const buffer=await new Promise((resolve,reject)=>canvas.toBlob(async blob=>blob?resolve(await blob.arrayBuffer()):reject(new Error('文字変換に失敗')),'image/png'));
+          const img=await doc.embedPng(buffer);page.drawImage(img,{x,y,width:w,height:h});canvas.width=canvas.height=0;
+        }
+      }
+      status.textContent='表紙PDFを保存しています…';
+      const bytes=await doc.save();
+      const child=state.children.find(c=>c.id===albumPreviewChildId);
+      await albumPdfSave(new Blob([bytes],{type:'application/pdf'}),albumPdfFilename(child)+'_表紙テスト.pdf');
+      status.textContent='表紙1ページの試作PDFを生成しました。印刷プレビューと比べて確認してください。';
+    }catch(e){console.error('pdf-lib cover test',e);status.style.color='#a13453';status.textContent='表紙PDF試作エラー：'+(e.message||e)}
+    finally{host.remove();albumPreviewIndex=originalIndex;await renderAlbumPreview();button.disabled=false}
+  }
+  $('#albumPdfLibCoverTest').addEventListener('click',exportPdfLibCoverTest);
   $('#albumPrintPdf').addEventListener('click',()=>exportAlbumPdf(false));
   $('#albumZipPdf').addEventListener('click',()=>exportAlbumPdf(true));
   $('#albumPreviewNext').addEventListener('click',()=>turnAlbumPreview(1));
