@@ -113,11 +113,20 @@
     .albumSpecialPreview{position:absolute;top:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:#fff2f7;border:1px solid #efd5df;padding:12px;color:#735166}.albumSpecialPreview strong{font-size:clamp(12px,4vw,22px)}.albumSpecialPreview small{font-size:10px}    [data-screen="albumPreview"]{min-width:0;overflow-x:clip}#albumPreviewSpread{max-width:100%;touch-action:pan-y;contain:layout paint}.albumPreviewControls button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.albumPreviewControls #albumPreviewPosition{min-width:0;flex:1;text-align:center;font-size:12px;overflow-wrap:anywhere}
     .albumPdfActions{display:grid;gap:6px;margin-top:14px}.albumPdfActions button{border:0;border-radius:15px;padding:14px;background:#f9dce9;color:#79546a;font-weight:800}.albumPdfActions button:disabled{opacity:.5}.albumPdfActions small{color:#766e73}
     .albumPrintStage{display:none}
+    .albumPrintStage.previewReady{display:block;position:fixed;z-index:99999;inset:0;overflow:auto;background:#f3f4f6;padding:12px;box-sizing:border-box}
+    .albumPrintToolbar{position:sticky;top:0;z-index:10;display:flex;gap:8px;align-items:center;background:#fff;padding:12px;border-radius:12px;margin-bottom:12px;box-shadow:0 2px 10px #0002}
+    .albumPrintToolbar button{border:0;background:#e4edf9;border-radius:10px;padding:12px;font-weight:800;font-size:14px}
+    .albumPrintToolbar button:first-child{background:#ffddeb}
+    .albumPrintStage.previewReady .albumPrintPage{position:relative;width:min(100%,420px);height:auto;aspect-ratio:210/297;margin:0 auto 14px;background:white;box-shadow:0 3px 12px #0002;overflow:hidden}
+    .albumPrintStage.previewReady .albumPrintSpread{position:absolute;width:200%!important;height:100%!important;aspect-ratio:420/297;left:0;top:0;max-width:none!important}
+    .albumPrintStage.previewReady .albumPrintPage.rightSide .albumPrintSpread{left:-100%}
+    .albumPrintToolbarNote{font-size:12px;color:#555;line-height:1.5}
     @media print{
       @page{size:A4 portrait;margin:0}
       html,body{margin:0!important;padding:0!important;background:white!important}
       body>*:not(.albumPrintStage){display:none!important}
-      .albumPrintStage{display:block!important;position:static!important;margin:0!important;padding:0!important}
+      .albumPrintStage,.albumPrintStage.previewReady{display:block!important;position:static!important;margin:0!important;padding:0!important;background:white!important;overflow:visible!important}
+      .albumPrintToolbar{display:none!important}
       .albumPrintPage{width:210mm;height:297mm;overflow:hidden;position:relative;page-break-after:always;break-after:page;background:white}
       .albumPrintSpread{width:420mm!important;height:297mm!important;max-width:none!important;min-width:420mm!important;position:absolute!important;left:0;top:0;border:0!important;border-radius:0!important;overflow:hidden!important}
       .albumPrintPage.rightSide .albumPrintSpread{left:-210mm!important}
@@ -2056,18 +2065,25 @@
     button.disabled=true;
     const stage=document.createElement('div');stage.className='albumPrintStage';
     document.body.append(stage);
+    const toolbar=document.createElement('div');toolbar.className='albumPrintToolbar';
+    const printButton=document.createElement('button');printButton.type='button';printButton.textContent='📄 印刷・PDF保存';
+    const closeButton=document.createElement('button');closeButton.type='button';closeButton.textContent='閉じる';
+    const note=document.createElement('span');note.className='albumPrintToolbarNote';note.textContent='iPhoneではSafariの印刷画面から共有→ファイルに保存';
+    toolbar.append(printButton,closeButton,note);stage.append(toolbar);
+    const close=()=>{stage.remove();button.disabled=false;};
+    closeButton.addEventListener('click',close);
+    printButton.addEventListener('click',()=>{
+      // The print call must come directly from a fresh user gesture on iOS.
+      try{window.print()}catch(err){console.error(err);toast('印刷を開けませんでした。Safariで開いてお試しください')}
+    });
     try{
-      // Each preview is rendered by the same routine as the visible album.
-      // Copy the finalized DOM only after pending image loads have settled.
-      const maxIndex=14;
-      for(let index=0;index<=maxIndex;index++){
+      for(let index=0;index<=14;index++){
         status.textContent='印刷ページを準備しています… '+(index+1)+'/15';
         albumPreviewIndex=index;
         await renderAlbumPreview();
         await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
         const spread=$('#albumPreviewSpread').cloneNode(true);
         spread.removeAttribute('id');spread.classList.add('albumPrintSpread');
-        // Cover occupies the right leaf, back cover the left leaf.
         const sides=index===0?['right']:index===14?['left']:['left','right'];
         for(const side of sides){
           const sheet=document.createElement('div');
@@ -2075,27 +2091,18 @@
           sheet.append(spread.cloneNode(true));stage.append(sheet);
         }
       }
-      albumPreviewIndex=originalIndex;
-      await renderAlbumPreview();
-      status.textContent='印刷画面で「PDFとして保存」を選んでください。';
-      let cleaned=false;
-      const cleanup=()=>{
-        if(cleaned)return;
-        cleaned=true;
-        window.removeEventListener('afterprint',cleanup);
-        stage.remove();
-        button.disabled=false;
-      };
-      window.addEventListener('afterprint',cleanup,{once:true});
-      window.print();
+      stage.classList.add('previewReady');
+      stage.scrollTop=0;
+      status.textContent='印刷用プレビューを表示しています。';
     }catch(error){
       console.error('album print',error);
       toast('印刷ページを準備できませんでした');
       status.textContent='出力エラーが発生しました';
-      stage.remove();
+      close();
+    }finally{
       albumPreviewIndex=originalIndex;
       await renderAlbumPreview();
-      button.disabled=false;
+      if(!stage.isConnected)button.disabled=false;
     }
   }
   $('#albumPrintPdf').addEventListener('click',printChildAlbum);
