@@ -239,7 +239,7 @@
     .messagePanels{display:flex;flex-direction:column;gap:4%;flex:1;min-height:0}
     .messagePanel{background:#fff7fa;border-radius:12px;padding:4%;min-height:0;flex:1;display:flex;flex-direction:column;text-align:left;gap:5px;overflow:hidden}
     .messagePanel b{color:#a76a86;font-size:clamp(11px,2.8vw,16px)}
-    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;margin:0;font-size:calc(12px * var(--message-font-scale, .85))}
+    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;margin:0;font-size:var(--message-text-size, 12px)}
     .messagePanel[hidden]{display:none}
     .messageSheet[data-teachers="1"] .messagePanel:first-child{flex:1}
     .messageOverflow{color:#a13453;font-size:12px;font-weight:700}
@@ -250,7 +250,7 @@
     #albumPreviewSpread .messagePanels{gap:3cqw}
     #albumPreviewSpread .messagePanel{border-radius:4cqw;padding:4cqw;gap:2cqw}
     #albumPreviewSpread .messagePanel b{font-size:5cqw}
-    #albumPreviewSpread .messagePanel p{font-size:calc(4cqw * var(--message-font-scale, .85));line-height:1.35}
+    #albumPreviewSpread .messagePanel p{font-size:var(--message-text-size, 12px);line-height:1.35}
     /* Match the growth editor sheet on the left album page only. */
     #albumPreviewSpread .growthAlbumPage{position:absolute;left:0;top:0;width:50%;height:100%;box-sizing:border-box;background:#dfedf9;border:0;border-radius:0;padding:6%;padding-left:3%;padding-right:3%;container-type:inline-size;display:flex;align-items:stretch;justify-content:center;color:#405e79}
     #albumPreviewSpread .growthAlbumPage .growthPageInner{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;padding:5cqw 4cqw;gap:3.3cqw;justify-content:center;border-radius:6cqw;overflow:hidden}
@@ -1819,6 +1819,7 @@
   function messageRecord(id){return state.messageRecords?.[messageChildKey(id)]||['','']}
   function messageSelected(){return state.children.find(x=>x.id===messageChildId&&x.classId===state.selectedClassId)}
   function messageFontSize(id){return Math.max(65,Math.min(140,Number(state.messageFontSizes?.[messageChildKey(id)])||85))}
+  function messageTeacherLabel(name){const trimmed=String(name||'').trim();return trimmed?trimmed.replace(/(?:先生|せんせい)\s*$/,'')+'せんせい':'せんせい'}
   function renderMessageEditor(){
     const children=state.children.filter(x=>x.classId===state.selectedClassId),selector=$('#messageChild');selector.replaceChildren();
     for(const child of children){const opt=document.createElement('option');opt.value=child.id;opt.textContent=child.name;selector.append(opt)}
@@ -1839,12 +1840,12 @@
     $('#messagePreviewChild').textContent=child?child.name.replace(/\s*さん$/,'')+' さんへ':'園児を選択してください';
     $('#messageSheet').dataset.teachers=names[1]?'2':'1';
     const fontSize=Number($('#messageFontSize').value)||85;
-    $('#messageSheet').style.setProperty('--message-font-scale',String(fontSize/100));
+    $('#messageSheet').style.setProperty('--message-text-size',(16*fontSize/100)+'px');
     $('#messageFontSizeLabel').textContent=fontSize+'%';
     $('#messageBlock2').hidden=!names[1];
     for(let i=0;i<2;i++){
       $('#messagePreviewPanel'+(i+1)).hidden=i===1&&!names[1];
-      $('#messagePreviewTeacher'+(i+1)).textContent=names[i]||'せんせい';
+      $('#messagePreviewTeacher'+(i+1)).textContent=messageTeacherLabel(names[i]);
       $('#messagePreviewText'+(i+1)).textContent=texts[i];
       $('#messageCount'+(i+1)).textContent=Array.from(texts[i]).length+'文字';
     }
@@ -1869,7 +1870,7 @@
   function appendAlbumMessagePage(spread,childId,classId,year){
     const names=state.messageTeachers?.[year+':'+classId]||['',''],texts=state.messageRecords?.[year+':'+classId+':'+childId]||['',''];
     const page=document.createElement('div');page.className='messageAlbumPage';
-    page.style.setProperty('--message-font-scale',String(messageFontSize(childId)/100));
+    page.style.setProperty('--message-text-size',(16*messageFontSize(childId)/100)+'px');
     const sheet=document.createElement('div');sheet.className='messageSheetInner';
     const heading=document.createElement('h3');heading.textContent='せんせいからのメッセージ';
     const who=document.createElement('div');who.className='messageAddressee';
@@ -1877,7 +1878,7 @@
     const panels=document.createElement('div');panels.className='messagePanels';
     for(let i=0;i<(names[1]?2:1);i++){
       const panel=document.createElement('div');panel.className='messagePanel';
-      const title=document.createElement('b');title.textContent=names[i]||'せんせい';
+      const title=document.createElement('b');title.textContent=messageTeacherLabel(names[i]);
       const body=document.createElement('p');body.textContent=texts[i]||'';
       panel.append(title,body);panels.append(panel);
     }
