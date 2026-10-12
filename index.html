@@ -1071,6 +1071,11 @@
       </div>
     </section>
 
+    <section class="screen" data-screen="archiveView">
+      <div class="topbar"><button class="back" data-go="yearAdmin" type="button">‹</button><h2 id="archiveViewTitle">過去年度のアルバム</h2></div>
+      <div class="yearGuideCard"><p class="hint">過去年度の記録は閲覧専用です。写真やアルバムは変更されません。</p><div id="archiveViewPages" class="yearPromotionList"></div></div>
+    </section>
+
     <section class="screen" data-screen="backupAdmin">
       <div class="topbar"><button class="back" data-go="admin" type="button">‹</button><h2>データ保存・復元</h2></div>
       <div class="yearOverview">
@@ -1145,7 +1150,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='yearAdmin')renderYearAdmin(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1745,12 +1750,31 @@
       saveState();currentClassId=state.selectedClassId;renderYearAdmin();toast('新年度を開始しました。前年度の写真・アルバムは保持されています');
     }catch(e){state=original;console.error(e);toast('年度の切り替えに失敗しました');}
   });
+  let archiveViewYear=null;
+  async function renderArchiveView(){
+    const entry=(state.yearArchives||[]).find(e=>e.year===archiveViewYear);
+    const target=$('#archiveViewPages');target.replaceChildren();
+    if(!entry){$('#archiveViewTitle').textContent='過去年度のアルバム';target.textContent='記録が見つかりません';return}
+    $('#archiveViewTitle').textContent=entry.year+'年度のアルバム';
+    if(!entry.pages.length){target.textContent='この年度には保存されたページがありません';return}
+    for(const page of entry.pages){
+      const card=document.createElement('div');card.className='yearGuideCard';
+      const title=document.createElement('b');title.textContent=(CLASSES.find(c=>c.id===page.classId)?.name||'クラス')+' ／ '+page.title;
+      const kind=document.createElement('span');kind.className='hint';kind.textContent=(page.type==='event'?'行事':'月')+'・写真'+(page.photos||[]).length+'枚';
+      const gallery=document.createElement('div');gallery.className='photoManageGrid';card.append(title,kind,gallery);target.append(card);
+      for(const photo of (page.photos||[])){
+        try{const blob=await getImage('page:'+page.id+':'+photo.id);if(!blob)continue;
+          const img=document.createElement('img');img.alt=page.title+'の写真';img.src=fileUrl(blob);img.style.cssText='width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px';gallery.append(img);
+        }catch(e){console.warn('過去年度の写真を表示できません',e)}
+      }
+    }
+  }
   function renderYearAdmin(){
     $('#yearLabel').textContent=state.year+'年度';
     const archive=$('#yearArchiveList');archive.replaceChildren();
     const archives=Array.isArray(state.yearArchives)?state.yearArchives:[];
     if(!archives.length){archive.textContent='保存された過去年度はまだありません';}
-    for(const entry of [...archives].reverse()){const details=document.createElement('details');details.className='yearPromotionRow';const title=document.createElement('summary');title.textContent=entry.year+'年度（園児'+entry.children.length+'名・アルバム'+entry.pages.length+'件）';const body=document.createElement('div');body.className='hint';body.style.marginTop='9px';body.textContent='園児：'+entry.children.map(c=>c.name).join('、')+' ／ ページ：'+entry.pages.map(p=>p.title).join('、');details.append(title,body);archive.append(details);}
+    for(const entry of [...archives].reverse()){const details=document.createElement('details');details.className='yearPromotionRow';const title=document.createElement('summary');title.textContent=entry.year+'年度（園児'+entry.children.length+'名・アルバム'+entry.pages.length+'件）';const body=document.createElement('div');body.className='hint';body.style.marginTop='9px';body.textContent='園児：'+entry.children.map(c=>c.name).join('、');details.append(title,body);const open=document.createElement('button');open.type='button';open.className='secondary wide';open.textContent='📖 この年度のアルバムを見る';open.addEventListener('click',()=>{archiveViewYear=entry.year;show('archiveView')});details.append(open);archive.append(details);}
     const wrap=$('#yearPromotionList');wrap.replaceChildren();
     CLASSES.forEach((c,i)=>{
       const n=state.children.filter(child=>child.classId===c.id).length;
