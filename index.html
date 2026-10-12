@@ -70,6 +70,14 @@
     .childPhotoSlot .childDetailPhoto{width:min(100%,136px);height:auto;aspect-ratio:1;font-size:48px}
     .childPhotoSlot b{font-size:13px;text-align:center}
     .childPhotoButton{width:100%;display:grid;place-items:center;min-height:46px;padding:9px 5px;text-align:center;font-size:12px;cursor:pointer}
+    .archiveSpread{width:100%;aspect-ratio:420/297;position:relative;overflow:hidden;background:white;border:1px solid #e5ded5;border-radius:5px;isolation:isolate}
+    .archiveSpread:after{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:#cfc5bc;z-index:200;pointer-events:none}
+    .archiveHalf{position:absolute;top:0;width:50%;height:100%;z-index:0}
+    .archivePlaced{position:absolute;overflow:hidden;z-index:1}
+    .archivePlaced img{width:100%;height:100%;object-fit:cover}
+    .archiveText{position:absolute;white-space:pre-wrap;overflow:hidden;line-height:1.25;z-index:100}
+    .archiveFallback{position:absolute;inset:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;overflow:hidden}
+    .archiveFallback img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:5px}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
     .yearCurrentCard span{font-size:14px;font-weight:800}
@@ -1761,11 +1769,32 @@
       const card=document.createElement('div');card.className='yearGuideCard';
       const title=document.createElement('b');title.textContent=(CLASSES.find(c=>c.id===page.classId)?.name||'クラス')+' ／ '+page.title;
       const kind=document.createElement('span');kind.className='hint';kind.textContent=(page.type==='event'?'行事':'月')+'・写真'+(page.photos||[]).length+'枚';
-      const gallery=document.createElement('div');gallery.className='photoManageGrid';card.append(title,kind,gallery);target.append(card);
-      for(const photo of (page.photos||[])){
-        try{const blob=await getImage('page:'+page.id+':'+photo.id);if(!blob)continue;
-          const img=document.createElement('img');img.alt=page.title+'の写真';img.src=fileUrl(blob);img.style.cssText='width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px';gallery.append(img);
-        }catch(e){console.warn('過去年度の写真を表示できません',e)}
+      const spread=document.createElement('div');spread.className='archiveSpread';spread.setAttribute('aria-label',page.title+'の保存済み見開き');card.append(title,kind,spread);target.append(card);
+      const backgrounds=page.background||{};
+      for(const [side,index] of [['left',0],['right',1]]){
+        const cfg=backgrounds[side]||{};
+        const bg=document.createElement('div');bg.className='archiveHalf';bg.style.left=(index*50)+'%';bg.style.backgroundColor=cfg.color||'#fff';
+        if(cfg.pattern==='dots'){bg.style.backgroundImage='radial-gradient(#aaa 1px, transparent 1px)';bg.style.backgroundSize='9px 9px'}
+        else if(cfg.pattern==='stripe'){bg.style.backgroundImage='repeating-linear-gradient(135deg,#ddd 0px 2px,transparent 2px 10px)'}
+        else if(cfg.pattern==='grid'){bg.style.backgroundImage='linear-gradient(#ddd 1px, transparent 1px),linear-gradient(90deg,#ddd 1px,transparent 1px)';bg.style.backgroundSize='11px 11px'}
+        spread.append(bg);
+      }
+      if((page.layout||[]).length){
+        for(const item of page.layout){
+          try{
+            const blob=await getImage(item.bgRemoved?'bg:'+page.id+':'+item.id:'page:'+page.id+':'+item.photoId);
+            if(!blob)continue;
+            const box=document.createElement('div');box.className='archivePlaced';box.style.cssText='left:'+(item.x||0)+'%;top:'+(item.y||0)+'%;width:'+(item.width||20)+'%;height:'+(item.height||20)+'%;transform:rotate('+(item.rotation||0)+'deg);z-index:'+(item.zIndex||1);
+            const img=document.createElement('img');img.src=fileUrl(blob);img.alt='配置済み写真';img.style.objectFit=item.layoutFit||'cover';img.style.clipPath=item.clipPath||'none';box.append(img);spread.append(box);
+          }catch(e){console.warn('過去年度の配置写真を表示できません',e)}
+        }
+      }else{
+        const gallery=document.createElement('div');gallery.className='archiveFallback';
+        spread.append(gallery);
+        for(const photo of (page.photos||[])){try{const blob=await getImage('page:'+page.id+':'+photo.id);if(blob){const img=document.createElement('img');img.alt='候補写真';img.src=fileUrl(blob);gallery.append(img)}}catch(e){console.warn(e)}}
+      }
+      for(const t of (page.texts||[])){
+        const el=document.createElement('div');el.className='archiveText';el.textContent=t.text||'';el.style.cssText='left:'+(t.x||0)+'%;top:'+(t.y||0)+'%;width:'+(t.width||28)+'%;height:'+(t.height||12)+'%;color:'+(t.color||'#333')+';z-index:'+(t.zIndex||100)+';font-family:'+fontStack(t.font||'HaniHani')+';font-size:'+Math.max(6,(Number(t.size)||28)*.36)+'px';spread.append(el);
       }
     }
   }
