@@ -228,14 +228,18 @@
     .messageEditor .messageBlock{display:grid;gap:9px;background:#fff8fa;border-radius:16px;padding:13px}
     .messageEditor .messageBlock[hidden]{display:none}
     .messageEditor .messageCounter{font-size:12px;color:#826f77;text-align:right}
+    .messageFontControl{display:grid;gap:6px;background:#fff;border-radius:12px;padding:10px;font-size:13px;font-weight:750}
+    .messageFontControl input{width:100%;accent-color:#b77996}
+    .messageBlock .messageInlineWarning{color:#a13453;font-size:12px;font-weight:800}
+    .messageBlock .messageInlineWarning[hidden]{display:none}
     .messageSheet{background:#fff0f5;padding:6%;aspect-ratio:210/297;width:min(82%,350px);box-sizing:border-box;margin:auto;display:flex;border-radius:9px}
-    .messageSheetInner{box-sizing:border-box;background:white;border-radius:15px;width:100%;min-height:0;padding:8%;display:flex;flex-direction:column;gap:5%;text-align:center}
+    .messageSheetInner{box-sizing:border-box;background:white;border-radius:15px;width:100%;min-height:0;padding:5%;display:flex;flex-direction:column;gap:3%;text-align:center}
     .messageSheetInner h3{font-size:clamp(13px,3.7vw,20px);color:#a76a86;margin:0}
     .messageSheetInner .messageAddressee{font-size:clamp(12px,3.3vw,18px);font-weight:700}
     .messagePanels{display:flex;flex-direction:column;gap:4%;flex:1;min-height:0}
-    .messagePanel{background:#fff7fa;border-radius:12px;padding:7%;min-height:0;flex:1;display:flex;flex-direction:column;text-align:left;gap:9px;overflow:hidden}
+    .messagePanel{background:#fff7fa;border-radius:12px;padding:4%;min-height:0;flex:1;display:flex;flex-direction:column;text-align:left;gap:5px;overflow:hidden}
     .messagePanel b{color:#a76a86;font-size:clamp(11px,2.8vw,16px)}
-    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;margin:0;font-size:clamp(10px,2.6vw,15px)}
+    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;margin:0;font-size:calc(12px * var(--message-font-scale, .85))}
     .messagePanel[hidden]{display:none}
     .messageSheet[data-teachers="1"] .messagePanel:first-child{flex:1}
     .messageOverflow{color:#a13453;font-size:12px;font-weight:700}
@@ -246,7 +250,7 @@
     #albumPreviewSpread .messagePanels{gap:3cqw}
     #albumPreviewSpread .messagePanel{border-radius:4cqw;padding:4cqw;gap:2cqw}
     #albumPreviewSpread .messagePanel b{font-size:5cqw}
-    #albumPreviewSpread .messagePanel p{font-size:4.6cqw;line-height:1.3}
+    #albumPreviewSpread .messagePanel p{font-size:calc(4cqw * var(--message-font-scale, .85));line-height:1.35}
     /* Match the growth editor sheet on the left album page only. */
     #albumPreviewSpread .growthAlbumPage{position:absolute;left:0;top:0;width:50%;height:100%;box-sizing:border-box;background:#dfedf9;border:0;border-radius:0;padding:6%;padding-left:3%;padding-right:3%;container-type:inline-size;display:flex;align-items:stretch;justify-content:center;color:#405e79}
     #albumPreviewSpread .growthAlbumPage .growthPageInner{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;padding:5cqw 4cqw;gap:3.3cqw;justify-content:center;border-radius:6cqw;overflow:hidden}
@@ -1173,11 +1177,11 @@
  <div class="yearGuideCard messageEditor">
  <label class="albumChildChooser">編集する園児<select id="messageChild"></select></label>
  <div class="messageSheet" id="messageSheet"><div class="messageSheetInner"><h3>せんせいからのメッセージ</h3><div class="messageAddressee" id="messagePreviewChild"></div><div class="messagePanels"><div class="messagePanel" id="messagePreviewPanel1"><b id="messagePreviewTeacher1"></b><p id="messagePreviewText1"></p></div><div class="messagePanel" id="messagePreviewPanel2"><b id="messagePreviewTeacher2"></b><p id="messagePreviewText2"></p></div></div></div></div>
- <p class="messageOverflow" id="messageOverflow" hidden>文章がページからはみ出す可能性があります。文字数や改行を調整してください。</p>
+ <div class="messageFontControl"><label for="messageFontSize">文字サイズ <output id="messageFontSizeLabel">85%</output></label><input type="range" id="messageFontSize" min="65" max="140" step="5" value="85"><span class="hint">文章が長い場合は小さく調整できます。プレビューにも反映されます。</span></div>
  <label class="messageTeacherInput">先生①の名前（クラス共通）<input id="messageTeacher1" placeholder="例：〇〇せんせい"></label>
- <div class="messageBlock"><b>先生①からのメッセージ</b><textarea id="messageText1" placeholder="園児へのメッセージを入力"></textarea><div class="messageCounter" id="messageCount1">0文字</div></div>
+ <div class="messageBlock"><b>先生①からのメッセージ</b><textarea id="messageText1" placeholder="園児へのメッセージを入力"></textarea><div class="messageCounter" id="messageCount1">0文字</div><div class="messageInlineWarning" id="messageWarning1" hidden>⚠️ この先生の文章が枠からはみ出しています。文字サイズや文章を調整してください。</div></div>
  <label class="messageTeacherInput">先生②の名前（クラス共通・任意）<input id="messageTeacher2" placeholder="担任が1人の場合は空欄"></label>
- <div class="messageBlock" id="messageBlock2"><b>先生②からのメッセージ</b><textarea id="messageText2" placeholder="園児へのメッセージを入力"></textarea><div class="messageCounter" id="messageCount2">0文字</div></div>
+ <div class="messageBlock" id="messageBlock2"><b>先生②からのメッセージ</b><textarea id="messageText2" placeholder="園児へのメッセージを入力"></textarea><div class="messageCounter" id="messageCount2">0文字</div><div class="messageInlineWarning" id="messageWarning2" hidden>⚠️ この先生の文章が枠からはみ出しています。文字サイズや文章を調整してください。</div></div>
  <p class="hint">先生名はクラス共通、文章は園児別に保存します。入力内容は省略せず保存されます。</p>
  </div>
 </section>
@@ -1814,6 +1818,7 @@
   function messageTeachers(){return state.messageTeachers?.[messageClassKey()]||['','']}
   function messageRecord(id){return state.messageRecords?.[messageChildKey(id)]||['','']}
   function messageSelected(){return state.children.find(x=>x.id===messageChildId&&x.classId===state.selectedClassId)}
+  function messageFontSize(id){return Math.max(65,Math.min(140,Number(state.messageFontSizes?.[messageChildKey(id)])||85))}
   function renderMessageEditor(){
     const children=state.children.filter(x=>x.classId===state.selectedClassId),selector=$('#messageChild');selector.replaceChildren();
     for(const child of children){const opt=document.createElement('option');opt.value=child.id;opt.textContent=child.name;selector.append(opt)}
@@ -1826,12 +1831,16 @@
     const messages=messageChildId?messageRecord(messageChildId):['',''];
     $('#messageText1').value=messages[0]||'';$('#messageText2').value=messages[1]||'';
     $('#messageSave').disabled=!messageSelected();
+    $('#messageFontSize').value=messageChildId?messageFontSize(messageChildId):85;
     updateMessageEditor();
   }
   function updateMessageEditor(){
     const names=[$('#messageTeacher1').value.trim(),$('#messageTeacher2').value.trim()],texts=[$('#messageText1').value,$('#messageText2').value],child=messageSelected();
     $('#messagePreviewChild').textContent=child?child.name.replace(/\s*さん$/,'')+' さんへ':'園児を選択してください';
     $('#messageSheet').dataset.teachers=names[1]?'2':'1';
+    const fontSize=Number($('#messageFontSize').value)||85;
+    $('#messageSheet').style.setProperty('--message-font-scale',String(fontSize/100));
+    $('#messageFontSizeLabel').textContent=fontSize+'%';
     $('#messageBlock2').hidden=!names[1];
     for(let i=0;i<2;i++){
       $('#messagePreviewPanel'+(i+1)).hidden=i===1&&!names[1];
@@ -1840,22 +1849,27 @@
       $('#messageCount'+(i+1)).textContent=Array.from(texts[i]).length+'文字';
     }
     requestAnimationFrame(()=>{
-      const panels=[...$('#messageSheet').querySelectorAll('.messagePanel:not([hidden])')];
-      const overflow=panels.some(p=>p.scrollHeight>p.clientHeight+2);
-      $('#messageOverflow').hidden=!overflow;
+      for(let i=1;i<=2;i++){
+        const panel=$('#messagePreviewPanel'+i),warning=$('#messageWarning'+i);
+        warning.hidden=panel.hidden||!(panel.scrollHeight>panel.clientHeight+2||panel.querySelector('p').scrollHeight>panel.querySelector('p').clientHeight+2);
+      }
     });
   }
   function saveMessageChild(){
     state.messageTeachers={...(state.messageTeachers||{}),[messageClassKey()]:[$('#messageTeacher1').value.trim(),$('#messageTeacher2').value.trim()]};
-    if(messageChildId){state.messageRecords={...(state.messageRecords||{}),[messageChildKey(messageChildId)]:[$('#messageText1').value,$('#messageText2').value]}}
+    if(messageChildId){
+      state.messageRecords={...(state.messageRecords||{}),[messageChildKey(messageChildId)]:[$('#messageText1').value,$('#messageText2').value]};
+      state.messageFontSizes={...(state.messageFontSizes||{}),[messageChildKey(messageChildId)]:Number($('#messageFontSize').value)||85};
+    }
     saveState();return true;
   }
   $('#messageChild').addEventListener('change',e=>{saveMessageChild();messageChildId=e.target.value;loadMessageChild()});
-  ['#messageTeacher1','#messageTeacher2','#messageText1','#messageText2'].forEach(id=>$(id).addEventListener('input',updateMessageEditor));
+  ['#messageTeacher1','#messageTeacher2','#messageText1','#messageText2','#messageFontSize'].forEach(id=>$(id).addEventListener('input',updateMessageEditor));
   $('#messageSave').addEventListener('click',()=>{saveMessageChild();toast('メッセージを保存しました');show('classWorkspace')});
   function appendAlbumMessagePage(spread,childId,classId,year){
     const names=state.messageTeachers?.[year+':'+classId]||['',''],texts=state.messageRecords?.[year+':'+classId+':'+childId]||['',''];
     const page=document.createElement('div');page.className='messageAlbumPage';
+    page.style.setProperty('--message-font-scale',String(messageFontSize(childId)/100));
     const sheet=document.createElement('div');sheet.className='messageSheetInner';
     const heading=document.createElement('h3');heading.textContent='せんせいからのメッセージ';
     const who=document.createElement('div');who.className='messageAddressee';
