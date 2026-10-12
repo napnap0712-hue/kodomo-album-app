@@ -2304,7 +2304,25 @@
             const px=Number.isFinite(pos[0])?pos[0]:.5,py=Number.isFinite(pos[1])?pos[1]:.5;
             ctx.drawImage(el,Math.max(0,(iw-sw)*px),Math.max(0,(ih-sh)*py),Math.min(iw,sw),Math.min(ih,sh),0,0,cw,ch);
           }
-          pdf.addImage(crop.toDataURL('image/jpeg',.94),'JPEG',x,y,w,h,undefined,'FAST');
+          // JPEG replaces transparency with black on iOS. Use a white-backed PNG
+          // for clipped/transparent photos, preserving their alpha channel.
+          const clip=cs.clipPath||cs.webkitClipPath||'';
+          if(clip&&clip!=='none'){
+            const mask=document.createElement('canvas');mask.width=cw;mask.height=ch;
+            const mc=mask.getContext('2d');mc.save();
+            if(clip.startsWith('circle(')||clip.startsWith('ellipse(')){
+              mc.beginPath();mc.ellipse(cw/2,ch/2,cw/2,ch/2,0,0,Math.PI*2);mc.clip();
+            }
+            mc.drawImage(crop,0,0);mc.restore();
+            pdf.addImage(mask.toDataURL('image/png'),'PNG',x,y,w,h,undefined,'FAST');
+            mask.width=mask.height=0;
+          }else{
+            const fill=ctx.getImageData(0,0,1,1).data;
+            if(fill[3]<255){
+              ctx.globalCompositeOperation='destination-over';ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);
+            }
+            pdf.addImage(crop.toDataURL('image/jpeg',.94),'JPEG',x,y,w,h,undefined,'FAST');
+          }
           crop.width=crop.height=0;
         }else if(el.children.length===0&&el.textContent?.trim()&&cs.display!=='none'){
           const pl=parseFloat(cs.paddingLeft)||0,pt=parseFloat(cs.paddingTop)||0;
