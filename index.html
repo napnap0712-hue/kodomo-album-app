@@ -1186,7 +1186,7 @@
       #nativePrintHost .nativePrintLeaf{contain:layout paint!important;box-sizing:border-box!important}
       #nativePrintHost .nativePrintSpread{contain:paint!important}
       #nativePrintHost .nativePrintSpread .placedText{min-width:0!important;min-height:0!important}
-      #nativePrintHost .nativePrintSpread .textEditable{overflow:hidden!important}
+      #nativePrintHost .nativePrintSpread .textEditable{overflow:visible!important}
       #nativePrintHost .nativePrintSpread .placedPhoto{box-sizing:border-box!important}
     }
     @page{size:A4 portrait;margin:0}
@@ -3344,6 +3344,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
     const leaf=document.createElement('section');
     leaf.className='nativePrintLeaf';
     const offset=side==='right'?50:0;
+    const bleedMm=4;
     const spread=document.createElement('div');
     spread.className='nativePrintSpread';
     spread.style.cssText='position:absolute;inset:0;width:197.4mm;height:279.18mm;overflow:hidden;background:white;isolation:isolate';
@@ -3353,12 +3354,12 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       if(original.classList.contains('pageBgLayer')){
         if(!original.classList.contains(side))continue;
         const bg=original.cloneNode(true);
-        bg.style.cssText+=';left:0!important;right:0!important;top:0!important;bottom:0!important;width:100%!important;height:100%!important;display:block';
+        bg.style.cssText+=';left:-'+bleedMm+'mm!important;right:auto!important;top:-'+bleedMm+'mm!important;bottom:auto!important;width:calc(100% + '+(bleedMm*2)+'mm)!important;height:calc(100% + '+(bleedMm*2)+'mm)!important;display:block';
         spread.append(bg);continue;
       }
       if(original.classList.contains('pageBgFrame')){
         const frame=document.createElement('div');
-        frame.style.cssText='position:absolute;inset:0;z-index:0;background-repeat:no-repeat;background-size:394.8mm 279.18mm;background-position:'+(side==='right'?'right':'left')+' center;';
+        frame.style.cssText='position:absolute;left:-4mm;top:-4mm;width:calc(100% + 8mm);height:calc(100% + 8mm);z-index:0;background-repeat:no-repeat;background-size:410.8mm 287.18mm;background-position:'+(side==='right'?'right':'left')+' center;';
         frame.style.backgroundImage=original.style.backgroundImage;
         spread.append(frame);
         // The editor frame uses an inset white panel over the decorations.
@@ -3368,18 +3369,21 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       }
       if(!original.matches('.placedPhoto,.placedText,.placedSticker'))continue;
       const x=parseFloat(original.style.left)||0,w=parseFloat(original.style.width)||0;
+      const y=parseFloat(original.style.top)||0,h=parseFloat(original.style.height)||0;
       if(x+w<=offset||x>=offset+50)continue;
       const copy=original.cloneNode(true);
       copy.classList.remove('selected','crop-preview');
       copy.querySelectorAll('.selectionFrame,.cropGuide,.resizeHandle,.trimHandle,.cropGuideHandle,.textResize').forEach(el=>el.remove());
       copy.style.left=((x-offset)*2)+'%';
       copy.style.width=(w*2)+'%';
+      copy.style.top=y+'%';copy.style.height=h+'%';
       if(copy.classList.contains('placedText')){
         const edit=copy.querySelector('.textEditable');
         const originalText=original.querySelector('.textEditable');
         if(edit&&originalText){
           edit.contentEditable='false';edit.style.fontSize=(parseFloat(getComputedStyle(originalText).fontSize)*scale)+'px';
           edit.style.outline='none';edit.style.background='transparent';
+          edit.style.overflow='visible';
         }
         const glyph=copy.querySelector('.curvedGlyphLayer');
         if(glyph){
@@ -3387,6 +3391,10 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
           const item=textItems.find(t=>String(t.id)===String(original.dataset.textItem));
           if(item)updateCurvedText(copy,{...item,size:(Number(item.size)||28)*scale});
         }
+      }
+      if(copy.classList.contains('placedSticker')){
+        const label=copy.querySelector('span'),originalLabel=original.querySelector('span');
+        if(label&&originalLabel){const fontSize=parseFloat(getComputedStyle(originalLabel).fontSize);if(Number.isFinite(fontSize))label.style.fontSize=(fontSize*scale)+'px'}
       }
       spread.append(copy);
     }
