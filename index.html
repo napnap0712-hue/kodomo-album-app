@@ -107,7 +107,7 @@
     [data-screen="photoManage"] .photoManageBottom .editGo{background:#e1f9de;border-color:#d3ebd0;box-shadow:0 3px 0 #c6dbc3}
     [data-screen="photoManage"] .photoManageGrid{margin:13px 0 18px;gap:9px}
     .classAlbumPreviewOpen{display:block;width:100%;margin:12px 0 16px;padding:15px;min-height:54px;border:1px solid #ecd8df;border-radius:20px;background:#ffe3f0;color:#543848;font-weight:900;box-shadow:0 3px 0 #e3cbd4}
-    .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
+    .albumSpecialPreview{position:absolute;top:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:#fff2f7;border:1px solid #efd5df;padding:12px;color:#735166}.albumSpecialPreview strong{font-size:clamp(12px,4vw,22px)}.albumSpecialPreview small{font-size:10px}    .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
     .albumPreviewEntry b,.albumPreviewEntry small{display:block}.albumPreviewEntry small{margin-top:6px;color:#766c70}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
@@ -1403,16 +1403,25 @@
     const c=cls(state.selectedClassId),pages=state.pages.filter(p=>p.classId===state.selectedClassId),spread=$('#albumPreviewSpread');
     $('#albumPreviewTitle').textContent=state.year+'年度 '+c.name;spread.replaceChildren();$('#albumPreviewList').replaceChildren();
     const token=++albumPreviewToken;
-    if(!pages.length){spread.textContent='まだセクションがありません';$('#albumPreviewPosition').textContent='0 / 0';$('#albumPreviewPrev').disabled=true;$('#albumPreviewNext').disabled=true;return}
-    albumPreviewIndex=Math.min(Math.max(albumPreviewIndex,0),pages.length-1);
-    const p=pages[albumPreviewIndex];
-    $('#albumPreviewPosition').textContent=(albumPreviewIndex+1)+' / '+pages.length+'　'+p.title;
-    $('#albumPreviewPrev').disabled=albumPreviewIndex===0;$('#albumPreviewNext').disabled=albumPreviewIndex===pages.length-1;
+    const entries=[{kind:'cover',name:'表紙'},{kind:'inside',name:'表紙裏'},{kind:'message',name:'先生からのメッセージ'},...Array.from({length:12},(_,i)=>({kind:'section',name:pages[i]?.title||((i+1)+'番目のセクション（未作成）'),page:pages[i]})),{kind:'back',name:'裏表紙'}];
+    albumPreviewIndex=Math.min(Math.max(albumPreviewIndex,0),entries.length-1);
+    const entry=entries[albumPreviewIndex],p=entry.page;
+    $('#albumPreviewPosition').textContent=(albumPreviewIndex+1)+' / '+entries.length+'　'+entry.name;
+    $('#albumPreviewPrev').disabled=albumPreviewIndex===0;$('#albumPreviewNext').disabled=albumPreviewIndex===entries.length-1;
+    if(entry.kind!=='section'||!p){
+      const placeholder=document.createElement('div');placeholder.className='albumSpecialPreview';
+      const single=entry.kind==='cover'||entry.kind==='inside'||entry.kind==='back';
+      placeholder.style.width=single?'50%':'100%';
+      placeholder.style.left=entry.kind==='cover'?'50%':'0';
+      const label=document.createElement('strong');label.textContent=entry.name;
+      const detail=document.createElement('small');detail.textContent=entry.kind==='section'?'このセクションはまだ作成されていません':'この特別ページはまだ編集機能がありません';
+      placeholder.append(label,detail);spread.append(placeholder);return;
+    }
     for(const [side,i] of [['left',0],['right',1]]){
       const cfg=p.background?.[side]||{},bg=document.createElement('div');bg.className='archiveHalf';bg.style.left=i*50+'%';bg.style.backgroundColor=cfg.color||'#fff';spread.append(bg);
     }
     for(const item of (p.layout||[])){
-      try{const blob=await getImage(item.bgRemoved?'bg:'+p.id+':'+item.id:'page:'+p.id+':'+item.photoId)|| (item.bgRemoved?await getImage('page:'+p.id+':'+item.photoId):null);
+      try{const blob=await getImage(item.bgRemoved?'bg:'+p.id+':'+item.id:'page:'+p.id+':'+item.photoId)||(item.bgRemoved?await getImage('page:'+p.id+':'+item.photoId):null);
         if(token!==albumPreviewToken)return;if(!blob)continue;
         const box=document.createElement('div');box.className='archivePlaced';
         box.style.cssText='left:'+(item.x||0)+'%;top:'+(item.y||0)+'%;width:'+(item.width||20)+'%;height:'+(item.height||20)+'%;transform:rotate('+(item.rotation||0)+'deg);z-index:'+(item.zIndex||1);
