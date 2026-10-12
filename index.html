@@ -1042,7 +1042,7 @@
 
     /* One continuous image frame across the A3-equivalent spread, no duplicate tiles. */
     .pageBgFrame{position:absolute;inset:0;z-index:0;pointer-events:none;background-size:cover;background-position:center;background-repeat:no-repeat}
-    .pageBgFrameCenter{position:absolute;inset:9% 8%;background:#fff;pointer-events:none}
+    .pageBgFrameCenter{position:absolute;inset:9% 8%;background:#fff;border-radius:3%;pointer-events:none}
 
     /* Selected background color: clear, accessible ring inside the fixed panel. */
     .screen.editor #backgroundPanel .bgQuickColor{position:relative;transition:transform .12s ease,box-shadow .12s ease}
@@ -2288,7 +2288,7 @@
         const bg=albumPdfColor(cs.backgroundColor);
         // Photo wrappers are clipping containers, not printable background rectangles.
         // Their opaque white fills caused visible strips around individual photos.
-        if(bg&&bg[3]!==0&&!el.matches('.placedPhoto,.photoViewport')){pdf.setFillColor(bg[0],bg[1],bg[2]);pdf.rect(Math.max(0,x),Math.max(0,y),Math.min(w,210-Math.max(0,x)),Math.min(h,297-Math.max(0,y)),'F')}
+        if(bg&&bg[3]!==0&&!el.matches('.placedPhoto,.photoViewport')){pdf.setFillColor(bg[0],bg[1],bg[2]);const bx=Math.max(0,x),by=Math.max(0,y),bw=Math.min(w,210-bx),bh=Math.min(h,297-by);if(bw>0&&bh>0){const rad=el.classList.contains('pageBgFrameCenter')?Math.min(7,bw/2,bh/2):0;if(rad)pdf.roundedRect(bx,by,bw,bh,rad,rad,'F');else pdf.rect(bx,by,bw,bh,'F')}}
         if(cs.backgroundImage&&cs.backgroundImage.startsWith('url(')){
           try{
             const url=cs.backgroundImage.slice(4,-1).replace(/^["']|["']$/g,'');
