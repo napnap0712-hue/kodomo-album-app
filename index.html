@@ -221,6 +221,32 @@
     .growthFaceSmall{width:42%;max-width:110px;aspect-ratio:1;overflow:hidden;background:#e8eef3;border-radius:6px;flex-shrink:0}
     .growthFaceSmall img{width:100%;height:100%;object-fit:cover;display:block}
     .growthAlbumFaces{display:flex;justify-content:center;gap:6px;width:100%}
+    .messageEditor{display:grid;gap:13px;padding:16px}
+    .messageTeacherInput{display:grid;gap:6px;font-size:14px;font-weight:750}
+    .messageTeacherInput input,.messageEditor textarea{box-sizing:border-box;width:100%;border:1px solid #e4dae0;border-radius:12px;padding:12px;background:#fff;font:inherit;font-size:16px}
+    .messageEditor textarea{min-height:155px;resize:vertical;line-height:1.6}
+    .messageEditor .messageBlock{display:grid;gap:9px;background:#fff8fa;border-radius:16px;padding:13px}
+    .messageEditor .messageBlock[hidden]{display:none}
+    .messageEditor .messageCounter{font-size:12px;color:#826f77;text-align:right}
+    .messageSheet{background:#fff0f5;padding:6%;aspect-ratio:210/297;width:min(82%,350px);box-sizing:border-box;margin:auto;display:flex;border-radius:9px}
+    .messageSheetInner{box-sizing:border-box;background:white;border-radius:15px;width:100%;min-height:0;padding:8%;display:flex;flex-direction:column;gap:5%;text-align:center}
+    .messageSheetInner h3{font-size:clamp(13px,3.7vw,20px);color:#a76a86;margin:0}
+    .messageSheetInner .messageAddressee{font-size:clamp(12px,3.3vw,18px);font-weight:700}
+    .messagePanels{display:flex;flex-direction:column;gap:4%;flex:1;min-height:0}
+    .messagePanel{background:#fff7fa;border-radius:12px;padding:7%;min-height:0;flex:1;display:flex;flex-direction:column;text-align:left;gap:9px;overflow:hidden}
+    .messagePanel b{color:#a76a86;font-size:clamp(11px,2.8vw,16px)}
+    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45;margin:0;font-size:clamp(10px,2.6vw,15px)}
+    .messagePanel[hidden]{display:none}
+    .messageSheet[data-teachers="1"] .messagePanel:first-child{flex:1}
+    .messageOverflow{color:#a13453;font-size:12px;font-weight:700}
+    #albumPreviewSpread .messageAlbumPage{position:absolute;left:50%;top:0;width:50%;height:100%;box-sizing:border-box;container-type:inline-size;background:#fff0f5;padding:5%;display:flex}
+    #albumPreviewSpread .messageSheetInner{border-radius:5cqw;padding:7cqw 5cqw;gap:5cqw}
+    #albumPreviewSpread .messageSheetInner h3{font-size:7cqw}
+    #albumPreviewSpread .messageAddressee{font-size:6cqw}
+    #albumPreviewSpread .messagePanels{gap:3cqw}
+    #albumPreviewSpread .messagePanel{border-radius:4cqw;padding:4cqw;gap:2cqw}
+    #albumPreviewSpread .messagePanel b{font-size:5cqw}
+    #albumPreviewSpread .messagePanel p{font-size:4.6cqw;line-height:1.3}
     /* Match the growth editor sheet on the left album page only. */
     #albumPreviewSpread .growthAlbumPage{position:absolute;left:0;top:0;width:50%;height:100%;box-sizing:border-box;background:#dfedf9;border:0;border-radius:0;padding:6%;padding-left:3%;padding-right:3%;container-type:inline-size;display:flex;align-items:stretch;justify-content:center;color:#405e79}
     #albumPreviewSpread .growthAlbumPage .growthPageInner{box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;padding:5cqw 4cqw;gap:3.3cqw;justify-content:center;border-radius:6cqw;overflow:hidden}
@@ -1142,6 +1168,19 @@
   <p class="coverFixedHint">ⓘ 裏表紙の基本レイアウトは固定です</p>
  </div>
 </section>
+<section class="screen" data-screen="messageEdit">
+ <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>メッセージ</h2><button type="button" id="messageSave" class="coverSaveTop">保存</button></div>
+ <div class="yearGuideCard messageEditor">
+ <label class="albumChildChooser">編集する園児<select id="messageChild"></select></label>
+ <div class="messageSheet" id="messageSheet"><div class="messageSheetInner"><h3>せんせいからのメッセージ</h3><div class="messageAddressee" id="messagePreviewChild"></div><div class="messagePanels"><div class="messagePanel" id="messagePreviewPanel1"><b id="messagePreviewTeacher1"></b><p id="messagePreviewText1"></p></div><div class="messagePanel" id="messagePreviewPanel2"><b id="messagePreviewTeacher2"></b><p id="messagePreviewText2"></p></div></div></div></div>
+ <p class="messageOverflow" id="messageOverflow" hidden>文章がページからはみ出す可能性があります。文字数や改行を調整してください。</p>
+ <label class="messageTeacherInput">先生①の名前（クラス共通）<input id="messageTeacher1" placeholder="例：〇〇せんせい"></label>
+ <div class="messageBlock"><b>先生①からのメッセージ</b><textarea id="messageText1" placeholder="園児へのメッセージを入力"></textarea><div class="messageCounter" id="messageCount1">0文字</div></div>
+ <label class="messageTeacherInput">先生②の名前（クラス共通・任意）<input id="messageTeacher2" placeholder="担任が1人の場合は空欄"></label>
+ <div class="messageBlock" id="messageBlock2"><b>先生②からのメッセージ</b><textarea id="messageText2" placeholder="園児へのメッセージを入力"></textarea><div class="messageCounter" id="messageCount2">0文字</div></div>
+ <p class="hint">先生名はクラス共通、文章は園児別に保存します。入力内容は省略せず保存されます。</p>
+ </div>
+</section>
 <section class="screen" data-screen="growthEdit">
  <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>身長・体重</h2><button type="button" id="growthSave" class="coverSaveTop">保存</button></div>
  <div class="yearGuideCard growthEditor"><label class="albumChildChooser">編集する園児<select id="growthChild"></select></label>
@@ -1357,7 +1396,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview')renderAlbumPreview(); if(screen==='coverEdit')renderCoverEditor(); if(screen==='backCoverEdit')renderBackCoverEditor(); if(screen==='growthEdit')renderGrowthEditor(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview')renderAlbumPreview(); if(screen==='coverEdit')renderCoverEditor(); if(screen==='backCoverEdit')renderBackCoverEditor(); if(screen==='growthEdit')renderGrowthEditor(); if(screen==='messageEdit')renderMessageEditor(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1626,7 +1665,7 @@
     paintCover($('#coverEditorCanvas'),panel,$('#coverEditorIcon'),$('#coverEditorName'),settings,coverPreviewFile).catch(console.warn);
   }
   document.querySelectorAll('[data-special]').forEach(b=>b.addEventListener('click',()=>{
-    if(b.dataset.special==='cover')show('coverEdit');else if(b.dataset.special==='group')show('backCoverEdit');else if(b.dataset.special==='growth')show('growthEdit');else toast(b.textContent.trim()+'の編集画面は準備中です');
+    if(b.dataset.special==='cover')show('coverEdit');else if(b.dataset.special==='group')show('backCoverEdit');else if(b.dataset.special==='growth')show('growthEdit');else if(b.dataset.special==='message')show('messageEdit');else toast(b.textContent.trim()+'の編集画面は準備中です');
   }));
   document.querySelectorAll('input[name="coverBgMode"]').forEach(r=>r.addEventListener('change',e=>{coverDraft.mode=e.target.value;updateCoverEditor()}));
   $('#coverOpacity').addEventListener('input',e=>{coverDraft.opacity=Number(e.target.value);updateCoverEditor()});
@@ -1769,6 +1808,67 @@
   $('#growthChild').addEventListener('change',e=>{if(!saveGrowthChild()){$('#growthChild').value=growthChildId||'';return}growthChildId=e.target.value;refreshGrowthEditor()});
   ['#growthStartHeight','#growthStartWeight','#growthHeight','#growthWeight'].forEach(id=>$(id).addEventListener('input',updateGrowthPreview));
   $('#growthSave').addEventListener('click',()=>{if(saveGrowthChild()){toast('身長・体重を保存しました');show('classWorkspace')}});
+  let messageChildId=null;
+  function messageClassKey(){return state.year+':'+state.selectedClassId}
+  function messageChildKey(id){return messageClassKey()+':'+id}
+  function messageTeachers(){return state.messageTeachers?.[messageClassKey()]||['','']}
+  function messageRecord(id){return state.messageRecords?.[messageChildKey(id)]||['','']}
+  function messageSelected(){return state.children.find(x=>x.id===messageChildId&&x.classId===state.selectedClassId)}
+  function renderMessageEditor(){
+    const children=state.children.filter(x=>x.classId===state.selectedClassId),selector=$('#messageChild');selector.replaceChildren();
+    for(const child of children){const opt=document.createElement('option');opt.value=child.id;opt.textContent=child.name;selector.append(opt)}
+    if(!children.some(x=>x.id===messageChildId))messageChildId=children[0]?.id||null;
+    selector.value=messageChildId||'';
+    const t=messageTeachers();$('#messageTeacher1').value=t[0]||'';$('#messageTeacher2').value=t[1]||'';
+    loadMessageChild();
+  }
+  function loadMessageChild(){
+    const messages=messageChildId?messageRecord(messageChildId):['',''];
+    $('#messageText1').value=messages[0]||'';$('#messageText2').value=messages[1]||'';
+    $('#messageSave').disabled=!messageSelected();
+    updateMessageEditor();
+  }
+  function updateMessageEditor(){
+    const names=[$('#messageTeacher1').value.trim(),$('#messageTeacher2').value.trim()],texts=[$('#messageText1').value,$('#messageText2').value],child=messageSelected();
+    $('#messagePreviewChild').textContent=child?child.name.replace(/\s*さん$/,'')+' さんへ':'園児を選択してください';
+    $('#messageSheet').dataset.teachers=names[1]?'2':'1';
+    $('#messageBlock2').hidden=!names[1];
+    for(let i=0;i<2;i++){
+      $('#messagePreviewPanel'+(i+1)).hidden=i===1&&!names[1];
+      $('#messagePreviewTeacher'+(i+1)).textContent=names[i]||'せんせい';
+      $('#messagePreviewText'+(i+1)).textContent=texts[i];
+      $('#messageCount'+(i+1)).textContent=Array.from(texts[i]).length+'文字';
+    }
+    requestAnimationFrame(()=>{
+      const panels=[...$('#messageSheet').querySelectorAll('.messagePanel:not([hidden])')];
+      const overflow=panels.some(p=>p.scrollHeight>p.clientHeight+2);
+      $('#messageOverflow').hidden=!overflow;
+    });
+  }
+  function saveMessageChild(){
+    state.messageTeachers={...(state.messageTeachers||{}),[messageClassKey()]:[$('#messageTeacher1').value.trim(),$('#messageTeacher2').value.trim()]};
+    if(messageChildId){state.messageRecords={...(state.messageRecords||{}),[messageChildKey(messageChildId)]:[$('#messageText1').value,$('#messageText2').value]}}
+    saveState();return true;
+  }
+  $('#messageChild').addEventListener('change',e=>{saveMessageChild();messageChildId=e.target.value;loadMessageChild()});
+  ['#messageTeacher1','#messageTeacher2','#messageText1','#messageText2'].forEach(id=>$(id).addEventListener('input',updateMessageEditor));
+  $('#messageSave').addEventListener('click',()=>{saveMessageChild();toast('メッセージを保存しました');show('classWorkspace')});
+  function appendAlbumMessagePage(spread,childId,classId,year){
+    const names=state.messageTeachers?.[year+':'+classId]||['',''],texts=state.messageRecords?.[year+':'+classId+':'+childId]||['',''];
+    const page=document.createElement('div');page.className='messageAlbumPage';
+    const sheet=document.createElement('div');sheet.className='messageSheetInner';
+    const heading=document.createElement('h3');heading.textContent='せんせいからのメッセージ';
+    const who=document.createElement('div');who.className='messageAddressee';
+    const child=state.children.find(x=>x.id===childId);who.textContent=child?child.name.replace(/\s*さん$/,'')+' さんへ':'園児を選択してください';
+    const panels=document.createElement('div');panels.className='messagePanels';
+    for(let i=0;i<(names[1]?2:1);i++){
+      const panel=document.createElement('div');panel.className='messagePanel';
+      const title=document.createElement('b');title.textContent=names[i]||'せんせい';
+      const body=document.createElement('p');body.textContent=texts[i]||'';
+      panel.append(title,body);panels.append(panel);
+    }
+    sheet.append(heading,who,panels);page.append(sheet);spread.append(page);
+  }
   let albumPreviewIndex=0,albumPreviewToken=0,albumPreviewChildId='';
   async function renderAlbumPreview(){
     const c=cls(state.selectedClassId),pages=state.pages.filter(p=>p.classId===state.selectedClassId),spread=$('#albumPreviewSpread');
@@ -1826,7 +1926,7 @@
         const weightDiff=document.createElement('strong');weightDiff.textContent='体重 '+growthDifference(record.startWeight,record.endWeight??record.weight,'kg');
         differenceRow.append(heightDiff,weightDiff);difference.append(differenceTitle,differenceRow);
         inner.append(title,name,faces,measures,difference);growth.append(inner);spread.append(growth);
-        special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
+        appendAlbumMessagePage(spread,albumPreviewChildId,c.id,state.year);
       }else if(entry.kind==='cover'){
         const cover=document.createElement('div');cover.className='albumChildCover';spread.append(cover);
         const heading=document.createElement('img');heading.src='./assets/cover-title.PNG';heading.alt='おもいでブック';heading.className='coverTitleArtwork';heading.onerror=()=>{heading.replaceWith(Object.assign(document.createElement('strong'),{textContent:'おもいでブック'}))};
