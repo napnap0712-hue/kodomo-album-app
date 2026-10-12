@@ -2093,9 +2093,9 @@
     });
   }
   async function ensureAlbumPdfLibraries(zip){
-    await loadAlbumPdfLibrary('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',()=>typeof window.html2canvas==='function');
-    await loadAlbumPdfLibrary('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js',()=>!!window.jspdf?.jsPDF);
-    if(zip)await loadAlbumPdfLibrary('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',()=>!!window.JSZip);
+    await loadAlbumPdfLibrary('./vendor/html2canvas.min.js',()=>typeof window.html2canvas==='function');
+    await loadAlbumPdfLibrary('./vendor/jspdf.umd.min.js',()=>!!window.jspdf?.jsPDF);
+    if(zip)await loadAlbumPdfLibrary('./vendor/jszip.min.js',()=>!!window.JSZip);
   }
   function albumPdfFilename(child){
     const safe=x=>String(x||'').replace(/[\\/:*?"<>|\\x00-\\x1f]/g,'_').trim();
