@@ -2353,7 +2353,29 @@
             pdf.addImage(crop.toDataURL('image/png'),'PNG',x,y,w,h,undefined,'FAST');
           }
           crop.width=crop.height=0;
-        }else if(el.children.length===0&&el.textContent?.trim()&&cs.display!=='none'){
+        }else if(el.classList.contains('curvedGlyphLayer')){
+          // Draw each glyph at its actual editor position and rotation, rather
+          // than flattening the curved phrase into a straight line.
+          for(const glyph of el.querySelectorAll('span')){
+            const gr=glyph.getBoundingClientRect(),gs=getComputedStyle(glyph);
+            if(!glyph.textContent||!gr.width||!gr.height)continue;
+            const side=Math.ceil(Math.max(gr.width,gr.height)*2+24);
+            const c=document.createElement('canvas');c.width=c.height=Math.min(512,side*2);
+            const ctx=c.getContext('2d'),fontSize=parseFloat(gs.fontSize)||24;
+            ctx.font=gs.fontWeight+' '+fontSize+'px '+gs.fontFamily;
+            ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=gs.color;
+            const transform=gs.transform;
+            const match=transform&&transform!=='none'?transform.match(/^matrix\\(([^)]+)\\)$/):null;
+            const values=match?match[1].split(',').map(Number):null;
+            const angle=values?Math.atan2(values[1],values[0]):0;
+            ctx.translate(c.width/2,c.height/2);ctx.rotate(angle);
+            ctx.fillText(glyph.textContent,0,0);
+            const gx=(gr.left-origin.left)*210/W,gy=(gr.top-origin.top)*297/H;
+            const gw=gr.width*210/W,gh=gr.height*297/H;
+            pdf.addImage(c.toDataURL('image/png'),'PNG',gx,gy,gw,gh,undefined,'FAST');
+            c.width=c.height=0;
+          }
+        }else if(el.children.length===0&&el.textContent?.trim()&&cs.display!=='none'&&!el.closest('.curvedGlyphLayer')){
           const pl=parseFloat(cs.paddingLeft)||0,pt=parseFloat(cs.paddingTop)||0;
           albumPdfAddText(pdf,el.textContent,cs,x+pl*210/W,y+pt*297/H,Math.max(1,rect.width-pl-(parseFloat(cs.paddingRight)||0)),Math.max(1,rect.height-pt-(parseFloat(cs.paddingBottom)||0)));
         }
