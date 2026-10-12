@@ -2075,10 +2075,23 @@
           sheet.append(spread.cloneNode(true));stage.append(sheet);
         }
       }
+      albumPreviewIndex=originalIndex;
+      await renderAlbumPreview();
       status.textContent='印刷画面で「PDFとして保存」を選んでください。';
+      let cleaned=false;
+      const cleanup=()=>{
+        if(cleaned)return;
+        cleaned=true;
+        window.removeEventListener('afterprint',cleanup);
+        stage.remove();
+        button.disabled=false;
+      };
+      window.addEventListener('afterprint',cleanup,{once:true});
       window.print();
-    }catch(error){console.error('album print',error);toast('印刷ページを準備できませんでした');status.textContent='出力エラーが発生しました';}
-    finally{
+    }catch(error){
+      console.error('album print',error);
+      toast('印刷ページを準備できませんでした');
+      status.textContent='出力エラーが発生しました';
       stage.remove();
       albumPreviewIndex=originalIndex;
       await renderAlbumPreview();
