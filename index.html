@@ -1225,7 +1225,7 @@
  <div class="growthInputs"><div class="growthPeriod"><h3>4月・年度初め</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthStartPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthStartPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthStartScaleValue">100%</output><input id="growthStartScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthStartX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthStartY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthStartHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：85.5"></label><label>体重（kg）<input id="growthStartWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：12.3"></label></div></div><div class="growthPeriod"><h3>3月・年度末</h3><div class="growthFaceControls"><div class="growthFaceActions"><label class="fileBtn">📷 写真を追加・変更<input id="growthEndPhotoInput" type="file" accept="image/*"></label><button type="button" id="growthEndPhotoRemove">削除</button></div><label>拡大縮小 <output id="growthEndScaleValue">100%</output><input id="growthEndScale" type="range" min="100" max="250" value="100"></label><label>左右位置<input id="growthEndX" type="range" min="0" max="100" value="50"></label><label>上下位置<input id="growthEndY" type="range" min="0" max="100" value="50"></label></div><div class="growthEntryGrid"><label>身長（cm）<input id="growthHeight" type="number" min="0" max="250" step="0.1" inputmode="decimal" placeholder="例：92.3"></label><label>体重（kg）<input id="growthWeight" type="number" min="0" max="150" step="0.1" inputmode="decimal" placeholder="例：14.1"></label></div></div></div>
  <p class="hint">園児ごとに保存します。未入力の項目や比較できない成長差は「—」で表示されます。</p></div>
 </section>
-    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDFは「A4印刷・PDF保存」から作成できます。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📄 この園児をA4印刷・PDF保存</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
+    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。A4縦のPDFを直接生成します。園児別PDFとクラス全員分ZIPを保存できます。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPdfActions"><button id="albumPrintPdf" type="button">📄 この園児のPDFを作成</button><button id="albumZipPdf" type="button">📦 クラス全員分のPDFをZIPで作成</button><small id="albumPrintStatus" aria-live="polite"></small></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
       <div class="photoManageTop">
@@ -2086,53 +2086,98 @@
     }
     return leaf;
   }
-  async function printChildAlbum(){
-    const button=$('#albumPrintPdf'),status=$('#albumPrintStatus'),chosen=albumPreviewChildId;
-    if(!chosen){toast('園児を選択してください');return}
-    if(document.querySelector('.albumPrintStage'))return;
-    const originalIndex=albumPreviewIndex;
-    button.disabled=true;
-    const stage=document.createElement('div');stage.className='albumPrintStage';
-    document.body.append(stage);
-    const toolbar=document.createElement('div');toolbar.className='albumPrintToolbar';
-    const printButton=document.createElement('button');printButton.type='button';printButton.textContent='📄 印刷・PDF保存';
-    const closeButton=document.createElement('button');closeButton.type='button';closeButton.textContent='閉じる';
-    const note=document.createElement('span');note.className='albumPrintToolbarNote';note.textContent='iPhoneではSafariの印刷画面から共有→ファイルに保存';
-    toolbar.append(printButton,closeButton,note);stage.append(toolbar);
-    const close=()=>{stage.remove();button.disabled=false;};
-    closeButton.addEventListener('click',close);
-    printButton.addEventListener('click',()=>{
-      // The print call must come directly from a fresh user gesture on iOS.
-      try{window.print()}catch(err){console.error(err);toast('印刷を開けませんでした。Safariで開いてお試しください')}
+  function loadAlbumPdfLibrary(url,test){
+    if(test())return Promise.resolve();
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement('script');script.src=url;script.onload=()=>test()?resolve():reject(new Error('PDFライブラリを読み込めません'));script.onerror=()=>reject(new Error('PDFライブラリの通信に失敗しました'));document.head.append(script);
     });
+  }
+  async function ensureAlbumPdfLibraries(zip){
+    await loadAlbumPdfLibrary('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',()=>typeof window.html2canvas==='function');
+    await loadAlbumPdfLibrary('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js',()=>!!window.jspdf?.jsPDF);
+    if(zip)await loadAlbumPdfLibrary('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',()=>!!window.JSZip);
+  }
+  function albumPdfFilename(child){
+    const safe=x=>String(x||'').replace(/[\\/:*?"<>|\\x00-\\x1f]/g,'_').trim();
+    return safe(state.year+'年度_'+cls(state.selectedClassId).name+'_'+child.name+'さん');
+  }
+  async function albumPdfSave(blob,name){
+    const file=new File([blob],name,{type:blob.type||'application/pdf'});
+    if(navigator.canShare?.({files:[file]})&&navigator.share){
+      try{await navigator.share({files:[file],title:name});return}catch(e){if(e.name==='AbortError')return;console.warn('Share PDF fallback',e)}
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }
+  async function createChildPdf(childId,progress){
+    const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
+    const originalIndex=albumPreviewIndex,originalChild=albumPreviewChildId;
+    const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;width:794px;pointer-events:none;z-index:-1';
+    document.body.append(host);
     try{
+      albumPreviewChildId=childId;
+      let pageNo=0;
       for(let index=0;index<=14;index++){
-        status.textContent='印刷ページを準備しています… '+(index+1)+'/15';
         albumPreviewIndex=index;
         await renderAlbumPreview();
         await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-        const spread=$('#albumPreviewSpread');
+        const source=$('#albumPreviewSpread');
         const sides=index===0?['right']:index===14?['left']:['left','right'];
         for(const side of sides){
-          const sheet=document.createElement('div');sheet.className='albumPrintPage';
-          sheet.append(albumPrintLeafFromSpread(spread,side));stage.append(sheet);
+          const page=albumPrintLeafFromSpread(source,side);
+          page.style.cssText='position:relative;width:794px;height:1123px;inset:auto;overflow:hidden;background:white;box-sizing:border-box';
+          host.append(page);
+          await Promise.all([...page.querySelectorAll('img')].map(img=>img.decode?.().catch(()=>{})||Promise.resolve()));
+          const canvas=await window.html2canvas(page,{backgroundColor:'#ffffff',scale:1.5,useCORS:true,logging:false,width:794,height:1123});
+          page.remove();
+          if(pageNo)pdf.addPage('a4','portrait');
+          pdf.addImage(canvas.toDataURL('image/jpeg',.91),'JPEG',0,0,210,297,undefined,'FAST');
+          canvas.width=canvas.height=0;
+          pageNo++;
+          progress?.(pageNo,28);
         }
       }
-      stage.classList.add('previewReady');
-      stage.scrollTop=0;
-      status.textContent='印刷用プレビューを表示しています。';
-    }catch(error){
-      console.error('album print',error);
-      toast('印刷ページを準備できませんでした');
-      status.textContent='出力エラーが発生しました';
-      close();
+      return pdf.output('blob');
     }finally{
-      albumPreviewIndex=originalIndex;
+      host.remove();albumPreviewChildId=originalChild;albumPreviewIndex=originalIndex;
       await renderAlbumPreview();
-      if(!stage.isConnected)button.disabled=false;
     }
   }
-  $('#albumPrintPdf').addEventListener('click',printChildAlbum);
+  let albumPdfBusy=false;
+  async function exportAlbumPdf(all){
+    if(albumPdfBusy)return;
+    const children=state.children.filter(child=>child.classId===state.selectedClassId);
+    const targets=all?children:children.filter(child=>child.id===albumPreviewChildId);
+    if(!targets.length){toast('園児を選択してください');return}
+    albumPdfBusy=true;
+    const buttons=[$('#albumPrintPdf'),$('#albumZipPdf')],status=$('#albumPrintStatus');
+    buttons.forEach(b=>b.disabled=true);
+    try{
+      status.textContent='PDF作成の準備中…';
+      await ensureAlbumPdfLibraries(all);
+      if(all){
+        const zip=new window.JSZip();
+        for(let i=0;i<targets.length;i++){
+          const child=targets[i];
+          const blob=await createChildPdf(child.id,(page,total)=>{status.textContent=(i+1)+'/'+targets.length+'人目 '+child.name+'さん：'+page+'/'+total+'ページ'});
+          zip.file(albumPdfFilename(child)+'.pdf',blob);
+        }
+        status.textContent='ZIPファイルをまとめています…';
+        const output=await zip.generateAsync({type:'blob',compression:'STORE'});
+        await albumPdfSave(output,state.year+'年度_'+cls(state.selectedClassId).name+'_全員分.zip');
+      }else{
+        const blob=await createChildPdf(targets[0].id,(page,total)=>{status.textContent='PDFを生成しています… '+page+'/'+total+'ページ'});
+        await albumPdfSave(blob,albumPdfFilename(targets[0])+'.pdf');
+      }
+      status.textContent='作成完了。共有またはダウンロードで保存してください。';
+    }catch(error){
+      console.error('album pdf export',error);
+      status.textContent='PDF作成に失敗しました：'+(error?.message||'不明なエラー');
+      toast('PDFを作成できませんでした');
+    }finally{albumPdfBusy=false;buttons.forEach(b=>b.disabled=false)}
+  }
+  $('#albumPrintPdf').addEventListener('click',()=>exportAlbumPdf(false));
+  $('#albumZipPdf').addEventListener('click',()=>exportAlbumPdf(true));
   $('#albumPreviewNext').addEventListener('click',()=>turnAlbumPreview(1));
   $('#classAlbumPreviewOpen').addEventListener('click',()=>{albumPreviewIndex=0;show('albumPreview')});
   $('#albumPreviewBack').addEventListener('click',()=>show('classWorkspace'));
