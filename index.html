@@ -2441,7 +2441,16 @@
         ctx.fillStyle=color;ctx.fillRect(r.x,r.y,r.w,r.h);
       };
       ctx.fillStyle='#fff';ctx.fillRect(0,0,target.width,target.height);
-      const pageElements=[...source.querySelectorAll('.archiveHalf,.archivePlaced,.archiveText,.growthAlbumPage,.growthAlbumPage *')];
+      const pageElements=[...source.querySelectorAll('.archiveHalf,.archivePlaced,.archivePlaced img,.archiveText,.growthAlbumPage,.growthAlbumPage *')];
+      // The placed photo is a child <img>; ensure it is decoded before drawing.
+      const photos=pageElements.filter(el=>el instanceof HTMLImageElement);
+      await Promise.all(photos.map(img=>new Promise((resolve,reject)=>{
+        if(img.complete){img.naturalWidth?resolve():reject(new Error('写真が読み込めません：'+(img.alt||'画像')));return}
+        const timer=setTimeout(()=>reject(new Error('写真の読み込みが完了しません')),10000);
+        img.addEventListener('load',()=>{clearTimeout(timer);resolve()},{once:true});
+        img.addEventListener('error',()=>{clearTimeout(timer);reject(new Error('写真の読み込みに失敗'))},{once:true});
+      })));
+      status.textContent='写真'+photos.length+'枚を確認。左ページPDFを描画中…';
       for(const el of pageElements){
         const r=relativeRect(el);
         if(r.x>=2480||r.x+r.w<=0||r.y>=3508||r.y+r.h<=0)continue;
