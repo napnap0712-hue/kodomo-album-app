@@ -73,6 +73,12 @@
     .archiveSpread{width:100%;aspect-ratio:420/297;position:relative;overflow:hidden;background:white;border:1px solid #e5ded5;border-radius:5px;isolation:isolate}
     .archiveSpread:after{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;background:#cfc5bc;z-index:200;pointer-events:none}
     .archiveHalf{position:absolute;top:0;width:50%;height:100%;z-index:0}
+    .archivePreviewFrame{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center}
+    .archivePreviewSticker{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .archivePreviewSticker img{width:100%;height:100%;object-fit:contain}
+    .archivePreviewSticker span{font-size:clamp(14px,4vw,60px);line-height:1}
+    .archivePlaced>div>img{width:100%;height:100%;object-fit:cover}
+
     .archivePlaced{position:absolute;overflow:hidden;z-index:1}
     .archivePlaced img{width:100%;height:100%;object-fit:cover}
     .archiveText{position:absolute;white-space:pre-wrap;overflow:hidden;line-height:1.25;z-index:100}
@@ -2072,18 +2078,54 @@
       }
       return;
     }
+    // Read the exact persisted editor properties when opening the album preview.
+    const bgSettings=p.background||{};
+    const frameCfg=['left','right'].map(side=>bgSettings[side]).find(cfg=>cfg?.pattern==='frame'&&cfg.imageUrl);
+    if(frameCfg){
+      const url=frameCfg.imageUrl.startsWith('localbg:')?await localBackgroundUrl(frameCfg.imageUrl):await sharedDisplayUrl(frameCfg.imageUrl);
+      if(token!==albumPreviewToken)return;
+      const frame=document.createElement('div');frame.className='archivePreviewFrame';
+      frame.style.backgroundImage='url("'+url+'")';spread.append(frame);
+    }
     for(const [side,i] of [['left',0],['right',1]]){
-      const cfg=p.background?.[side]||{},bg=document.createElement('div');bg.className='archiveHalf';bg.style.left=i*50+'%';bg.style.backgroundColor=cfg.color||'#fff';spread.append(bg);
+      const cfg=bgSettings[side]||{},bg=document.createElement('div');
+      bg.className='archiveHalf';bg.style.left=i*50+'%';
+      if(frameCfg){bg.style.backgroundColor='transparent'}
+      else if(cfg.imageUrl){
+        const url=cfg.imageUrl.startsWith('localbg:')?await localBackgroundUrl(cfg.imageUrl):await sharedDisplayUrl(cfg.imageUrl);
+        if(token!==albumPreviewToken)return;
+        bg.style.backgroundColor='#ffffff';bg.style.backgroundImage='url("'+url+'")';
+        bg.style.backgroundSize='cover';bg.style.backgroundPosition='center';bg.style.backgroundRepeat='no-repeat';
+      }else{Object.assign(bg.style,backgroundCss(cfg.pattern||'plain',cfg.color||'#ffffff',cfg.opacity,cfg.patternScale))}
+      spread.append(bg);
     }
     for(const item of (p.layout||[])){
-      try{const blob=await getImage(item.bgRemoved?'bg:'+p.id+':'+item.id:'page:'+p.id+':'+item.photoId)||(item.bgRemoved?await getImage('page:'+p.id+':'+item.photoId):null);
+      try{
+        const blob=await getImage(item.bgRemoved?'bg:'+p.id+':'+item.id:'page:'+p.id+':'+item.photoId)||(item.bgRemoved?await getImage('page:'+p.id+':'+item.photoId):null);
         if(token!==albumPreviewToken)return;if(!blob)continue;
         const box=document.createElement('div');box.className='archivePlaced';
         box.style.cssText='left:'+(item.x||0)+'%;top:'+(item.y||0)+'%;width:'+(item.width||20)+'%;height:'+(item.height||20)+'%;transform:rotate('+(item.rotation||0)+'deg);z-index:'+(item.zIndex||1);
-        const img=document.createElement('img');img.src=fileUrl(blob);img.alt='配置済み写真';img.style.objectFit=item.layoutFit||'cover';img.style.clipPath=item.clipPath||'none';box.append(img);spread.append(box);
+        const viewport=document.createElement('div');viewport.style.cssText='width:100%;height:100%;overflow:hidden;clip-path:inset('+(item.trimTop||0)+'% '+(item.trimRight||0)+'% '+(item.trimBottom||0)+'% '+(item.trimLeft||0)+'%)';
+        const img=document.createElement('img');img.src=fileUrl(blob);img.alt='配置済み写真';img.style.objectFit=item.layoutFit||'cover';img.style.clipPath=item.clipPath||'none';
+        viewport.append(img);box.append(viewport);spread.append(box);
       }catch(e){console.warn('プレビュー画像の読込失敗',e)}
     }
-    for(const t of (p.texts||[])){const el=document.createElement('div');el.className='archiveText';el.textContent=t.text||'';el.style.cssText='left:'+(t.x||0)+'%;top:'+(t.y||0)+'%;width:'+(t.width||28)+'%;height:'+(t.height||12)+'%;color:'+(t.color||'#333')+';z-index:'+(t.zIndex||100)+';font-size:'+Math.max(6,(Number(t.size)||28)*.36)+'px';spread.append(el)}
+    for(const t of (p.texts||[])){
+      const el=document.createElement('div');el.className='archiveText';el.textContent=t.text||'';
+      el.style.cssText='left:'+(t.x||0)+'%;top:'+(t.y||0)+'%;width:'+(t.width||28)+'%;height:'+(t.height||12)+'%;color:'+(t.color||'#333')+';z-index:'+(t.zIndex||100)+';font-size:'+Math.max(6,(Number(t.size)||28)*.36)+'px';
+      el.style.fontFamily=fontStack(t.font||'HaniHani');spread.append(el);
+    }
+    for(const item of (p.stickers||[])){
+      const box=document.createElement('div');box.className='archivePreviewSticker';
+      box.style.cssText='left:'+item.x+'%;top:'+item.y+'%;width:'+item.width+'%;height:'+item.height+'%;transform:rotate('+(item.rotation||0)+'deg);z-index:'+(item.zIndex||1);
+      if(item.assetUrl){
+        const processed=item.bgRemoved?await getImage('sticker-bg:'+p.id+':'+item.id):null;
+        if(token!==albumPreviewToken)return;
+        const img=document.createElement('img');img.alt='配置済みスタンプ';img.src=processed?fileUrl(processed):await sharedDisplayUrl(item.assetUrl);
+        if(token!==albumPreviewToken)return;box.append(img);
+      }else{const label=document.createElement('span');label.textContent=item.symbol||'✨';box.append(label)}
+      spread.append(box);
+    }
     if(!(p.layout||[]).length){const note=document.createElement('p');note.className='albumPreviewEmpty';note.textContent='見開きに写真がまだ配置されていません';spread.append(note)}
   }
   function turnAlbumPreview(direction){
