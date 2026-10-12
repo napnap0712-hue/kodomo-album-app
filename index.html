@@ -2117,30 +2117,8 @@
       const el=document.createElement('div');el.className='archiveText';el.textContent=t.text||'';
       el.style.cssText='left:'+(t.x||0)+'%;top:'+(t.y||0)+'%;width:'+(t.width||28)+'%;height:'+(t.height||12)+'%;color:'+(t.color||'#333')+';z-index:'+(t.zIndex||100)+';font-size:'+Math.max(6,(Number(t.size)||28)*.36)+'px';
       el.style.fontFamily=fontStack(t.font||'HaniHani');
-      if(Number(t.curve)){
-        // Preserve the editor's curved text, rather than silently dropping the saved curve.
-        const layer=document.createElement('div');layer.className='curvedGlyphLayer';
-        const value=t.text||'',size=Math.max(6,(Number(t.size)||28)*.36),curve=Math.max(-100,Math.min(100,Number(t.curve)||0));
-        const canvas=document.createElement('canvas'),context=canvas.getContext('2d');
-        if(context){
-          context.font=size+'px '+fontStack(t.font||'HaniHani');
-          const chars=Array.from(value.replaceAll('\n',' '));
-          const widths=chars.map(ch=>Math.max(1,context.measureText(ch).width||size));
-          const total=widths.reduce((a,b)=>a+b,0),extent=Math.abs(curve)/100*Math.PI*1.8;
-          const radius=Math.max(1,total/Math.max(.001,extent)),sign=curve>0?1:-1;
-          let pos=0;
-          chars.forEach((ch,i)=>{
-            const angle=(pos+widths[i]/2-total/2)/radius,span=document.createElement('span');
-            span.textContent=ch;
-            span.style.cssText='position:absolute;left:50%;top:50%;white-space:pre;';
-            span.style.fontFamily=fontStack(t.font||'HaniHani');
-            span.style.fontSize=size+'px';span.style.color=t.color||'#4f4944';
-            span.style.transform='translate(-50%,-50%) translate('+radius*Math.sin(angle)+'px,'+sign*radius*(1-Math.cos(angle))+'px) rotate('+sign*angle*180/Math.PI+'deg)';
-            layer.append(span);pos+=widths[i];
-          });
-          el.classList.add('curved');el.append(layer);
-        }
-      }
+      // Share the editor's glyph placement, font and curvature renderer.
+      if(Number(t.curve))updateCurvedText(el,{...t,size:Math.max(6,(Number(t.size)||28)*.36)});
       spread.append(el);
     }
     for(const item of (p.stickers||[])){
