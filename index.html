@@ -3452,12 +3452,14 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
     button.disabled=true;
     const previousText=button.textContent;
     let stage=null;
+    const bounded=(promise,ms,label)=>Promise.race([Promise.resolve(promise),new Promise((_,reject)=>setTimeout(()=>reject(new Error(label+'が時間内に完了しませんでした')),ms))]);
     try{
       button.textContent='PDF作成中…';
       const source=$('#spread');
       if(!source||!source.getBoundingClientRect().width)throw new Error('編集画面を開いてください');
       if(!window.jspdf?.jsPDF||typeof window.html2canvas!=='function'){
-        await ensureAlbumPdfLibraries(false);
+        button.textContent='PDF機能を準備中…';
+        await bounded(ensureAlbumPdfLibraries(false),15000,'PDF機能の読込');
       }
       // A detached/hidden element cannot be reliably captured by html2canvas on iOS.
       // Render in an on-document offscreen stage at full opacity instead.
@@ -3466,14 +3468,17 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       const sides=['left','right'];
       const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
       document.body.append(stage);
-      if(document.fonts?.ready)await document.fonts.ready;
+      button.textContent='文字を準備中…';
+      if(document.fonts?.ready)await bounded(document.fonts.ready,4000,'フォントの読込');
       for(let i=0;i<sides.length;i++){
         stage.replaceChildren();
         const leaf=makeNativePrintLeaf(source,sides[i]);
         leaf.style.cssText='position:relative;display:block;width:209.8mm;height:296.7mm;overflow:hidden;margin:0;padding:0;contain:layout paint';
         stage.append(leaf);
-        await Promise.all([...leaf.querySelectorAll('img')].map(img=>img.decode?img.decode().catch(()=>{}):Promise.resolve()));
-        const canvas=await window.html2canvas(leaf,{scale:1.5,backgroundColor:'#fff',useCORS:true,logging:false,imageTimeout:12000,scrollX:0,scrollY:0});
+        button.textContent=(i+1)+'/2 ページの画像を準備中…';
+        await bounded(Promise.all([...leaf.querySelectorAll('img')].map(img=>img.decode?img.decode().catch(()=>{}):Promise.resolve())),5000,'画像の読込');
+        button.textContent=(i+1)+'/2 ページをPDF化中…';
+        const canvas=await bounded(window.html2canvas(leaf,{scale:1,backgroundColor:'#fff',useCORS:true,logging:false,imageTimeout:7000,scrollX:0,scrollY:0}),14000,'ページの画像化');
         try{
           if(!canvas.width||!canvas.height)throw new Error('画像化に失敗しました');
           if(i)pdf.addPage('a4','portrait');
@@ -3484,7 +3489,8 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       if(blob.size<1000)throw new Error('PDFファイルの生成に失敗しました');
       const page=state.pages.find(p=>p.id===editingPage.id);
       const filename='思い出ブック_'+(page?.title||'見開き')+'_A4左右.pdf';
-      await albumPdfSave(blob,filename);
+      button.textContent='PDFを開いています…';
+      await bounded(albumPdfSave(blob,filename),15000,'PDFの共有');
       toast('左右A4のPDFを作成しました');
     }catch(err){
       console.error('experimental direct PDF export',err);
