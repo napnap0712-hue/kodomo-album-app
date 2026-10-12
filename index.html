@@ -171,7 +171,24 @@
 
     [data-screen="coverEdit"] .coverBackgroundCard h3{margin:0 0 12px;font-size:17px}
     [data-screen="coverEdit"] .coverBackgroundCard{padding:15px;border-radius:20px}
-        .yearOverview{display:grid;gap:14px}
+        [data-screen="backCoverEdit"] .coverEditorCanvas{box-sizing:border-box;width:min(78%,350px);max-height:none;aspect-ratio:4/5;padding:6%;display:flex;align-items:center;justify-content:center;margin:4px auto 10px;background:#ffdce7;background-size:cover;background-position:center;border:1px solid #e4d3d8;border-radius:6px;box-shadow:-6px 3px 0 #f7eef0,0 9px 18px #0002}
+    [data-screen="backCoverEdit"] .coverWhitePanel{box-sizing:border-box;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:8%;border:0;border-radius:22px;overflow:hidden;background:white}
+    .backCoverPhotoFrame{width:100%;aspect-ratio:4/3;position:relative;border-radius:12px;overflow:hidden;background:#f8f7f8;display:flex;align-items:center;justify-content:center}
+    .backCoverPhotoFrame>img{width:100%;height:100%;object-fit:cover;display:block}
+    .backCoverPhotoFrame>img[hidden]{display:none}
+    #backCoverEmpty{display:grid;place-items:center;gap:4px;color:#a17f89;font-size:24px}
+    #backCoverEmpty[hidden]{display:none}
+    #backCoverEmpty small{font-size:12px}
+    [data-screen="backCoverEdit"] .yearGuideCard{padding:15px;border-radius:20px}
+    [data-screen="backCoverEdit"] .yearGuideCard h3{margin:0 0 12px;font-size:17px}
+    .backPhotoButtons{display:flex;gap:10px;align-items:center}
+    .backPhotoButtons .fileBtn{flex:1;text-align:center}
+    .backPhotoButtons button{border:1px solid #efcbd7;border-radius:13px;background:white;min-height:43px;padding:0 14px}
+    .backPositionControls{display:grid;gap:9px;margin-top:14px}
+    .backPositionControls label{display:grid;gap:3px;font-size:13px;font-weight:700}
+    .backPositionControls input{width:100%;accent-color:#e67d9e}
+    .backPositionControls output{float:right}
+    .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
     .yearCurrentCard span{font-size:14px;font-weight:800}
     .yearCurrentCard strong{font-size:32px}
@@ -1066,6 +1083,15 @@
         <p class="coverFixedHint">ⓘ 表紙の基本レイアウトは固定です</p>
       </div>
     </section>
+<section class="screen" data-screen="backCoverEdit">
+ <div class="coverEditHeader"><button class="back" type="button" data-go="classWorkspace">‹</button><h2>裏表紙編集</h2><button type="button" id="backCoverSave" class="coverSaveTop">保存</button></div>
+ <div class="coverEditorSheet">
+  <div id="backCoverCanvas" class="coverEditorCanvas"><div class="coverWhitePanel"><div id="backCoverPhotoFrame" class="backCoverPhotoFrame"><img id="backCoverPhoto" alt="集合写真" hidden><span id="backCoverEmpty">📷<small>集合写真を追加</small></span></div></div></div>
+  <div class="yearGuideCard backCoverPhotoTools"><h3>📸 集合写真</h3><div class="backPhotoButtons"><label class="fileBtn">＋ 写真を追加・変更<input type="file" id="backPhotoInput" accept="image/*"></label><button type="button" id="backPhotoRemove">削除</button></div><div class="backPositionControls"><label>拡大・縮小 <output id="backPhotoScaleLabel">100%</output><input id="backPhotoScale" type="range" min="100" max="250" step="5" value="100"></label><label>左右位置 <input id="backPhotoX" type="range" min="0" max="100" value="50"></label><label>上下位置 <input id="backPhotoY" type="range" min="0" max="100" value="50"></label></div></div>
+  <div class="yearGuideCard coverBackgroundCard"><h3>🎨 背景選択</h3><div class="typeChoices"><label class="typeChoice"><input type="radio" name="backBgMode" value="solid" checked><span>単色</span></label><label class="typeChoice"><input type="radio" name="backBgMode" value="image"><span>背景画像</span></label></div><div id="backColorControls"><div id="backColors" class="coverColorSwatches"></div><div class="coverOpacityLabel">色の薄さ <output id="backOpacityNumber">100%</output></div><div class="coverOpacityAdjust"><button id="backOpacityMinus" type="button">－</button><input id="backOpacity" type="range" min="5" max="100" step="5" value="100"><button id="backOpacityPlus" type="button">＋</button></div></div><div id="backImageControls" hidden><div id="backPatternChoices" class="coverPatternChoices"></div></div></div>
+  <p class="coverFixedHint">ⓘ 裏表紙の基本レイアウトは固定です</p>
+ </div>
+</section>
     <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
@@ -1274,7 +1300,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview')renderAlbumPreview(); if(screen==='coverEdit')renderCoverEditor(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview')renderAlbumPreview(); if(screen==='coverEdit')renderCoverEditor(); if(screen==='backCoverEdit')renderBackCoverEditor(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1543,7 +1569,7 @@
     paintCover($('#coverEditorCanvas'),panel,$('#coverEditorIcon'),$('#coverEditorName'),settings,coverPreviewFile).catch(console.warn);
   }
   document.querySelectorAll('[data-special]').forEach(b=>b.addEventListener('click',()=>{
-    if(b.dataset.special==='cover')show('coverEdit');else toast(b.textContent.trim()+'の編集画面は準備中です');
+    if(b.dataset.special==='cover')show('coverEdit');else if(b.dataset.special==='group')show('backCoverEdit');else toast(b.textContent.trim()+'の編集画面は準備中です');
   }));
   document.querySelectorAll('input[name="coverBgMode"]').forEach(r=>r.addEventListener('change',e=>{coverDraft.mode=e.target.value;updateCoverEditor()}));
   $('#coverOpacity').addEventListener('input',e=>{coverDraft.opacity=Number(e.target.value);updateCoverEditor()});
@@ -1554,6 +1580,48 @@
       state.coverStyles={...(state.coverStyles||{}),[state.selectedClassId]:{...coverDraft}};saveState();toast('表紙のデザインを保存しました');show('classWorkspace');
     }catch(e){console.error(e);toast('表紙を保存できませんでした')}
   });
+  let backDraft=null,backPhotoDraft=null,backPhotoRemoved=false,backRenderToken=0;
+  function backKey(){return 'backCoverPhoto:'+state.year+':'+state.selectedClassId}
+  function backSettings(){return state.backCoverStyles?.[state.year+':'+state.selectedClassId]||{mode:'solid',color:'#ffd5e5',opacity:100,pattern:'dots',scale:100,x:50,y:50}}
+  function backPhotoStyle(img,cfg){img.style.objectPosition=(cfg.x??50)+'% '+(cfg.y??50)+'%';img.style.transform='scale('+((cfg.scale??100)/100)+')';img.style.transformOrigin='center'}
+  async function paintBackCover(){
+    const token=++backRenderToken,settings=backDraft,canvas=$('#backCoverCanvas'),img=$('#backCoverPhoto');
+    const color=settings.color||'#ffd5e5',opacity=Math.max(0,Math.min(100,Number(settings.opacity??100)))/100;
+    canvas.style.backgroundColor=settings.mode==='image'?'#fff':'rgb('+[0,1,2].map(i=>Math.round(255*(1-opacity)+parseInt(color.slice(1+2*i,3+2*i),16)*opacity)).join(',')+')';
+    canvas.style.backgroundImage='none';
+    if(settings.mode==='image'){const blob=await getImage('coverPattern:'+settings.pattern);if(token!==backRenderToken)return;useCoverPatternCss(canvas,settings.pattern||'dots',blob)}
+    const file=backPhotoRemoved?null:(backPhotoDraft||await getImage(backKey()));if(token!==backRenderToken)return;
+    img.hidden=!file;$('#backCoverEmpty').hidden=!!file;if(file)img.src=fileUrl(file);
+    backPhotoStyle(img,settings);
+  }
+  function updateBackCoverEditor(){
+    if(!backDraft)return;
+    const d=backDraft,mode=d.mode;
+    const radio=document.querySelector('input[name="backBgMode"][value="'+mode+'"]');if(radio)radio.checked=true;
+    $('#backColorControls').hidden=mode!=='solid';$('#backImageControls').hidden=mode!=='image';
+    $('#backOpacity').value=d.opacity;$('#backOpacityNumber').textContent=d.opacity+'%';
+    $('#backPhotoScale').value=d.scale??100;$('#backPhotoScaleLabel').textContent=(d.scale??100)+'%';
+    $('#backPhotoX').value=d.x??50;$('#backPhotoY').value=d.y??50;
+    [...$('#backColors').children].forEach(b=>b.classList.toggle('active',b.getAttribute('aria-label')===d.color));
+    [...$('#backPatternChoices').children].forEach((b,i)=>b.classList.toggle('active',coverPatterns[i].id===(d.pattern||'dots')));
+    paintBackCover().catch(console.warn);
+  }
+  function renderBackCoverEditor(){
+    backDraft={...backSettings()};backPhotoDraft=null;backPhotoRemoved=false;
+    const colors=$('#backColors');colors.replaceChildren();
+    for(const color of coverPalette){const b=document.createElement('button');b.type='button';b.style.backgroundColor=color;b.setAttribute('aria-label',color);b.onclick=()=>{backDraft.color=color;updateBackCoverEditor()};colors.append(b)}
+    const patterns=$('#backPatternChoices');patterns.replaceChildren();
+    for(const item of coverPatterns){const b=document.createElement('button');b.type='button';b.className='coverPatternOption';const thumb=document.createElement('span');thumb.className='coverPatternThumb';thumb.style.backgroundColor='#fff';useCoverPatternCss(thumb,item.id,null);const label=document.createElement('small');label.textContent=item.name;b.append(thumb,label);b.onclick=()=>{backDraft.pattern=item.id;updateBackCoverEditor()};patterns.append(b)}
+    updateBackCoverEditor();
+  }
+  document.querySelectorAll('input[name="backBgMode"]').forEach(r=>r.addEventListener('change',e=>{backDraft.mode=e.target.value;updateBackCoverEditor()}));
+  $('#backOpacity').addEventListener('input',e=>{backDraft.opacity=Number(e.target.value);updateBackCoverEditor()});
+  $('#backOpacityMinus').addEventListener('click',()=>{backDraft.opacity=Math.max(5,Number(backDraft.opacity)-5);updateBackCoverEditor()});
+  $('#backOpacityPlus').addEventListener('click',()=>{backDraft.opacity=Math.min(100,Number(backDraft.opacity)+5);updateBackCoverEditor()});
+  for(const [id,field] of [['backPhotoScale','scale'],['backPhotoX','x'],['backPhotoY','y']])$('#'+id).addEventListener('input',e=>{backDraft[field]=Number(e.target.value);updateBackCoverEditor()});
+  $('#backPhotoInput').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;if(!file.type.startsWith('image/')){toast('画像を選択してください');return}backPhotoDraft=file;backPhotoRemoved=false;updateBackCoverEditor();e.target.value=''});
+  $('#backPhotoRemove').addEventListener('click',()=>{backPhotoDraft=null;backPhotoRemoved=true;updateBackCoverEditor()});
+  $('#backCoverSave').addEventListener('click',async()=>{try{if(backPhotoRemoved)await deleteImage(backKey());else if(backPhotoDraft)await putImage(backKey(),backPhotoDraft);state.backCoverStyles={...(state.backCoverStyles||{}),[state.year+':'+state.selectedClassId]:{...backDraft}};saveState();toast('裏表紙を保存しました');show('classWorkspace')}catch(e){console.error(e);toast('裏表紙を保存できませんでした')}});
   let albumPreviewIndex=0,albumPreviewToken=0,albumPreviewChildId='';
   async function renderAlbumPreview(){
     const c=cls(state.selectedClassId),pages=state.pages.filter(p=>p.classId===state.selectedClassId),spread=$('#albumPreviewSpread');
@@ -1601,7 +1669,15 @@
           const blob=await getImage('classIcon:'+c.id);if(token===albumPreviewToken&&blob)icon.src=fileUrl(blob)
         }catch(e){console.warn('表紙素材の読込失敗',e)}
       }else if(entry.kind==='back'){
-        special('裏表紙・集合写真','left','集合写真のページ（準備中）');
+        const cfg=state.backCoverStyles?.[state.year+':'+c.id]||{mode:'solid',color:'#ffd5e5',opacity:100,pattern:'dots',scale:100,x:50,y:50};
+        const back=document.createElement('div');back.className='albumChildCover';back.style.left='0';spread.append(back);
+        const op=Math.max(0,Math.min(100,Number(cfg.opacity??100)))/100,hex=cfg.color||'#ffd5e5';
+        back.style.backgroundColor=cfg.mode==='image'?'#fff':'rgb('+[0,1,2].map(i=>Math.round(255*(1-op)+parseInt(hex.slice(1+2*i,3+2*i),16)*op)).join(',')+')';
+        if(cfg.mode==='image'){const bg=await getImage('coverPattern:'+(cfg.pattern||'dots'));if(token===albumPreviewToken)useCoverPatternCss(back,cfg.pattern||'dots',bg)}
+        const white=document.createElement('div');white.className='coverWhitePanel';white.style.cssText='width:100%;height:100%;box-sizing:border-box;background:white;border:0;border-radius:18px;display:flex;justify-content:center;align-items:center;padding:10%';
+        const frame=document.createElement('div');frame.className='backCoverPhotoFrame';white.append(frame);back.append(white);
+        const photo=await getImage('backCoverPhoto:'+state.year+':'+c.id);
+        if(token===albumPreviewToken){if(photo){const img=document.createElement('img');img.src=fileUrl(photo);backPhotoStyle(img,cfg);frame.append(img)}else{const label=document.createElement('span');label.textContent='集合写真 未設定';frame.append(label)}}
       }else{
         special(entry.name,'left','この見開きはまだ作成されていません');
         special(entry.name,'right','ページ作成後に写真を表示します');
