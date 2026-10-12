@@ -174,6 +174,12 @@
         [data-screen="backCoverEdit"] .coverEditorCanvas{box-sizing:border-box;width:min(78%,350px);max-height:none;aspect-ratio:4/5;padding:6%;display:flex;align-items:center;justify-content:center;margin:4px auto 10px;background:#ffdce7;background-size:cover;background-position:center;border:1px solid #e4d3d8;border-radius:6px;box-shadow:-6px 3px 0 #f7eef0,0 9px 18px #0002}
     [data-screen="backCoverEdit"] .coverWhitePanel{box-sizing:border-box;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:8%;border:0;border-radius:22px;overflow:hidden;background:white}
     .backCoverPhotoFrame{width:100%;aspect-ratio:4/3;position:relative;border-radius:12px;overflow:hidden;background:#f8f7f8;display:flex;align-items:center;justify-content:center}
+    /* Back-cover album preview: mirror the editor instead of cover artwork sizing. */
+    #albumPreviewSpread .backAlbumCover{left:0;top:0;width:50%;height:100%;box-sizing:border-box;padding:3%;display:flex;align-items:center;justify-content:center;background-position:center;background-size:cover}
+    #albumPreviewSpread .backAlbumCover>.coverWhitePanel{width:100%;height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:8%;border:0;border-radius:7%;overflow:hidden;background:white}
+    #albumPreviewSpread .backAlbumCover .backCoverPhotoFrame{width:100%;height:auto;aspect-ratio:4/3;flex:none;position:relative;border-radius:8px;overflow:hidden;background:#f8f7f8;display:flex;align-items:center;justify-content:center}
+    #albumPreviewSpread .backAlbumCover .backCoverPhotoFrame>img{width:100%;height:100%;object-fit:cover;display:block}
+    #albumPreviewSpread .backAlbumCover .backCoverPhotoFrame>span{font-size:11px}
     .backCoverPhotoFrame>img{width:100%;height:100%;object-fit:cover;display:block}
     .backCoverPhotoFrame>img[hidden]{display:none}
     #backCoverEmpty{display:grid;place-items:center;gap:4px;color:#a17f89;font-size:24px}
@@ -1991,11 +1997,11 @@
         }catch(e){console.warn('表紙素材の読込失敗',e)}
       }else if(entry.kind==='back'){
         const cfg=state.backCoverStyles?.[state.year+':'+c.id]||{mode:'solid',color:'#ffd5e5',opacity:100,pattern:'dots',scale:100,x:50,y:50};
-        const back=document.createElement('div');back.className='albumChildCover';back.style.left='0';spread.append(back);
+        const back=document.createElement('div');back.className='albumChildCover backAlbumCover';spread.append(back);
         const op=Math.max(0,Math.min(100,Number(cfg.opacity??100)))/100,hex=cfg.color||'#ffd5e5';
         back.style.backgroundColor=cfg.mode==='image'?'#fff':'rgb('+[0,1,2].map(i=>Math.round(255*(1-op)+parseInt(hex.slice(1+2*i,3+2*i),16)*op)).join(',')+')';
         if(cfg.mode==='image'){const bg=await getImage('coverPattern:'+(cfg.pattern||'dots'));if(token===albumPreviewToken)useCoverPatternCss(back,cfg.pattern||'dots',bg)}
-        const white=document.createElement('div');white.className='coverWhitePanel';white.style.cssText='width:100%;height:100%;box-sizing:border-box;background:white;border:0;border-radius:18px;display:flex;justify-content:center;align-items:center;padding:10%';
+        const white=document.createElement('div');white.className='coverWhitePanel';white.style.cssText='width:100%;height:100%;box-sizing:border-box;background:white;border:0;border-radius:7%;display:flex;justify-content:center;align-items:center;padding:8%';
         const frame=document.createElement('div');frame.className='backCoverPhotoFrame';white.append(frame);back.append(white);
         const photo=await getImage('backCoverPhoto:'+state.year+':'+c.id);
         if(token===albumPreviewToken){if(photo){const img=document.createElement('img');img.src=fileUrl(photo);backPhotoStyle(img,cfg);frame.append(img)}else{const label=document.createElement('span');label.textContent='集合写真 未設定';frame.append(label)}}
