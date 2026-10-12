@@ -119,7 +119,9 @@
     .albumPrintToolbar button:first-child{background:#ffddeb}
     .albumPrintStage.previewReady .albumPrintPage{position:relative;width:min(100%,420px);height:auto;aspect-ratio:210/297;margin:0 auto 14px;background:white;box-shadow:0 3px 12px #0002;overflow:hidden}
     .albumPrintStage.previewReady .albumPrintSpread{position:absolute;width:200%!important;height:100%!important;aspect-ratio:420/297;left:0;top:0;max-width:none!important}
-    .albumPrintStage.previewReady .albumPrintPage.rightSide .albumPrintSpread{left:-100%}
+    .albumPrintStage.previewReady .albumPrintPage.rightSide .albumPrintSpread{left:0;transform:translateX(-50%)}
+    .albumPrintStage.previewReady .albumPrintPage.leftSide .albumPrintSpread{left:0;transform:none}
+    .albumPrintStage.previewReady .albumPrintPage.singleCover>.albumChildCover{position:absolute;left:0!important;top:0;width:100%!important;height:100%!important;box-sizing:border-box}
     .albumPrintToolbarNote{font-size:12px;color:#555;line-height:1.5}
     @media print{
       @page{size:A4 portrait;margin:0}
@@ -129,7 +131,9 @@
       .albumPrintToolbar{display:none!important}
       .albumPrintPage{width:210mm;height:297mm;overflow:hidden;position:relative;page-break-after:always;break-after:page;background:white}
       .albumPrintSpread{width:420mm!important;height:297mm!important;max-width:none!important;min-width:420mm!important;position:absolute!important;left:0;top:0;border:0!important;border-radius:0!important;overflow:hidden!important}
-      .albumPrintPage.rightSide .albumPrintSpread{left:-210mm!important}
+      .albumPrintPage.rightSide .albumPrintSpread{left:0!important;transform:translateX(-50%)!important}
+      .albumPrintPage.leftSide .albumPrintSpread{left:0!important;transform:none!important}
+      .albumPrintPage.singleCover>.albumChildCover{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;box-sizing:border-box!important}
       .albumPrintSpread .albumChildCover,.albumPrintSpread .growthAlbumPage,.albumPrintSpread .messageAlbumPage,.albumPrintSpread .backAlbumCover{container-type:inline-size}
       .albumPrintPage:last-child{page-break-after:auto;break-after:auto}
     }
@@ -2088,7 +2092,15 @@
         for(const side of sides){
           const sheet=document.createElement('div');
           sheet.className='albumPrintPage '+(side==='right'?'rightSide':'leftSide');
-          sheet.append(spread.cloneNode(true));stage.append(sheet);
+          if(index===0||index===14){
+            // A single cover belongs to one A4 leaf; no spread cropping needed.
+            sheet.classList.add('singleCover');
+            const cover=spread.querySelector('.albumChildCover');
+            if(cover){const leaf=cover.cloneNode(true);leaf.style.left='0';leaf.style.width='100%';leaf.style.height='100%';leaf.style.boxSizing='border-box';sheet.append(leaf)}
+          }else{
+            sheet.append(spread.cloneNode(true));
+          }
+          stage.append(sheet);
         }
       }
       stage.classList.add('previewReady');
