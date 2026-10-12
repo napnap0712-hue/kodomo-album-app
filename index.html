@@ -86,6 +86,15 @@
     .albumSettingCheck{display:flex;align-items:center;gap:10px;font-size:14px}
     .albumSettingCheck input{width:20px;height:20px}
     .classCard{display:grid;gap:10px;text-align:center}.classIcon{width:104px;height:104px;margin:auto;border-radius:26px;background:#faf7f2;border:1px dashed #d6ccc3;display:grid;place-items:center;overflow:hidden;font-size:34px}.classIcon img{width:100%;height:100%;object-fit:cover}
+    #classIconGrid{gap:13px}
+    #classIconGrid .classCard{padding:14px 9px;gap:9px;border:2px solid var(--class-tint,#eee);border-radius:23px;background:var(--class-tint,#fff);box-shadow:none}
+    #classIconGrid .classIcon{width:min(100%,116px);height:auto;aspect-ratio:1;background:#fff;border:3px solid #fff;border-radius:23px;box-shadow:0 3px 9px rgba(70,58,47,.07)}
+    #classIconGrid .classIcon img{width:100%;height:100%;object-fit:contain}
+    #classIconGrid .classIcon.uploaded img{object-fit:cover}
+    #classIconGrid .classCard>b{font-size:17px}
+    #classIconGrid .classCard .hint{font-size:12px}
+    #classIconGrid .classCard .fileBtn{border:0;border-radius:999px;background:#fff;box-shadow:0 3px 7px rgba(70,58,47,.06);min-height:44px;display:flex;align-items:center;justify-content:center;font-size:12px;padding:9px 7px}
+
     .fileBtn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px;border-radius:15px;background:#fff;border:1px solid var(--line);font-weight:900}.fileBtn input{display:none}
     .bulkRow{display:grid;grid-template-columns:82px 1fr 46px;gap:10px;align-items:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 5px 14px rgba(70,58,47,.03)}
     .photoPick{width:82px;height:82px;border-radius:20px;background:#f7f3ef;border:1px dashed #d3c8be;display:grid;place-items:center;overflow:hidden;position:relative}.photoPick img{width:100%;height:100%;object-fit:cover}.photoPick input{position:absolute;inset:0;opacity:0}.removeRow{width:44px;height:44px;border-radius:15px;border:0;background:#fae8ea;color:var(--danger);font-weight:900}
@@ -1313,10 +1322,19 @@
   async function deleteImage(key){const db=await openDB();return new Promise(resolve=>{const tx=db.transaction('images','readwrite');tx.objectStore('images').delete(key);tx.oncomplete=resolve;tx.onerror=resolve;});}
   function fileUrl(file){return URL.createObjectURL(file)}
 
-  async function renderClassIcons(){const grid=$('#classIconGrid');grid.innerHTML='';for(const c of CLASSES){const card=document.createElement('div');card.className='card classCard';card.innerHTML=`<div class="classIcon" id="icon-${c.id}">🌼</div><b>${c.name}</b><span class="hint">${c.age}</span><label class="fileBtn">画像を選択<input type="file" accept="image/*" data-icon-input="${c.id}"></label>`;grid.appendChild(card);const blob=await getImage(`classIcon:${c.id}`);if(blob){const box=card.querySelector('.classIcon');box.innerHTML=`<img alt="${c.name} アイコン" src="${fileUrl(blob)}">`}}
-    $$('[data-icon-input]').forEach(inp=>inp.addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;await putImage(`classIcon:${inp.dataset.iconInput}`,f);toast('クラスアイコンを保存しました');renderClassIcons();}));
+  async function renderClassIcons(){
+    const grid=$('#classIconGrid');grid.replaceChildren();
+    const flowers={tanpopo:'tanpopo.png',tulip:'tulip.png',cosmos:'cosmos.png',canna:'canna.png',deigo:'deigo.png',sakura:'sakura.png'};
+    const palette={tanpopo:'#fbd4d8',tulip:'#ffe1bc',cosmos:'#ffffb5',canna:'#d4ffc2',deigo:'#beeefa',sakura:'#f5ccfa'};
+    for(const c of CLASSES){
+      const card=document.createElement('div');card.className='card classCard';card.style.setProperty('--class-tint',palette[c.id]);
+      card.innerHTML=`<div class="classIcon" id="icon-${c.id}"><img src="./${flowers[c.id]}" alt="${escapeHtml(c.name)} の花アイコン"></div><b>${escapeHtml(c.name)}</b><span class="hint">${c.age}</span><label class="fileBtn">📷 画像を変更<input type="file" accept="image/*" data-icon-input="${c.id}"></label>`;
+      grid.appendChild(card);
+      const blob=await getImage(`classIcon:${c.id}`);
+      if(blob){const box=card.querySelector('.classIcon');box.classList.add('uploaded');box.replaceChildren();const img=document.createElement('img');img.alt=c.name+' 登録画像';img.src=fileUrl(blob);box.append(img);}
+    }
+    $$('[data-icon-input]').forEach(inp=>inp.addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;await putImage(`classIcon:${inp.dataset.iconInput}`,file);toast('クラスアイコンを保存しました');renderClassIcons();}));
   }
-
   function renderChildClasses(){const list=$('#childClassList');const flowers={tanpopo:'tanpopo.png',tulip:'tulip.png',cosmos:'cosmos.png',canna:'canna.png',deigo:'deigo.png',sakura:'sakura.png'};const palette={tanpopo:'#fbd4d8',tulip:'#ffe1bc',cosmos:'#ffffb5',canna:'#d4ffc2',deigo:'#beeefa',sakura:'#f5ccfa'};list.innerHTML=CLASSES.map(c=>{const n=state.children.filter(x=>x.classId===c.id).length;return `<button class="childClassTile" type="button" data-class-open="${c.id}" style="--tint:${palette[c.id]}" aria-label="${c.name} ${c.age} ${n}名登録"><span class="childClassSymbol" aria-hidden="true"><img src="./${flowers[c.id]}" alt=""></span><b>${escapeHtml(c.name)}</b><small>${c.age} ・ ${n}名登録</small></button>`}).join('');$$('[data-class-open]').forEach(b=>b.addEventListener('click',()=>{currentClassId=b.dataset.classOpen;show('childList')}));}
 
   let editingChildId=null,childDetailNewMain=null,childDetailNewExtra=null;
