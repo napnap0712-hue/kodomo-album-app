@@ -2242,12 +2242,14 @@
       albumPreviewChildId=childId;
       for(let index=0;index<15;index++){
         albumPreviewIndex=index;
+        progress?.(count,28,'プレビューを準備中');
         await renderAlbumPreview();
         const source=$('#albumPreviewSpread'),sides=index===0?['right']:index===14?['left']:['left','right'];
         for(const side of sides){
           const leaf=albumPrintLeafFromSpread(source,side);
           leaf.style.cssText='position:relative;inset:auto;width:794px;height:1123px;overflow:hidden;background:white;box-sizing:border-box';
           captureHost.append(leaf);
+          progress?.(count,28,'写真の読み込み中');
           try{
             await Promise.all([...leaf.querySelectorAll('img')].map(img=>new Promise(resolve=>{
               if(img.complete){resolve();return}
@@ -2256,14 +2258,18 @@
               img.addEventListener('error',done,{once:true});
               setTimeout(done,5000);
             })));
-            await document.fonts?.ready;
+            progress?.(count,28,'フォントの確認中');
+            if(document.fonts?.ready)await Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,2500))]);
             // Capture the actual preview DOM as a whole; retain masks, text and decorations.
             // Limit scale for iPhone memory; one page is released before rendering the next.
             let canvas;
             try{
+              progress?.(count,28,'ページの画像化中');
               canvas=await window.html2canvas(leaf,{backgroundColor:'#ffffff',scale:2,useCORS:true,logging:false,width:794,height:1123,scrollX:0,scrollY:0,removeContainer:true});
               // Blob -> bytes avoids keeping a large base64 data URL in iPhone memory.
+              progress?.(count,28,'JPEG変換中');
               const jpeg=canvas.toDataURL('image/jpeg',0.97);
+              progress?.(count,28,'PDFに追加中');
               if(count)pdf.addPage('a4','portrait');
               pdf.addImage(jpeg,'JPEG',0,0,210,297,undefined,'FAST');
             }finally{
@@ -2272,7 +2278,7 @@
           }catch(error){
             throw new Error((count+1)+'ページ目のプレビュー変換：'+(error?.message||String(error)));
           }finally{leaf.remove()}
-          count++;progress?.(count,28);
+          count++;progress?.(count,28,'完了');
           await new Promise(resolve=>setTimeout(resolve,35));
         }
       }
@@ -2298,13 +2304,13 @@
         const zip=new window.JSZip();
         for(let i=0;i<targets.length;i++){
           const child=targets[i];
-          const blob=await createChildDirectPdf(child.id,(page,total)=>status.textContent=(i+1)+'/'+targets.length+'人目：'+page+'/'+total+'ページ');
+          const blob=await createChildDirectPdf(child.id,(page,total,step)=>status.textContent=(i+1)+'/'+targets.length+'人目：'+page+'/'+total+'ページ '+(step||''));
           zip.file(albumPdfFilename(child)+'.pdf',blob);
         }
         status.textContent='ZIPファイルにまとめています…';
         await albumPdfSave(await zip.generateAsync({type:'blob',compression:'STORE'}),state.year+'年度_'+cls(state.selectedClassId).name+'_全員PDF.zip');
       }else{
-        const blob=await createChildDirectPdf(targets[0].id,(page,total)=>status.textContent='PDF生成中 '+page+'/'+total+'ページ');
+        const blob=await createChildDirectPdf(targets[0].id,(page,total,step)=>status.textContent='PDF生成中 '+page+'/'+total+'ページ '+(step||''));
         await albumPdfSave(blob,albumPdfFilename(targets[0])+'.pdf');
       }
       status.textContent='PDF作成完了。';
