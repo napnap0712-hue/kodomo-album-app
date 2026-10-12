@@ -107,6 +107,9 @@
     [data-screen="photoManage"] .photoManageBottom .editGo{background:#e1f9de;border-color:#d3ebd0;box-shadow:0 3px 0 #c6dbc3}
     [data-screen="photoManage"] .photoManageGrid{margin:13px 0 18px;gap:9px}
     .classAlbumPreviewOpen{display:block;width:100%;margin:12px 0 16px;padding:15px;min-height:54px;border:1px solid #ecd8df;border-radius:20px;background:#ffe3f0;color:#543848;font-weight:900;box-shadow:0 3px 0 #e3cbd4}
+    .albumChildChooser{display:grid;gap:6px;font-size:13px;font-weight:900;margin:12px 0}.albumChildChooser select{width:100%;min-height:48px;background:#fff;border:1px solid #efcedc;border-radius:15px;padding:9px;font-size:16px}
+    .albumChildCover{position:absolute;left:50%;top:0;width:50%;height:100%;background:#ffe3ed;border:1px solid #eed0dc;display:flex;flex-direction:column;align-items:center;justify-content:space-around;text-align:center;padding:4% 3%;color:#8e536c}
+    .albumChildCover strong{font-size:clamp(10px,3vw,23px)}.albumChildCover span{font-size:clamp(8px,2vw,14px)}.albumChildCover img{width:50%;height:43%;object-fit:contain}.albumChildCover b{font-size:clamp(10px,3vw,21px)}
     .albumSpecialPreview{position:absolute;top:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;background:#fff2f7;border:1px solid #efd5df;padding:12px;color:#735166}.albumSpecialPreview strong{font-size:clamp(12px,4vw,22px)}.albumSpecialPreview small{font-size:10px}    [data-screen="albumPreview"]{min-width:0;overflow-x:clip}#albumPreviewSpread{max-width:100%;touch-action:pan-y;contain:layout paint}.albumPreviewControls button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}.albumPreviewControls #albumPreviewPosition{min-width:0;flex:1;text-align:center;font-size:12px;overflow-wrap:anywhere}
     .albumPreviewControls{display:flex;align-items:center;justify-content:space-between;gap:7px;margin:14px 0}.albumPreviewControls button{border:0;border-radius:16px;padding:12px;background:#ffe3f0;font-weight:800}.albumPreviewControls button:disabled{opacity:.4}#albumPreviewSpread{margin-top:12px}.albumPreviewEntry{display:none;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
     .albumPreviewEntry b,.albumPreviewEntry small{display:block}.albumPreviewEntry small{margin-top:6px;color:#766c70}
@@ -987,7 +990,7 @@
       <button type="button" id="classAlbumPreviewOpen" class="classAlbumPreviewOpen">📖 アルバムをプレビュー　›</button>
       <div id="sectionList" class="sectionList"></div>
     </section>
-    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
+    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><label class="albumChildChooser">プレビューする園児<select id="albumPreviewChild"></select></label><p class="hint">保存済み見開きを確認できます。PDF出力は準備中です。</p><div id="albumPreviewList"></div><div id="albumPreviewSpread" class="archiveSpread"></div><div class="albumPreviewControls"><button id="albumPreviewPrev" type="button">‹ 前へ</button><span id="albumPreviewPosition"></span><button id="albumPreviewNext" type="button">次へ ›</button></div></div></section>
 
     <section class="screen" data-screen="photoManage">
       <div class="photoManageTop">
@@ -1399,10 +1402,17 @@
     renderSectionList(pages);
   }
 
-  let albumPreviewIndex=0,albumPreviewToken=0;
+  let albumPreviewIndex=0,albumPreviewToken=0,albumPreviewChildId='';
   async function renderAlbumPreview(){
     const c=cls(state.selectedClassId),pages=state.pages.filter(p=>p.classId===state.selectedClassId),spread=$('#albumPreviewSpread');
     $('#albumPreviewTitle').textContent=state.year+'年度 '+c.name;spread.replaceChildren();$('#albumPreviewList').replaceChildren();
+    const children=state.children.filter(child=>child.classId===state.selectedClassId);
+    const select=$('#albumPreviewChild');
+    if(!children.some(child=>child.id===albumPreviewChildId))albumPreviewChildId=children[0]?.id||'';
+    select.replaceChildren();
+    if(!children.length){const option=document.createElement('option');option.value='';option.textContent='園児が登録されていません';select.append(option)}
+    for(const child of children){const option=document.createElement('option');option.value=child.id;option.textContent=child.name;select.append(option)}
+    select.value=albumPreviewChildId;select.disabled=!children.length;
     const token=++albumPreviewToken;
     const entries=[{kind:'cover',name:'表紙'},...Array.from({length:12},(_,i)=>({kind:'section',name:pages[i]?.title||('見開き'+(i+1)+'（未作成）'),page:pages[i]})),{kind:'growth',name:'身長・体重 ／ 担任からのメッセージ'},{kind:'back',name:'裏表紙・集合写真'}];
     albumPreviewIndex=Math.min(Math.max(albumPreviewIndex,0),entries.length-1);
@@ -1421,7 +1431,14 @@
         special('身長・体重','left','成長記録のページ（準備中）');
         special('担任からのメッセージ','right','先生は最大2人・上段と下段（準備中）');
       }else if(entry.kind==='cover'){
-        special('表紙','right','表紙をめくると見開き1ページ目が始まります');
+        const cover=document.createElement('div');cover.className='albumChildCover';spread.append(cover);
+        const heading=document.createElement('strong');heading.textContent='おもいでブック';
+        const year=document.createElement('span');year.textContent=state.year+'年度・'+c.name;
+        const icon=document.createElement('img');icon.alt=c.name+'のアイコン';icon.src='./'+({tanpopo:'tanpopo',tulip:'tulip',cosmos:'cosmos',canna:'canna',deigo:'deigo',sakura:'sakura'}[c.id]||c.id)+'.png';
+        const child=children.find(x=>x.id===albumPreviewChildId);
+        const name=document.createElement('b');name.textContent=child?child.name+' さん':'園児を選択してください';
+        cover.append(heading,year,icon,name);
+        try{const blob=await getImage('classIcon:'+c.id);if(token===albumPreviewToken&&blob)icon.src=fileUrl(blob)}catch(e){console.warn('クラスアイコン読込失敗',e)}
       }else if(entry.kind==='back'){
         special('裏表紙・集合写真','left','集合写真のページ（準備中）');
       }else{
@@ -1452,6 +1469,7 @@
     renderAlbumPreview();
     requestAnimationFrame(()=>window.scrollTo({top,behavior:'instant'}));
   }
+  $('#albumPreviewChild').addEventListener('change',e=>{albumPreviewChildId=e.target.value;albumPreviewIndex=0;renderAlbumPreview()});
   $('#albumPreviewPrev').addEventListener('click',()=>turnAlbumPreview(-1));
   $('#albumPreviewNext').addEventListener('click',()=>turnAlbumPreview(1));
   $('#classAlbumPreviewOpen').addEventListener('click',()=>{albumPreviewIndex=0;show('albumPreview')});
