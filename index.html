@@ -106,6 +106,9 @@
     [data-screen="photoManage"] .photoManageBottom button{min-height:62px;padding:9px;border:1px solid #ebdadf;border-radius:19px;background:#ffe5f1;box-shadow:0 3px 0 #e4d2d8;font-size:12px;line-height:1.4}
     [data-screen="photoManage"] .photoManageBottom .editGo{background:#e1f9de;border-color:#d3ebd0;box-shadow:0 3px 0 #c6dbc3}
     [data-screen="photoManage"] .photoManageGrid{margin:13px 0 18px;gap:9px}
+    .classAlbumPreviewOpen{display:block;width:100%;margin:12px 0 16px;padding:15px;min-height:54px;border:1px solid #ecd8df;border-radius:20px;background:#ffe3f0;color:#543848;font-weight:900;box-shadow:0 3px 0 #e3cbd4}
+    .albumPreviewEntry{display:block;width:100%;margin:10px 0;padding:16px;text-align:left;border:1px solid #eee1e4;border-radius:18px;background:#fff}
+    .albumPreviewEntry b,.albumPreviewEntry small{display:block}.albumPreviewEntry small{margin-top:6px;color:#766c70}
     .yearOverview{display:grid;gap:14px}
     .yearCurrentCard{display:grid;gap:7px;background:#eff7ff;border:2px solid #cfe5f5;border-radius:23px;padding:22px;text-align:center}
     .yearCurrentCard span{font-size:14px;font-weight:800}
@@ -980,8 +983,10 @@
     <section class="screen" data-screen="classWorkspace">
       <div class="classWorkspaceTop"><button type="button" class="back" id="backToClassHome" aria-label="クラス一覧に戻る">‹</button><div><h1 id="workspaceClassTitle">クラスのページ</h1><div class="hint" id="workspaceYear">2026年度</div></div></div>
       <div class="sectionListTitle"><h2>📖 セクション一覧</h2><button class="sectionNew" id="sectionNew" type="button">＋ 新規作成</button></div>
+      <button type="button" id="classAlbumPreviewOpen" class="classAlbumPreviewOpen">📖 アルバムをプレビュー　›</button>
       <div id="sectionList" class="sectionList"></div>
     </section>
+    <section class="screen" data-screen="albumPreview"><div class="topbar"><button type="button" class="back" id="albumPreviewBack">‹</button><h2>アルバムプレビュー</h2></div><div class="yearGuideCard"><h3 id="albumPreviewTitle"></h3><p class="hint">保存済みセクションの一覧です。実際の見開き表示・印刷PDFは次の段階で追加します。</p><div id="albumPreviewList"></div></div></section>
 
     <section class="screen" data-screen="photoManage">
       <div class="photoManageTop">
@@ -1189,7 +1194,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview')renderAlbumPreview(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1393,6 +1398,15 @@
     renderSectionList(pages);
   }
 
+  function renderAlbumPreview(){
+    const target=$('#albumPreviewList');target.replaceChildren();
+    const c=cls(state.selectedClassId);$('#albumPreviewTitle').textContent=state.year+'年度 '+c.name;
+    const pages=state.pages.filter(p=>p.classId===state.selectedClassId);
+    if(!pages.length){target.textContent='まだセクションがありません';return}
+    pages.forEach((p,i)=>{const btn=document.createElement('button');btn.type='button';btn.className='albumPreviewEntry';const title=document.createElement('b');title.textContent=(i+1)+' / '+pages.length+'　'+p.title;const detail=document.createElement('small');detail.textContent=(p.type==='event'?'行事':'月')+'・写真'+(p.photos||[]).length+'枚';btn.append(title,detail);btn.addEventListener('click',()=>openPhotoManagement(p.id));target.append(btn)});
+  }
+  $('#classAlbumPreviewOpen').addEventListener('click',()=>show('albumPreview'));
+  $('#albumPreviewBack').addEventListener('click',()=>show('classWorkspace'));
   function openPageCreate(){pageDraft=[];$('#pageTitle').value='';const preferred=state.creationMode==='event'?'event':'month';const radio=$(`input[name="pageType"][value="${preferred}"]`);if(radio)radio.checked=true;show('pageCreate')}
   function renderPageDraft(){const children=state.children.filter(x=>x.classId===state.selectedClassId);const wrap=$('#pagePhotos');wrap.innerHTML='';$('#pagePhotoCount').textContent=`${pageDraft.length}枚`;$('#pageChildNotice').textContent=children.length?'写真を追加し、それぞれ園児を選んでください。':'先に管理画面で園児を登録すると、写真を振り分けできます。';pageDraft.forEach((photo,i)=>{const el=document.createElement('div');el.className='pagePhoto';const options=['<option value="">園児を選択</option>',...children.map(child=>`<option value="${child.id}" ${photo.childId===child.id?'selected':''}>${escapeHtml(child.name)}</option>`)].join('');el.innerHTML=`<img src="${fileUrl(photo.file)}" alt="追加した写真 ${i+1}"><div class="photoDetails"><div class="photoName">${escapeHtml(photo.file.name)}</div><select data-photo-child="${photo.id}" aria-label="${i+1}枚目を園児に振り分け">${options}</select></div><button class="removeRow" type="button" data-remove-photo="${photo.id}" aria-label="写真を削除">×</button>`;wrap.appendChild(el)});$$('[data-photo-child]').forEach(s=>s.addEventListener('change',()=>{const p=pageDraft.find(x=>x.id===s.dataset.photoChild);if(p)p.childId=s.value}));$$('[data-remove-photo]').forEach(b=>b.addEventListener('click',()=>{pageDraft=pageDraft.filter(x=>x.id!==b.dataset.removePhoto);renderPageDraft()}));}
 
