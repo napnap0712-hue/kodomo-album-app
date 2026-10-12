@@ -2317,7 +2317,7 @@
           crop.width=cw;crop.height=ch;
           const ctx=crop.getContext('2d');
           const iw=el.naturalWidth,ih=el.naturalHeight,fit=cs.objectFit;
-          if(fit==='contain' && !el.closest('.placedPhoto')){
+          if(fit==='contain'){
             const z=Math.min(cw/iw,ch/ih),dw=iw*z,dh=ih*z;
             ctx.drawImage(el,(cw-dw)/2,(ch-dh)/2,dw,dh);
           }else{
@@ -2349,11 +2349,8 @@
           }else{
             // Always flatten the entire image against white before JPEG.
             // Sampling one pixel missed transparent black bands elsewhere.
-            ctx.globalCompositeOperation='destination-over';
-            ctx.fillStyle='#ffffff';
-            ctx.fillRect(0,0,cw,ch);
-            ctx.globalCompositeOperation='source-over';
-            pdf.addImage(crop.toDataURL('image/jpeg',.94),'JPEG',x,y,w,h,undefined,'FAST');
+            // Preserve transparent letterboxing rather than painting it white or stretching the photo.
+            pdf.addImage(crop.toDataURL('image/png'),'PNG',x,y,w,h,undefined,'FAST');
           }
           crop.width=crop.height=0;
         }else if(el.children.length===0&&el.textContent?.trim()&&cs.display!=='none'){
