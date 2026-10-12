@@ -3464,7 +3464,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       // A detached/hidden element cannot be reliably captured by html2canvas on iOS.
       // Render in an on-document offscreen stage at full opacity instead.
       stage=document.createElement('div');
-      stage.style.cssText='position:absolute;left:-1200px;top:0;width:210mm;background:white;pointer-events:none;overflow:visible';
+      stage.style.cssText='position:fixed;left:0;top:0;width:210mm;background:white;pointer-events:none;overflow:visible;z-index:-1;opacity:1';
       const sides=['left','right'];
       const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
       document.body.append(stage);
@@ -3480,7 +3480,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
         // html2canvas handles image loading itself; avoid blocking on decode().
         await new Promise(resolve=>requestAnimationFrame(()=>resolve()));
         button.textContent=(i+1)+'/2 ページをPDF化中…';
-        const canvas=await bounded(window.html2canvas(leaf,{scale:1,backgroundColor:'#fff',useCORS:true,logging:false,imageTimeout:7000,scrollX:0,scrollY:0}),14000,'ページの画像化');
+        const canvas=await bounded(window.html2canvas(leaf,{scale:1,backgroundColor:'#fff',useCORS:true,logging:false,imageTimeout:7000,scrollX:0,scrollY:0,windowWidth:Math.max(document.documentElement.clientWidth,820),onclone:doc=>{const el=doc.querySelector('.nativePrintLeaf');if(el)el.style.contain='none'}}),14000,'ページの画像化');
         try{
           if(!canvas.width||!canvas.height)throw new Error('画像化に失敗しました');
           if(i)pdf.addPage('a4','portrait');
