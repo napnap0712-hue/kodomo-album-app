@@ -1185,8 +1185,8 @@
     @media print{
       html,body{margin:0!important;padding:0!important;background:#fff!important;width:210mm!important}
       body > :not(#nativePrintHost){display:none!important}
-      #nativePrintHost{display:block!important;position:static!important;margin:0!important;padding:0!important;width:210mm!important}
-      #nativePrintHost .nativePrintLeaf{position:relative!important;display:block!important;width:210mm!important;height:297mm!important;overflow:hidden!important;margin:0!important;padding:0!important;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid}
+      #nativePrintHost{display:block!important;position:static!important;margin:0!important;padding:0!important;width:197.4mm!important}
+      #nativePrintHost .nativePrintLeaf{position:relative!important;display:block!important;width:197.4mm!important;height:279.18mm!important;overflow:hidden!important;margin:0!important;padding:0!important;break-after:page;page-break-after:always;break-inside:avoid;page-break-inside:avoid}
       #nativePrintHost .nativePrintLeaf:last-child{break-after:auto;page-break-after:auto}
       #nativePrintHost .nativePrintSpread,#nativePrintHost .nativePrintSpread *{print-color-adjust:exact!important;-webkit-print-color-adjust:exact!important}
       #nativePrintHost .nativePrintSpread{display:block!important;visibility:visible!important}
@@ -3338,8 +3338,8 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
     const offset=side==='right'?50:0;
     const spread=document.createElement('div');
     spread.className='nativePrintSpread';
-    spread.style.cssText='position:absolute;inset:0;width:210mm;height:297mm;overflow:hidden;background:white;isolation:isolate';
-    const scale=(210*96/25.4)/(source.getBoundingClientRect().width/2);
+    spread.style.cssText='position:absolute;inset:0;width:197.4mm;height:279.18mm;overflow:hidden;background:white;isolation:isolate';
+    const scale=(197.4*96/25.4)/(source.getBoundingClientRect().width/2);
     for(const original of source.children){
       if(original.matches('.pageLabel,.selectionFrame,.cropGuide'))continue;
       if(original.classList.contains('pageBgLayer')){
@@ -3350,7 +3350,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       }
       if(original.classList.contains('pageBgFrame')){
         const frame=document.createElement('div');
-        frame.style.cssText='position:absolute;inset:0;z-index:0;background-repeat:no-repeat;background-size:420mm 297mm;background-position:'+(side==='right'?'right':'left')+' center;';
+        frame.style.cssText='position:absolute;inset:0;z-index:0;background-repeat:no-repeat;background-size:394.8mm 279.18mm;background-position:'+(side==='right'?'right':'left')+' center;';
         frame.style.backgroundImage=original.style.backgroundImage;
         spread.append(frame);
         // The editor frame uses an inset white panel over the decorations.
