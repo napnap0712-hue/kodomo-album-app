@@ -1987,6 +1987,15 @@
     requestAnimationFrame(()=>fitMessagePanels(page,false));
   }
   let albumPreviewIndex=0,albumPreviewToken=0,albumPreviewChildId='';
+  // Consistent backgrounds between editing and print preview.
+  async function sharedPageBackgroundStyle(cfg){
+    const style=backgroundCss(cfg.pattern||'plain',cfg.color||'#ffffff',cfg.opacity,cfg.patternScale);
+    if(cfg.imageUrl){
+      const url=cfg.imageUrl.startsWith('localbg:')?await localBackgroundUrl(cfg.imageUrl):await sharedDisplayUrl(cfg.imageUrl);
+      return {backgroundColor:'#ffffff',backgroundImage:'url("'+url+'")',backgroundSize:'cover',backgroundPosition:'center',backgroundRepeat:'no-repeat',maskImage:'none',webkitMaskImage:'none'};
+    }
+    return {backgroundColor:style.backgroundColor,backgroundImage:style.backgroundImage||'none',backgroundSize:style.backgroundSize||'',backgroundPosition:style.backgroundPosition||'',backgroundRepeat:style.backgroundRepeat||'repeat',maskImage:style.maskImage||'none',maskSize:style.maskSize||'',maskRepeat:style.maskRepeat||'',maskPosition:style.maskPosition||'',webkitMaskImage:style.maskImage||'none',webkitMaskSize:style.maskSize||'',webkitMaskRepeat:style.maskRepeat||'',webkitMaskPosition:style.maskPosition||''};
+  }
   async function renderAlbumPreview(){
     const c=cls(state.selectedClassId),pages=state.pages.filter(p=>p.classId===state.selectedClassId),spread=$('#albumPreviewSpread');
     $('#albumPreviewTitle').textContent=state.year+'年度 '+c.name;spread.replaceChildren();$('#albumPreviewList').replaceChildren();
@@ -2094,12 +2103,7 @@
       const cfg=bgSettings[side]||{},bg=document.createElement('div');
       bg.className='archiveHalf';bg.style.left=i*50+'%';
       if(frameCfg){bg.style.backgroundColor='transparent'}
-      else if(cfg.imageUrl){
-        const url=cfg.imageUrl.startsWith('localbg:')?await localBackgroundUrl(cfg.imageUrl):await sharedDisplayUrl(cfg.imageUrl);
-        if(token!==albumPreviewToken)return;
-        bg.style.backgroundColor='#ffffff';bg.style.backgroundImage='url("'+url+'")';
-        bg.style.backgroundSize='cover';bg.style.backgroundPosition='center';bg.style.backgroundRepeat='no-repeat';
-      }else{Object.assign(bg.style,backgroundCss(cfg.pattern||'plain',cfg.color||'#ffffff',cfg.opacity,cfg.patternScale))}
+      else {Object.assign(bg.style,await sharedPageBackgroundStyle(cfg));if(token!==albumPreviewToken)return}
       spread.append(bg);
     }
     for(const item of (p.layout||[])){
@@ -2816,7 +2820,7 @@
       syncBackgroundPanel();return;
     }
     if(frame)frame.remove();
-    for(const side of ['left','right']){let el=spread.querySelector('.pageBgLayer.'+side);if(el)el.style.display='';if(!el){el=document.createElement('div');el.className='pageBgLayer '+side;spread.prepend(el)}const cfg=editBackground[side]||{pattern:'plain',color:'#ffffff',imageUrl:null};const style=backgroundCss(cfg.pattern,cfg.color,cfg.opacity,cfg.patternScale);if(cfg.imageUrl){const displayUrl=cfg.imageUrl.startsWith('localbg:')?await localBackgroundUrl(cfg.imageUrl):await sharedDisplayUrl(cfg.imageUrl);el.style.backgroundColor='#ffffff';el.style.backgroundImage=cfg.pattern==='frame'?`linear-gradient(#fff,#fff),url("${displayUrl}")`:`url("${displayUrl}")`;el.style.backgroundSize=cfg.pattern==='frame'?'82% 78%, auto 90%':'cover';el.style.backgroundRepeat=cfg.pattern==='frame'?'no-repeat, repeat':'no-repeat';el.style.backgroundPosition='center center'}else{el.style.backgroundColor=style.backgroundColor;el.style.backgroundImage=style.backgroundImage||'none';el.style.backgroundSize=style.backgroundSize||'';el.style.backgroundRepeat=style.backgroundRepeat||'repeat';el.style.backgroundPosition=style.backgroundPosition||''}el.style.maskImage=cfg.imageUrl?'none':(style.maskImage||'none');el.style.maskSize=cfg.imageUrl?'':(style.maskSize||'');el.style.maskRepeat=cfg.imageUrl?'':(style.maskRepeat||'');el.style.maskPosition=cfg.imageUrl?'':(style.maskPosition||'');el.style.webkitMaskImage=cfg.imageUrl?'none':(style.maskImage||'none');el.style.webkitMaskSize=cfg.imageUrl?'':(style.maskSize||'');el.style.webkitMaskRepeat=cfg.imageUrl?'':(style.maskRepeat||'');el.style.webkitMaskPosition=cfg.imageUrl?'':(style.maskPosition||'')}syncBackgroundPanel()}
+    for(const side of ['left','right']){let el=spread.querySelector('.pageBgLayer.'+side);if(el)el.style.display='';if(!el){el=document.createElement('div');el.className='pageBgLayer '+side;spread.prepend(el)}const cfg=editBackground[side]||{pattern:'plain',color:'#ffffff',imageUrl:null};Object.assign(el.style,await sharedPageBackgroundStyle(cfg))}syncBackgroundPanel()}
   function selectedBgConfig(){const side=bgTarget==='right'?'right':'left',cfg=editBackground?.[side]||{pattern:'plain',color:'#ffffff',opacity:35,patternScale:100};return {...cfg,pattern:cfg.pattern==='paper'?'cloud':cfg.pattern,opacity:Number.isFinite(Number(cfg.opacity))?Number(cfg.opacity):35,patternScale:Number.isFinite(Number(cfg.patternScale))?Number(cfg.patternScale):100}}
   let bgMode='pattern',backgroundLibrary=[];
   const bgLocalUrls=new Map();
