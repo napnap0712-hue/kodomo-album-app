@@ -233,14 +233,14 @@
     .messageFontControl{position:relative;z-index:1}
     .messageBlock .messageInlineWarning{color:#a13453;font-size:12px;font-weight:800}
     .messageBlock .messageInlineWarning[hidden]{display:none}
-    .messageSheet{background:#fff0f5;padding:6%;aspect-ratio:210/297;width:min(82%,350px);box-sizing:border-box;margin:auto;display:flex;border-radius:9px}
+    .messageSheet{background:#fff0f5;padding:6%;aspect-ratio:210/297;width:min(82%,350px);box-sizing:border-box;margin:auto;display:flex;border-radius:9px;container-type:inline-size}
     .messageSheetInner{box-sizing:border-box;background:white;border-radius:15px;width:100%;min-height:0;padding:5%;display:flex;flex-direction:column;gap:3%;text-align:center}
     .messageSheetInner h3{font-size:clamp(13px,3.7vw,20px);color:#a76a86;margin:0}
     .messageSheetInner .messageAddressee{font-size:clamp(12px,3.3vw,18px);font-weight:700}
     .messagePanels{display:flex;flex-direction:column;gap:4%;flex:1;min-height:0}
-    .messagePanel{background:#fff7fa;border-radius:12px;padding:4%;min-height:0;flex:1;display:flex;flex-direction:column;text-align:left;gap:5px;overflow:hidden}
+    .messagePanel{background:#fff7fa;border-radius:12px;padding:4%;min-height:0;flex:1 1 0;display:flex;flex-direction:column;text-align:left;gap:5px;overflow:hidden}
     .messagePanel b{color:#a76a86;font-size:clamp(11px,2.8vw,16px)}
-    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;margin:0;font-size:var(--message-text-size, 12px)}
+    .messagePanel p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;margin:0;font-size:var(--message-text-size, 12px);max-width:100%}
     .messagePanel[hidden]{display:none}
     .messageSheet[data-teachers="1"] .messagePanel:first-child{flex:1}
     .messageOverflow{color:#a13453;font-size:12px;font-weight:700}
@@ -1841,7 +1841,8 @@
     $('#messagePreviewChild').textContent=child?child.name.replace(/\s*さん$/,'')+' さんへ':'園児を選択してください';
     $('#messageSheet').dataset.teachers=names[1]?'2':'1';
     const fontSize=Number($('#messageFontSize').value)||85;
-    $('#messageSheet').style.setProperty('--message-text-size',(16*fontSize/100)+'px');
+    const previewPixels=(18*fontSize/100);
+    $('#messageSheet').style.setProperty('--message-text-size',previewPixels+'px');
     $('#messageFontSizeLabel').textContent=fontSize+'%';
     $('#messageBlock2').hidden=!names[1];
     for(let i=0;i<2;i++){
@@ -1849,9 +1850,16 @@
       $('#messagePreviewTeacher'+(i+1)).textContent=messageTeacherLabel(names[i]);
       const previewText=$('#messagePreviewText'+(i+1));
       previewText.textContent=texts[i];
-      previewText.style.setProperty('font-size',(16*fontSize/100)+'px','important');
+      previewText.style.setProperty('font-size',previewPixels+'px','important');
       $('#messageCount'+(i+1)).textContent=Array.from(texts[i]).length+'文字';
     }
+    const p1=$('#messagePreviewPanel1'),p2=$('#messagePreviewPanel2');
+    if(names[1]){
+      const lengths=texts.map(t=>Math.max(0,Array.from(t).length));
+      const firstShare=Math.max(.20,Math.min(.80,(lengths[0]+30)/(lengths[0]+lengths[1]+60)));
+      p1.style.flex=''+firstShare+' 1 0';
+      p2.style.flex=''+(1-firstShare)+' 1 0';
+    }else{p1.style.flex='1 1 0';p2.style.flex='1 1 0'}
     requestAnimationFrame(()=>{
       for(let i=1;i<=2;i++){
         const panel=$('#messagePreviewPanel'+i),warning=$('#messageWarning'+i);
@@ -1875,7 +1883,7 @@
   function appendAlbumMessagePage(spread,childId,classId,year){
     const names=state.messageTeachers?.[year+':'+classId]||['',''],texts=state.messageRecords?.[year+':'+classId+':'+childId]||['',''];
     const page=document.createElement('div');page.className='messageAlbumPage';
-    page.style.setProperty('--message-text-size',(16*messageFontSize(childId)/100)+'px');
+    page.style.setProperty('--message-text-size',(18*messageFontSize(childId)/100)+'px');
     const sheet=document.createElement('div');sheet.className='messageSheetInner';
     const heading=document.createElement('h3');heading.textContent='せんせいからのメッセージ';
     const who=document.createElement('div');who.className='messageAddressee';
@@ -1886,6 +1894,12 @@
       const title=document.createElement('b');title.textContent=messageTeacherLabel(names[i]);
       const body=document.createElement('p');body.textContent=texts[i]||'';
       panel.append(title,body);panels.append(panel);
+    }
+    if(names[1]){
+      const weights=texts.map(t=>Array.from(t||'').length);
+      const share=Math.max(.20,Math.min(.80,(weights[0]+30)/(weights[0]+weights[1]+60)));
+      panels.children[0].style.flex=share+' 1 0';
+      panels.children[1].style.flex=(1-share)+' 1 0';
     }
     sheet.append(heading,who,panels);page.append(sheet);spread.append(page);
   }
