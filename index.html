@@ -3445,10 +3445,13 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
         frame.style.backgroundImage=original.style.backgroundImage;
         spread.append(frame);
         // The editor frame uses an inset white panel over the decorations.
-        const white=document.createElement('div');
-        white.className='pageBgFrameCenter';
-        white.style.cssText='position:absolute;top:9%;bottom:9%;background:white;border-radius:7mm;z-index:0;'+(side==='right'?'left:-8%;right:16%':'left:16%;right:-8%');
-        spread.append(white);continue;
+        const white=original.querySelector('.pageBgFrameCenter')?.cloneNode(true);
+        if(white){
+          // Preserve the editor's full-spread panel geometry and corner radius.
+          white.style.cssText+=';position:absolute!important;top:9%!important;bottom:9%!important;left:'+(side==='right'?'-84%':'16%')+'!important;right:'+(side==='right'?'16%':'-84%')+'!important;border-radius:3%!important;';
+          spread.append(white);
+        }
+        continue;
       }
       if(!original.matches('.placedPhoto,.placedText,.placedSticker'))continue;
       const x=parseFloat(original.style.left)||0,w=parseFloat(original.style.width)||0;
