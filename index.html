@@ -3436,7 +3436,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
       if(original.classList.contains('pageBgLayer')){
         if(!original.classList.contains(side))continue;
         const bg=original.cloneNode(true);
-        bg.style.cssText+=';left:-'+bleedMm+'mm!important;right:auto!important;top:-'+bleedMm+'mm!important;bottom:auto!important;width:calc(100% + '+(bleedMm*2)+'mm)!important;height:calc(100% + '+(bleedMm*2)+'mm)!important;display:block';
+        bg.style.cssText+=';left:0!important;right:auto!important;top:0!important;bottom:auto!important;width:100%!important;height:100%!important;display:block';
         spread.append(bg);continue;
       }
       if(original.classList.contains('pageBgFrame')){
