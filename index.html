@@ -99,6 +99,57 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  .canvasHint{font-size:12px}
 }
 
+
+/* Responsive workspace: phone and desktop are intentionally different layouts */
+@media(min-width:900px){
+ body{background:#f6f8fa}
+ .app{max-width:1440px;padding:28px 34px 40px}
+ .screen[data-screen="editor"].active{max-width:none}
+ .screen[data-screen="editor"]>.top{align-items:center;margin-bottom:20px}
+ .screen[data-screen="editor"]>.top .lead{margin-bottom:0}
+ .editorPanel{grid-template-columns:minmax(270px,320px) minmax(0,1fr);column-gap:26px;row-gap:14px;align-items:start}
+ .editorPanel>label.field:first-child{grid-column:1;grid-row:1}
+ .editorPanel>.editorToolbar{grid-column:1;grid-row:2;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+ .editorPanel>.photoManager{grid-column:1;grid-row:3}
+ .editorPanel>.designToolbar{grid-column:2;grid-row:1;display:flex;overflow:visible;flex-wrap:wrap}
+ .editorPanel>.pageNav{grid-column:2;grid-row:2}
+ .editorPanel>.canvasWrap{grid-column:2;grid-row:3 / span 2;min-width:0;padding:18px}
+ .editorPanel>.canvasHint{grid-column:2;grid-row:5}
+ .editorPanel>.elementTools{grid-column:1;grid-row:4;display:grid;grid-template-columns:1fr;gap:14px;padding:16px;border:1px solid #e6ebf0;border-radius:16px;background:#fff}
+ .editorPanel>.editorActions{grid-column:1;grid-row:5;position:sticky;bottom:12px;z-index:25;display:grid;grid-template-columns:1fr;gap:10px;padding:12px;background:#ffffffed;border:1px solid #e7ebef;border-radius:16px;box-shadow:0 8px 30px #26344712}
+ .editorPanel>.notice{grid-column:1;grid-row:6}
+ .designCanvas{width:100%;max-width:1120px;margin:auto;aspect-ratio:1.414/1;min-height:420px;touch-action:none}
+ .designCanvas.singleCanvas{aspect-ratio:.707/1;max-width:650px;min-height:680px}
+ .designToolbar button{min-height:42px;padding:11px 16px;font-size:13px}
+ .pageNav button{min-height:42px;padding:10px 18px}
+ .elementTools label{font-size:13px;justify-content:space-between}
+ .elementTools input[type=range]{width:55%;height:30px}
+ .flowerGrid{max-width:680px;grid-template-columns:repeat(6,minmax(0,1fr));gap:30px 22px}
+ .homeHeader{margin-bottom:38px}
+}
+@media(min-width:600px) and (max-width:899px){
+ .app{max-width:900px;padding:28px 24px 36px}
+ .editorPanel{gap:14px}
+ .designCanvas{min-height:280px;touch-action:none}
+ .editorToolbar{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .elementTools{padding:12px}
+}
+@media(max-width:599px){
+ .screen[data-screen="editor"]>.top{margin-bottom:16px}
+ .screen[data-screen="editor"]>.top .lead{margin-bottom:0}
+ .editorPanel{display:flex;flex-direction:column;gap:12px}
+ .editorPanel>.editorToolbar{order:1}
+ .editorPanel>.photoManager{order:2;width:100%}
+ .editorPanel>.designToolbar{order:3;width:100%}
+ .editorPanel>.pageNav{order:4;width:100%}
+ .editorPanel>.canvasWrap{order:5;width:100%}
+ .editorPanel>.canvasHint{order:6}
+ .editorPanel>.elementTools{order:7;width:100%}
+ .editorPanel>.editorActions{order:8;width:100%}
+ .editorPanel>.notice{order:9}
+ .designCanvas{min-height:200px;touch-action:none}
+}
+
 </style>
 </head>
 <body>
