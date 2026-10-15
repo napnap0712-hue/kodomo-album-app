@@ -162,6 +162,14 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 @media(max-width:599px){.designToolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.designToolbar button{min-height:44px}}
 @media(min-width:900px){.designToolbar{gap:8px}.designToolbar button{min-height:42px}}
 
+
+.layerControlGroup{display:flex;flex-direction:column;gap:4px;border:1px solid #e3e8ee;border-radius:12px;padding:7px;background:#f8fafc}
+.layerControlTitle{font-size:11px;font-weight:800;color:#687586;padding:0 4px}
+.layerControlButtons{display:flex;gap:5px}
+.layerControlButtons button{flex:1;white-space:nowrap}
+@media(max-width:599px){.layerControlGroup{grid-column:1/-1}.layerControlButtons button{min-height:44px}.layerControlTitle{font-size:12px}}
+@media(min-width:900px){.layerControlGroup{min-width:205px}}
+
 </style>
 </head>
 <body>
@@ -194,7 +202,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <label class="field">ページのひとこと<input id="pageCaption" maxlength="100" placeholder="例：みんなでおさんぽ"></label>
 </div>
 <div class="photoManager"><div class="photoManagerHead"><strong>使う写真</strong><span id="photoManagerCount">0枚</span></div><div id="photoStrip" class="photoStrip"></div><label class="secondary" style="display:block;text-align:center;cursor:pointer">＋ 写真を追加<input id="editorPhotoInput" type="file" accept="image/*" multiple hidden></label></div>
-<div class="designToolbar"><button id="addTextElement" type="button">＋ 文字を追加</button><button id="addPhotoElement" type="button">＋ 写真を配置</button><button id="duplicateElement" type="button">複製</button><button id="bringForwardElement" type="button">前面へ</button><button id="sendBackwardElement" type="button">背面へ</button><button id="deleteSelectedElement" type="button">削除</button></div>
+<div class="designToolbar"><button id="addTextElement" type="button">＋ 文字を追加</button><button id="addPhotoElement" type="button">＋ 写真を配置</button><button id="duplicateElement" type="button">複製</button><div class="layerControlGroup"><span class="layerControlTitle">重なり順</span><div class="layerControlButtons"><button id="bringForwardElement" type="button" aria-label="選択した写真や文字を前に出す">↑ 前に出す</button><button id="sendBackwardElement" type="button" aria-label="選択した写真や文字を後ろに下げる">↓ 後ろに下げる</button></div></div><button id="deleteSelectedElement" type="button">削除</button></div>
 <div class="pageNav"><button id="prevSpread" type="button">‹ 前へ</button><span id="pageIndicator">1 / 1</span><button id="nextSpread" type="button">次へ ›</button></div>
 <div class="canvasWrap"><div class="designCanvas spreadCanvas" id="designCanvas" aria-label="ドラッグして自由に配置できるページ"></div></div>
 <p class="canvasHint">文字や写真をタップして選択し、ドラッグして自由に配置できます。青い丸を動かすと大きさを変更できます。</p>
