@@ -52,7 +52,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <label class="drop" for="photoInput"><strong>＋ 写真を追加</strong><p>端末から写真を選択できます。選んだ写真はこの画面でプレビューします。</p><input id="photoInput" type="file" accept="image/*" multiple></label>
 <div id="photoPreviews" class="previewGrid"></div><p id="photoCount" class="muted">写真はまだ選択されていません。</p>
 <button id="continueEdit" class="primary wide" disabled>選んだ写真で続ける</button>
-<p class="muted">写真選択の試作画面です。編集・保存機能と既存データは、互換性を確認してから接続します。</p>
+<p class="muted">選んだ写真を見開きに配置し、タイトルや背景を調整できます。</p>
 </section>
 <section class="screen" data-screen="editor">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div></div>
@@ -61,7 +61,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <label class="field">背景<select id="pageBackground"><option value="#ffffff">白</option><option value="#fff5f7">さくら</option><option value="#f2f8ff">そら</option><option value="#fff9e9">クリーム</option><option value="#f2f8f1">若葉</option></select></label>
 <div class="spread" id="spreadPreview"><div class="pageSide" id="leftPage"><h3>おもいで</h3><p>写真を選ぶとここに表示されます</p></div><div class="pageSide" id="rightPage"><h3>アルバム</h3><p>見開きプレビュー</p></div></div>
 <div class="editorActions"><button class="secondary" id="saveDraft">下書きを保存</button><button class="primary" id="exportImage">画像を書き出す</button></div>
-<p id="editorStatus" class="notice">写真やタイトルはこの端末内で扱います。下書き保存はこのブラウザの保存領域を使います。</p>
+<p id="editorStatus" class="notice">下書き保存はこの端末のブラウザ内に保存します。既存アプリの保存データとはまだ別管理です。</p>
 </div>
 </section>
 <section class="screen" data-screen="saved">
