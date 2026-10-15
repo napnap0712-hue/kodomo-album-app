@@ -1262,6 +1262,36 @@
       [data-screen="home"] .crayonClassCard b{font-size:12px!important}
     }
 
+
+    /* Compact icon home · settings joins class grid */
+    [data-screen="home"]{
+      display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+      align-content:start!important;justify-items:center!important;gap:24px 10px!important;
+      padding:calc(28px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom))!important
+    }
+    [data-screen="home"] .crayonHomeHero{grid-column:1/-1!important;width:100%!important;margin:0 auto 6px!important}
+    [data-screen="home"] .crayonClassGrid{display:contents!important}
+    [data-screen="home"] .crayonClassCard{align-self:start!important}
+    [data-screen="home"] .canvaHomeSettings{
+      display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;
+      justify-self:stretch!important;align-self:start!important;gap:8px!important;
+      width:100%!important;height:auto!important;min-height:0!important;margin:0!important;padding:0!important;
+      border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+      color:#414b57!important;font-size:11px!important;line-height:1.4!important;font-weight:750!important
+    }
+    [data-screen="home"] .canvaHomeSettings .homeSettingsIcon{
+      display:block!important;box-sizing:border-box!important;width:58px!important;height:58px!important;
+      padding:8px!important;object-fit:contain!important;border:1px solid #edf0f3!important;border-radius:17px!important;
+      background:#fff!important;box-shadow:0 2px 5px rgba(30,42,55,.045)!important
+    }
+    [data-screen="home"] .canvaHomeSettings span{display:block!important;margin:0!important;padding:0!important;color:#414b57!important;font-size:11px!important}
+    @media(min-width:600px){
+      [data-screen="home"]{gap:30px 18px!important;padding-top:42px!important}
+      [data-screen="home"] .crayonHomeHero{margin-bottom:8px!important}
+      [data-screen="home"] .canvaHomeSettings .homeSettingsIcon{width:68px!important;height:68px!important;border-radius:20px!important}
+      [data-screen="home"] .canvaHomeSettings span{font-size:12px!important}
+    }
+
 </style>
 </head>
 <body>
