@@ -1405,6 +1405,27 @@
     [data-screen="home"]{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;align-content:start!important;justify-items:center!important;gap:24px 10px!important}
     [data-screen="home"] .crayonHomeHero{grid-column:1/-1!important}
 
+
+    /* Rebuild navigation · class choice screen */
+    [data-screen="classChoice"]{background:#fff!important;min-height:calc(100dvh - 80px)!important;padding:calc(14px + env(safe-area-inset-top)) 18px 28px!important}
+    .classChoiceHeader{display:flex;align-items:flex-start;gap:13px;max-width:680px;margin:4px auto 30px}
+    .classChoiceHeader .back{flex:none;margin-top:4px}
+    .classChoiceHeader h1{font-size:25px;line-height:1.25;margin:2px 0 5px;color:#303946}
+    .classChoiceHeader .eyebrow{margin:0;color:#8c9aaa;font-size:10px;font-weight:850;letter-spacing:.14em}
+    .classChoiceDescription{margin:0;color:#7c8793;font-size:13px}
+    .classChoiceActions{display:grid;gap:14px;max-width:680px;margin:0 auto}
+    .classChoiceAction{width:100%;display:grid;grid-template-columns:54px minmax(0,1fr) 20px;align-items:center;gap:13px;min-height:104px;padding:17px;text-align:left;border:1px solid #e8edf2;border-radius:20px;background:#fff;color:#354150;box-shadow:0 3px 12px rgba(33,48,65,.045)}
+    .classChoiceAction.create{border-color:#f2dce2;background:linear-gradient(110deg,#fff8fa,#fff)}
+    .classChoiceAction.saved{border-color:#dce8f5;background:linear-gradient(110deg,#f7fbff,#fff)}
+    .classChoiceIcon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:28px;font-weight:600}
+    .classChoiceAction.create .classChoiceIcon{background:#fde9ef;color:#c96e8a}
+    .classChoiceAction.saved .classChoiceIcon{background:#e7f1fc;color:#5a8fc2}
+    .classChoiceAction b{display:block;font-size:16px;font-weight:850;margin-bottom:5px}
+    .classChoiceAction small{display:block;font-size:11px;line-height:1.5;color:#7d8792}
+    .classChoiceArrow{font-size:25px;color:#a5afb9}
+    .classChoiceAction:active{transform:scale(.99)}
+    @media(min-width:650px){.classChoiceActions{grid-template-columns:repeat(2,minmax(0,1fr))}.classChoiceAction{grid-template-columns:48px minmax(0,1fr);min-height:150px}.classChoiceArrow{display:none}}
+
 </style>
 </head>
 <body>
@@ -1432,6 +1453,25 @@
       <div class="crayonHomeHero"><h1 class="crayonTitle"><img src="./logo.png" alt="おもいでぶっく"></h1><span class="crayonYear" id="crayonHomeYear">2026年度</span></div>
       <div class="crayonClassGrid" id="crayonClassGrid" aria-label="クラス選択"></div>
       <button type="button" class="canvaHomeSettings" data-go="admin" aria-label="設定・管理"><img class="homeSettingsIcon" src="./settings-icon.svg?v=2" alt="" aria-hidden="true" width="21" height="21"><span>設定・管理</span></button>
+    </section>
+
+    <section class="screen" data-screen="classChoice">
+      <div class="classChoiceHeader">
+        <button type="button" class="back" id="classChoiceBack" aria-label="クラス一覧に戻る">‹</button>
+        <div><p class="eyebrow">CLASS WORKSPACE</p><h1 id="classChoiceTitle">クラス</h1><p class="classChoiceDescription">何をするか選んでね</p></div>
+      </div>
+      <div class="classChoiceActions">
+        <button type="button" class="classChoiceAction create" id="classChoiceCreate">
+          <span class="classChoiceIcon" aria-hidden="true">＋</span>
+          <span><b>新しく作る</b><small>写真を選んでアルバムを作成</small></span>
+          <span class="classChoiceArrow" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="classChoiceAction saved" id="classChoiceSaved">
+          <span class="classChoiceIcon" aria-hidden="true">▤</span>
+          <span><b>保存済みを見る</b><small>作成済みのページを開く・続きから編集</small></span>
+          <span class="classChoiceArrow" aria-hidden="true">›</span>
+        </button>
+      </div>
     </section>
 
     <section class="screen" data-screen="classWorkspace">
@@ -1695,7 +1735,7 @@
   function cls(id){return CLASSES.find(c=>c.id===id)||CLASSES[0]}
   function escapeHtml(s=''){return s.replace(/[&<>'"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[m]))}
 
-  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=!state.setupCompleted || screen==='setup' || screen==='pageCreate' || isEditor;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview'){state=migrateState(state);renderAlbumPreview();} if(screen==='coverEdit')renderCoverEditor(); if(screen==='backCoverEdit')renderBackCoverEditor(); if(screen==='growthEdit')renderGrowthEditor(); if(screen==='messageEdit')renderMessageEditor(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
+  function show(screen){const isEditor=screen==='editor';document.body.classList.toggle('editing',isEditor);$('#app').classList.toggle('editorMode',isEditor);$$('.screen').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));$('#footerNav').hidden=true;window.scrollTo({top:0,behavior:'instant'}); if(screen==='home'||screen==='classWorkspace')renderHome(); if(screen==='admin'){} if(screen==='photoAdmin')renderPhotoAdmin(); if(screen==='albumPreview'){state=migrateState(state);renderAlbumPreview();} if(screen==='coverEdit')renderCoverEditor(); if(screen==='backCoverEdit')renderBackCoverEditor(); if(screen==='growthEdit')renderGrowthEditor(); if(screen==='messageEdit')renderMessageEditor(); if(screen==='yearAdmin')renderYearAdmin(); if(screen==='archiveView')renderArchiveView(); if(screen==='backupAdmin'){$('#backupStatus').textContent='';} if(screen==='classIcons')renderClassIcons(); if(screen==='childClasses')renderChildClasses(); if(screen==='childList')renderChildList(); if(screen==='childDetail')renderChildDetail(); if(screen==='bulkRegister')renderBulk(); if(screen==='pageSettings')renderPageSettings(); if(screen==='pageCreate')renderPageDraft();if(screen==='photoManage')renderPhotoManagement();if(screen==='photoSort')renderPhotoSorting(); refreshNav(screen);}
   function refreshNav(screen){$$('.navBtn').forEach(b=>b.classList.toggle('active',b.dataset.go===screen));}
   function refreshHeader(){const c=cls(state.selectedClassId);$('#headerSub').textContent=state.setupCompleted?`${state.year}年度・${c.name}`:'Canva UI版 v0.2';}
 
@@ -1712,7 +1752,9 @@
     }).join('');
     grid.querySelectorAll('[data-crayon-class]').forEach(button=>button.addEventListener('click',()=>{
       state.selectedClassId=button.dataset.crayonClass;currentClassId=state.selectedClassId;
-      saveState();show('classWorkspace');
+      saveState();
+      const title=$('#classChoiceTitle');if(title)title.textContent=cls(state.selectedClassId).name;
+      show('classChoice');
     }));
     // Fixed Canva homepage PNGs; uploaded class icons remain in storage unchanged.
   }
@@ -1895,6 +1937,7 @@
     const c=cls(state.selectedClassId);
     $('#workspaceClassTitle').textContent=c.name+'のページ';
     $('#workspaceYear').textContent=state.year+'年度';
+    const choiceTitle=$('#classChoiceTitle');if(choiceTitle)choiceTitle.textContent=c.name;
     const pages=state.pages.filter(p=>p.classId===state.selectedClassId);
     renderSectionList(pages);
   }
@@ -3440,7 +3483,10 @@
   function renderPageSettingsSummary(){$('#adminSettingsSummary').textContent=`現在の設定：${$('#adminClass').selectedOptions[0].textContent}・${$('#adminMode').selectedOptions[0].textContent}・1人${$('#adminCount').value}枚・候補上限${$('#adminCandidateLimit').value}枚`}
 
   $$('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
-  $('#backToClassHome').addEventListener('click',()=>show('home'));
+  $('#backToClassHome').addEventListener('click',()=>show('classChoice'));
+  $('#classChoiceBack').addEventListener('click',()=>show('home'));
+  $('#classChoiceCreate').addEventListener('click',openPageCreate);
+  $('#classChoiceSaved').addEventListener('click',()=>show('classWorkspace'));
   $('#photoBack').addEventListener('click',()=>show(photoManagementFromAdmin?'photoAdmin':'classWorkspace'));
   $('#photoManageInput').addEventListener('change',e=>{const files=[...(e.target.files||[])];e.target.value='';addManagedPhotos(files)});
   $('#photoManageRemove').addEventListener('click',removeManagedPhotos);
