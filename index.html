@@ -1522,6 +1522,67 @@
       .screen.editor .piconPanel.open{transform:translateX(-50%) translateY(0)!important}
     }
 
+
+    /* ===== Omoide Book redesign · Phase 4: compact app-icon home (no bottom tabs) ===== */
+    [data-screen="home"]{
+      display:flex!important;flex-direction:column!important;align-items:center!important;
+      padding:calc(28px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom))!important;
+      background:#fff!important
+    }
+    [data-screen="home"] .crayonHomeHero{width:100%!important;max-width:430px!important;margin:0 auto 30px!important;padding:0!important;text-align:center!important}
+    [data-screen="home"] .crayonDoodles{display:none!important}
+    [data-screen="home"] .crayonTitle{margin:0!important;line-height:1.2!important}
+    [data-screen="home"] .crayonTitle img{display:block!important;width:170px!important;max-width:70%!important;max-height:48px!important;margin:0 auto!important;object-fit:contain!important}
+    [data-screen="home"] .crayonTagline,[data-screen="home"] .crayonHeading{display:none!important}
+    [data-screen="home"] .crayonYear{margin-top:12px!important;padding:4px 10px!important;border:0!important;border-radius:7px!important;background:#f5f6f8!important;color:#737e89!important;font-size:11px!important;font-weight:700!important}
+    [data-screen="home"] .crayonClassGrid{
+      display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+      align-content:start!important;justify-items:center!important;gap:24px 10px!important;
+      width:100%!important;max-width:420px!important;margin:0 auto!important
+    }
+    [data-screen="home"] .crayonClassCard{
+      display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-start!important;
+      width:100%!important;min-width:0!important;min-height:0!important;aspect-ratio:auto!important;
+      gap:8px!important;padding:0!important;overflow:visible!important;
+      border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+      color:#343d48!important;text-align:center!important;transition:transform .12s ease!important
+    }
+    [data-screen="home"] .crayonClassCard::before{display:none!important}
+    [data-screen="home"] .crayonClassCard:active{transform:scale(.96)!important;box-shadow:none!important}
+    [data-screen="home"] .crayonClassCard .classFlower{
+      display:flex!important;align-items:center!important;justify-content:center!important;
+      width:58px!important;height:58px!important;min-height:58px!important;padding:0!important;
+      border:1px solid #edf0f3!important;border-radius:17px!important;
+      background:#fff!important;box-shadow:0 2px 5px rgba(30,42,55,.045)!important;
+      font-size:30px!important;filter:none!important
+    }
+    [data-screen="home"] .crayonClassCard .classFlower img{
+      display:block!important;width:42px!important;height:42px!important;max-width:82%!important;max-height:82%!important;
+      object-fit:contain!important
+    }
+    [data-screen="home"] .crayonClassCard b{
+      display:block!important;max-width:100%!important;margin:0!important;padding:0!important;
+      font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif!important;
+      font-size:11px!important;line-height:1.4!important;font-weight:750!important;color:#414b57!important;
+      overflow-wrap:anywhere!important
+    }
+    [data-screen="home"] .crayonClassCard small{display:none!important}
+    [data-screen="home"] .canvaHomeSettings{
+      display:flex!important;align-items:center!important;justify-content:center!important;
+      width:40px!important;height:40px!important;min-height:40px!important;margin:32px auto 0!important;padding:8px!important;
+      border:1px solid #edf0f3!important;border-radius:13px!important;background:#fff!important;
+      box-shadow:none!important;color:#687482!important;font-size:0!important
+    }
+    [data-screen="home"] .canvaHomeSettings img{width:20px!important;height:20px!important;object-fit:contain!important}
+    @media(min-width:600px){
+      [data-screen="home"]{padding-top:42px!important}
+      [data-screen="home"] .crayonHomeHero{margin-bottom:38px!important}
+      [data-screen="home"] .crayonClassGrid{gap:30px 18px!important}
+      [data-screen="home"] .crayonClassCard .classFlower{width:68px!important;height:68px!important;border-radius:20px!important}
+      [data-screen="home"] .crayonClassCard .classFlower img{width:49px!important;height:49px!important}
+      [data-screen="home"] .crayonClassCard b{font-size:12px!important}
+    }
+
 </style>
 </head>
 <body>
