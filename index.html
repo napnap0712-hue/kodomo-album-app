@@ -26,6 +26,13 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .previewGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}.previewGrid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;background:#f2f4f6}
 .savedList{display:grid;gap:10px}.savedItem{border:1px solid #e8edf2;border-radius:15px;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:12px}.muted{color:#7b8794;font-size:12px;line-height:1.7}.empty{padding:30px 15px;text-align:center;border-radius:18px;background:#f8fafb;color:#778391;font-size:13px}
 @media(min-width:600px){.app{padding-top:38px}.flower{width:76px;height:76px}.flower img{width:56px;height:56px}.flowerGrid{gap:32px 18px}.actionList{grid-template-columns:repeat(2,minmax(0,1fr))}.action{grid-template-columns:48px 1fr;min-height:150px}.arrow{display:none}}
+
+.editorPanel{display:grid;gap:14px}.field{display:grid;gap:7px;font-size:12px;font-weight:750;color:#596575}.field input,.field select{width:100%;border:1px solid #dfe5eb;border-radius:12px;padding:12px;background:#fff;color:#303946}
+.spread{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:#d9dfe6;padding:8px;border-radius:16px;min-height:210px}
+.pageSide{position:relative;overflow:hidden;background:#fff;border-radius:5px;min-height:194px;padding:10px;display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center}
+.pageSide h3{font-size:13px;text-align:center;margin:0;overflow-wrap:anywhere}.pageSide img{width:100%;max-height:135px;object-fit:contain;border-radius:4px}.pageSide p{font-size:10px;text-align:center;color:#687585;margin:0}
+.editorActions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.editorActions button{min-width:0}.notice{padding:12px;border-radius:12px;background:#f5f8fb;color:#697586;font-size:11px;line-height:1.7}
+
 </style>
 </head>
 <body>
@@ -47,6 +54,16 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button id="continueEdit" class="primary wide" disabled>選んだ写真で続ける</button>
 <p class="muted">写真選択の試作画面です。編集・保存機能と既存データは、互換性を確認してから接続します。</p>
 </section>
+<section class="screen" data-screen="editor">
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div></div>
+<div class="editorPanel">
+<label class="field">アルバムのタイトル<input id="albumTitle" maxlength="80" placeholder="例：春のおさんぽ"></label>
+<label class="field">背景<select id="pageBackground"><option value="#ffffff">白</option><option value="#fff5f7">さくら</option><option value="#f2f8ff">そら</option><option value="#fff9e9">クリーム</option><option value="#f2f8f1">若葉</option></select></label>
+<div class="spread" id="spreadPreview"><div class="pageSide" id="leftPage"><h3>おもいで</h3><p>写真を選ぶとここに表示されます</p></div><div class="pageSide" id="rightPage"><h3>アルバム</h3><p>見開きプレビュー</p></div></div>
+<div class="editorActions"><button class="secondary" id="saveDraft">下書きを保存</button><button class="primary" id="exportImage">画像を書き出す</button></div>
+<p id="editorStatus" class="notice">写真やタイトルはこの端末内で扱います。下書き保存はこのブラウザの保存領域を使います。</p>
+</div>
+</section>
 <section class="screen" data-screen="saved">
 <div class="top"><button class="back" data-back="classChoice">‹</button><div class="topText"><p class="brand">SAVED ALBUMS</p><h1>保存済みを見る</h1><p class="lead" id="savedClassLabel">このクラスのアルバム</p></div></div>
 <div id="savedList" class="savedList"></div><p class="muted">旧バージョンの保存データは削除せず、読み込み方法を確認してから接続します。</p>
@@ -66,21 +83,31 @@ const classes=[
 {id:'deigo',name:'でいご組',flower:'deigo.png'},
 {id:'sakura',name:'さくら組',flower:'sakura.png'}
 ];
-let selected=classes[1],files=[];
+let selected=classes[1],files=[],editingId=null,previewUrls=[];
+const DB_NAME='omoide-rebuild-db-v1',STORE_NAME='drafts';
 const $=selector=>document.querySelector(selector);
+function openDraftDb(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE_NAME))req.result.createObjectStore(STORE_NAME,{keyPath:'id'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+async function getAllDrafts(){const db=await openDraftDb();return new Promise((resolve,reject)=>{const req=db.transaction(STORE_NAME,'readonly').objectStore(STORE_NAME).getAll();req.onsuccess=()=>{db.close();resolve(req.result||[]);};req.onerror=()=>{db.close();reject(req.error);};});}
+async function putDraft(draft){const db=await openDraftDb();return new Promise((resolve,reject)=>{const tx=db.transaction(STORE_NAME,'readwrite');tx.objectStore(STORE_NAME).put(draft);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(tx.error);};});}
 function show(id){document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.dataset.screen===id));window.scrollTo({top:0,behavior:'instant'});if(id==='saved')renderSaved();}
 function renderHome(){
 $('#flowerGrid').innerHTML=classes.map(c=>'<button type="button" class="tile" data-class="'+c.id+'"><span class="flower"><img src="./'+c.flower+'" alt=""></span><span>'+c.name+'</span></button>').join('')+'<button type="button" class="tile" id="settingsButton"><span class="flower settingsMark" aria-hidden="true">⚙</span><span>設定</span></button>';
 document.querySelectorAll('[data-class]').forEach(btn=>btn.addEventListener('click',()=>{selected=classes.find(c=>c.id===btn.dataset.class)||classes[1];$('#classTitle').textContent=selected.name;$('#savedClassLabel').textContent=selected.name+'のアルバム';show('classChoice')}));
 $('#settingsButton').addEventListener('click',()=>show('settings'));
 }
-function renderSaved(){const items=JSON.parse(localStorage.getItem('omoide-rebuild-drafts-v1')||'[]').filter(item=>item.classId===selected.id);$('#savedList').innerHTML=items.length?items.map(item=>'<article class="savedItem"><span><b>'+escapeText(item.name)+'</b><br><small class="muted">'+new Date(item.updatedAt).toLocaleDateString('ja-JP')+'</small></span><span class="muted">準備中</span></article>').join(''):'<div class="empty">このクラスの保存済みアルバムはまだありません。</div>';}
+async function renderSaved(){try{const items=(await getAllDrafts()).filter(item=>item.classId===selected.id);$('#savedList').innerHTML=items.length?items.map(item=>'<article class="savedItem"><span><b>'+escapeText(item.title||'無題のアルバム')+'</b><br><small class="muted">'+new Date(item.updatedAt).toLocaleDateString('ja-JP')+' ・ '+item.photos.length+'枚</small></span><button class="secondary" data-open-draft="'+escapeText(item.id)+'">開く</button></article>').join(''):'<div class="empty">このクラスの保存済みアルバムはまだありません。</div>';document.querySelectorAll('[data-open-draft]').forEach(btn=>btn.addEventListener('click',()=>loadDraft(btn.dataset.openDraft)));}catch(error){$('#savedList').innerHTML='<div class="empty">保存済み一覧を読み込めませんでした。このブラウザの保存機能を確認してください。</div>';}}
 function escapeText(value){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 document.querySelectorAll('[data-back]').forEach(btn=>btn.addEventListener('click',()=>show(btn.dataset.back)));
 $('#createNew').addEventListener('click',()=>{files=[];$('#photoInput').value='';$('#photoPreviews').innerHTML='';$('#photoCount').textContent='写真はまだ選択されていません。';$('#continueEdit').disabled=true;show('photoPick');});
 $('#openSaved').addEventListener('click',()=>show('saved'));
 $('#photoInput').addEventListener('change',event=>{files=[...event.target.files];$('#photoPreviews').innerHTML='';files.forEach(file=>{const img=document.createElement('img');img.alt=file.name;img.src=URL.createObjectURL(file);$('#photoPreviews').appendChild(img);});$('#photoCount').textContent=files.length+'枚の写真を選択中';$('#continueEdit').disabled=files.length===0;});
-$('#continueEdit').addEventListener('click',()=>alert('写真選択画面の確認用です。編集・保存機能は次の段階で接続します。選択した写真はまだ保存していません。'));
+$('#continueEdit').addEventListener('click',()=>{if(!files.length)return;editingId=null;$('#albumTitle').value='';$('#editorStatus').textContent=files.length+'枚の写真を編集中です。下書き保存でこの端末に保存できます。';renderSpread(files.map(file=>({name:file.name,url:URL.createObjectURL(file)})));show('editor');});
+function renderSpread(photos){previewUrls.forEach(url=>URL.revokeObjectURL(url));previewUrls=[];const left=$('#leftPage'),right=$('#rightPage');[left,right].forEach((page,index)=>{page.innerHTML='';page.style.background=$('#pageBackground').value;const title=document.createElement('h3');title.textContent=$('#albumTitle').value||selected.name+'の思い出';page.appendChild(title);const photo=photos[index];if(photo){const img=document.createElement('img');img.src=photo.url;img.alt=photo.name||'アルバムの写真';page.appendChild(img);}const caption=document.createElement('p');caption.textContent=photos[index+2]?.name||'おもいでブック';page.appendChild(caption);});}
+$('#albumTitle').addEventListener('input',()=>renderSpread(files.map(file=>({name:file.name,url:URL.createObjectURL(file)}))));
+$('#pageBackground').addEventListener('change',()=>{document.querySelectorAll('.pageSide').forEach(page=>page.style.background=$('#pageBackground').value);});
+async function loadDraft(id){try{const item=(await getAllDrafts()).find(draft=>draft.id===id);if(!item)return;editingId=item.id;selected=classes.find(c=>c.id===item.classId)||selected;$('#albumTitle').value=item.title||'';$('#pageBackground').value=item.background||'#ffffff';files=item.photos.map(photo=>new File([photo.blob],photo.name,{type:photo.type}));renderSpread(item.photos.map(photo=>({name:photo.name,url:URL.createObjectURL(photo.blob)})));$('#editorStatus').textContent='保存済みの下書きを開きました。';show('editor');}catch(error){alert('下書きを開けませんでした。');}}
+$('#saveDraft').addEventListener('click',async()=>{try{const photos=await Promise.all(files.map(async file=>({name:file.name,type:file.type,blob:file})));const draft={id:editingId||('draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),classId:selected.id,title:$('#albumTitle').value.trim()||'無題のアルバム',background:$('#pageBackground').value,photos,updatedAt:Date.now()};await putDraft(draft);editingId=draft.id;$('#editorStatus').textContent='この端末に下書きを保存しました。';}catch(error){$('#editorStatus').textContent='保存できませんでした。写真の容量やブラウザの保存設定を確認してください。';}});
+$('#exportImage').addEventListener('click',async()=>{try{const canvas=document.createElement('canvas');canvas.width=1600;canvas.height=900;const ctx=canvas.getContext('2d');ctx.fillStyle=$('#pageBackground').value;ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#303946';ctx.textAlign='center';ctx.font='bold 42px sans-serif';ctx.fillText($('#albumTitle').value||selected.name+'の思い出',800,75);const count=Math.min(files.length,6);for(let i=0;i<count;i++){const img=await createImageBitmap(files[i]);const col=i%3,row=Math.floor(i/3);const x=45+col*510,y=115+row*370,w=480,h=330,scale=Math.min(w/img.width,h/img.height);ctx.drawImage(img,x+(w-img.width*scale)/2,y+(h-img.height*scale)/2,img.width*scale,img.height*scale);img.close();}const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('export failed');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='omoide-book.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('#editorStatus').textContent='画像を書き出しました（最大6枚の簡易レイアウト）。';}catch(error){$('#editorStatus').textContent='画像を書き出せませんでした。もう一度お試しください。';}});
 renderHome();
 })();
 </script>
