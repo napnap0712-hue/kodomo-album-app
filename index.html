@@ -4,26 +4,85 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<title>おもいでブック｜メンテナンス中</title>
+<title>おもいでブック</title>
 <style>
-:root{color-scheme:light;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;color:#344054;background:#fff}
-*{box-sizing:border-box}
-body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 1px 1px,#e9edf2 1px,transparent 1.5px) 0 0/18px 18px,#fff}
-main{width:min(100%,440px);text-align:center;background:rgba(255,255,255,.96);padding:36px 24px;border:1px solid #eef0f3;border-radius:28px;box-shadow:0 12px 36px rgba(30,42,55,.06)}
-.brand{font-size:clamp(26px,7vw,36px);font-weight:900;letter-spacing:.04em;color:#9bbdc4;margin:0 0 24px}
-.flower{font-size:38px;margin:0 0 12px}
-h1{font-size:22px;line-height:1.5;margin:0 0 12px}
-p{font-size:14px;line-height:1.9;color:#697586;margin:0}
-.note{margin-top:22px;padding:14px;border-radius:14px;background:#f7f9fb;font-size:12px}
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;color:#303946;background:#fff;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;background:#fff}button,input{font:inherit}button{cursor:pointer}
+.app{min-height:100dvh;padding:calc(24px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));max-width:780px;margin:auto}
+.screen{display:none}.screen.active{display:block}
+.brand{font-size:11px;letter-spacing:.14em;font-weight:850;color:#9aa8b5;margin:0 0 10px}
+h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size:13px;line-height:1.8;color:#7b8794;margin:0 0 28px}
+.homeHeader{margin:10px 0 30px}.flowerGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 12px;max-width:460px}
+.tile{display:flex;flex-direction:column;align-items:center;gap:9px;border:0;background:transparent;color:#414b57;min-width:0;padding:0}
+.flower{width:66px;height:66px;border:1px solid #edf0f3;border-radius:20px;background:#fff;display:grid;place-items:center;box-shadow:0 3px 10px #1e2a3709}
+.flower img{width:49px;height:49px;object-fit:contain}.tile span:last-child{font-size:12px;font-weight:750;text-align:center;line-height:1.4}
+.settingsMark{font-size:27px;color:#8a97a5}.back{border:0;background:#f5f7f9;border-radius:12px;width:40px;height:40px;font-size:24px;color:#536170;flex:none}
+.top{display:flex;align-items:flex-start;gap:13px;margin:0 0 28px}.topText{padding-top:2px}
+.actionList{display:grid;gap:13px}.action{width:100%;display:grid;grid-template-columns:54px 1fr 18px;align-items:center;gap:14px;text-align:left;border:1px solid #e8edf2;border-radius:20px;padding:17px;background:#fff;color:#303946;min-height:104px}
+.actionIcon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px;background:#f8e9ee;color:#bc7187}.action.saved .actionIcon{background:#eaf2fc;color:#648fc0}
+.action b{display:block;font-size:16px;margin-bottom:5px}.action small{display:block;color:#7b8794;font-size:12px;line-height:1.5}.arrow{font-size:24px;color:#a4aeb8}
+.primary,.secondary{border:0;border-radius:14px;padding:14px 18px;font-weight:800}.primary{background:#303946;color:#fff}.secondary{background:#f3f5f7;color:#44505d}.wide{width:100%}
+.drop{display:block;border:1.5px dashed #d7dfe7;border-radius:20px;padding:26px 16px;text-align:center;background:#fbfcfd}.drop strong{display:block;margin-bottom:8px}.drop p{font-size:12px;color:#7b8794;line-height:1.7}.drop input{display:block;margin:16px auto 0;max-width:100%}
+.previewGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}.previewGrid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;background:#f2f4f6}
+.savedList{display:grid;gap:10px}.savedItem{border:1px solid #e8edf2;border-radius:15px;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:12px}.muted{color:#7b8794;font-size:12px;line-height:1.7}.empty{padding:30px 15px;text-align:center;border-radius:18px;background:#f8fafb;color:#778391;font-size:13px}
+@media(min-width:600px){.app{padding-top:38px}.flower{width:76px;height:76px}.flower img{width:56px;height:56px}.flowerGrid{gap:32px 18px}.actionList{grid-template-columns:repeat(2,minmax(0,1fr))}.action{grid-template-columns:48px 1fr;min-height:150px}.arrow{display:none}}
 </style>
 </head>
 <body>
-<main>
-<p class="brand">おもいでブック</p>
-<div class="flower" aria-hidden="true">🌼</div>
-<h1>ただいまリニューアル準備中です</h1>
-<p>使いやすいアプリに作り直すため、いったん公開をお休みしています。<br>準備ができたら、またお知らせします。</p>
-<p class="note">このページへの切り替えでは、アプリの保存データや写真を削除していません。再開まで、ブラウザのデータやアプリの保存領域を消去しないでください。</p>
+<main class="app">
+<section class="screen active" data-screen="home">
+<header class="homeHeader"><p class="brand">OMOIDE BOOK</p><h1>おもいでブック</h1><p class="lead">クラスを選んで、思い出のアルバムを作ろう。</p></header>
+<div class="flowerGrid" id="flowerGrid"></div>
+</section>
+<section class="screen" data-screen="classChoice">
+<div class="top"><button class="back" data-back="home" aria-label="戻る">‹</button><div class="topText"><p class="brand">CLASS</p><h1 id="classTitle">クラス</h1><p class="lead">何をするか選んでね。</p></div></div>
+<div class="actionList">
+<button class="action" id="createNew"><span class="actionIcon">＋</span><span><b>新しく作る</b><small>写真を選んでアルバムを作成</small></span><span class="arrow">›</span></button>
+<button class="action saved" id="openSaved"><span class="actionIcon">▤</span><span><b>保存済みを見る</b><small>作成済みのアルバムを開く</small></span><span class="arrow">›</span></button>
+</div></section>
+<section class="screen" data-screen="photoPick">
+<div class="top"><button class="back" data-back="classChoice">‹</button><div class="topText"><p class="brand">NEW ALBUM</p><h1>写真を選ぶ</h1><p class="lead">写真を選んでから、アルバムの設定や編集に進めます。</p></div></div>
+<label class="drop" for="photoInput"><strong>＋ 写真を追加</strong><p>端末から写真を選択できます。選んだ写真はこの画面でプレビューします。</p><input id="photoInput" type="file" accept="image/*" multiple></label>
+<div id="photoPreviews" class="previewGrid"></div><p id="photoCount" class="muted">写真はまだ選択されていません。</p>
+<button id="continueEdit" class="primary wide" disabled>選んだ写真で続ける</button>
+<p class="muted">写真選択の試作画面です。編集・保存機能と既存データは、互換性を確認してから接続します。</p>
+</section>
+<section class="screen" data-screen="saved">
+<div class="top"><button class="back" data-back="classChoice">‹</button><div class="topText"><p class="brand">SAVED ALBUMS</p><h1>保存済みを見る</h1><p class="lead" id="savedClassLabel">このクラスのアルバム</p></div></div>
+<div id="savedList" class="savedList"></div><p class="muted">旧バージョンの保存データは削除せず、読み込み方法を確認してから接続します。</p>
+</section>
+<section class="screen" data-screen="settings">
+<div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">SETTINGS</p><h1>設定</h1><p class="lead">年度・クラス・保存方法などを整えます。</p></div></div>
+<div class="empty">設定項目は旧データとの互換性を確認しながら順に移植します。</div>
+</section>
 </main>
+<script>
+(()=>{
+const classes=[
+{id:'tanpopo',name:'たんぽぽ組',flower:'tanpopo.png'},
+{id:'tulip',name:'ちゅうりっぷ組',flower:'tulip.png'},
+{id:'cosmos',name:'コスモス組',flower:'cosmos.png'},
+{id:'canna',name:'カンナ組',flower:'canna.png'},
+{id:'deigo',name:'でいご組',flower:'deigo.png'},
+{id:'sakura',name:'さくら組',flower:'sakura.png'}
+];
+let selected=classes[1],files=[];
+const $=selector=>document.querySelector(selector);
+function show(id){document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.dataset.screen===id));window.scrollTo({top:0,behavior:'instant'});if(id==='saved')renderSaved();}
+function renderHome(){
+$('#flowerGrid').innerHTML=classes.map(c=>'<button type="button" class="tile" data-class="'+c.id+'"><span class="flower"><img src="./'+c.flower+'" alt=""></span><span>'+c.name+'</span></button>').join('')+'<button type="button" class="tile" id="settingsButton"><span class="flower settingsMark" aria-hidden="true">⚙</span><span>設定</span></button>';
+document.querySelectorAll('[data-class]').forEach(btn=>btn.addEventListener('click',()=>{selected=classes.find(c=>c.id===btn.dataset.class)||classes[1];$('#classTitle').textContent=selected.name;$('#savedClassLabel').textContent=selected.name+'のアルバム';show('classChoice')}));
+$('#settingsButton').addEventListener('click',()=>show('settings'));
+}
+function renderSaved(){const items=JSON.parse(localStorage.getItem('omoide-rebuild-drafts-v1')||'[]').filter(item=>item.classId===selected.id);$('#savedList').innerHTML=items.length?items.map(item=>'<article class="savedItem"><span><b>'+escapeText(item.name)+'</b><br><small class="muted">'+new Date(item.updatedAt).toLocaleDateString('ja-JP')+'</small></span><span class="muted">準備中</span></article>').join(''):'<div class="empty">このクラスの保存済みアルバムはまだありません。</div>';}
+function escapeText(value){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
+document.querySelectorAll('[data-back]').forEach(btn=>btn.addEventListener('click',()=>show(btn.dataset.back)));
+$('#createNew').addEventListener('click',()=>{files=[];$('#photoInput').value='';$('#photoPreviews').innerHTML='';$('#photoCount').textContent='写真はまだ選択されていません。';$('#continueEdit').disabled=true;show('photoPick');});
+$('#openSaved').addEventListener('click',()=>show('saved'));
+$('#photoInput').addEventListener('change',event=>{files=[...event.target.files];$('#photoPreviews').innerHTML='';files.forEach(file=>{const img=document.createElement('img');img.alt=file.name;img.src=URL.createObjectURL(file);$('#photoPreviews').appendChild(img);});$('#photoCount').textContent=files.length+'枚の写真を選択中';$('#continueEdit').disabled=files.length===0;});
+$('#continueEdit').addEventListener('click',()=>alert('写真選択画面の確認用です。編集・保存機能は次の段階で接続します。選択した写真はまだ保存していません。'));
+renderHome();
+})();
+</script>
 </body>
 </html>
