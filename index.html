@@ -158,6 +158,10 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .photoThumb .photoPlace{border:1px solid #dfe5eb;border-radius:9px;background:#f7f9fb;color:#354150;padding:8px 3px;font-size:11px;font-weight:800;min-height:36px}
 @media(min-width:900px){.photoThumb{flex-basis:100px}.photoThumb>img{width:100px;height:90px}.photoThumb .photoPlace{font-size:12px}}
 
+
+@media(max-width:599px){.designToolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.designToolbar button{min-height:44px}}
+@media(min-width:900px){.designToolbar{gap:8px}.designToolbar button{min-height:42px}}
+
 </style>
 </head>
 <body>
@@ -190,7 +194,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <label class="field">ページのひとこと<input id="pageCaption" maxlength="100" placeholder="例：みんなでおさんぽ"></label>
 </div>
 <div class="photoManager"><div class="photoManagerHead"><strong>使う写真</strong><span id="photoManagerCount">0枚</span></div><div id="photoStrip" class="photoStrip"></div><label class="secondary" style="display:block;text-align:center;cursor:pointer">＋ 写真を追加<input id="editorPhotoInput" type="file" accept="image/*" multiple hidden></label></div>
-<div class="designToolbar"><button id="addTextElement" type="button">＋ 文字を追加</button><button id="addPhotoElement" type="button">＋ 写真を配置</button><button id="duplicateElement" type="button">複製</button><button id="deleteSelectedElement" type="button">削除</button></div>
+<div class="designToolbar"><button id="addTextElement" type="button">＋ 文字を追加</button><button id="addPhotoElement" type="button">＋ 写真を配置</button><button id="duplicateElement" type="button">複製</button><button id="bringForwardElement" type="button">前面へ</button><button id="sendBackwardElement" type="button">背面へ</button><button id="deleteSelectedElement" type="button">削除</button></div>
 <div class="pageNav"><button id="prevSpread" type="button">‹ 前へ</button><span id="pageIndicator">1 / 1</span><button id="nextSpread" type="button">次へ ›</button></div>
 <div class="canvasWrap"><div class="designCanvas spreadCanvas" id="designCanvas" aria-label="ドラッグして自由に配置できるページ"></div></div>
 <p class="canvasHint">文字や写真をタップして選択し、ドラッグして自由に配置できます。青い丸を動かすと大きさを変更できます。</p>
@@ -262,6 +266,9 @@ $('#addPhotoElement').addEventListener('click',addPhotoElement);
 $('#addTextElement').addEventListener('click',addTextElement);
 $('#duplicateElement').addEventListener('click',()=>{const el=activeElement();if(!el)return;const copy={...el,id:elementId(),x:Math.min(100-el.w,el.x+4),y:Math.min(100-el.h,el.y+4)};designElements.push(copy);selectedElementId=copy.id;renderSpread(files);});
 $('#deleteSelectedElement').addEventListener('click',()=>{if(!activeElement())return;designElements=designElements.filter(el=>el.id!==selectedElementId);selectedElementId=null;renderSpread(files);});
+function changeElementLayer(front){const el=activeElement();if(!el)return;const page=el.page||0;const siblings=designElements.filter(item=>(item.page||0)===page);const from=siblings.findIndex(item=>item.id===el.id);if(from<0)return;const target=front?siblings.length-1:0;if(from===target)return;siblings.splice(from,1);siblings.splice(target,0,el);let cursor=0;designElements=designElements.map(item=>(item.page||0)===page?siblings[cursor++]:item);const canvas=$('#designCanvas');const node=canvas?.querySelector('[data-element-id="'+el.id+'"]');if(node){if(front)canvas.appendChild(node);else canvas.insertBefore(node,canvas.firstChild);}$('#editorStatus').textContent=front?'選択した要素を前面に移動しました。':'選択した要素を背面に移動しました。';}
+$('#bringForwardElement').addEventListener('click',()=>changeElementLayer(true));
+$('#sendBackwardElement').addEventListener('click',()=>changeElementLayer(false));
 $('#elementColor').addEventListener('input',e=>{const el=activeElement();if(el&&el.type==='text'){el.color=e.target.value;renderSpread(files);}});
 $('#elementFontSize').addEventListener('input',e=>{const el=activeElement();if(el&&el.type==='text'){el.fontSize=Number(e.target.value);renderSpread(files);}});
 $('#elementOpacity').addEventListener('input',e=>{const el=activeElement();if(el){el.opacity=Number(e.target.value);renderSpread(files);}});
