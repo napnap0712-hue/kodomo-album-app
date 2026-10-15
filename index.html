@@ -170,6 +170,14 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 @media(max-width:599px){.layerControlGroup{grid-column:1/-1}.layerControlButtons button{min-height:44px}.layerControlTitle{font-size:12px}}
 @media(min-width:900px){.layerControlGroup{min-width:205px}}
 
+
+/* Brief visual feedback after changing stacking order; canvas itself is not redrawn */
+.designElement.layerChangedFront{animation:layerPopFront 240ms ease-out}
+.designElement.layerChangedBack{animation:layerPopBack 240ms ease-out}
+@keyframes layerPopFront{0%{filter:drop-shadow(0 0 0 rgba(65,130,235,0));transform:translateY(0) scale(1)}35%{filter:drop-shadow(0 5px 5px rgba(65,130,235,.4));transform:translateY(-7px) scale(1.025)}100%{filter:drop-shadow(0 0 0 rgba(65,130,235,0));transform:translateY(0) scale(1)}}
+@keyframes layerPopBack{0%{filter:drop-shadow(0 0 0 rgba(90,100,115,0));transform:translateY(0) scale(1)}35%{filter:drop-shadow(0 5px 5px rgba(90,100,115,.3));transform:translateY(7px) scale(.985)}100%{filter:drop-shadow(0 0 0 rgba(90,100,115,0));transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.designElement.layerChangedFront,.designElement.layerChangedBack{animation-duration:1ms}}
+
 </style>
 </head>
 <body>
@@ -274,7 +282,7 @@ $('#addPhotoElement').addEventListener('click',addPhotoElement);
 $('#addTextElement').addEventListener('click',addTextElement);
 $('#duplicateElement').addEventListener('click',()=>{const el=activeElement();if(!el)return;const copy={...el,id:elementId(),x:Math.min(100-el.w,el.x+4),y:Math.min(100-el.h,el.y+4)};designElements.push(copy);selectedElementId=copy.id;renderSpread(files);});
 $('#deleteSelectedElement').addEventListener('click',()=>{if(!activeElement())return;designElements=designElements.filter(el=>el.id!==selectedElementId);selectedElementId=null;renderSpread(files);});
-function changeElementLayer(front){const el=activeElement();if(!el)return;const page=el.page||0;const siblings=designElements.filter(item=>(item.page||0)===page);const from=siblings.findIndex(item=>item.id===el.id);if(from<0)return;const target=front?siblings.length-1:0;if(from===target)return;siblings.splice(from,1);siblings.splice(target,0,el);let cursor=0;designElements=designElements.map(item=>(item.page||0)===page?siblings[cursor++]:item);const canvas=$('#designCanvas');const node=canvas?.querySelector('[data-element-id="'+el.id+'"]');if(node){if(front)canvas.appendChild(node);else canvas.insertBefore(node,canvas.firstChild);}$('#editorStatus').textContent=front?'選択した要素を前面に移動しました。':'選択した要素を背面に移動しました。';}
+function changeElementLayer(front){const el=activeElement();if(!el){$('#editorStatus').textContent='先にページ上の写真や文字をタップして選択してください。';return;}const page=el.page||0;const siblings=designElements.filter(item=>(item.page||0)===page);const from=siblings.findIndex(item=>item.id===el.id);if(from<0)return;const target=front?siblings.length-1:0;if(from===target){$('#editorStatus').textContent=front?'この要素はすでに一番前にあります。':'この要素はすでに一番後ろにあります。';return;}siblings.splice(from,1);siblings.splice(target,0,el);let cursor=0;designElements=designElements.map(item=>(item.page||0)===page?siblings[cursor++]:item);const canvas=$('#designCanvas');if(canvas){siblings.forEach(item=>{const node=canvas.querySelector('[data-element-id="'+item.id+'"]');if(node)canvas.appendChild(node);});const node=canvas.querySelector('[data-element-id="'+el.id+'"]');if(node){node.classList.remove('layerChangedFront','layerChangedBack');void node.offsetWidth;node.classList.add(front?'layerChangedFront':'layerChangedBack');node.addEventListener('animationend',()=>node.classList.remove('layerChangedFront','layerChangedBack'),{once:true});}}$('#editorStatus').textContent=front?'写真を一番前に移動しました。重なり順が変わりました。':'写真を一番後ろに移動しました。重なり順が変わりました。';}
 $('#bringForwardElement').addEventListener('click',()=>changeElementLayer(true));
 $('#sendBackwardElement').addEventListener('click',()=>changeElementLayer(false));
 $('#elementColor').addEventListener('input',e=>{const el=activeElement();if(el&&el.type==='text'){el.color=e.target.value;renderSpread(files);}});
