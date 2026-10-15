@@ -3942,7 +3942,7 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
   }
   bootApp();
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('./sw.js?v=103',{updateViaCache:'none'}).then(reg=>reg.update()).catch(err=>console.warn('service worker update skipped',err));
+    navigator.serviceWorker.register('./sw.js?v=104',{updateViaCache:'none'}).then(reg=>reg.update()).catch(err=>console.warn('service worker update skipped',err));
   }
   window.addEventListener('pageshow',e=>{if(e.persisted){try{refreshHeader();show(state.setupCompleted?'home':'setup')}catch(err){console.warn('pageshow restore skipped',err)}}});
 })();
