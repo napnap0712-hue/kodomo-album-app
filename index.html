@@ -1200,6 +1200,24 @@
       #nativePrintHost .nativePrintSpread{display:block!important;visibility:visible!important}
       #nativePrintHost .nativePrintSpread:after{display:none!important}
     }
+
+    /* Editor image export: compact, mobile-first dialog. */
+    #imageExportDialog{width:min(92vw,430px);max-height:86dvh;border:1px solid #f0d8df;border-radius:24px;padding:20px;background:#fffdfb;color:var(--ink);box-shadow:0 18px 60px rgba(52,38,42,.24)}
+    #imageExportDialog::backdrop{background:rgba(45,36,40,.42);backdrop-filter:blur(3px)}
+    #imageExportDialog h3{font-size:19px;margin:0 0 7px;color:#654b58}
+    #imageExportDialog .imageExportHint{font-size:12px;line-height:1.55;color:var(--muted);margin:0 0 15px}
+    #imageExportDialog .imageExportFields{display:grid;gap:12px}
+    #imageExportDialog .imageExportField{display:grid;gap:6px;font-size:13px;font-weight:800}
+    #imageExportDialog select{width:100%;height:46px;border:1px solid #eadde0;border-radius:13px;background:#fff;padding:0 12px;font-size:16px;color:var(--ink)}
+    #imageExportDialog .imageExportCheck{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:800;padding:3px 0}
+    #imageExportDialog .imageExportCheck input{width:20px;height:20px;accent-color:#df8fa3}
+    #imageExportDialog .imageExportStatus{min-height:18px;font-size:12px;line-height:1.5;color:#7b5a69;margin-top:10px}
+    #imageExportDialog .imageExportActions{display:grid;grid-template-columns:1fr 1.3fr;gap:9px;margin-top:14px}
+    #imageExportDialog .imageExportActions button{min-height:47px;border-radius:14px;font-weight:900}
+    #saveImageExport{background:#e694a8;color:white;border:0}
+    #saveImageExport:disabled{opacity:.55}
+    @media(max-width:390px){#imageExportDialog{padding:16px}#imageExportDialog .imageExportActions{grid-template-columns:1fr 1fr}}
+
 </style>
 </head>
 <body>
@@ -1431,8 +1449,28 @@
         <h2 id="editorTitle">見開き編集</h2><span class="grow"></span>
         <button class="editorIcon" id="undoEdit" type="button" aria-label="元に戻す">↶</button>
         <button class="editorIcon" id="redoEdit" type="button" aria-label="やり直す">↷</button>
-        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="ブラウザの印刷機能で左右A4の2ページを保存する">見開きPDF</button><button class="editorSave" id="savePdfBleedTrial" type="button" title="印刷画面を通さずPDFファイルを作成">余白なしPDF（お試し）</button><button class="editorSave" id="saveEdit" type="button">保存</button>
+        <button class="editorIcon" id="restoreEditSave" type="button" title="前回の保存履歴" aria-label="前回の保存履歴">↺</button><button class="editorSave" id="savePdfTrial" type="button" title="ブラウザの印刷機能で左右A4の2ページを保存する">見開きPDF</button><button class="editorSave" id="savePdfBleedTrial" type="button" title="印刷画面を通さずPDFファイルを作成">余白なしPDF（お試し）</button><button class="editorSave" id="openImageExport" type="button" title="編集内容をPNG・JPEG画像として書き出す">画像出力</button><button class="editorSave" id="saveEdit" type="button">保存</button>
       </div>
+      
+      <dialog id="imageExportDialog" aria-labelledby="imageExportTitle">
+        <h3 id="imageExportTitle">🖼️ 画像として書き出す</h3>
+        <p class="imageExportHint">編集画面の見た目を画像にします。元写真や編集データは変更されません。</p>
+        <div class="imageExportFields">
+          <label class="imageExportField">書き出す範囲
+            <select id="imageExportScope"><option value="spread">見開き全体</option><option value="left">左ページ</option><option value="right">右ページ</option></select>
+          </label>
+          <label class="imageExportField">ファイル形式
+            <select id="imageExportFormat"><option value="png">PNG（高品質・透過対応）</option><option value="jpeg">JPEG（写真向け・軽量）</option></select>
+          </label>
+          <label class="imageExportField">画像サイズ
+            <select id="imageExportScale"><option value="1">標準（1倍）</option><option value="2" selected>高画質（2倍）</option><option value="3">印刷向け（3倍・容量大）</option></select>
+          </label>
+          <label class="imageExportCheck"><input id="imageExportTransparent" type="checkbox"> PNGで背景を透過する</label>
+        </div>
+        <div class="imageExportStatus" id="imageExportStatus" role="status" aria-live="polite"></div>
+        <div class="imageExportActions"><button type="button" class="ghost" id="cancelImageExport">キャンセル</button><button type="button" id="saveImageExport">画像を保存</button></div>
+      </dialog>
+
       <div class="editorStage" id="editorStage">
         <div class="spreadViewport" id="spreadViewport"><div class="spread" id="spread"><span class="pageLabel left">LEFT / A4</span><span class="pageLabel right">RIGHT / A4</span></div></div>
         <div class="piconTabs"><button class="piconTab" type="button" data-panel="photos">写真</button><button class="piconTab" type="button" data-panel="layout">レイアウト</button><button class="piconTab" type="button" data-panel="crop">切り抜き</button><button class="piconTab" type="button" data-panel="background">背景</button><button class="piconTab" type="button" data-panel="text">文字</button><button class="piconTab" type="button" data-panel="stickers">スタンプ</button></div>
@@ -3509,6 +3547,104 @@ const pageId=editingPage.id,page=state.pages.find(p=>p.id===pageId);if(!page)ret
     leaf.append(spread);
     return leaf;
   }
+
+  // Export the current editor canvas as PNG/JPEG without changing the live page.
+  function editorImageSafeName(value){
+    return String(value||'見開き').replace(/[/:*?"<>|]/g,'_').replace(/[\u0000-\u001f]/g,'').trim()||'見開き';
+  }
+  function editorImageBlob(canvas,type,quality){
+    return new Promise((resolve,reject)=>{
+      if(!canvas||typeof canvas.toBlob!=='function'){reject(new Error('このブラウザは画像書き出しに対応していません'));return}
+      canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('画像データを作成できませんでした')),type,quality);
+    });
+  }
+  async function saveEditorImage(blob,name,type){
+    const file=new File([blob],name,{type});
+    if(navigator.canShare?.({files:[file]})&&navigator.share){
+      try{await navigator.share({files:[file],title:name});return 'shared'}
+      catch(error){if(error?.name==='AbortError')return 'cancelled';console.warn('Image share fallback',error)}
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download=name;a.style.display='none';document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    return 'downloaded';
+  }
+  async function exportEditorImage(){
+    const button=$('#saveImageExport'),status=$('#imageExportStatus'),source=$('#spread');
+    if(!editingPage||!source||!source.getBoundingClientRect().width){status.textContent='先に見開き編集画面を開いてください。';return}
+    const format=$('#imageExportFormat').value,scale=Math.max(1,Math.min(3,Number($('#imageExportScale').value)||2));
+    const transparent=format==='png'&&$('#imageExportTransparent').checked,scope=$('#imageExportScope').value;
+    if(transparent&&scope!=='spread'){status.textContent='背景透過は見開き全体で書き出す場合に利用できます。';return}
+    button.disabled=true;button.textContent='画像を作成中…';status.textContent='編集画面を画像に変換しています…';
+    let canvas=null,output=null;
+    try{
+      if(typeof window.html2canvas!=='function'){
+        status.textContent='画像化機能を読み込んでいます…';
+        await loadAlbumPdfLibrary('./vendor/html2canvas.min.js',()=>typeof window.html2canvas==='function');
+      }
+      if(document.fonts?.ready)await Promise.race([document.fonts.ready,new Promise(resolve=>setTimeout(resolve,2500))]);
+      const rect=source.getBoundingClientRect();
+      canvas=await window.html2canvas(source,{
+        backgroundColor:transparent?null:'#ffffff',scale,width:Math.ceil(rect.width),height:Math.ceil(rect.height),
+        useCORS:true,allowTaint:false,logging:false,removeContainer:true,imageTimeout:12000,
+        onclone(clonedDocument){
+          const clonedSpread=clonedDocument.querySelector('#spread');
+          if(!clonedSpread)return;
+          clonedSpread.querySelectorAll('.pageLabel,.selectionFrame,.cropGuide,.resizeHandle,.trimHandle,.cropGuideHandle,.textResize,.pageGuide,.editorHandle').forEach(el=>el.remove());
+          clonedSpread.querySelectorAll('.selected,.crop-preview').forEach(el=>el.classList.remove('selected','crop-preview'));
+          clonedSpread.querySelectorAll('[contenteditable="true"]').forEach(el=>el.setAttribute('contenteditable','false'));
+          if(transparent){
+            clonedSpread.querySelectorAll('.pageBgLayer,.pageBgFrame').forEach(el=>el.remove());
+            clonedSpread.style.background='transparent';clonedSpread.style.backgroundColor='transparent';
+          }
+        }
+      });
+      if(!canvas.width||!canvas.height)throw new Error('画像サイズが正しくありません');
+      if(scope!=='spread'){
+        const half=Math.floor(canvas.width/2),left=scope==='left';
+        output=document.createElement('canvas');output.width=half;output.height=canvas.height;
+        const ctx=output.getContext('2d');if(!ctx)throw new Error('画像を切り出せませんでした');
+        ctx.drawImage(canvas,left?0:half,0,half,canvas.height,0,0,half,canvas.height);
+      }else output=canvas;
+      const mime=format==='jpeg'?'image/jpeg':'image/png';
+      const blob=await editorImageBlob(output,mime,format==='jpeg'?0.92:undefined);
+      if(blob.size<1000)throw new Error('画像ファイルの生成に失敗しました');
+      const page=state.pages.find(p=>p.id===editingPage.id);
+      const scopeName=scope==='left'?'左ページ':scope==='right'?'右ページ':'見開き';
+      const extension=format==='jpeg'?'jpg':'png';
+      const filename='思い出ブック_'+editorImageSafeName(page?.title||'見開き')+'_'+scopeName+'_'+scale+'x.'+extension;
+      status.textContent='保存先を準備しています…';
+      const result=await saveEditorImage(blob,filename,mime);
+      if(result==='cancelled'){status.textContent='共有をキャンセルしました。画像は保存されていません。';return}
+      status.textContent='画像を書き出しました（'+Math.round(blob.size/1024)+'KB）。';
+      toast('画像を書き出しました');
+    }catch(error){
+      console.error('editor image export failed',error);
+      status.textContent='画像書き出しに失敗しました：'+(error?.message||String(error));
+      toast('画像書き出しに失敗しました');
+    }finally{
+      if(canvas&&canvas!==output){canvas.width=canvas.height=0}
+      if(output){output.width=output.height=0}
+      button.disabled=false;button.textContent='画像を保存';
+    }
+  }
+  $('#openImageExport').addEventListener('click',()=>{
+    const dialog=$('#imageExportDialog');$('#imageExportStatus').textContent='';
+    if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+  });
+  $('#cancelImageExport').addEventListener('click',()=>{const dialog=$('#imageExportDialog');if(dialog.close)dialog.close();else dialog.removeAttribute('open')});
+  $('#imageExportFormat').addEventListener('change',()=>{
+    const png=$('#imageExportFormat').value==='png';
+    $('#imageExportTransparent').disabled=!png||$('#imageExportScope').value!=='spread';
+    if(!png)$('#imageExportTransparent').checked=false;
+  });
+  $('#imageExportScope').addEventListener('change',()=>{
+    const spread=$('#imageExportScope').value==='spread';
+    $('#imageExportTransparent').disabled=!spread||$('#imageExportFormat').value!=='png';
+    if(!spread)$('#imageExportTransparent').checked=false;
+  });
+  $('#saveImageExport').addEventListener('click',exportEditorImage);
+
   $('#savePdfTrial').addEventListener('click',async()=>{
     const button=$('#savePdfTrial');
     if(!editingPage||button.disabled)return;
