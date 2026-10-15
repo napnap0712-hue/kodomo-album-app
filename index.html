@@ -1335,7 +1335,105 @@
       [data-screen="classWorkspace"] .sectionList{grid-template-columns:repeat(3,minmax(0,1fr))!important}
     }
 
-  </style>
+  
+    /* ===== Omoide Book redesign · Phase 2: page creation + photo management ===== */
+    [data-screen="pageCreate"],[data-screen="photoManage"],[data-screen="photoSort"],[data-screen="photoAdmin"]{
+      box-sizing:border-box!important;width:100%!important;max-width:720px!important;margin:0 auto!important;
+      padding:16px 16px calc(28px + env(safe-area-inset-bottom))!important;background:#fff!important;color:var(--redesign-ink,#29313b)!important
+    }
+    [data-screen="pageCreate"] .topbar,[data-screen="photoAdmin"] .topbar{
+      display:flex!important;align-items:center!important;gap:10px!important;margin:0 0 18px!important;padding:0!important;background:#fff!important;border:0!important;box-shadow:none!important
+    }
+    [data-screen="pageCreate"] .topbar .back,[data-screen="photoAdmin"] .topbar .back{
+      position:static!important;flex:0 0 42px!important;width:42px!important;height:42px!important;border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:13px!important;background:#fff!important;color:#3c4652!important;font-size:26px!important
+    }
+    [data-screen="pageCreate"] .topbar h2,[data-screen="photoAdmin"] .topbar h2{
+      margin:0!important;font-size:20px!important;font-weight:800!important;color:var(--redesign-ink,#29313b)!important
+    }
+    [data-screen="pageCreate"] .card.stack{
+      gap:16px!important;padding:16px!important;border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:17px!important;background:#fff!important;box-shadow:none!important
+    }
+    [data-screen="pageCreate"] .field{gap:8px!important}
+    [data-screen="pageCreate"] .field>label{font-size:13px!important;font-weight:800!important;color:#4a5562!important}
+    [data-screen="pageCreate"] #pageTitle{
+      box-sizing:border-box!important;width:100%!important;min-height:47px!important;padding:11px 13px!important;border:1px solid #dfe4ea!important;border-radius:12px!important;background:#fff!important;font-size:16px!important;color:var(--redesign-ink,#29313b)!important
+    }
+    [data-screen="pageCreate"] .typeChoices{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+    [data-screen="pageCreate"] .typeChoice{
+      min-height:43px!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;
+      border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:11px!important;background:#fff!important;color:#586371!important;font-size:13px!important
+    }
+    [data-screen="pageCreate"] .typeChoice:has(input:checked){border-color:#9ac8f1!important;background:#f1f8ff!important;color:#276b9e!important;font-weight:800!important}
+    [data-screen="pageCreate"] .pageCreateActionsTop{display:grid!important;gap:10px!important;margin:12px 0 22px!important}
+    [data-screen="pageCreate"] .fileBtn.wide{
+      display:flex!important;align-items:center!important;justify-content:center!important;min-height:47px!important;padding:10px!important;
+      border:1px dashed #a9cce8!important;border-radius:13px!important;background:#f6fbff!important;color:#326e9c!important;font-size:14px!important;font-weight:800!important
+    }
+    [data-screen="pageCreate"] .createActions{display:grid!important;grid-template-columns:1fr 1.3fr!important;gap:9px!important}
+    [data-screen="pageCreate"] .createActions button{min-height:46px!important;border-radius:12px!important;font-weight:800!important;box-shadow:none!important}
+    [data-screen="pageCreate"] .sectionTitle{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;margin:0 0 10px!important}
+    [data-screen="pageCreate"] .sectionTitle h2{margin:0!important;font-size:17px!important;font-weight:800!important;color:var(--redesign-ink,#29313b)!important}
+    [data-screen="pageCreate"] .notice{padding:11px 12px!important;border:1px solid #e2edf6!important;border-radius:12px!important;background:#f7fbff!important;color:#526c82!important;font-size:12px!important;line-height:1.55!important}
+    [data-screen="pageCreate"] #pagePhotos{gap:9px!important}
+    [data-screen="pageCreate"] .pagePhoto{
+      display:grid!important;grid-template-columns:76px minmax(0,1fr) 34px!important;align-items:center!important;gap:10px!important;
+      padding:10px!important;border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:14px!important;background:#fff!important;box-shadow:none!important
+    }
+    [data-screen="pageCreate"] .pagePhoto>img{width:76px!important;height:76px!important;object-fit:cover!important;border-radius:10px!important}
+    [data-screen="pageCreate"] .pagePhoto .photoDetails{min-width:0!important;display:grid!important;gap:7px!important}
+    [data-screen="pageCreate"] .pagePhoto .photoName{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:11px!important;color:#75808c!important}
+    [data-screen="pageCreate"] .pagePhoto select{box-sizing:border-box!important;width:100%!important;min-height:39px!important;padding:6px 8px!important;border:1px solid #dfe4ea!important;border-radius:9px!important;background:#fff!important;color:#364250!important;font-size:13px!important}
+    [data-screen="pageCreate"] .pagePhoto .removeRow{width:32px!important;height:32px!important;border:1px solid #f1dfe3!important;border-radius:9px!important;background:#fff!important;color:#a45c6b!important;box-shadow:none!important}
+    [data-screen="photoManage"]{max-width:760px!important;padding-top:16px!important}
+    [data-screen="photoManage"] .photoManageTop{
+      position:static!important;z-index:auto!important;padding:0 0 15px!important;margin:0!important;background:#fff!important;background-image:none!important;border:0!important
+    }
+    [data-screen="photoManage"] .photoManageTop::before{display:none!important;content:none!important}
+    [data-screen="photoManage"] .photoManageBar{display:flex!important;align-items:center!important;gap:11px!important;margin:0 0 10px!important}
+    [data-screen="photoManage"] .photoManageBar .back{
+      order:0!important;flex:0 0 42px!important;width:42px!important;height:42px!important;margin:0!important;
+      border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:13px!important;background:#fff!important;color:#3c4652!important;font-size:26px!important
+    }
+    [data-screen="photoManage"] .photoManageBar h1{order:0!important;margin:0!important;font-size:20px!important;font-weight:800!important;color:var(--redesign-ink,#29313b)!important}
+    [data-screen="photoManage"] .photoManageCount{margin:0 0 13px!important;color:var(--redesign-muted,#77808b)!important;font-size:12px!important}
+    [data-screen="photoManage"] .photoManageActions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+    [data-screen="photoManage"] .photoManageActions label,[data-screen="photoManage"] .photoManageActions button{
+      box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;min-width:0!important;min-height:45px!important;
+      padding:9px 8px!important;border:1px solid #dfe7ee!important;border-radius:12px!important;background:#f7fbff!important;color:#326e9c!important;
+      box-shadow:none!important;font-size:12px!important;font-weight:800!important;line-height:1.4!important
+    }
+    [data-screen="photoManage"] .photoManageActions .photoRemove{border-color:#f0dfe3!important;background:#fff8f9!important;color:#a45c6b!important}
+    [data-screen="photoManage"] .photoManageBottom{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important;margin:12px 0 17px!important}
+    [data-screen="photoManage"] .photoManageBottom button{
+      box-sizing:border-box!important;width:100%!important;min-height:44px!important;padding:9px!important;border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:12px!important;
+      background:#fff!important;color:#485463!important;font-size:12px!important;font-weight:800!important;box-shadow:none!important
+    }
+    [data-screen="photoManage"] .photoManageBottom .editGo{border-color:#cfe9da!important;background:#f3fbf6!important;color:#337b56!important}
+    [data-screen="photoManage"] .photoManageGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important;margin:0!important}
+    [data-screen="photoManage"] .photoManageGrid>*{min-width:0!important;border-radius:11px!important}
+    [data-screen="photoManage"] .photoManageGrid img{border-radius:9px!important}
+    [data-screen="photoSort"] .sortTop{position:relative!important;display:flex!important;align-items:center!important;gap:10px!important;margin:0 0 16px!important;padding:0!important}
+    [data-screen="photoSort"] .sortTop::before{display:none!important;content:none!important}
+    [data-screen="photoSort"] .sortTop .back{order:0!important;flex:0 0 42px!important;width:42px!important;height:42px!important;margin:0!important;border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:13px!important;background:#fff!important;color:#3c4652!important}
+    [data-screen="photoSort"] .sortTop h1{order:0!important;margin:0!important;font-size:19px!important;font-weight:800!important;color:var(--redesign-ink,#29313b)!important}
+    [data-screen="photoSort"] .sortList{grid-template-columns:1fr!important;gap:9px!important}
+    [data-screen="photoSort"] .sortChild{min-height:78px!important;padding:11px!important;border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:14px!important;background:#fff!important;box-shadow:none!important;gap:11px!important}
+    [data-screen="photoSort"] .sortAvatar{width:54px!important;height:54px!important;flex-basis:54px!important;border-radius:11px!important;background:#f5f7f9!important}
+    [data-screen="photoSort"] .sortChildMain b{font-size:15px!important;font-weight:800!important;color:var(--redesign-ink,#29313b)!important}
+    [data-screen="photoSort"] .sortChildMain small{font-size:12px!important;color:var(--redesign-muted,#77808b)!important}
+    [data-screen="photoSort"] .sortFilters{gap:6px!important;padding:2px 0 12px!important}
+    [data-screen="photoSort"] .sortFilters button{min-height:36px!important;padding:7px 11px!important;border:1px solid var(--redesign-line,#e8ebef)!important;border-radius:10px!important;background:#fff!important;color:#52606e!important;font-size:12px!important}
+    [data-screen="photoAdmin"] .photoAdminClasses,[data-screen="photoAdmin"] .photoAdminSections{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+    [data-screen="photoAdmin"] .sectionTitle{margin:16px 0 10px!important}
+    [data-screen="photoAdmin"] .sectionTitle h2{font-size:16px!important;font-weight:800!important;color:var(--redesign-ink,#29313b)!important}
+    @media(max-width:390px){
+      [data-screen="pageCreate"],[data-screen="photoManage"],[data-screen="photoSort"],[data-screen="photoAdmin"]{padding-left:12px!important;padding-right:12px!important}
+      [data-screen="photoManage"] .photoManageGrid{gap:5px!important}
+      [data-screen="pageCreate"] .pagePhoto{grid-template-columns:62px minmax(0,1fr) 30px!important;gap:7px!important}
+      [data-screen="pageCreate"] .pagePhoto>img{width:62px!important;height:62px!important}
+    }
+
+</style>
 </head>
 <body>
   <main class="app" id="app">
