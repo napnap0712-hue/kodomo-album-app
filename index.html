@@ -1433,6 +1433,95 @@
       [data-screen="pageCreate"] .pagePhoto>img{width:62px!important;height:62px!important}
     }
 
+
+    /* ===== Omoide Book redesign · Phase 3: editor workspace ===== */
+    .screen.editor.active{
+      background:#f7f8fa!important;color:#29313b!important;
+      padding:calc(8px + env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important;
+      grid-template-rows:auto minmax(0,1fr)!important;gap:8px!important
+    }
+    .screen.editor .editorBar{
+      box-sizing:border-box!important;display:flex!important;flex-wrap:wrap!important;align-content:center!important;align-items:center!important;
+      gap:6px!important;width:100%!important;max-width:1100px!important;padding:5px 7px!important;margin:0 auto!important;
+      border:1px solid #e8ebef!important;border-radius:16px!important;background:#fff!important;box-shadow:0 2px 8px rgba(30,42,55,.035)!important
+    }
+    .screen.editor .editorBar h2{flex:1 1 95px!important;min-width:65px!important;font-size:13px!important;font-weight:800!important;color:#29313b!important}
+    .screen.editor .editorBar .grow{display:none!important}
+    .screen.editor .editorIcon{
+      flex:0 0 36px!important;width:36px!important;min-width:36px!important;height:36px!important;
+      border:1px solid #e5e9ee!important;border-radius:11px!important;background:#fff!important;color:#4c5866!important;box-shadow:none!important;font-size:18px!important
+    }
+    .screen.editor .editorSave{
+      flex:0 1 auto!important;min-width:0!important;min-height:36px!important;height:36px!important;padding:0 11px!important;
+      border:1px solid #e4e9ef!important;border-radius:11px!important;background:#f5f9ff!important;color:#356d9d!important;
+      box-shadow:none!important;font-size:11px!important;font-weight:800!important;white-space:nowrap!important
+    }
+    .screen.editor #saveEdit{background:#e8f6ed!important;border-color:#cfe9d9!important;color:#287348!important}
+    .screen.editor #savePdfBleedTrial{background:#fff8e9!important;border-color:#f1e1b7!important;color:#87651e!important}
+    .screen.editor .editorStage{min-height:0!important;padding:0 0 52px!important;overflow:hidden!important}
+    .screen.editor .spreadViewport{inset:0 0 0!important;overflow:hidden!important}
+    .screen.editor .spread{
+      border:1px solid #e3e7ec!important;border-radius:4px!important;
+      box-shadow:0 4px 20px rgba(35,48,62,.10)!important;background:#fff!important
+    }
+    .screen.editor .spread::after{background:linear-gradient(90deg,rgba(80,90,100,.035),rgba(80,90,100,.18),rgba(255,255,255,.8),rgba(80,90,100,.035))!important}
+    .screen.editor .pageLabel{color:#a5adb7!important;font-size:8px!important}
+    .screen.editor .piconTabs{
+      left:0!important;right:0!important;bottom:0!important;gap:6px!important;padding:5px!important;
+      border:1px solid #e8ebef!important;border-radius:15px!important;background:rgba(255,255,255,.98)!important;
+      box-shadow:0 3px 12px rgba(30,42,55,.06)!important
+    }
+    .screen.editor .piconTab{
+      flex:1 0 auto!important;min-width:0!important;height:42px!important;padding:0 10px!important;
+      border:1px solid #e6e9ee!important;border-radius:11px!important;background:#fff!important;color:#52606e!important;
+      box-shadow:none!important;font-size:11px!important;font-weight:800!important;letter-spacing:0!important
+    }
+    .screen.editor .piconTab[data-panel="photos"]{background:#f3f8ff!important;border-color:#d9e9fa!important;color:#3b76aa!important}
+    .screen.editor .piconTab[data-panel="layout"]{background:#fff8eb!important;border-color:#f2e4c8!important;color:#94702c!important}
+    .screen.editor .piconTab[data-panel="crop"]{background:#f8f6ff!important;border-color:#e6e0fa!important;color:#7565ae!important}
+    .screen.editor .piconTab[data-panel="background"]{background:#eff9f3!important;border-color:#d7eee0!important;color:#3c8058!important}
+    .screen.editor .piconTab[data-panel="text"]{background:#fff3f7!important;border-color:#f5dce5!important;color:#ad5b79!important}
+    .screen.editor .piconTab[data-panel="stickers"]{background:#f6f2ff!important;border-color:#e6dcfa!important;color:#7962aa!important}
+    .screen.editor .piconTab.active{transform:none!important;box-shadow:inset 0 0 0 1px currentColor!important}
+    .screen.editor .piconPanel{
+      left:0!important;right:0!important;bottom:51px!important;max-height:min(43dvh,360px)!important;
+      padding:12px!important;border:1px solid #e4e8ed!important;border-radius:17px!important;background:rgba(255,255,255,.99)!important;
+      box-shadow:0 -5px 22px rgba(30,42,55,.10)!important
+    }
+    .screen.editor .panelHead{margin-bottom:10px!important}
+    .screen.editor .panelHead b{font-size:14px!important;font-weight:850!important;color:#303b48!important}
+    .screen.editor .panelClose{background:#f2f4f7!important;color:#4d5966!important;border-radius:10px!important}
+    .screen.editor .candidate{border-radius:10px!important;border-color:#e6e9ee!important}
+    .screen.editor .candidate.selected{border:2px solid #5d9bd1!important}
+    .screen.editor .candidateDone{border-radius:11px!important;background:#e8f6ed!important;color:#287348!important}
+    .screen.editor .layoutCard{border-color:#e6e9ee!important;border-radius:13px!important;box-shadow:none!important}
+    .screen.editor .layoutCardTitle{font-size:12px!important;color:#344150!important}
+    .screen.editor .layoutCardDesc{font-size:10px!important;color:#77818c!important}
+    .screen.editor .editQuick{top:5px!important;padding:5px!important;border:1px solid #e6e9ee!important;border-radius:12px!important;background:#fff!important;box-shadow:0 3px 12px rgba(30,42,55,.10)!important}
+    .screen.editor .quickBtn{border-color:#e3e8ed!important;border-radius:9px!important;color:#4d5966!important}
+    .screen.editor .quickBtn.danger{background:#fff5f6!important;color:#ad4f5d!important}
+    .screen.editor .resizeHandle{border-color:#5b9bd2!important}
+    .screen.editor .trimHandle{border-color:#5b9bd2!important}
+    @media(max-width:520px){
+      .screen.editor .editorBar{gap:5px!important;padding:5px!important}
+      .screen.editor .editorBar h2{font-size:12px!important;flex:1 1 75px!important}
+      .screen.editor .editorIcon{flex-basis:32px!important;width:32px!important;min-width:32px!important;height:32px!important;border-radius:9px!important;font-size:16px!important}
+      .screen.editor .editorSave{height:32px!important;min-height:32px!important;padding:0 8px!important;font-size:10px!important}
+      .screen.editor .editorStage{padding-bottom:52px!important}
+      .screen.editor .spread{width:min(calc(100vw - 20px),calc((100dvh - 174px)*1.4142))!important}
+      .screen.editor .piconTab{height:40px!important;padding:0 8px!important;font-size:10px!important}
+      .screen.editor .piconPanel{max-height:min(40dvh,300px)!important}
+    }
+    @media(min-width:700px){
+      .screen.editor .editorBar{flex-wrap:nowrap!important;padding:6px 10px!important}
+      .screen.editor .editorBar .grow{display:block!important;flex:1 1 auto!important}
+      .screen.editor .editorBar h2{flex:0 1 180px!important}
+      .screen.editor .editorStage{padding-bottom:54px!important}
+      .screen.editor .piconTabs{left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:min(620px,80%)!important}
+      .screen.editor .piconPanel{left:50%!important;right:auto!important;transform:translateX(-50%) translateY(calc(100% + 58px))!important;width:min(640px,88vw)!important;border-radius:17px!important}
+      .screen.editor .piconPanel.open{transform:translateX(-50%) translateY(0)!important}
+    }
+
 </style>
 </head>
 <body>
