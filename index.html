@@ -1387,6 +1387,12 @@
     .screen.editor .piconTab{position:relative!important;z-index:91!important;pointer-events:auto!important;touch-action:manipulation!important}
     .screen.editor .piconPanel:not(.open){pointer-events:none!important}
 
+
+    /* Navigation model: button-driven screens only; remove global bottom navigation */
+    #footerNav,.footerNav{display:none!important;visibility:hidden!important;pointer-events:none!important}
+    .app{padding-bottom:0!important}
+    body.editing .footerNav{display:none!important}
+
 </style>
 </head>
 <body>
