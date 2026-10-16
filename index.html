@@ -427,6 +427,11 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 
 .personEditorStage{background-color:#eee;background-image:linear-gradient(45deg,#d7dce2 25%,transparent 25%),linear-gradient(-45deg,#d7dce2 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#d7dce2 75%),linear-gradient(-45deg,transparent 75%,#d7dce2 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;min-height:220px;max-height:45dvh;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;touch-action:none}
 #personEditorCanvas{display:block;max-width:100%;max-height:45dvh;touch-action:none}
+.personEditorStage{position:relative}
+#personEditorCanvas{transform-origin:center center;will-change:transform}
+.personZoomControls{display:flex;align-items:center;gap:8px;margin:8px 0}
+.personZoomControls button{min-width:45px;min-height:38px}
+.personZoomControls input{flex:1;min-width:0}
 .personEditorModes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .personEditorModes button{padding:10px 5px;font-size:13px;border-radius:9px}
 .personEditorModes button.active{background:#eaf2ff;border:2px solid #367dcb;color:#235e9d}
@@ -464,7 +469,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" id="openPhotoInspector" class="openTextInspector" hidden>✎ 写真を編集</button><button type="button" id="openTextInspector" class="openTextInspector" hidden>✎ 文字を編集</button>
 
 </div>
-<div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">「人物を選択」を押して、残したい人物を写真上でタップしてください。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><button type="button" id="personSelectTarget" class="secondary" style="width:100%;min-height:40px">👆 残す人物を選択する</button><button type="button" id="personAutoSegment" class="primary" style="width:100%;min-height:42px">🪄 自動で人物を残す</button><div class="personEditorModes"><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="50" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
+<div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">「人物を選択」を押して、残したい人物を写真上でタップしてください。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><div class="personZoomControls"><button type="button" id="personZoomOut">−</button><input id="personZoom" aria-label="表示倍率" type="range" min="100" max="500" step="25" value="100"><button type="button" id="personZoomIn">＋</button><button type="button" id="personZoomReset">100%</button><span id="personZoomLabel">100%</span></div><p class="cropEditorHelp">2本指で拡大・移動できます。拡大中も1本指でブラシ編集できます。</p><button type="button" id="personSelectTarget" class="secondary" style="width:100%;min-height:40px">👆 残す人物を選択する</button><button type="button" id="personAutoSegment" class="primary" style="width:100%;min-height:42px">🪄 自動で人物を残す</button><div class="personEditorModes"><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="50" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
 <section class="screen" data-screen="saved">
 <div class="top"><button class="back" data-back="classChoice">‹</button><div class="topText"><p class="brand">SAVED ALBUMS</p><h1>保存済みを見る</h1><p class="lead" id="savedClassLabel">このクラスのアルバム</p></div></div>
 <div id="savedList" class="savedList"></div><p class="muted">旧バージョンの保存データは削除せず、読み込み方法を確認してから接続します。</p>
@@ -694,7 +699,7 @@ $('#openPersonCutout').addEventListener('click',async()=>{
   personCanvas.width=Math.max(1,Math.round(source.naturalWidth*scale));personCanvas.height=Math.max(1,Math.round(source.naturalHeight*scale));
   personCtx.clearRect(0,0,personCanvas.width,personCanvas.height);
   personCtx.drawImage(source,0,0,personCanvas.width,personCanvas.height);
-  personOriginal=personSnapshot();personHistory=[];personFuture=[];personSelecting=false;personSelectionPoint=null;$('#personSelectTarget').textContent='👆 残す人物を選択する';personSetMode('erase');personModal.hidden=false;
+  personOriginal=personSnapshot();personHistory=[];personFuture=[];personTouches.clear();personGesture=null;personPanX=0;personPanY=0;personSetZoom(1);personSelecting=false;personSelectionPoint=null;$('#personSelectTarget').textContent='👆 残す人物を選択する';personSetMode('erase');personModal.hidden=false;
  };
  source.onerror=()=>{$('#editorStatus').textContent='写真を読み込めませんでした。';};
  source.src=el.personCutout||fileUrl(files[el.fileIndex]);
@@ -778,18 +783,60 @@ $('#personAutoSegment').addEventListener('click',async()=>{
   $('#personEditorInfo').textContent='自動透過できませんでした：'+(err.message||'読み込みエラー')+'。手動ブラシはそのまま使えます。';
  }finally{personSegmentationBusy=false;button.disabled=false;button.textContent='🪄 自動で人物を残す';}
 });
+let personZoom=1,personPanX=0,personPanY=0;
+const personTouches=new Map();let personGesture=null;
+function personUpdateZoom(){
+ personCanvas.style.transform='translate('+personPanX+'px,'+personPanY+'px) scale('+personZoom+')';
+ $('#personZoom').value=Math.round(personZoom*100);
+ $('#personZoomLabel').textContent=Math.round(personZoom*100)+'%';
+}
+function personSetZoom(value){
+ const next=Math.max(1,Math.min(5,value));if(next===1){personPanX=0;personPanY=0;}
+ personZoom=next;personUpdateZoom();
+}
+$('#personZoom').addEventListener('input',e=>personSetZoom(Number(e.target.value)/100));
+$('#personZoomIn').addEventListener('click',()=>personSetZoom(personZoom+.25));
+$('#personZoomOut').addEventListener('click',()=>personSetZoom(personZoom-.25));
+$('#personZoomReset').addEventListener('click',()=>personSetZoom(1));
+function personPoint(e){
+ const rect=personCanvas.getBoundingClientRect();
+ // getBoundingClientRect accounts for scale and translation
+ return {x:(e.clientX-rect.left)*personCanvas.width/rect.width,y:(e.clientY-rect.top)*personCanvas.height/rect.height};
+}
+function personGestureUpdate(){
+ if(personTouches.size<2)return;
+ const points=[...personTouches.values()],a=points[0],b=points[1];
+ const dist=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+ if(!personGesture){personGesture={dist,mx,my,zoom:personZoom,panX:personPanX,panY:personPanY};return;}
+ const z=Math.max(1,Math.min(5,personGesture.zoom*dist/Math.max(1,personGesture.dist)));
+ personZoom=z;personPanX=personGesture.panX+(mx-personGesture.mx);personPanY=personGesture.panY+(my-personGesture.my);
+ if(z===1){personPanX=0;personPanY=0;}
+ personUpdateZoom();
+}
 function personBrush(e){
  if(!personOriginal)return;
- const rect=personCanvas.getBoundingClientRect(),x=(e.clientX-rect.left)*personCanvas.width/rect.width,y=(e.clientY-rect.top)*personCanvas.height/rect.height;
+ const {x,y}=personPoint(e);
  const r=Number($('#personBrushSize').value)/200*Math.min(personCanvas.width,personCanvas.height);
  const base=personCtx.getImageData(0,0,personCanvas.width,personCanvas.height),pixels=base.data,original=personOriginal.data;
  const minX=Math.max(0,Math.floor(x-r)),maxX=Math.min(personCanvas.width-1,Math.ceil(x+r)),minY=Math.max(0,Math.floor(y-r)),maxY=Math.min(personCanvas.height-1,Math.ceil(y+r));
  for(let yy=minY;yy<=maxY;yy++)for(let xx=minX;xx<=maxX;xx++){if((xx-x)**2+(yy-y)**2>r*r)continue;const i=(yy*personCanvas.width+xx)*4;if(personMode==='erase')pixels[i+3]=0;else{pixels[i]=original[i];pixels[i+1]=original[i+1];pixels[i+2]=original[i+2];pixels[i+3]=original[i+3];}}
  personCtx.putImageData(base,0,0);
 }
-personCanvas.addEventListener('pointerdown',e=>{if(!personOriginal)return;if(personSelecting){const rect=personCanvas.getBoundingClientRect();personSelectionPoint={x:Math.max(0,Math.min(personCanvas.width-1,(e.clientX-rect.left)*personCanvas.width/rect.width)),y:Math.max(0,Math.min(personCanvas.height-1,(e.clientY-rect.top)*personCanvas.height/rect.height))};personSelecting=false;$('#personSelectTarget').textContent='✓ 人物を選択しました（選び直す）';$('#personEditorInfo').textContent='「自動で人物を残す」を押してください。重なっている人物は一緒に残る場合があります。';e.preventDefault();return;}personHistory.push(personSnapshot());if(personHistory.length>15)personHistory.shift();personFuture=[];personDrawing=true;personCanvas.setPointerCapture(e.pointerId);personBrush(e);e.preventDefault();});
-personCanvas.addEventListener('pointermove',e=>{if(personDrawing){personBrush(e);e.preventDefault();}});
-['pointerup','pointercancel','lostpointercapture'].forEach(t=>personCanvas.addEventListener(t,()=>{personDrawing=false;}));
+personCanvas.addEventListener('pointerdown',e=>{
+ if(!personOriginal)return;
+ personTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ personCanvas.setPointerCapture(e.pointerId);
+ if(personTouches.size>=2){personDrawing=false;personGesture=null;personGestureUpdate();e.preventDefault();return;}
+ if(personSelecting){personSelectionPoint=personPoint(e);personSelecting=false;$('#personSelectTarget').textContent='✓ 人物を選択しました（選び直す）';$('#personEditorInfo').textContent='「自動で人物を残す」を押してください。';e.preventDefault();return;}
+ personHistory.push(personSnapshot());if(personHistory.length>15)personHistory.shift();personFuture=[];personDrawing=true;personBrush(e);e.preventDefault();
+});
+personCanvas.addEventListener('pointermove',e=>{
+ if(personTouches.has(e.pointerId))personTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(personTouches.size>=2){personGestureUpdate();e.preventDefault();return;}
+ if(personDrawing){personBrush(e);e.preventDefault();}
+});
+
+['pointerup','pointercancel','lostpointercapture'].forEach(t=>personCanvas.addEventListener(t,e=>{personTouches.delete(e.pointerId);personGesture=null;personDrawing=false;}));
 $('#personErase').addEventListener('click',()=>personSetMode('erase'));
 $('#personRestore').addEventListener('click',()=>personSetMode('restore'));
 $('#personUndo').addEventListener('click',()=>{if(personHistory.length){personFuture.push(personSnapshot());personShowSnapshot(personHistory.pop());}});
