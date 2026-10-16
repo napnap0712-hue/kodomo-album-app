@@ -65,6 +65,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .canvasWrap{overflow:hidden;border:1px solid #e2e7ed;border-radius:17px;background:#eef1f5;padding:10px}
 .designCanvas{position:relative;width:100%;aspect-ratio:1.414/1;background:#fff;box-shadow:0 4px 14px #202a3714;overflow:hidden;touch-action:pan-y}
 .designCanvas.spreadCanvas:after{content:"";position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed #aeb7c2;pointer-events:none}
+.designCanvas.spreadCanvas.exportRendering:after{display:none!important;content:none!important}
 .designCanvas.singleCanvas{aspect-ratio:.707/1}.designCanvas.gridCanvas{background-image:radial-gradient(#d9dfe7 1px,transparent 1px);background-size:12px 12px}
 .designElement{position:absolute;touch-action:none;user-select:none;cursor:grab;border:1px solid transparent;display:flex;align-items:center;justify-content:center}
 .designElement.selected{border:2px solid #588ee6;z-index:20}.exportRendering .designElement.selected{border-color:transparent!important}.exportRendering .resizeHandle,.exportRendering .rotationHandle{display:none!important}.designElement img{width:100%;height:100%;object-fit:contain;pointer-events:none}
