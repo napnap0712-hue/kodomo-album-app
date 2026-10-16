@@ -470,7 +470,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" id="openPhotoInspector" class="openTextInspector" hidden>✎ 写真を編集</button><button type="button" id="openTextInspector" class="openTextInspector" hidden>✎ 文字を編集</button>
 
 </div>
-<div id="pageExportModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="ページ画像を保存"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>📸 左右ページを保存</strong><button type="button" id="pageExportClose">×</button></div><p class="cropEditorHelp">左右を別々の画像にしました。iPhoneでは画像を長押しして「写真に保存」できます。</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><strong>左ページ</strong><img id="exportLeftPreview" alt="左ページ" style="width:100%;display:block;border:1px solid #ddd"><a id="exportLeftLink" download="omoide-left.png" style="display:block;padding:12px;text-align:center">左ページを保存</a></div><div><strong>右ページ</strong><img id="exportRightPreview" alt="右ページ" style="width:100%;display:block;border:1px solid #ddd"><a id="exportRightLink" download="omoide-right.png" style="display:block;padding:12px;text-align:center">右ページを保存</a></div></div><button type="button" id="pageExportDone" class="primary" style="width:100%">閉じる</button></div></div>
+<div id="pageExportModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="ページ画像を保存"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>📸 左右ページを保存</strong><button type="button" id="pageExportClose">×</button></div><p class="cropEditorHelp">左右を別々の画像にしました。保存ボタンから共有メニューを開き、「画像を保存」または「“ファイル”に保存」を選べます。</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><strong>左ページ</strong><img id="exportLeftPreview" alt="左ページ" style="width:100%;display:block;border:1px solid #ddd"><button type="button" id="exportLeftLink" style="width:100%;padding:12px">左ページを保存</button></div><div><strong>右ページ</strong><img id="exportRightPreview" alt="右ページ" style="width:100%;display:block;border:1px solid #ddd"><button type="button" id="exportRightLink" style="width:100%;padding:12px">右ページを保存</button></div></div><button type="button" id="pageExportDone" class="primary" style="width:100%">閉じる</button></div></div>
 <div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">「写真を移動」「消しゴム」「復元ブラシ」を切り替えて手動で透過できます。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><div class="personZoomControls"><button type="button" id="personZoomOut">−</button><input id="personZoom" aria-label="表示倍率" type="range" min="100" max="500" step="25" value="100"><button type="button" id="personZoomIn">＋</button><button type="button" id="personZoomReset">100%</button><span id="personZoomLabel">100%</span></div><p class="cropEditorHelp">2本指で拡大・移動できます。「写真を移動」では1本指で移動できます。</p><div class="personEditorModes"><button type="button" id="personMove" class="active">✋ 写真を移動</button><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="50" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
 <section class="screen" data-screen="saved">
 <div class="top"><button class="back" data-back="classChoice">‹</button><div class="topText"><p class="brand">SAVED ALBUMS</p><h1>保存済みを見る</h1><p class="lead" id="savedClassLabel">このクラスのアルバム</p></div></div>
@@ -834,6 +834,29 @@ function loadExportImageLibrary(){
  }).catch(err=>{exportImageLibraryPromise=null;throw err;});
  return exportImageLibraryPromise;
 }
+const pageExportFiles={};
+async function saveExportPage(side){
+ const entry=pageExportFiles[side];if(!entry)return;
+ const button=$('#export'+side+'Link');
+ try{
+  const file=entry.file;
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+   await navigator.share({files:[file]});
+   return;
+  }
+  const link=document.createElement('a');link.href=entry.url;link.download=file.name;
+  document.body.appendChild(link);link.click();link.remove();
+  $('#editorStatus').textContent='画像をダウンロードしました。写真アプリへは画像を開いて共有から保存してください。';
+ }catch(error){
+  if(error.name!=='AbortError'){
+   console.warn('Page sharing unavailable',error);
+   const link=document.createElement('a');link.href=entry.url;link.download=entry.file.name;
+   document.body.appendChild(link);link.click();link.remove();
+  }
+ }
+}
+$('#exportLeftLink').addEventListener('click',()=>saveExportPage('Left'));
+$('#exportRightLink').addEventListener('click',()=>saveExportPage('Right'));
 function closePageExport(){ $('#pageExportModal').hidden=true; }
 $('#pageExportClose').addEventListener('click',closePageExport);
 $('#pageExportDone').addEventListener('click',closePageExport);
@@ -860,7 +883,11 @@ $('#exportImage').addEventListener('click',async()=>{
    const page=document.createElement('canvas');page.width=Math.round(full.width*portion);page.height=full.height;
    const ctx=page.getContext('2d');ctx.drawImage(full,Math.round(full.width*start),0,page.width,page.height,0,0,page.width,page.height);
    const data=page.toDataURL('image/png'),img=$('#export'+side+'Preview'),link=$('#export'+side+'Link');
-   img.src=data;link.href=data;link.download='omoide-'+(spreadIndex+1)+'-'+(side==='Left'?'left':'right')+'.png';
+   img.src=data;
+   const filename='omoide-'+(spreadIndex+1)+'-'+(side==='Left'?'left':'right')+'.png';
+   const binary=atob(data.split(',')[1]),bytes=new Uint8Array(binary.length);
+   for(let j=0;j<binary.length;j++)bytes[j]=binary.charCodeAt(j);
+   pageExportFiles[side]={url:data,file:new File([bytes],filename,{type:'image/png'})};
   }
   $('#exportRightPreview').parentElement.hidden=!split;
   $('#pageExportModal').hidden=false;
