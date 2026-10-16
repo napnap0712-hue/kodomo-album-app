@@ -206,6 +206,93 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .elementTools input[type=range]:disabled{opacity:.35}
 @media(max-width:599px){.elementTools{display:grid;grid-template-columns:1fr 1fr;gap:10px}.elementTools label{align-items:flex-start;flex-direction:column;font-size:12px}.elementTools input[type=range]{width:100%;min-height:30px}.elementTools select{width:100%;max-width:none;min-height:42px;font-size:16px}}
 
+
+/* Canva-inspired editor workspace: calm panels, clear hierarchy, generous canvas */
+.screen[data-screen="editor"].active{--editor-ink:#252d3a;--editor-muted:#7a8492;--editor-line:#e2e7ed;--editor-panel:#ffffff;--editor-workspace:#f1f3f6;color:var(--editor-ink)}
+.screen[data-screen="editor"]>.top .brand{letter-spacing:.14em;font-size:10px;color:#7c8795}
+.screen[data-screen="editor"]>.top h1{font-size:clamp(22px,3vw,30px);letter-spacing:-.035em}
+.screen[data-screen="editor"]>.top .lead{font-size:13px;color:#778291}
+.editorPanel{gap:14px}
+.editorToolbar,.photoManager,.layerOrderPanel,.elementTools{border:1px solid var(--editor-line);border-radius:16px;background:var(--editor-panel);padding:14px}
+.editorToolbar{position:relative;padding-top:32px}
+.editorToolbar:before{content:"ページ設定";position:absolute;top:11px;left:14px;font-size:12px;font-weight:850;color:#5f6b7a}
+.editorToolbar .field{gap:6px}
+.editorToolbar .field input,.editorToolbar .field select,.editorPanel>label.field input{border-color:#e0e5eb;border-radius:10px;background:#fbfcfd;min-height:42px}
+.photoManager{padding:14px}
+.photoManagerHead strong{font-size:13px;font-weight:850}
+.photoThumb{border-radius:11px;padding:3px;transition:background .15s,border-color .15s}
+.photoThumb:active{background:#edf4ff}
+.photoThumb>img{border-radius:8px}
+.photoThumb small{font-size:10px}
+.designToolbar{align-items:stretch;gap:7px;padding:10px;background:#fff;border:1px solid var(--editor-line);border-radius:15px}
+.designToolbar:before{content:"要素を追加・編集";display:flex;align-items:center;padding:0 5px;font-size:12px;font-weight:850;color:#5f6b7a;white-space:nowrap}
+.designToolbar button{border:1px solid #e0e5eb;background:#fff;border-radius:10px;padding:10px 13px;font-size:12px;font-weight:750;color:#394454;transition:background .15s,border-color .15s}
+.designToolbar button:active{background:#edf4ff;border-color:#8bb4f5}
+.layerControlGroup{border-color:#e0e5eb;background:#f8fafc}
+.layerControlTitle{font-size:10px;letter-spacing:.02em}
+.layerOrderPanel{padding:13px}
+.layerOrderHeader strong{font-size:12px}
+.layerOrderItem{background:#fff;border-color:#e8ecf1;transition:border-color .15s,background .15s}
+.layerOrderItem.isSelected{background:#eef5ff;border-color:#4d8be8}
+.layerDragHandle{border-color:#e0e5eb;background:#f8fafc}
+.pageNav{padding:2px 0}
+.pageNav span{font-size:13px;font-weight:800;color:#566171}
+.pageNav button{border-radius:10px;font-size:12px;font-weight:800}
+.canvasWrap{background:var(--editor-workspace);border:1px solid #e3e7ed;border-radius:18px;padding:18px;box-shadow:inset 0 1px 2px #24304408}
+.designCanvas{background-color:#fff;background-image:linear-gradient(45deg,#f8f9fb 25%,transparent 25%),linear-gradient(-45deg,#f8f9fb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#f8f9fb 75%),linear-gradient(-45deg,transparent 75%,#f8f9fb 75%);background-size:18px 18px;background-position:0 0,0 9px,9px -9px,-9px 0;box-shadow:0 3px 12px #202a3714,0 0 0 1px #dfe4ea;overflow:hidden}
+.designCanvas.spreadCanvas:after{border-left:1px dashed #9ca8b7}
+.canvasHint{font-size:11px;color:#7a8492;line-height:1.65}
+.elementTools{position:relative;padding:30px 14px 14px}
+.elementTools:before{content:"選択中の要素";position:absolute;top:11px;left:14px;font-size:12px;font-weight:850;color:#5f6b7a}
+.elementTools label{color:#657181}
+.elementTools select{border-color:#e0e5eb;border-radius:9px;background:#fbfcfd}
+.editorActions button{border-radius:12px;font-weight:850}
+.editorActions .primary{box-shadow:0 3px 0 #222936}
+.notice{border:1px solid #e8ecf1;background:#f8fafc}
+@media(min-width:900px){
+ .editorPanel{grid-template-columns:minmax(270px,310px) minmax(0,1fr);column-gap:24px;row-gap:14px}
+ .editorPanel>label.field:first-child{padding:14px;border:1px solid var(--editor-line);border-radius:16px;background:#fff}
+ .editorPanel>.editorToolbar{padding:34px 13px 13px}
+ .editorPanel>.photoManager{padding:14px 12px}
+ .editorPanel>.designToolbar{align-items:center;min-height:58px}
+ .editorPanel>.canvasWrap{grid-row:3 / span 2;min-height:520px;display:flex;align-items:center;justify-content:center;padding:28px;background:#eef1f5}
+ .designCanvas{max-height:calc(100vh - 250px)}
+ .editorPanel>.layerOrderPanel{grid-column:1;grid-row:5}
+ .editorPanel>.elementTools{grid-column:1;grid-row:6}
+ .editorPanel>.editorActions{grid-column:1;grid-row:7}
+ .editorPanel>.notice{grid-column:1;grid-row:8}
+ .editorPanel>.canvasHint{grid-column:2;grid-row:5}
+}
+@media(max-width:899px){
+ .canvasWrap{padding:12px}
+ .designToolbar{display:flex;flex-wrap:wrap}
+ .designToolbar:before{width:100%;padding:2px 3px}
+ .editorPanel>.layerOrderPanel{margin-top:0}
+ .elementTools{padding:30px 12px 12px}
+}
+@media(max-width:599px){
+ .screen[data-screen="editor"]>.top{padding:0 2px 12px;border-bottom:1px solid #edf0f3}
+ .editorPanel{gap:11px}
+ .editorPanel>.editorToolbar{order:1}
+ .editorPanel>.photoManager{order:2}
+ .editorPanel>.designToolbar{order:3}
+ .editorPanel>.pageNav{order:4}
+ .editorPanel>.canvasWrap{order:5;padding:7px;border-radius:14px}
+ .editorPanel>.canvasHint{order:6;margin-top:-3px}
+ .editorPanel>.elementTools{order:7}
+ .editorPanel>.layerOrderPanel{order:8}
+ .editorPanel>.editorActions{order:9;position:sticky;bottom:calc(8px + env(safe-area-inset-bottom));z-index:25;padding:9px;background:#fffffff2;backdrop-filter:blur(14px);box-shadow:0 6px 24px #202a371a}
+ .editorPanel>.notice{order:10}
+ .editorToolbar{padding:32px 10px 10px;gap:8px}
+ .editorToolbar .field{font-size:11px}
+ .designToolbar{padding:9px;gap:6px}
+ .designToolbar button{flex:1 1 calc(50% - 6px);min-height:42px}
+ .layerOrderHeader{align-items:flex-start;flex-direction:column;gap:3px}
+ .layerOrderList{max-height:220px}
+ .designCanvas{background-size:14px 14px}
+ .editorActions{grid-template-columns:1fr 1fr}
+}
+
 </style>
 </head>
 <body>
