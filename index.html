@@ -67,7 +67,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .designCanvas.spreadCanvas:after{content:"";position:absolute;top:0;bottom:0;left:50%;border-left:1px dashed #aeb7c2;pointer-events:none}
 .designCanvas.singleCanvas{aspect-ratio:.707/1}.designCanvas.gridCanvas{background-image:radial-gradient(#d9dfe7 1px,transparent 1px);background-size:12px 12px}
 .designElement{position:absolute;touch-action:none;user-select:none;cursor:grab;border:1px solid transparent;display:flex;align-items:center;justify-content:center}
-.designElement.selected{border:2px solid #588ee6;z-index:20}.designElement img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+.designElement.selected{border:2px solid #588ee6;z-index:20}.exportRendering .designElement.selected{border-color:transparent!important}.exportRendering .resizeHandle,.exportRendering .rotationHandle{display:none!important}.designElement img{width:100%;height:100%;object-fit:contain;pointer-events:none}
 .designElement .textContent{width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-align:center;overflow-wrap:anywhere;white-space:pre-wrap;font-weight:800;line-height:1.25;padding:3px;pointer-events:none}
 .designElement .resizeHandle{position:absolute;right:-6px;bottom:-6px;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #588ee6;touch-action:none}
 .designElement .deleteElement{position:absolute;right:-8px;top:-10px;width:23px;height:23px;border:0;border-radius:50%;background:#303946;color:#fff;font-size:15px;line-height:1;padding:0}
@@ -457,7 +457,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p class="muted">選んだ写真を見開きに配置し、タイトルや背景を調整できます。</p>
 </section>
 <section class="screen" data-screen="editor">
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><button class="secondary" id="saveDraft">下書きを保存</button><button class="primary" id="exportImage">画像を書き出す</button></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><button class="secondary" id="saveDraft">下書きを保存</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
 <div class="editorPanel">
 <label class="field">アルバムのタイトル<input id="albumTitle" maxlength="80" placeholder="例：春のおさんぽ"></label>
 <div class="editorCanvasFirst"><div class="canvasZoomBar"><span>ページの拡大</span><button type="button" id="zoomOut" aria-label="縮小">−</button><output id="zoomLevel">100%</output><button type="button" id="zoomIn" aria-label="拡大">＋</button><button type="button" id="zoomReset">戻す</button><button type="button" id="panMode" aria-pressed="false" hidden>✋ ページ移動</button><button type="button" id="editMode" aria-pressed="true" hidden>✎ 写真・文字編集</button></div><div class="pageNav"><button id="prevSpread" type="button">‹ 前へ</button><span id="pageIndicator">1 / 1</span><button id="nextSpread" type="button">次へ ›</button></div>
@@ -469,6 +469,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" id="openPhotoInspector" class="openTextInspector" hidden>✎ 写真を編集</button><button type="button" id="openTextInspector" class="openTextInspector" hidden>✎ 文字を編集</button>
 
 </div>
+<div id="pageExportModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="ページ画像を保存"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>📸 左右ページを保存</strong><button type="button" id="pageExportClose">×</button></div><p class="cropEditorHelp">左右を別々の画像にしました。iPhoneでは画像を長押しして「写真に保存」できます。</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><strong>左ページ</strong><img id="exportLeftPreview" alt="左ページ" style="width:100%;display:block;border:1px solid #ddd"><a id="exportLeftLink" download="omoide-left.png" style="display:block;padding:12px;text-align:center">左ページを保存</a></div><div><strong>右ページ</strong><img id="exportRightPreview" alt="右ページ" style="width:100%;display:block;border:1px solid #ddd"><a id="exportRightLink" download="omoide-right.png" style="display:block;padding:12px;text-align:center">右ページを保存</a></div></div><button type="button" id="pageExportDone" class="primary" style="width:100%">閉じる</button></div></div>
 <div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">「写真を移動」「消しゴム」「復元ブラシ」を切り替えて手動で透過できます。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><div class="personZoomControls"><button type="button" id="personZoomOut">−</button><input id="personZoom" aria-label="表示倍率" type="range" min="100" max="500" step="25" value="100"><button type="button" id="personZoomIn">＋</button><button type="button" id="personZoomReset">100%</button><span id="personZoomLabel">100%</span></div><p class="cropEditorHelp">2本指で拡大・移動できます。「写真を移動」では1本指で移動できます。</p><div class="personEditorModes"><button type="button" id="personMove" class="active">✋ 写真を移動</button><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="50" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
 <section class="screen" data-screen="saved">
 <div class="top"><button class="back" data-back="classChoice">‹</button><div class="topText"><p class="brand">SAVED ALBUMS</p><h1>保存済みを見る</h1><p class="lead" id="savedClassLabel">このクラスのアルバム</p></div></div>
@@ -823,38 +824,46 @@ $('#saveDraft').addEventListener('click',async()=>{const button=$('#saveDraft');
 let exportImageLibraryPromise=null;
 function loadExportImageLibrary(){
  if(!exportImageLibraryPromise)exportImageLibraryPromise=new Promise((resolve,reject)=>{
-  if(window.htmlToImage){resolve(window.htmlToImage);return;}
+  if(window.html2canvas){resolve(window.html2canvas);return;}
   const script=document.createElement('script');
-  script.src='https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js';
-  script.onload=()=>window.htmlToImage?resolve(window.htmlToImage):reject(new Error('画像出力ライブラリを読み込めません'));
-  script.onerror=()=>reject(new Error('画像出力ライブラリのダウンロードに失敗しました'));
+  script.src='https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+  script.onload=()=>window.html2canvas?resolve(window.html2canvas):reject(new Error('画像変換ライブラリを読み込めません'));
+  script.onerror=()=>reject(new Error('画像変換ライブラリを読み込めません'));
   document.head.appendChild(script);
  }).catch(err=>{exportImageLibraryPromise=null;throw err;});
  return exportImageLibraryPromise;
 }
+function closePageExport(){ $('#pageExportModal').hidden=true; }
+$('#pageExportClose').addEventListener('click',closePageExport);
+$('#pageExportDone').addEventListener('click',closePageExport);
 $('#exportImage').addEventListener('click',async()=>{
  const button=$('#exportImage');if(button.disabled)return;
- button.disabled=true;button.textContent='書き出し中…';
+ button.disabled=true;button.textContent='画像を作成中…';
  try{
-  const node=$('#designCanvas');if(!node)throw new Error('見開きがありません');
-  const lib=await loadExportImageLibrary();
+  const node=$('#designCanvas'),lib=await loadExportImageLibrary();
+  if(!node||!node.clientWidth)throw new Error('ページを表示できません');
   if(document.fonts&&document.fonts.ready)await document.fonts.ready;
   await Promise.all([...node.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});})));
   const width=node.clientWidth,height=node.clientHeight;
-  if(!width||!height)throw new Error('見開きのサイズを取得できません');
-  const pixelRatio=Math.min(3,Math.max(1,1600/width));
-  const dataUrl=await lib.toPng(node,{
-   pixelRatio,cacheBust:false,backgroundColor:$('#pageBackground').value||'#ffffff',
-   filter:el=>!el.classList||(!el.classList.contains('resizeHandle')&&!el.classList.contains('rotationHandle')),
-   style:{transform:'none',boxShadow:'none'},
-   width,height
-  });
-  const link=document.createElement('a');link.href=dataUrl;
-  link.download='omoide-book-spread-'+(spreadIndex+1)+'.png';
-  document.body.appendChild(link);link.click();link.remove();
-  $('#editorStatus').textContent='編集中の見開き '+(spreadIndex+1)+' ページを画像に書き出しました。';
- }catch(error){console.error('Export failed',error);$('#editorStatus').textContent='画像を書き出せませんでした：'+(error.message||'もう一度お試しください');}
- finally{button.disabled=false;button.textContent='画像を書き出す';}
+  const scale=Math.min(2,Math.max(1,1200/width));
+  const oldSelected=selectedElementId;
+  // Temporarily hide selection outlines and handles without changing the actual layout.
+  node.classList.add('exportRendering');
+  let full;
+  try{full=await lib(node,{backgroundColor:null,scale,useCORS:true,logging:false,width,height,scrollX:0,scrollY:0});}
+  finally{node.classList.remove('exportRendering');}
+  const split=$('#layoutMode').value==='spread';
+  for(const [side,start,portion] of split?[['Left',0,.5],['Right',.5,.5]]:[['Left',0,1]]){
+   const page=document.createElement('canvas');page.width=Math.round(full.width*portion);page.height=full.height;
+   const ctx=page.getContext('2d');ctx.drawImage(full,Math.round(full.width*start),0,page.width,page.height,0,0,page.width,page.height);
+   const data=page.toDataURL('image/png'),img=$('#export'+side+'Preview'),link=$('#export'+side+'Link');
+   img.src=data;link.href=data;link.download='omoide-'+(spreadIndex+1)+'-'+(side==='Left'?'left':'right')+'.png';
+  }
+  $('#exportRightPreview').parentElement.hidden=!split;
+  $('#pageExportModal').hidden=false;
+  $('#editorStatus').textContent=split?'左右ページを別々の画像にしました。':'1ページの画像を作成しました。';
+ }catch(err){console.error('Page export error',err);$('#editorStatus').textContent='画像を作成できませんでした：'+(err.message||'不明なエラー');}
+ finally{button.disabled=false;button.textContent='左右ページを書き出す';}
 });
 // Keep the home screen independent from optional editor tool initialization.
 try {
