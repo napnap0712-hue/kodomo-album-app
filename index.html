@@ -735,7 +735,7 @@ $('#personAutoSegment').addEventListener('click',async()=>{
    const output=personCtx.createImageData(w,h);
    for(let i=0;i<output.data.length;i+=4){
     output.data[i]=original[i];output.data[i+1]=original[i+1];output.data[i+2]=original[i+2];
-    const confidence=maskPixels[i+3]/255;
+    const confidence=maskPixels[i]/255;
     const alpha=Math.max(0,Math.min(1,(confidence-.18)/.64));
     output.data[i+3]=Math.round(original[i+3]*alpha);
    }
