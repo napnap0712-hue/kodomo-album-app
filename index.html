@@ -729,14 +729,14 @@ $('#personAutoSegment').addEventListener('click',async()=>{
    const w=personCanvas.width,h=personCanvas.height;
    const mask=document.createElement('canvas');mask.width=w;mask.height=h;
    const maskCtx=mask.getContext('2d',{willReadFrequently:true});
-   maskCtx.drawImage(results.segmentationMask,0,0,w,h);
+   maskCtx.filter='blur(1.5px)';maskCtx.drawImage(results.segmentationMask,0,0,w,h);maskCtx.filter='none';
    const maskPixels=maskCtx.getImageData(0,0,w,h).data;
    const original=personOriginal.data;
    const output=personCtx.createImageData(w,h);
    for(let i=0;i<output.data.length;i+=4){
     output.data[i]=original[i];output.data[i+1]=original[i+1];output.data[i+2]=original[i+2];
     const confidence=maskPixels[i]/255;
-    const alpha=Math.max(0,Math.min(1,(confidence-.18)/.64));
+    const alpha=Math.max(0,Math.min(1,(confidence-.34)/.38));
     output.data[i+3]=Math.round(original[i+3]*alpha);
    }
    personHistory.push(personSnapshot());if(personHistory.length>15)personHistory.shift();personFuture=[];
