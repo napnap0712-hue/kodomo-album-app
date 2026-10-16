@@ -820,7 +820,42 @@ $('#nextSpread').addEventListener('click',()=>{spreadIndex=Math.min(Math.max(0,M
 
 async function loadDraft(id){try{const item=(await getAllDrafts()).find(draft=>draft.id===id);if(!item)return;editingId=item.id;selected=classes.find(c=>c.id===item.classId)||selected;$('#albumTitle').value=item.title||'';$('#pageBackground').value=item.background||'#ffffff';$('#pageCaption').value=item.caption||'';$('#layoutMode').value=item.layout||'spread';syncPageSettingsChoices();photoGapPercent=Number.isFinite(Number(item.photoGap))?Math.max(0,Math.min(15,Number(item.photoGap))):2;$('#photoGap').value=photoGapPercent;$('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';document.querySelectorAll('[data-gap]').forEach(b=>b.classList.toggle('active',Number(b.dataset.gap)===photoGapPercent));lastArrangeMode=null;autoArrangeStep=-1;freeLayoutBase=null;$('#photoFit').value='cover';if(!Array.isArray(item.photos)||!item.photos.length)throw new Error('保存データに写真がありません');files=item.photos.map((photo,index)=>{if(!photo.blob||typeof photo.blob.size!=='number'||photo.blob.size===0)throw new Error('写真'+(index+1)+'の保存データが空です。元の編集画面から再保存してください');const restored=photo.blob;const name=photo.name||('photo-'+(index+1)+'.jpg');const type=restored.type||photo.type||(/\.hei[cf]$/i.test(name)?'image/heic':'image/jpeg');return new File([restored],name,{type,lastModified:Date.now()});});spreadIndex=item.spreadIndex||0;designElements=Array.isArray(item.designElements)?item.designElements:files.map((file,index)=>({id:elementId(),type:'photo',fileIndex:index,x:(index%2)*48+3,y:15,w:44,h:58,opacity:100,page:Math.floor(index/2),fit:'cover'}));designElements.forEach((el,index)=>{if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=files.length)){const validPhotoIndexes=designElements.slice(0,index).filter(item=>item.type==='photo').length;el.fileIndex=Math.min(validPhotoIndexes,files.length-1);}});selectedElementId=null;refreshEditor();$('#editorStatus').textContent='保存済みの下書きを開きました。';show('editor');}catch(error){console.error('下書きの写真復元に失敗しました',error);alert('下書きを開けませんでした。'+(error&&error.message?'\n'+error.message:''));}}
 $('#saveDraft').addEventListener('click',async()=>{const button=$('#saveDraft');button.disabled=true;button.textContent='保存中…';$('#editorStatus').textContent='写真と編集内容を保存しています…';try{if(!files.length)throw new Error('保存する写真がありません。先に写真を追加してください');const photos=await Promise.all(files.map(makeDurablePhoto));const draft={id:editingId||('draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),classId:selected.id,title:$('#albumTitle').value.trim()||'無題のアルバム',background:$('#pageBackground').value,caption:$('#pageCaption').value.trim(),layout:$('#layoutMode').value,photoGap:photoGapPercent,fit:'cover',spreadIndex,designElements,photos,updatedAt:Date.now()};await putDraft(draft);editingId=draft.id;$('#editorStatus').textContent='保存しました！「保存済みを見る」からいつでも開けます。';}catch(error){$('#editorStatus').textContent='保存できませんでした：'+(error&&error.message?error.message:'端末の保存領域を確認して、もう一度お試しください');}finally{button.disabled=false;button.textContent='下書きを保存';}});
-$('#exportImage').addEventListener('click',async()=>{try{const canvas=document.createElement('canvas');canvas.width=1600;canvas.height=900;const ctx=canvas.getContext('2d');ctx.fillStyle=$('#pageBackground').value;ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#303946';ctx.textAlign='center';ctx.font='bold 42px sans-serif';ctx.fillText($('#albumTitle').value||selected.name+'の思い出',800,75);const count=Math.min(files.length,6);for(let i=0;i<count;i++){const img=await createImageBitmap(files[i]);const col=i%3,row=Math.floor(i/3);const x=45+col*510,y=115+row*370,w=480,h=330,scale=Math.min(w/img.width,h/img.height);ctx.drawImage(img,x+(w-img.width*scale)/2,y+(h-img.height*scale)/2,img.width*scale,img.height*scale);img.close();}const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('export failed');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='omoide-book.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);$('#editorStatus').textContent='画像を書き出しました（最大6枚の簡易レイアウト）。';}catch(error){$('#editorStatus').textContent='画像を書き出せませんでした。もう一度お試しください。';}});
+let exportImageLibraryPromise=null;
+function loadExportImageLibrary(){
+ if(!exportImageLibraryPromise)exportImageLibraryPromise=new Promise((resolve,reject)=>{
+  if(window.htmlToImage){resolve(window.htmlToImage);return;}
+  const script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/html-to-image@1.11.13/dist/html-to-image.js';
+  script.onload=()=>window.htmlToImage?resolve(window.htmlToImage):reject(new Error('画像出力ライブラリを読み込めません'));
+  script.onerror=()=>reject(new Error('画像出力ライブラリのダウンロードに失敗しました'));
+  document.head.appendChild(script);
+ }).catch(err=>{exportImageLibraryPromise=null;throw err;});
+ return exportImageLibraryPromise;
+}
+$('#exportImage').addEventListener('click',async()=>{
+ const button=$('#exportImage');if(button.disabled)return;
+ button.disabled=true;button.textContent='書き出し中…';
+ try{
+  const node=$('#designCanvas');if(!node)throw new Error('見開きがありません');
+  const lib=await loadExportImageLibrary();
+  if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+  await Promise.all([...node.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});})));
+  const width=node.clientWidth,height=node.clientHeight;
+  if(!width||!height)throw new Error('見開きのサイズを取得できません');
+  const pixelRatio=Math.min(3,Math.max(1,1600/width));
+  const dataUrl=await lib.toPng(node,{
+   pixelRatio,cacheBust:false,backgroundColor:$('#pageBackground').value||'#ffffff',
+   filter:el=>!el.classList||(!el.classList.contains('resizeHandle')&&!el.classList.contains('rotationHandle')),
+   style:{transform:'none',boxShadow:'none'},
+   width,height
+  });
+  const link=document.createElement('a');link.href=dataUrl;
+  link.download='omoide-book-spread-'+(spreadIndex+1)+'.png';
+  document.body.appendChild(link);link.click();link.remove();
+  $('#editorStatus').textContent='編集中の見開き '+(spreadIndex+1)+' ページを画像に書き出しました。';
+ }catch(error){console.error('Export failed',error);$('#editorStatus').textContent='画像を書き出せませんでした：'+(error.message||'もう一度お試しください');}
+ finally{button.disabled=false;button.textContent='画像を書き出す';}
+});
 // Keep the home screen independent from optional editor tool initialization.
 try {
   renderHome();
