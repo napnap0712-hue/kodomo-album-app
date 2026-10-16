@@ -464,7 +464,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" id="openPhotoInspector" class="openTextInspector" hidden>✎ 写真を編集</button><button type="button" id="openTextInspector" class="openTextInspector" hidden>✎ 文字を編集</button>
 
 </div>
-<div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">消しゴムで不要な背景を消せます。人物の自動抽出は準備中です。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><div class="personEditorModes"><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="50" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
+<div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">「自動で人物を残す」を押してから、消しゴムや復元ブラシで仕上げられます。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><button type="button" id="personAutoSegment" class="primary" style="width:100%;min-height:42px">🪄 自動で人物を残す</button><div class="personEditorModes"><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="50" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
 <section class="screen" data-screen="saved">
 <div class="top"><button class="back" data-back="classChoice">‹</button><div class="topText"><p class="brand">SAVED ALBUMS</p><h1>保存済みを見る</h1><p class="lead" id="savedClassLabel">このクラスのアルバム</p></div></div>
 <div id="savedList" class="savedList"></div><p class="muted">旧バージョンの保存データは削除せず、読み込み方法を確認してから接続します。</p>
@@ -698,6 +698,59 @@ $('#openPersonCutout').addEventListener('click',async()=>{
  };
  source.onerror=()=>{$('#editorStatus').textContent='写真を読み込めませんでした。';};
  source.src=el.personCutout||fileUrl(files[el.fileIndex]);
+});
+
+/* MediaPipe Selfie Segmentation runs in this browser; only model assets are downloaded. */
+let personSegmenterPromise=null,personSegmentationBusy=false;
+function loadPersonSegmenter(){
+ if(personSegmenterPromise)return personSegmenterPromise;
+ personSegmenterPromise=new Promise((resolve,reject)=>{
+  if(window.SelfieSegmentation){resolve(window.SelfieSegmentation);return;}
+  const script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1/selfie_segmentation.js';
+  script.onload=()=>window.SelfieSegmentation?resolve(window.SelfieSegmentation):reject(new Error('人物抽出モデルを読み込めません'));
+  script.onerror=()=>reject(new Error('人物抽出モデルのダウンロードに失敗しました'));
+  document.head.appendChild(script);
+ }).catch(err=>{personSegmenterPromise=null;throw err;});
+ return personSegmenterPromise;
+}
+$('#personAutoSegment').addEventListener('click',async()=>{
+ if(!personOriginal||personSegmentationBusy)return;
+ personSegmentationBusy=true;
+ const button=$('#personAutoSegment');button.disabled=true;button.textContent='人物を検出しています…';
+ $('#personEditorInfo').textContent='端末内で人物を検出中です。写真は外部送信しません。';
+ try{
+  const Segmenter=await loadPersonSegmenter();
+  const segmenter=new Segmenter({locateFile:file=>'https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1/'+file});
+  segmenter.setOptions({modelSelection:1});
+  let completed=false;
+  segmenter.onResults(results=>{
+   if(!personOriginal)return;
+   const w=personCanvas.width,h=personCanvas.height;
+   const mask=document.createElement('canvas');mask.width=w;mask.height=h;
+   const maskCtx=mask.getContext('2d',{willReadFrequently:true});
+   maskCtx.drawImage(results.segmentationMask,0,0,w,h);
+   const maskPixels=maskCtx.getImageData(0,0,w,h).data;
+   const original=personOriginal.data;
+   const output=personCtx.createImageData(w,h);
+   for(let i=0;i<output.data.length;i+=4){
+    output.data[i]=original[i];output.data[i+1]=original[i+1];output.data[i+2]=original[i+2];
+    const confidence=maskPixels[i+3]/255;
+    const alpha=Math.max(0,Math.min(1,(confidence-.18)/.64));
+    output.data[i+3]=Math.round(original[i+3]*alpha);
+   }
+   personHistory.push(personSnapshot());if(personHistory.length>15)personHistory.shift();personFuture=[];
+   personCtx.putImageData(output,0,0);completed=true;
+  });
+  const input=document.createElement('canvas');input.width=personCanvas.width;input.height=personCanvas.height;
+  input.getContext('2d').putImageData(personOriginal,0,0);
+  await segmenter.send({image:input});
+  if(typeof segmenter.close==='function')await segmenter.close();
+  if(!completed)throw new Error('人物を検出できませんでした');
+  $('#personEditorInfo').textContent='自動透過ができました。消しゴムで不要な部分を消し、復元ブラシで戻せます。';
+ }catch(err){
+  $('#personEditorInfo').textContent='自動透過できませんでした：'+(err.message||'読み込みエラー')+'。手動ブラシはそのまま使えます。';
+ }finally{personSegmentationBusy=false;button.disabled=false;button.textContent='🪄 自動で人物を残す';}
 });
 function personBrush(e){
  if(!personOriginal)return;
