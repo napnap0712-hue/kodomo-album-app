@@ -420,7 +420,7 @@ node.style.overflow='visible';node.style.borderRadius='0';node.style.clipPath='n
 img.style.display='block';img.style.width='100%';img.style.height='100%';
 img.style.clipPath='none';img.style.maskImage='none';img.style.webkitMaskImage='none';
 img.style.borderRadius=shape==='circle'?'50%':shape==='rounded'?'16%':'0';
-if(svgMask){
+if(svgMask||shape==='flower'){
 const flowerShape=shape==='flower';const flowerPetals='<circle cx="50" cy="15" r="18"/><circle cx="74.75" cy="25.25" r="18"/><circle cx="85" cy="50" r="18"/><circle cx="74.75" cy="74.75" r="18"/><circle cx="50" cy="85" r="18"/><circle cx="25.25" cy="74.75" r="18"/><circle cx="15" cy="50" r="18"/><circle cx="25.25" cy="25.25" r="18"/><circle cx="50" cy="50" r="24"/>';const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">'+(flowerShape?'<g fill="white">'+flowerPetals+'</g>':'<path fill="white" d="'+svgMask+'"/>')+'</svg>';
 const url='url("data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)+'")';
 img.style.maskImage=url;img.style.webkitMaskImage=url;
