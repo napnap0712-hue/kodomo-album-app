@@ -690,7 +690,7 @@ $('#openPersonCutout').addEventListener('click',async()=>{
  const el=activeElement();if(!el||el.type!=='photo'||!files[el.fileIndex])return;
  personTarget=el.id;const source=new Image();
  source.onload=()=>{
-  const scale=Math.min(1,1100/Math.max(source.naturalWidth,source.naturalHeight));
+  const scale=Math.min(1,768/Math.max(source.naturalWidth,source.naturalHeight));
   personCanvas.width=Math.max(1,Math.round(source.naturalWidth*scale));personCanvas.height=Math.max(1,Math.round(source.naturalHeight*scale));
   personCtx.clearRect(0,0,personCanvas.width,personCanvas.height);
   personCtx.drawImage(source,0,0,personCanvas.width,personCanvas.height);
@@ -768,8 +768,8 @@ $('#personAutoSegment').addEventListener('click',async()=>{
    personHistory.push(personSnapshot());if(personHistory.length>15)personHistory.shift();personFuture=[];
    personCtx.putImageData(output,0,0);completed=true;
   });
-  const input=document.createElement('canvas');input.width=personCanvas.width;input.height=personCanvas.height;
-  input.getContext('2d').putImageData(personOriginal,0,0);
+  const input=document.createElement('canvas');const inputScale=Math.min(1,512/Math.max(personCanvas.width,personCanvas.height));input.width=Math.max(1,Math.round(personCanvas.width*inputScale));input.height=Math.max(1,Math.round(personCanvas.height*inputScale));
+  const originalInput=document.createElement('canvas');originalInput.width=personCanvas.width;originalInput.height=personCanvas.height;originalInput.getContext('2d').putImageData(personOriginal,0,0);input.getContext('2d').drawImage(originalInput,0,0,input.width,input.height);
   await segmenter.send({image:input});
   if(typeof segmenter.close==='function')await segmenter.close();
   if(!completed)throw new Error('人物を検出できませんでした');
