@@ -845,7 +845,9 @@ $('#exportImage').addEventListener('click',async()=>{
   if(document.fonts&&document.fonts.ready)await document.fonts.ready;
   await Promise.all([...node.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});})));
   const width=node.clientWidth,height=node.clientHeight;
-  const scale=Math.min(2,Math.max(1,1200/width));
+  // Target roughly 1800 px per individual page while limiting iPhone canvas memory.
+  const targetWidth=$('#layoutMode').value==='spread'?3600:1800;
+  const scale=Math.min(6,Math.max(1,targetWidth/width));
   const oldSelected=selectedElementId;
   // Temporarily hide selection outlines and handles without changing the actual layout.
   node.classList.add('exportRendering');
