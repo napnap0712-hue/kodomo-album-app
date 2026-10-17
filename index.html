@@ -506,6 +506,12 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 #projectGrid .projectThumbnail{object-fit:contain;background:#f7f9fc}
  .fixedSpecialCard .projectCardPreview{aspect-ratio:1.414;background:#fff8f3;border:1px solid #f1e7dd;font-size:24px}.fixedSpecialCard .projectCardName{font-weight:800;color:#755c6d}
 /* Dedicated single-page A4 cover editor; independent of the 12 spread projects */
+/* This screen lives after </main>, so explicitly position it and keep hidden until activated. */
+.screen[data-screen="coverEditor"]{display:none;width:min(100% - 28px,900px);margin:0 auto;padding:18px 0 36px;min-height:0}
+.screen[data-screen="coverEditor"].active{display:block}
+.screen[data-screen="coverEditor"]>.top{margin:0 0 15px;align-items:center}
+.screen[data-screen="coverEditor"] .coverPaper{max-height:680px}
+
 .coverEditorPanel{display:grid;gap:13px;max-width:850px;margin:auto}.coverFields{display:grid;grid-template-columns:1fr 1fr;gap:10px}.coverFields label{font-size:12px;font-weight:800;color:#596575}.coverFields input{display:block;width:100%;padding:11px;border:1px solid #dfe5eb;border-radius:10px;font-size:16px}.coverPaper{width:min(100%,480px);aspect-ratio:210/297;margin:5px auto;border:1px solid #dce3eb;background:white;position:relative;overflow:hidden;box-shadow:0 4px 16px #293c5115;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:11% 7%;text-align:center}.coverPaper .coverTitle{font-size:clamp(20px,6vw,38px);font-weight:900;overflow-wrap:anywhere}.coverPaper .coverSubtitle{font-size:clamp(12px,3vw,19px);font-weight:700}.coverPaper .coverPhoto{width:100%;height:52%;object-fit:cover;border-radius:5px;background:#f1f5f8}.coverPaper .coverName{font-size:clamp(17px,4.5vw,27px);font-weight:800}.coverActions{display:flex;gap:10px;flex-wrap:wrap}.coverActions button{flex:1;min-height:45px}.coverEditorPanel input[type=color]{width:100%;height:42px;padding:3px}.coverEditorPanel .muted{line-height:1.6}@media(max-width:450px){.coverFields{grid-template-columns:1fr 1fr}.coverPaper{width:100%}}
 </style>
 </head>
