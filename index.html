@@ -3372,12 +3372,12 @@
       button.addEventListener('click',()=>{selectedCurveLineIndex=index;syncTextPanel();updateCurvedText($('[data-text-item="'+item.id+'"]'),item)});
       list.appendChild(button);
     });
-    $('#textPanel [data-curve-apply]').forEach(button=>button.classList.toggle('active',button.dataset.curveApply===curveApplyMode));
+    $$('#textPanel [data-curve-apply]').forEach(button=>button.classList.toggle('active',button.dataset.curveApply===curveApplyMode));
     ['addCurveLine','moveCurveLineUp','moveCurveLineDown','deleteCurveLine'].forEach(id=>{const button=$('#'+id);if(button)button.disabled=!item||(id==='moveCurveLineUp'&&selectedCurveLineIndex===0)||(id==='moveCurveLineDown'&&selectedCurveLineIndex===lines.length-1)||(id==='deleteCurveLine'&&lines.length<=1)});
     const curve=curves[selectedCurveLineIndex]||0,slider=$('#textCurveSlider');
     if(slider){slider.disabled=!item;slider.value=curve;$('#textCurveValue').textContent=curve>0?'+'+curve:String(curve);$('#textCurveReset').disabled=!item||!curves.some(v=>v!==0)}
   }
-  function syncTextPanel(){const item=selectedText();$('#deleteText').disabled=!item;syncCurveLineControls(item);$('.fontChoice').forEach(b=>b.classList.toggle('active',!!item&&b.dataset.font===item.font));$('.textColor').forEach(b=>{const chosen=!!item&&b.dataset.color===(item?.color||'');b.classList.toggle('active',chosen);b.setAttribute('aria-pressed',String(chosen))})}
+  function syncTextPanel(){const item=selectedText();$('#deleteText').disabled=!item;syncCurveLineControls(item);$$('.fontChoice').forEach(b=>b.classList.toggle('active',!!item&&b.dataset.font===item.font));$$('.textColor').forEach(b=>{const chosen=!!item&&b.dataset.color===(item?.color||'');b.classList.toggle('active',chosen);b.setAttribute('aria-pressed',String(chosen))})}
   function selectedLayerItem(){if(selectedEditId)return editItems.find(x=>x.id===selectedEditId)||null;if(selectedTextId)return textItems.find(x=>x.id===selectedTextId)||null;if(selectedStickerId)return stickerItems.find(x=>x.id===selectedStickerId)||null;return null}
   function allLayerItems(){return [...editItems.map(item=>({kind:'photo',item})),...textItems.map(item=>({kind:'text',item})),...stickerItems.map(item=>({kind:'sticker',item}))].sort((a,b)=>(a.item.zIndex||0)-(b.item.zIndex||0))}
   function applyLayerDom(){for(const item of editItems){const el=$(`[data-edit-item="${item.id}"]`);if(el)el.style.zIndex=String(item.zIndex||1)}for(const item of textItems){const el=$(`[data-text-item="${item.id}"]`);if(el)el.style.zIndex=String(item.zIndex||1)}for(const item of stickerItems){const el=$(`[data-sticker-item="${item.id}"]`);if(el)el.style.zIndex=String(item.zIndex||1)}}
@@ -3754,7 +3754,7 @@
     lines.splice(selectedCurveLineIndex,1);curves.splice(selectedCurveLineIndex,1);item.text=lines.join('\n');item.lineCurves=curves;selectedCurveLineIndex=Math.min(selectedCurveLineIndex,lines.length-1);
     updateTextFromCurveLines(item);recordEdit();toast('行を削除しました');
   });
-  $('#textPanel [data-curve-apply]').forEach(button=>button.addEventListener('click',()=>{
+  $$('#textPanel [data-curve-apply]').forEach(button=>button.addEventListener('click',()=>{
     curveApplyMode=button.dataset.curveApply;syncCurveLineControls(selectedText());
     toast(curveApplyMode==='all'?'曲線設定を全行に適用します':'曲線設定を選択行に適用します');
   }));
