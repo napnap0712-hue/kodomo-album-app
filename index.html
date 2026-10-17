@@ -655,6 +655,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .assignGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:14px 0 22px}.assignCard{display:flex;gap:12px;padding:12px;border:1px solid #e0e6ef;border-radius:15px;background:white}.assignCard>img{width:100px;height:110px;object-fit:cover;border-radius:10px}.assignCardBody{display:flex;flex:1;flex-direction:column;gap:8px;max-height:190px;overflow-y:auto;font-size:13px}.assignCardBody label{display:flex;align-items:center;gap:7px}.assignCardBody input{accent-color:#4b9bd5}
 .assignDropdown{width:100%;border:1px solid #dce2eb;border-radius:10px;padding:8px;background:#fff}.assignDropdown summary{cursor:pointer;font-size:12px;color:#345d8b;overflow-wrap:anywhere}.assignDropdown label{padding:7px 2px}.childFolderSelect{width:100%;max-width:100%;padding:10px 12px;border:1px solid #dce2eb;border-radius:12px;background:#fff;font-size:13px}
 .assignDropdown{position:relative;padding:0;border:0;background:transparent}.assignDropdownTrigger{width:100%;padding:10px;border:1px solid #dce2eb;border-radius:10px;background:#fff;text-align:left;color:#345d8b;font-size:12px;overflow-wrap:anywhere}.assignDropdownMenu{position:absolute;z-index:30;top:calc(100% + 4px);left:0;right:0;max-height:220px;overflow-y:auto;padding:8px;background:#fff;border:1px solid #ccd8e8;border-radius:12px;box-shadow:0 8px 22px #1f29371f}.assignDropdownMenu[hidden]{display:none}.assignDropdownMenu label{display:flex;align-items:center;gap:7px;padding:7px 4px}.assignDropdownDone{width:100%;padding:8px;margin-top:4px;border-radius:8px;background:#e8f2ff}
+.assignNativePicker{display:flex;flex-direction:column;gap:7px;width:100%}.assignNativeSelect{width:100%;min-height:40px;border:1px solid #dce2eb;border-radius:10px;padding:8px;background:#fff;color:#345d8b;font-size:13px}.assignSelectedKids{display:flex;flex-wrap:wrap;gap:5px}.assignKidChip{border:1px solid #c9ddf2;background:#edf5ff;color:#286ca4;border-radius:99px;padding:4px 8px;font-size:11px}
 </style>
 </head>
 <body>
@@ -837,15 +838,14 @@ function renderPhotoAssignmentPage(){
   const image=document.createElement('img');image.src=fileUrl(file);image.alt=file.name;
   const body=document.createElement('div');body.className='assignCardBody';
   const name=document.createElement('strong');name.textContent=file.name;body.append(name);
-  const picker=document.createElement('div');picker.className='assignDropdown';
-  const trigger=document.createElement('button');trigger.type='button';trigger.className='assignDropdownTrigger';trigger.setAttribute('aria-expanded','false');
-  const menu=document.createElement('div');menu.className='assignDropdownMenu';menu.hidden=true;
-  const updateLabel=()=>{const ids=photoAssignments[index]||[];trigger.textContent=(ids.length?kids.filter(k=>ids.includes(k.id)).map(k=>k.name).join('・'):'園児を選択')+' ▾';};
-  updateLabel();
-  trigger.addEventListener('click',()=>{const opening=menu.hidden;document.querySelectorAll('.assignDropdownMenu').forEach(m=>m.hidden=true);document.querySelectorAll('.assignDropdownTrigger').forEach(t=>t.setAttribute('aria-expanded','false'));menu.hidden=!opening;trigger.setAttribute('aria-expanded',String(opening))});
-  if(!kids.length){const msg=document.createElement('p');msg.textContent='クラス管理で園児を登録してください';menu.append(msg)}
-  kids.forEach(k=>{const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=(photoAssignments[index]||[]).includes(k.id);box.addEventListener('change',()=>{const ids=new Set(photoAssignments[index]||[]);box.checked?ids.add(k.id):ids.delete(k.id);photoAssignments[index]=[...ids];updateLabel();updatePhotoAssignmentProgress()});label.append(box,document.createTextNode(k.name));menu.append(label)});
-  const done=document.createElement('button');done.type='button';done.textContent='完了';done.className='assignDropdownDone';done.addEventListener('click',()=>{menu.hidden=true;trigger.setAttribute('aria-expanded','false')});menu.append(done);picker.append(trigger,menu);
+  const picker=document.createElement('div');picker.className='assignNativePicker';
+  const select=document.createElement('select');select.className='assignNativeSelect';select.setAttribute('aria-label',file.name+'の園児を選択');
+  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='園児を選択';select.append(placeholder);
+  kids.forEach(k=>{const option=document.createElement('option');option.value=k.id;option.textContent=k.name;select.append(option)});
+  const selectedList=document.createElement('div');selectedList.className='assignSelectedKids';
+  const renderSelected=()=>{selectedList.replaceChildren();(photoAssignments[index]||[]).forEach(id=>{const kid=kids.find(k=>k.id===id);if(!kid)return;const chip=document.createElement('button');chip.type='button';chip.className='assignKidChip';chip.textContent=kid.name+' ×';chip.setAttribute('aria-label',kid.name+'の振り分けを解除');chip.addEventListener('click',()=>{photoAssignments[index]=(photoAssignments[index]||[]).filter(v=>v!==id);renderSelected();updatePhotoAssignmentProgress()});selectedList.append(chip)})};
+  select.addEventListener('change',()=>{if(!select.value)return;const ids=new Set(photoAssignments[index]||[]);ids.add(select.value);photoAssignments[index]=[...ids];select.value='';renderSelected();updatePhotoAssignmentProgress()});
+  select.disabled=!kids.length;picker.append(select,selectedList);renderSelected();
   body.append(picker);card.append(image,body);grid.append(card);
  });updatePhotoAssignmentProgress();
 }
