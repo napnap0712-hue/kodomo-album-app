@@ -581,6 +581,19 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 #seasonStickerPanel{padding:12px!important;border:1px solid #e1e5ed;border-radius:16px!important}
 #seasonStickerPanel>strong{padding-left:4px!important;margin-bottom:10px!important}
 .designToolbar:before{padding-left:12px!important}
+/* Editor tabs: shared spacing, surfaces and control states. Scoped to editor only. */
+#seasonStickerPanel,.pageSettingPane,.designToolbar{--editor-section-ink:#526277;--editor-section-line:#dce2eb;--editor-section-radius:16px}
+.pageSettingPane{box-sizing:border-box;border:1px solid var(--editor-section-line);border-radius:var(--editor-section-radius);background:#fff;padding:12px 12px 14px}
+.pageSettingPane>strong,.pageSettingPane .layoutSectionLabel{padding-left:4px!important;padding-right:4px!important;margin-bottom:12px!important}
+.pageSettingPane .photoManagerHead{padding-left:4px;padding-right:4px}
+.pageSettingPane button:not(.photoShapeChoice):not(.active),#seasonStickerPanel button:not(.active){border-radius:12px}
+.pageSettingPane button.active,#seasonStickerPanel button.active{border-radius:12px}
+.pageSettingPane .photoArrangeButtons{margin-inline:auto}
+.pageSettingPane .photoGapSettings{margin-inline:auto}
+.pageSettingPane input[type="range"]{max-width:100%;box-sizing:border-box}
+#seasonStickerPanel{box-sizing:border-box;padding:12px!important;border-color:var(--editor-section-line)}
+#seasonStickerPanel>strong{padding-left:4px!important}
+@media(max-width:480px){.pageSettingPane{padding:12px 10px 14px}.pageSettingPane .photoArrangeButtons{gap:10px}}
 </style>
 </head>
 <body>
