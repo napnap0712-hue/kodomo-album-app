@@ -613,6 +613,26 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .screen[data-screen="editor"] .pageSettings .pageSettingPane .photoManager{
  border:0!important;box-shadow:none!important;background:transparent!important;
 }
+
+/* Unified text-tab controls: one card, add button followed by editing tools */
+.screen[data-screen="editor"][data-editor-tab="text"] .designToolbar{display:block!important;padding:0!important;border:0!important;background:transparent!important}
+.screen[data-screen="editor"][data-editor-tab="text"] .designToolbar #addTextElement{
+  order:0;display:block!important;width:100%;min-height:46px;
+  border:1px solid #dce2eb;border-radius:12px;background:#f5f7fa;
+  color:#334155;font-weight:700;margin:0 0 12px;
+}
+.screen[data-screen="editor"][data-editor-tab="text"] .designToolbar #duplicateElement,
+.screen[data-screen="editor"][data-editor-tab="text"] .designToolbar #deleteSelectedElement{display:none!important}
+.screen[data-screen="editor"][data-editor-tab="text"] .elementTools{
+  order:1;margin:0!important;border:0!important;border-radius:0!important;
+  padding:0!important;box-shadow:none!important;background:transparent!important;
+}
+.screen[data-screen="editor"]:not([data-editor-tab="text"]) .textTabUnifiedCard{display:contents}
+.screen[data-screen="editor"][data-editor-tab="text"] .textTabUnifiedCard{
+  display:flex;flex-direction:column;gap:0;padding:16px;
+  border:1px solid #dce2eb;border-radius:17px;background:#fff;
+}
+
 /* Text tab: inline inspector instead of the mobile bottom sheet */
 .screen[data-screen="editor"][data-editor-tab="text"] .designToolbar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px!important;border:1px solid #dce2eb;border-radius:16px;background:#fff}
 .screen[data-screen="editor"][data-editor-tab="text"] .designToolbar #editSelectedText,
@@ -784,6 +804,17 @@ zoomCanvas.addEventListener('touchstart',event=>{if(event.touches.length!==2)ret
 zoomCanvas.addEventListener('touchmove',event=>{if(event.touches.length!==2||!zoomTouchDistance)return;event.preventDefault();const distance=Math.hypot(event.touches[0].clientX-event.touches[1].clientX,event.touches[0].clientY-event.touches[1].clientY);setEditorZoom(zoomTouchStart*distance/zoomTouchDistance);},{passive:false});
 zoomCanvas.addEventListener('touchend',event=>{if(event.touches.length<2)zoomTouchDistance=0;},{passive:true});
 let activeEditorTab='none';
+
+function setupUnifiedTextTab(){
+  const editor=document.querySelector('.screen[data-screen="editor"]');
+  const toolbar=editor?.querySelector('.designToolbar');
+  const tools=editor?.querySelector('#elementTools');
+  if(!toolbar||!tools)return;
+  let card=editor.querySelector('.textTabUnifiedCard');
+  if(!card){card=document.createElement('div');card.className='textTabUnifiedCard';toolbar.parentNode.insertBefore(card,toolbar);card.append(toolbar,tools);}
+}
+setupUnifiedTextTab();
+
 function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===tab?'none':tab;activeEditorTab=next;const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab=next;document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.toggle('active',b.dataset.editorTab===next));$('#seasonStickerPanel').hidden=next!=='stamps';if(next==='stamps')renderSeasonStickerPanel();if(next==='text')syncElementTools();const settings=document.querySelector('.pageSettings');settings.open=next==='background'||next==='layout';if(next==='background'||next==='layout'){const pageTab=next;document.querySelectorAll('[data-page-tab]').forEach(b=>b.classList.toggle('active',b.dataset.pageTab===pageTab));document.querySelectorAll('[data-page-pane]').forEach(p=>p.hidden=p.dataset.pagePane!==pageTab);}}
 
 document.querySelectorAll('[data-editor-tab]').forEach(b=>b.addEventListener('click',()=>switchEditorTab(b.dataset.editorTab)));
