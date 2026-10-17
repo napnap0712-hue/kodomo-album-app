@@ -822,7 +822,7 @@ function addTextElement(){const el={id:elementId(),type:'text',text:'文字を�
 function refreshEditor(){renderPhotoStrip();renderSpread(files);}
 $('#albumTitle').addEventListener('input',()=>renderSpread(files));
 $('#pageCaption').addEventListener('input',()=>renderSpread(files));
-['pageBackground','layoutMode','photoFit'].forEach(id=>$('#'+id).addEventListener('change',()=>{spreadIndex=0;renderSpread(files);}));
+$('#pageBackground').addEventListener('change',()=>{const canvas=$('#designCanvas');if(canvas)canvas.style.background=backgroundStyle($('#pageBackground').value);});['layoutMode','photoFit'].forEach(id=>$('#'+id).addEventListener('change',()=>{spreadIndex=0;renderSpread(files);}));
 $('#prevSpread').addEventListener('click',()=>{spreadIndex=Math.max(0,spreadIndex-1);renderSpread(files);});
 $('#nextSpread').addEventListener('click',()=>{spreadIndex=Math.min(Math.max(0,Math.ceil(files.length/($('#layoutMode').value==='single'?1:2))-1),spreadIndex+1);renderSpread(files);});
 $('#editorPhotoInput').addEventListener('change',event=>{const add=[...event.target.files];if(!add.length)return;files.push(...add);event.target.value='';renderPhotoStrip();$('#editorStatus').textContent=add.length+'枚を写真一覧に追加しました。ページに置く写真は一覧の「ページに追加」から選べます。';renderSpread(files);});
