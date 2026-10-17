@@ -437,6 +437,20 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .personEditorModes button{padding:10px 5px;font-size:13px;border-radius:9px}
 .personEditorModes button.active{background:#eaf2ff;border:2px solid #367dcb;color:#235e9d}
 .groupControls{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:8px 0;grid-column:1/-1;position:relative}.groupControls::-webkit-scrollbar{display:none}.groupControls>button{flex:0 0 auto;white-space:nowrap}.groupControls>button:disabled{opacity:.38}.groupControls .groupCount{font-size:12px;color:#475569;font-weight:700}.groupControls .groupMenu:not([hidden]){display:flex;position:absolute;z-index:30;right:0;top:100%;width:min(260px,90vw);padding:9px;flex-direction:column;gap:5px;background:white;border:1px solid #dce3eb;border-radius:13px;box-shadow:0 8px 28px #0002}.groupControls .groupMenu button{text-align:left;width:100%}.groupControls [hidden]{display:none!important}.groupControls button{border:1px solid #dce3eb;background:white;border-radius:9px;padding:8px;font-size:12px;min-height:38px}.groupControls button.active{background:#e7ecff;border-color:#6175c8}.designElement.groupSelected{outline:2px solid #6175c8;outline-offset:1px}.designElement .groupLockBadge{position:absolute;top:2px;left:2px;background:#fff;border-radius:5px;font-size:12px;z-index:5}.exportRendering .groupLockBadge{display:none!important}.historyControls{display:flex;gap:5px;margin:4px 0}.historyControls button{border:1px solid #dce3eb;background:#fff;border-radius:9px;min-width:43px;min-height:35px;font-size:22px}.historyControls button:disabled{opacity:.35}.pageNav[hidden]{display:none!important}
+
+/* Compact mobile editing workspace: canvas remains in view while tools scroll internally. */
+@media(max-width:700px){
+ .screen[data-screen="editor"]>.top{margin-bottom:5px!important}
+ .screen[data-screen="editor"] .topText .lead{display:none}
+ .screen[data-screen="editor"] .editorPanel>.field:first-child{display:none}
+ .screen[data-screen="editor"] .editorCanvasFirst{position:sticky;top:0;z-index:12;background:#f7f9fc;padding:3px 0 5px;width:100%}
+ .screen[data-screen="editor"] .mobileEditorTabs{position:sticky;top:0;z-index:11}
+ .screen[data-screen="editor"] .editorPanel>:is(.pageSettings,.photoManager,.designToolbar,.editorLayerPanel,#seasonStickerPanel,.elementTools){max-height:30dvh;overflow-y:auto;overscroll-behavior:contain;min-height:0;width:100%}
+ .screen[data-screen="editor"] .canvasHint{display:none}
+ .screen[data-screen="editor"] .editorCanvasFirst .canvasZoomBar{margin:0 0 3px}
+ .screen[data-screen="editor"] .editorCanvasFirst .groupControls{margin:3px 0}
+ .screen[data-screen="editor"] .editorCanvasFirst .canvasWrap{padding:3px}
+}
 </style>
 </head>
 <body>
