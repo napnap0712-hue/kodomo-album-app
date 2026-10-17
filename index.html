@@ -653,6 +653,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .childPhotoFolders{display:flex;gap:8px;overflow-x:auto;padding:3px 0 10px}.childFolderButton{flex:0 0 auto;border:1px solid #dce2eb;border-radius:12px;padding:9px 11px;background:white;color:#526277;font-size:12px}.childFolderButton.active{background:#e7f1ff;border-color:#82afe5;color:#2169aa}
 .photoAssignButton{font-size:11px;padding:4px 6px;border-radius:8px}.photoAssignPanel{display:flex;flex-direction:column;gap:10px;width:100%;padding:12px;border:1px solid #dce2eb;border-radius:12px}.photoAssignPanel label{display:flex;align-items:center;gap:8px}
 .assignGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:14px 0 22px}.assignCard{display:flex;gap:12px;padding:12px;border:1px solid #e0e6ef;border-radius:15px;background:white}.assignCard>img{width:100px;height:110px;object-fit:cover;border-radius:10px}.assignCardBody{display:flex;flex:1;flex-direction:column;gap:8px;max-height:190px;overflow-y:auto;font-size:13px}.assignCardBody label{display:flex;align-items:center;gap:7px}.assignCardBody input{accent-color:#4b9bd5}
+.assignDropdown{width:100%;border:1px solid #dce2eb;border-radius:10px;padding:8px;background:#fff}.assignDropdown summary{cursor:pointer;font-size:12px;color:#345d8b;overflow-wrap:anywhere}.assignDropdown label{padding:7px 2px}.childFolderSelect{width:100%;max-width:100%;padding:10px 12px;border:1px solid #dce2eb;border-radius:12px;background:#fff;font-size:13px}
 </style>
 </head>
 <body>
@@ -829,18 +830,20 @@ function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===t
 document.querySelectorAll('[data-editor-tab]').forEach(b=>b.addEventListener('click',()=>switchEditorTab(b.dataset.editorTab)));
 function startEditingWithSelectedPhotos(){if(!files.length)return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;resetEditHistory();resetEditHistory();$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';syncPageSettingsChoices();$('#editorStatus').textContent=files.length+'枚の写真を編集中です。下書き保存を押すと、この端末に保存されます。';refreshEditor();show('editor');switchEditorTab('none');}
 function renderPhotoAssignmentPage(){
- const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);
- grid.innerHTML='';
+ const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);grid.innerHTML='';
  files.forEach((file,index)=>{
   const card=document.createElement('article');card.className='assignCard';
   const image=document.createElement('img');image.src=fileUrl(file);image.alt=file.name;
   const body=document.createElement('div');body.className='assignCardBody';
   const name=document.createElement('strong');name.textContent=file.name;body.append(name);
-  if(!kids.length){const msg=document.createElement('p');msg.textContent='クラス管理で園児を登録すると振り分けできます。';body.append(msg)}
-  kids.forEach(k=>{const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=(photoAssignments[index]||[]).includes(k.id);box.addEventListener('change',()=>{const ids=new Set(photoAssignments[index]||[]);box.checked?ids.add(k.id):ids.delete(k.id);photoAssignments[index]=[...ids];updatePhotoAssignmentProgress()});label.append(box,document.createTextNode(k.name));body.append(label)});
-  card.append(image,body);grid.append(card);
- });
- updatePhotoAssignmentProgress();
+  const picker=document.createElement('details');picker.className='assignDropdown';
+  const summary=document.createElement('summary');
+  const updateLabel=()=>{const ids=photoAssignments[index]||[];summary.textContent=ids.length?kids.filter(k=>ids.includes(k.id)).map(k=>k.name).join('・'):'園児を選択';};
+  updateLabel();picker.append(summary);
+  if(!kids.length){const msg=document.createElement('p');msg.textContent='クラス管理で園児を登録してください';picker.append(msg)}
+  kids.forEach(k=>{const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=(photoAssignments[index]||[]).includes(k.id);box.addEventListener('change',()=>{const ids=new Set(photoAssignments[index]||[]);box.checked?ids.add(k.id):ids.delete(k.id);photoAssignments[index]=[...ids];updateLabel();updatePhotoAssignmentProgress()});label.append(box,document.createTextNode(k.name));picker.append(label)});
+  body.append(picker);card.append(image,body);grid.append(card);
+ });updatePhotoAssignmentProgress();
 }
 function updatePhotoAssignmentProgress(){
  const done=files.filter((_,i)=>(photoAssignments[i]||[]).length).length;
@@ -880,8 +883,9 @@ function renderChildPhotoFolders(){
  const kids=getChildren(selected.id),goal=Math.max(1,Number(getClassSettings()[selected.id]?.photoCount)||5);
  const options=[{id:'all',name:'全写真'},{id:'unassigned',name:'未振り分け'},...kids];
  if(!options.some(k=>k.id===activePhotoFolder))activePhotoFolder='all';
- host.innerHTML=options.map(k=>'<button type="button" class="childFolderButton '+(activePhotoFolder===k.id?'active':'')+'" data-photo-folder="'+escapeText(k.id)+'">'+escapeText(k.name)+(k.id==='all'?'':k.id==='unassigned'?'':(childPhotoUsedCount(k.id)>=goal?' ✅':'')+' · '+childPhotoUsedCount(k.id)+'/'+goal+'枚')+'</button>').join('');
- host.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{activePhotoFolder=b.dataset.photoFolder;renderChildPhotoFolders()}));
+ const select=document.createElement('select');select.className='childFolderSelect';select.setAttribute('aria-label','写真を表示する園児フォルダ');
+ options.forEach(k=>{const option=document.createElement('option');option.value=k.id;const count=childPhotoUsedCount(k.id);option.textContent=k.name+(k.id==='all'||k.id==='unassigned'?'':(count>=goal?' ✅':'')+' ('+count+'/'+goal+'枚)');select.append(option)});
+ select.value=activePhotoFolder;select.addEventListener('change',()=>{activePhotoFolder=select.value;renderPhotoStrip()});host.replaceChildren(select);
 }
 function renderPhotoStrip(){renderChildPhotoFolders();const strip=$('#photoStrip');strip.innerHTML='';$('#photoManagerCount').textContent=files.length+'枚';files.forEach((file,index)=>{if(activePhotoFolder==='unassigned'&&(photoAssignments[index]||[]).length)return;if(activePhotoFolder!=='all'&&activePhotoFolder!=='unassigned'&&!(photoAssignments[index]||[]).includes(activePhotoFolder))return;const item=document.createElement('div');item.className='photoThumb';item.tabIndex=0;item.setAttribute('role','button');item.setAttribute('aria-label',file.name+'をページに追加');const img=document.createElement('img');img.src=fileUrl(file);img.alt=file.name;img.loading='lazy';img.style.cursor='pointer';const remove=document.createElement('button');remove.type='button';remove.className='photoRemove';remove.textContent='×';remove.setAttribute('aria-label',file.name+'を写真一覧から削除');remove.addEventListener('click',event=>{event.stopPropagation();releasePhotoUrl(files[index]);files.splice(index,1);photoAssignments.splice(index,1);designElements=designElements.filter(el=>el.type!=='photo'||el.fileIndex!==index);designElements.forEach(el=>{if(el.type==='photo'&&el.fileIndex>index)el.fileIndex--;});selectedElementId=null;renderPhotoStrip();renderSpread(files);});const name=document.createElement('small');name.textContent=file.name;item.addEventListener('click',event=>{if(event.target.closest('button'))return;placePhotoOnPage(index);});item.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();placePhotoOnPage(index);}});const assign=document.createElement('button');assign.type='button';assign.textContent='振り分け';assign.className='photoAssignButton';assign.addEventListener('click',e=>{e.stopPropagation();const kids=getChildren(selected.id);if(!kids.length){$('#editorStatus').textContent='先に園児を登録してください';return;}const panel=document.createElement('div');panel.className='photoAssignPanel';const heading=document.createElement('strong');heading.textContent='写真の振り分け';panel.append(heading);kids.forEach(k=>{const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=(photoAssignments[index]||[]).includes(k.id);box.addEventListener('change',()=>{const set=new Set(photoAssignments[index]||[]);box.checked?set.add(k.id):set.delete(k.id);photoAssignments[index]=[...set];renderChildPhotoFolders()});label.append(box,document.createTextNode(k.name));panel.append(label)});const done=document.createElement('button');done.type='button';done.textContent='完了';done.addEventListener('click',()=>renderPhotoStrip());panel.append(done);strip.replaceChildren(panel)});item.append(img,remove,name,assign);strip.appendChild(item);});}
 function elementId(){return 'el-'+Date.now().toString(36)+'-'+(++elementCounter).toString(36);}
