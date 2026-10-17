@@ -893,18 +893,29 @@ $('#exportImage').addEventListener('click',async()=>{
   await Promise.all([...node.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});})));
   // Embed all photos and stickers in the export clone so html2canvas does not
   // lose blob: photos when it encounters separately loaded sticker assets on iOS.
-  const exportImages=await Promise.all([...node.querySelectorAll('img')].map(async img=>{
-   const id=img.closest('[data-element-id]')?.dataset.elementId;
-   if(!id)return null;
-   const source=img.currentSrc||img.src;
-   if(source.startsWith('data:'))return {id,data:source};
-   const response=await fetch(source,{cache:'force-cache'});
-   if(!response.ok)throw new Error('画像の読み込みに失敗しました');
-   const blob=await response.blob();
-   const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('画像を読み込めません'));reader.readAsDataURL(blob);});
-   return {id,data};
-  }));
-  const exportImageMap=new Map(exportImages.filter(Boolean).map(item=>[item.id,item.data]));
+  // Prepare embedded images before cloning. html2canvas on iOS may snapshot
+  // the clone before images assigned in onclone have finished decoding.
+  const exportSwaps=[];
+  try{
+   for(const img of node.querySelectorAll('.designElement img')){
+    const original=img.getAttribute('src');
+    if(!original||original.startsWith('data:'))continue;
+    const response=await fetch(original,{cache:'force-cache'});
+    if(!response.ok)throw new Error('写真・スタンプを読み込めません');
+    const blob=await response.blob();
+    const data=await new Promise((resolve,reject)=>{
+     const reader=new FileReader();reader.onload=()=>resolve(reader.result);
+     reader.onerror=()=>reject(new Error('画像データを読み込めません'));
+     reader.readAsDataURL(blob);
+    });
+    exportSwaps.push({img,original});
+    img.src=data;
+    if(img.decode)await img.decode().catch(()=>{});
+   }
+  }catch(error){
+   exportSwaps.forEach(({img,original})=>{img.src=original;});
+   throw error;
+  }
   const width=node.clientWidth,height=node.clientHeight;
   // Target roughly 1800 px per individual page while limiting iPhone canvas memory.
   const targetWidth=$('#layoutMode').value==='spread'?3600:1800;
@@ -913,13 +924,12 @@ $('#exportImage').addEventListener('click',async()=>{
   // Temporarily hide selection outlines and handles without changing the actual layout.
   node.classList.add('exportRendering');
   let full;
-  try{full=await lib(node,{backgroundColor:null,scale,useCORS:true,logging:false,width,height,scrollX:0,scrollY:0,onclone:clonedDoc=>{
-   clonedDoc.querySelectorAll('#designCanvas [data-element-id]').forEach(el=>{
-    const data=exportImageMap.get(el.dataset.elementId);
-    if(data){const img=el.querySelector('img');if(img){img.src=data;img.removeAttribute('srcset');}}
-   });
-  }});}
-  finally{node.classList.remove('exportRendering');}
+  try{
+   full=await lib(node,{backgroundColor:null,scale,useCORS:true,logging:false,width,height,scrollX:0,scrollY:0});
+  }finally{
+   node.classList.remove('exportRendering');
+   exportSwaps.forEach(({img,original})=>{img.src=original;});
+  }
   const split=$('#layoutMode').value==='spread';
   for(const [side,start,portion] of split?[['Left',0,.5],['Right',.5,.5]]:[['Left',0,1]]){
    const page=document.createElement('canvas');page.width=Math.round(full.width*portion);page.height=full.height;
