@@ -652,6 +652,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .screen[data-screen="editor"][data-editor-tab="text"] .editorPanel:has(.mobileTextInspector){padding-bottom:0!important}
 .childPhotoFolders{display:flex;gap:8px;overflow-x:auto;padding:3px 0 10px}.childFolderButton{flex:0 0 auto;border:1px solid #dce2eb;border-radius:12px;padding:9px 11px;background:white;color:#526277;font-size:12px}.childFolderButton.active{background:#e7f1ff;border-color:#82afe5;color:#2169aa}
 .photoAssignButton{font-size:11px;padding:4px 6px;border-radius:8px}.photoAssignPanel{display:flex;flex-direction:column;gap:10px;width:100%;padding:12px;border:1px solid #dce2eb;border-radius:12px}.photoAssignPanel label{display:flex;align-items:center;gap:8px}
+.assignGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:14px 0 22px}.assignCard{display:flex;gap:12px;padding:12px;border:1px solid #e0e6ef;border-radius:15px;background:white}.assignCard>img{width:100px;height:110px;object-fit:cover;border-radius:10px}.assignCardBody{display:flex;flex:1;flex-direction:column;gap:8px;max-height:190px;overflow-y:auto;font-size:13px}.assignCardBody label{display:flex;align-items:center;gap:7px}.assignCardBody input{accent-color:#4b9bd5}
 </style>
 </head>
 <body>
@@ -670,8 +671,14 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <div class="top"><button class="back" data-back="classProjects">‹</button><div class="topText"><p class="brand">NEW ALBUM</p><h1>写真を選ぶ</h1><p class="lead">写真を選んでから、アルバムの設定や編集に進めます。</p></div></div>
 <label class="drop" for="photoInput"><strong>＋ 写真を追加</strong><p>端末から写真を選択できます。選んだ写真はこの画面でプレビューします。</p><input id="photoInput" type="file" accept="image/*" multiple></label>
 <div id="photoPreviews" class="previewGrid"></div><p id="photoCount" class="muted">写真はまだ選択されていません。</p>
-<button id="continueEdit" class="primary wide" disabled>選んだ写真で続ける</button>
+<button id="continueEdit" class="primary wide" disabled>写真を振り分ける ›</button>
 <p class="muted">選んだ写真を見開きに配置し、タイトルや背景を調整できます。</p>
+</section>
+<section class="screen" data-screen="photoAssign">
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
+<p id="photoAssignProgress" class="muted"></p>
+<div id="photoAssignGrid" class="assignGrid"></div>
+<button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor">
 <div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
@@ -821,8 +828,27 @@ function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===t
 
 document.querySelectorAll('[data-editor-tab]').forEach(b=>b.addEventListener('click',()=>switchEditorTab(b.dataset.editorTab)));
 function startEditingWithSelectedPhotos(){if(!files.length)return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;resetEditHistory();resetEditHistory();$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';syncPageSettingsChoices();$('#editorStatus').textContent=files.length+'枚の写真を編集中です。下書き保存を押すと、この端末に保存されます。';refreshEditor();show('editor');switchEditorTab('none');}
-$('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;startEditingWithSelectedPhotos();});
-$('#continueEdit').addEventListener('click',()=>{if(!files.length)return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';$('#editorStatus').textContent='写真を自由に配置できます。タップして選択し、ドラッグして編集してください。';refreshEditor();show('editor');});
+function renderPhotoAssignmentPage(){
+ const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);
+ grid.innerHTML='';
+ files.forEach((file,index)=>{
+  const card=document.createElement('article');card.className='assignCard';
+  const image=document.createElement('img');image.src=fileUrl(file);image.alt=file.name;
+  const body=document.createElement('div');body.className='assignCardBody';
+  const name=document.createElement('strong');name.textContent=file.name;body.append(name);
+  if(!kids.length){const msg=document.createElement('p');msg.textContent='クラス管理で園児を登録すると振り分けできます。';body.append(msg)}
+  kids.forEach(k=>{const label=document.createElement('label'),box=document.createElement('input');box.type='checkbox';box.checked=(photoAssignments[index]||[]).includes(k.id);box.addEventListener('change',()=>{const ids=new Set(photoAssignments[index]||[]);box.checked?ids.add(k.id):ids.delete(k.id);photoAssignments[index]=[...ids];updatePhotoAssignmentProgress()});label.append(box,document.createTextNode(k.name));body.append(label)});
+  card.append(image,body);grid.append(card);
+ });
+ updatePhotoAssignmentProgress();
+}
+function updatePhotoAssignmentProgress(){
+ const done=files.filter((_,i)=>(photoAssignments[i]||[]).length).length;
+ $('#photoAssignProgress').textContent='振り分け済み '+done+' / '+files.length+'枚（未振り分けも後から編集できます）';
+}
+$('#finishPhotoAssign').addEventListener('click',()=>startEditingWithSelectedPhotos());
+$('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;photoAssignments=picked.map(()=>[]);renderPhotoAssignmentPage();show('photoAssign');});
+$('#continueEdit').addEventListener('click',()=>{if(!files.length)return;renderPhotoAssignmentPage();show('photoAssign');return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';$('#editorStatus').textContent='写真を自由に配置できます。タップして選択し、ドラッグして編集してください。';refreshEditor();show('editor');});
 let spreadIndex=0,designElements=[],selectedElementId=null,elementCounter=0;
 const editHistory={states:[],index:-1,restoring:false};
 function historySnapshot(){return JSON.stringify(designElements)}
