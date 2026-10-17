@@ -3744,7 +3744,7 @@
     const item=selectedText();if(!item)return;const lines=getCurveLines(item),curves=getCurveValues(item);
     if(from<0||from>=lines.length||target<0||target>=lines.length||from===target)return;
     const [line]=lines.splice(from,1),[curve]=curves.splice(from,1);lines.splice(target,0,line);curves.splice(target,0,curve);
-    item.text=lines.join('\\n');item.lineCurves=curves;selectedCurveLineIndex=target;updateTextFromCurveLines(item);recordEdit();toast('行の順序を変更しました');
+    item.text=lines.join('\n');item.lineCurves=curves;selectedCurveLineIndex=target;updateTextFromCurveLines(item);recordEdit();toast('行の順序を変更しました');
   }
   function moveCurveLineBy(delta){
     const item=selectedText();if(!item)return;const lines=getCurveLines(item),curves=getCurveValues(item),target=selectedCurveLineIndex+delta;
