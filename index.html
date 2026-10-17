@@ -568,7 +568,7 @@ const projectPreviewUrls=[];
 function clearProjectPreviewUrls(){projectPreviewUrls.forEach(url=>URL.revokeObjectURL(url));projectPreviewUrls.length=0}
 function projectPreview(d){if(!d)return '＋';return '<span class="projectPreviewPending">📖</span>'}
 async function makeProjectThumbnail(d){
- if(d.thumbnail&&typeof d.thumbnail==='string'&&d.thumbnail.startsWith('data:image/'))return d.thumbnail;
+ // Always render a clean preview from saved elements; legacy screenshots can include editor handles.
  const canvas=document.createElement('canvas');canvas.width=420;canvas.height=297;const ctx=canvas.getContext('2d');ctx.fillStyle=/^#[0-9a-f]{3,8}$/i.test(d.background||'')?d.background:'#ffffff';ctx.fillRect(0,0,420,297);ctx.strokeStyle='#dddddd';ctx.beginPath();ctx.moveTo(210,0);ctx.lineTo(210,297);ctx.stroke();
  const els=(d.designElements||[]).filter(e=>(e.page||0)===(d.spreadIndex||0));
  for(const el of els){const x=420*(el.x||0)/100,y=297*(el.y||0)/100,w=420*(el.w||0)/100,h=297*(el.h||0)/100;
