@@ -452,6 +452,16 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  .screen[data-screen="editor"] .editorCanvasFirst .canvasWrap{padding:3px}
 }
 .projectGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}.projectCard{min-width:0;border:1px solid #e2e8ef;border-radius:15px;background:#fff;padding:10px;display:flex;flex-direction:column;gap:6px;text-align:left;color:#41546a}.projectCardPreview{display:grid;place-items:center;width:100%;aspect-ratio:1.414;background:#f3f7fb;border-radius:10px;color:#85a9c8;font-size:32px}.projectCard.hasProject .projectCardPreview{background:#e9f4f2}.projectCardName{font-size:13px;font-weight:800;overflow-wrap:anywhere}.projectCard small{font-size:10px;color:#8290a0}.projectAdd{width:100%;min-height:46px}@media(min-width:650px){.projectGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(min-width:1000px){.projectGrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* Compact class-project thumbnails */
+.projectGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 14px}
+.projectCard{padding:5px;border-radius:10px;gap:4px;text-align:center;align-items:stretch}
+.projectCardPreview{aspect-ratio:1.414;border-radius:6px;font-size:24px}
+.projectCardName{font-size:12px;line-height:1.25;text-align:center}
+.projectCard small{display:none}
+.projectAdd{min-height:42px}
+@media(min-width:650px){.projectGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}}
+@media(min-width:1000px){.projectGrid{grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}}
 </style>
 </head>
 <body>
@@ -515,7 +525,7 @@ function writeProjectSlots(slots){localStorage.setItem(projectKey(selected.id),J
 function startProjectSlot(i){pendingProjectSlot=i;files=[];editingId=null;$('#photoInput').value='';$('#photoPreviews').innerHTML='';$('#photoCount').textContent='写真はまだ選択されていません。';$('#continueEdit').disabled=true;show('photoPick')}
 async function renderProjects(){
  $('#projectClassTitle').textContent=selected.name;const grid=$('#projectGrid');grid.innerHTML='<p class="muted">読み込み中…</p>';
- try{const drafts=(await getAllDrafts()).filter(d=>d.classId===selected.id).sort((a,b)=>(a.updatedAt||0)-(b.updatedAt||0));const slots=readProjectSlots(),known=new Set(slots.filter(Boolean));drafts.forEach(d=>{if(!known.has(d.id)){const free=slots.findIndex(x=>!x);if(free>=0)slots[free]=d.id;else slots.push(d.id);known.add(d.id)}});while(slots.length<12)slots.push(null);writeProjectSlots(slots);const byId=new Map(drafts.map(d=>[d.id,d]));grid.innerHTML=slots.map((id,i)=>{const d=byId.get(id);return '<button type="button" class="projectCard '+(d?'hasProject':'')+'" data-project-slot="'+i+'"><span class="projectCardPreview">'+(d?'📖':'＋')+'</span><span class="projectCardName">'+String(i+1).padStart(2,'0')+'　'+(d?escapeText(d.title||'無題のアルバム'):'新しく作る')+'</span><small>'+(d?'保存済み・タップして編集':'見開き1ページ')+'</small></button>'}).join('');grid.querySelectorAll('[data-project-slot]').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.projectSlot),d=byId.get(slots[i]);if(d){pendingProjectSlot=i;loadDraft(d.id)}else startProjectSlot(i)}));$('#projectStatus').textContent=slots.length+'枠 ・ 保存済み '+drafts.length+'件'}catch(e){grid.innerHTML='<p class="muted">読み込みに失敗しました。</p>'}}
+ try{const drafts=(await getAllDrafts()).filter(d=>d.classId===selected.id).sort((a,b)=>(a.updatedAt||0)-(b.updatedAt||0));const slots=readProjectSlots(),known=new Set(slots.filter(Boolean));drafts.forEach(d=>{if(!known.has(d.id)){const free=slots.findIndex(x=>!x);if(free>=0)slots[free]=d.id;else slots.push(d.id);known.add(d.id)}});while(slots.length<12)slots.push(null);writeProjectSlots(slots);const byId=new Map(drafts.map(d=>[d.id,d]));grid.innerHTML=slots.map((id,i)=>{const d=byId.get(id);return '<button type="button" class="projectCard '+(d?'hasProject':'')+'" data-project-slot="'+i+'"><span class="projectCardPreview">'+(d?'📖':'＋')+'</span><span class="projectCardName">'+String(i+1).padStart(2,'0')+'</span>'</button>'}).join('');grid.querySelectorAll('[data-project-slot]').forEach(btn=>btn.addEventListener('click',()=>{const i=Number(btn.dataset.projectSlot),d=byId.get(slots[i]);if(d){pendingProjectSlot=i;loadDraft(d.id)}else startProjectSlot(i)}));$('#projectStatus').textContent=slots.length+'枠 ・ 保存済み '+drafts.length+'件'}catch(e){grid.innerHTML='<p class="muted">読み込みに失敗しました。</p>'}}
 
 const $=selector=>document.querySelector(selector);
 function openDraftDb(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('このブラウザでは端末内保存が利用できません'));return;}const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE_NAME))req.result.createObjectStore(STORE_NAME,{keyPath:'id'});};req.onsuccess=()=>{const db=req.result;db.onversionchange=()=>db.close();resolve(db);};req.onerror=()=>reject(req.error||new Error('保存領域を開けませんでした'));req.onblocked=()=>reject(new Error('保存領域が別のタブで使用中です。ほかのタブを閉じて再試行してください'));});}
