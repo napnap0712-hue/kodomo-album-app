@@ -539,6 +539,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .compactLayout .photoArrangeButtons{grid-template-columns:repeat(3,minmax(0,1fr))}.compactLayout .photoArrangeButtons button{font-size:11px;padding:10px 3px}.compactGap{display:grid;gap:8px}.compactGap label{display:flex;justify-content:space-between;align-items:center;font-size:13px}.compactGap #photoGap{display:block!important;width:100%;margin:0;accent-color:#5c9fdb}.compactGap #photoGapValue{display:inline!important;color:#4386c7;font-weight:700}
 .compactLayout .photoArrangeButtons{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.compactLayout .photoArrangeButtons button{font-size:13px;padding:12px 8px;min-height:54px}.compactLayout #equalArrangeShape{display:block;font-size:10px;font-weight:400;margin-top:3px;color:#66809b}
 .compactLayout .photoArrangeButtons{display:flex;justify-content:center;align-items:stretch;gap:14px}.compactLayout .photoArrangeButtons button{flex:0 1 145px;max-width:calc((100% - 14px)/2);aspect-ratio:1/1;min-height:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:14px;padding:10px;border-radius:13px}.compactLayout #equalArrangeShape{margin-top:7px}
+.compactLayout .photoArrangeButtons{display:grid;grid-template-columns:repeat(2,minmax(0,104px));justify-content:center;gap:12px;width:100%}.compactLayout .photoArrangeButtons button{box-sizing:border-box;width:100%;max-width:none;aspect-ratio:1/1;min-height:0!important;padding:8px 5px;font-size:12px;line-height:1.35}
 </style>
 </head>
 <body>
@@ -827,7 +828,7 @@ let cols=shape==='rect'?Math.max(1,Math.ceil(Math.sqrt(n*width/height*1.8))):sha
 const rows=Math.ceil(n/cols),slotW=width/cols,slotH=height/rows;
 group.forEach((el,i)=>{const col=i%cols,row=Math.floor(i/cols);const boxW=slotW,boxH=slotH;let w=boxW-gap,h=boxH-gap;
 if(shape==='square'){const canvas=$('#designCanvas');const rect=canvas.getBoundingClientRect();const ratio=rect.width>0&&rect.height>0?rect.height/rect.width:1;const sidePxPercent=Math.min(w/ratio,h);w=sidePxPercent*ratio;h=sidePxPercent;}
-else if(shape==='rect'){const bounds=$('#designCanvas').getBoundingClientRect();const ratio=bounds.width>0&&bounds.height>0?bounds.width/bounds.height:1;h=Math.min(h,w*ratio*.72);}
+else if(shape==='rect'){const bounds=$('#designCanvas').getBoundingClientRect();const canvasRatio=bounds.width>0&&bounds.height>0?bounds.width/bounds.height:1;const maxAspect=1.5,minAspect=1.15;const currentAspect=(w*canvasRatio)/Math.max(h,0.01);if(currentAspect>maxAspect){w=Math.min(w,h*maxAspect/canvasRatio);}else if(currentAspect<minAspect){h=Math.min(h,w*canvasRatio/minAspect);}}
 else if(shape==='portrait'){w=Math.min(w,h*.65);}
 else if(shape==='mix'){if(i%3===0)h=Math.min(h,w*.83);else if(i%3===1)w=Math.min(w,h*.8);}
 if(mode==='auto'&&autoArrangeStep===1&&i===0){w=Math.min(boxW-gap,Math.max(w,boxW*.92));h=Math.min(boxH-gap,Math.max(h,boxH*.92));}
