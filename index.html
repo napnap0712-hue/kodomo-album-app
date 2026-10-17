@@ -601,6 +601,18 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .screen[data-screen="editor"] .pageSettingPane .photoStrip{padding:2px 0 10px}
 .screen[data-screen="editor"] .pageSettingPane .photoManager>label.secondary{border-radius:12px}
 .screen[data-screen="editor"] .pageSettingPane{box-shadow:none!important}
+/* One outer card per editor tab: remove pane's duplicate border. */
+.screen[data-screen="editor"] .pageSettings .pageSettingPane{
+ border:0!important;border-radius:0!important;box-shadow:none!important;
+ background:transparent!important;margin:0!important;
+ padding:12px 4px 14px!important;
+}
+.screen[data-screen="editor"] .pageSettings .pageSettingPane .spreadLayoutControls{
+ border:0!important;box-shadow:none!important;background:transparent!important;
+}
+.screen[data-screen="editor"] .pageSettings .pageSettingPane .photoManager{
+ border:0!important;box-shadow:none!important;background:transparent!important;
+}
 </style>
 </head>
 <body>
