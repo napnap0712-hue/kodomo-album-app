@@ -772,6 +772,16 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button class="secondary wide" id="syncInspectLocal" type="button">🔍 端末内データを読み取り確認</button>
 <p id="syncLocalSummary" class="muted" role="status">未確認。保存データは変更しません。</p>
 </div>
+<div class="panel" style="display:grid;gap:11px;padding:16px;margin-top:14px">
+<b>📦 アルバムを別コピーで引き継ぐ（試験版）</b>
+<p class="muted">iPhoneから専用ファイルを書き出してAirDropなどでMacBookへ移し、MacBookで新しい下書きとして読み込みます。元の下書きは削除・上書きしません。</p>
+<label class="field">書き出すアルバム<select id="safeAlbumChoice"><option value="">「一覧を更新」を押してね</option></select></label>
+<button type="button" class="secondary wide" id="safeAlbumRefresh">📚 保存済みアルバムの一覧を更新</button>
+<button type="button" class="primary wide" id="safeAlbumExport">📤 選んだアルバムをファイルで書き出す</button>
+<label class="field">MacBookで受け取ったファイルを選ぶ<input type="file" id="safeAlbumImport" accept=".json,application/json"></label>
+<p id="safeAlbumMessage" role="status" class="muted">この操作では同期サーバーへ写真を送信しません。</p>
+<p class="notice">🔐 ファイルには実際の写真・編集内容・文字が入ります。自分の端末間だけで受け渡し、他人に共有しないでね。表紙・成長記録・クラス名簿・追加背景素材は今回の引き継ぎ対象外です。</p>
+</div>
 <div class="panel" style="display:grid;gap:12px;padding:16px;margin-top:14px">
 <label class="field">接続先の同期サーバー<input id="syncServerAddress" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://192.168.0.8:4318" aria-describedby="syncAddressHelp"></label>
 <p id="syncAddressHelp" class="muted">MacBookの同期サーバーをHTTPSで起動し、ターミナルに表示されたアドレスを入力してね。アドレスはこの端末のみに保存します。</p>
@@ -1615,6 +1625,107 @@ async function transferImportData(file){
  }catch(e){transferStatus.textContent='読み込みに失敗しました: '+e.message;}
  finally{document.getElementById('transferImport').value='';}
 }
+
+/* Album handoff v1: only explicit user-selected files, never sends photos to a server.
+   Existing drafts are read-only on export. Import uses IndexedDB.add with a fresh ID. */
+const safeAlbumChoice=document.getElementById('safeAlbumChoice');
+const safeAlbumMessage=document.getElementById('safeAlbumMessage');
+let safeAlbumExportRows=[];
+function safeAlbumPhotoCount(d){return Array.isArray(d.photos)?d.photos.length:0;}
+async function safeAlbumRefresh(){
+ const btn=document.getElementById('safeAlbumRefresh');btn.disabled=true;
+ safeAlbumMessage.textContent='保存済みアルバムを端末内で調べています…';
+ try{
+  const entries=await getAllDrafts();
+  safeAlbumExportRows=entries.filter(d=>d&&typeof d.id==='string'&&Array.isArray(d.photos)).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  safeAlbumChoice.replaceChildren();
+  if(!safeAlbumExportRows.length){const option=document.createElement('option');option.value='';option.textContent='保存済みの下書きがありません';safeAlbumChoice.appendChild(option);}
+  for(const d of safeAlbumExportRows){
+   const option=document.createElement('option');option.value=d.id;
+   option.textContent=(d.title||'無題のアルバム')+'（写真'+safeAlbumPhotoCount(d)+'枚・'+(d.year||'年度不明')+'年度）';
+   safeAlbumChoice.appendChild(option);
+  }
+  safeAlbumMessage.textContent='✅ この端末に '+safeAlbumExportRows.length+'件のアルバムが見つかりました。ファイルを選んで書き出せます。';
+ }catch(e){safeAlbumMessage.textContent='⚠️ 下書きを読み取れませんでした。保存データは変更していません。';}
+ finally{btn.disabled=false;}
+}
+async function safeAlbumExport(){
+ const button=document.getElementById('safeAlbumExport');button.disabled=true;
+ safeAlbumMessage.textContent='写真・編集内容をコピーしています…';
+ try{
+  const id=safeAlbumChoice.value;
+  if(!id)throw Error('先に「一覧を更新」からアルバムを選んでね。');
+  // Always fetch the latest draft instead of trusting a cached photo object.
+  const d=(await getAllDrafts()).find(x=>x.id===id);
+  if(!d||!Array.isArray(d.photos)||!d.photos.length)throw Error('元データを確認できません。写真がある下書きを選んでね。');
+  if(d.photos.some(p=>!(p?.blob instanceof Blob)||!p.blob.size))throw Error('写真のデータが欠けています。書き出しを中止しました。');
+  const content=await encodeBackup(d);
+  const payload={format:'omoide-safe-single-album-copy',version:1,createdAt:new Date().toISOString(),sourceId:d.id,photoCount:d.photos.length,draft:content};
+  const file=new File([JSON.stringify(payload)],'omoide-album-copy-'+new Date().toISOString().replaceAll(':','-').slice(0,19)+'.json',{type:'application/json'});
+  if(file.size>200*1024*1024)throw Error('ファイルが200MBを超えるため、今回の試験版では書き出せません。');
+  if(navigator.canShare?.({files:[file]})){
+   await navigator.share({files:[file]});
+   safeAlbumMessage.textContent='✅ 共有画面を開きました。自分のMacBookへAirDropまたは「ファイルに保存」で受け渡してね。';
+  }else{
+   const url=URL.createObjectURL(file),link=document.createElement('a');link.href=url;link.download=file.name;document.body.appendChild(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),60000);
+   safeAlbumMessage.textContent='✅ 下書き'+1+'件・写真'+d.photos.length+'枚をファイルに書き出しました。元データは変更していません。';
+  }
+ }catch(e){safeAlbumMessage.textContent=e?.name==='AbortError'?'ファイルの共有をキャンセルしました。':'⚠️ '+e.message;}
+ finally{button.disabled=false;}
+}
+function safeAlbumNewId(existing){
+ let id;
+ do{
+  const bytes=new Uint8Array(12);
+  crypto.getRandomValues(bytes);
+  id='draft-transfer-copy-'+[...bytes].map(x=>x.toString(16).padStart(2,'0')).join('');
+ }while(existing.has(id));
+ return id;
+}
+async function safeAlbumAddOnly(draft){
+ const db=await openDraftDb();
+ return new Promise((resolve,reject)=>{
+  try{
+   const tx=db.transaction(STORE_NAME,'readwrite');
+   tx.objectStore(STORE_NAME).add(draft);
+   tx.oncomplete=()=>{db.close();resolve();};
+   tx.onerror=()=>{db.close();reject(tx.error||new Error('追加保存に失敗しました'));};
+   tx.onabort=()=>{db.close();reject(tx.error||new Error('追加保存が中断されました'));};
+  }catch(error){db.close();reject(error);}
+ });
+}
+async function safeAlbumImport(file){
+ if(!file)return;
+ const input=document.getElementById('safeAlbumImport');
+ safeAlbumMessage.textContent='ファイルを確認しています…';
+ try{
+  if(file.size>200*1024*1024)throw Error('200MB以内の専用ファイルを選んでね。');
+  const packageData=JSON.parse(await file.text());
+  if(packageData?.format!=='omoide-safe-single-album-copy'||packageData.version!==1||!packageData.draft||typeof packageData.sourceId!=='string'||!Number.isSafeInteger(packageData.photoCount)||packageData.photoCount<1||packageData.photoCount>500)throw Error('対応する専用ファイルではありません。');
+  const raw=packageData.draft;
+  if(raw.id!==packageData.sourceId||typeof raw.classId!=='string'||!classes.some(c=>c.id===raw.classId)||!Array.isArray(raw.photos)||raw.photos.length!==packageData.photoCount||!Array.isArray(raw.designElements)||!Array.isArray(raw.photoAssignments)||!Number.isSafeInteger(raw.year))throw Error('アルバム構成が正しくありません。');
+  const copy=await transferDecode(raw);
+  if(copy.photos.some(p=>!(p?.blob instanceof Blob)||!p.blob.size||p.blob.size>100*1024*1024))throw Error('写真の実データを検証できません。保存を中止しました。');
+  const existing=new Set((await getAllDrafts()).map(d=>d.id));
+  const sourceId=copy.id;
+  copy.id=safeAlbumNewId(existing);
+  copy.transferSourceId=sourceId;
+  copy.updatedAt=Date.now();
+  const title=String(copy.title||'無題のアルバム');
+  if(!confirm('アルバムの別コピーを追加します。\n\nタイトル：'+title+'\n年度：'+copy.year+'\n写真：'+copy.photos.length+'枚\n\n新しいIDで保存し、既存の下書きには一切上書きしません。続けますか？')){
+   safeAlbumMessage.textContent='取り込みをキャンセルしました。保存データは変更していません。';return;
+  }
+  await safeAlbumAddOnly(copy);
+  safeAlbumMessage.textContent='✅ 別コピーの取り込み完了：写真'+copy.photos.length+'枚。元の下書きは変更していません。対象の年度・クラスを開くと表示されます。';
+  await safeAlbumRefresh();
+  safeAlbumMessage.textContent='✅ 別コピーの取り込み完了：写真'+copy.photos.length+'枚。対象の年度・クラスで確認してね。';
+ }catch(e){safeAlbumMessage.textContent='⚠️ '+e.message+'。既存のアルバムは変更していません。';}
+ finally{input.value='';}
+}
+document.getElementById('safeAlbumRefresh').addEventListener('click',safeAlbumRefresh);
+document.getElementById('safeAlbumExport').addEventListener('click',safeAlbumExport);
+document.getElementById('safeAlbumImport').addEventListener('change',e=>safeAlbumImport(e.target.files?.[0]));
 
 /* Sync status entry only. Does not read photos, drafts, credentials or connect across origins. */
 const syncAddrEl=document.getElementById('syncServerAddress');
