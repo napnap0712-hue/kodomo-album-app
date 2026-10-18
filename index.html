@@ -739,7 +739,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor">
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
 <section id="trialSplitPreviewPanel" hidden style="margin:12px 0;padding:14px;background:#f7faff;border:1px solid #cdd9e5;border-radius:12px">
 <b>📖 分離保存した試験コピー（読み取り専用）</b>
 <p id="trialSplitPreviewStatus" class="muted" role="status"></p><label style="display:block;margin:8px 0;font-size:13px">背景の表示テスト（プレビューのみ）<select id="trialSplitBackgroundTest" style="width:100%;padding:8px;margin-top:5px"><option value="saved">試験コピーの保存済み背景</option><option value="pattern-dots">ドット柄</option><option value="pattern-lines">斜線柄</option><option value="custom-check">チェック柄</option><option value="custom-flower">花柄</option><option value="custom-star">星柄</option></select></label>
@@ -1681,6 +1681,32 @@ function clearSplitPreview(){
  splitPreviewUrls.length=0;for(const blob of splitPreviewPhotos)releasePhotoUrl(blob);splitPreviewPhotos.length=0;$('#trialSplitPreviewCanvas').replaceChildren();
 }
 // Explicitly update ONLY the metadata in the isolated migration trial database.
+// Metadata-only rehearsal: never writes to the real album or trial photo store.
+$('#trialSyncLayout').addEventListener('click',async()=>{
+ const button=$('#trialSyncLayout'),status=$('#editorStatus');
+ button.disabled=true;let db=null;
+ try{
+  if(!editingId)throw Error('保存済みアルバムを開いてね');
+  if(!editorPhotoIntegrityOk)throw Error('写真の読み込みに問題があるため試験を中止しました');
+  if(!Array.isArray(designElements))throw Error('配置情報を確認できません');
+  const snapshot=structuredClone(designElements);
+  for(const element of snapshot){
+   if(element.type==='photo'&&(!Number.isInteger(element.fileIndex)||element.fileIndex<0||element.fileIndex>=files.length))throw Error('配置に不正な写真の参照があります');
+  }
+  const request=indexedDB.open('omoide-split-migration-trial-v1',1);
+  db=await new Promise((resolve,reject)=>{request.onupgradeneeded=()=>{for(const name of ['photos','edits'])if(!request.result.objectStoreNames.contains(name))request.result.createObjectStore(name)};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||Error('試験保存領域を開けません'))});
+  const original=await new Promise((resolve,reject)=>{const tx=db.transaction('edits','readonly'),req=tx.objectStore('edits').get('album');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('試験コピーを読めません'))});
+  if(!original)throw Error('先に「分離保存への移行コピーを検証」を実行してね');
+  if(original.photoCount!==files.length)throw Error('試験コピーと現在の写真枚数が違います。安全のため更新しません');
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction('edits','readwrite');
+   tx.objectStore('edits').put({...original,designElements:snapshot,spreadIndex,background:$('#pageBackground').value},'album');
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('配置情報を保存できません'));tx.onabort=()=>reject(tx.error||Error('更新が中断されました'));
+  });
+  status.textContent='✅ 配置'+snapshot.length+'個と現在の背景を分離保存の試験コピーへ反映しました。元のアルバムと写真は未変更です。プレビューを開き直してね。';
+ }catch(e){status.textContent='⚠️ '+(e?.message||String(e))+'。元アルバムは未変更です。'}
+ finally{db?.close();button.disabled=false}
+});
 $('#trialSyncBackground').addEventListener('click',async()=>{
  const btn=$('#trialSyncBackground'),status=$('#editorStatus');btn.disabled=true;
  let db=null;
