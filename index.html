@@ -747,7 +747,19 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor">
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button><button class="secondary" id="recoveryGuideToggle" type="button" aria-expanded="false" aria-controls="recoveryGuidePanel">🛟 復旧リハーサルの手順</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
+<section id="recoveryGuidePanel" hidden style="margin:12px 0;padding:14px;border:1px solid #cdd9e5;border-radius:12px;background:#f7faff">
+<strong>🛟 アルバム復旧リハーサル（元データ変更なし）</strong>
+<ol style="font-size:13px;line-height:1.9;padding-left:22px">
+<li>MacBookに保存した <code>.omoide.json</code> ファイルがあることを確認する。園児の写真が含まれるため、安全な場所で取り扱う。</li>
+<li>「🔍 バックアップファイルを検証」でファイルを選び、写真枚数・配置数・SHA-256の一致を確認する。</li>
+<li>「🧪 ファイルを試験領域へ復元」で同じファイルを選び、試験保存先への復元結果を確認する。</li>
+<li>「👀 復元した試験アルバムを表示」で、写真・文字・背景の見た目を確認する。</li>
+<li>「🔎 移行前の安全チェック」で元アルバムと保護用コピーの一致を確認する（元アルバムが正常に残っている場合のみ）。</li>
+</ol>
+<p style="font-size:12px;color:#7b3541;font-weight:700">⚠️ この手順は復旧リハーサルです。元のアルバムへの復元機能はまだありません。既存アルバムを削除・上書きしたり、SafariのWebサイトデータを消去したりしないでね。</p>
+<p style="font-size:12px;color:#607086">試験領域への復元は既存試験データを上書きしないため、すでに復元済みの場合は再実行が停止します。その場合は既存の試験表示を使って確認できます。</p>
+</section>
 <section id="restoredPortablePreviewPanel" hidden style="margin:12px 0;padding:14px;min-width:0;border-radius:12px;border:1px solid #cdd9e5;background:#f7faff">
 <b>📖 ファイルから復元した試験アルバム（読み取り専用）</b>
 <p id="restoredPortablePreviewStatus" class="muted" role="status"></p>
@@ -1752,6 +1764,12 @@ $('#exportMigrationBackupFile').addEventListener('click',async()=>{
  finally{db?.close();if(url)setTimeout(()=>URL.revokeObjectURL(url),60000);button.disabled=false}
 });
 // Read-only pre-migration audit: compare the original, immutable backup and split copy.
+$('#recoveryGuideToggle').addEventListener('click',()=>{
+ const panel=$('#recoveryGuidePanel'),button=$('#recoveryGuideToggle');
+ panel.hidden=!panel.hidden;
+ button.setAttribute('aria-expanded',String(!panel.hidden));
+ button.textContent=panel.hidden?'🛟 復旧リハーサルの手順':'🛟 復旧手順を閉じる';
+});
 $('#preMigrationSafetyAudit').addEventListener('click',async()=>{
  const button=$('#preMigrationSafetyAudit'),status=$('#editorStatus');
  button.disabled=true;
