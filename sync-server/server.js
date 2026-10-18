@@ -235,6 +235,13 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
    }catch(e){return json(res,500,{message:'保存データの確認に失敗しました'});}
   }
  }
+ // Offline shell is limited to the synthetic album; never cache real photos or API state.
+ if(req.method==='GET'&&path==='/fictional-album/offline-sw.js'){
+  if(!tlsOptions)return json(res,403,{message:'HTTPSが必要です'});
+  if(!isPaired(req))return json(res,401,{message:'この端末をペアリングしてください'});
+  res.writeHead(200,{'Content-Type':'text/javascript; charset=utf-8','Service-Worker-Allowed':'/fictional-album','Cache-Control':'no-store'});
+  return res.end("const CACHE='omoide-fictional-shell-v1',PAGE='/fictional-album';\nself.addEventListener('install',e=>e.waitUntil((async()=>{const r=await fetch(PAGE,{cache:'no-store'});if(r.ok&&r.headers.get('content-type')?.includes('text/html'))await(await caches.open(CACHE)).put(PAGE,r);await self.skipWaiting()})()));\nself.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));\nself.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.mode!=='navigate'||e.request.method!=='GET'||u.origin!==self.location.origin||u.pathname!==PAGE)return;e.respondWith((async()=>{try{const r=await fetch(e.request);if(r.ok&&r.headers.get('content-type')?.includes('text/html'))await(await caches.open(CACHE)).put(PAGE,r.clone());return r}catch{return(await(await caches.open(CACHE)).match(PAGE))||Response.error()}})())});");
+ }
  // Fictional-only bidirectional album: no real photos, names or arbitrary input.
  if(path==='/fictional-album'&&req.method==='GET'){
   if(!tlsOptions)return json(res,403,{message:'HTTPSが必要です'});
