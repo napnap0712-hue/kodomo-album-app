@@ -785,6 +785,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p id="syncReusePhotoResult" class="muted" role="status">未実施。架空画像を専用の保存領域で検証します。</p>
 <button class="secondary wide" id="syncReusePreflight" type="button">🛡️ 既存写真の再利用準備チェック（読み取りのみ）</button>
 <p id="syncReusePreflightResult" class="muted" role="status">未確認。写真は保存し直さず、元のデータを変更しません。</p>
+<button class="secondary wide" id="syncPhotoReuseTrial" type="button">🧪 写真再利用の別コピー試験保存</button>
+<p id="syncPhotoReuseTrialResult" class="muted" role="status">未実施。元アルバムは読み取りのみ。試験用領域に別コピーを作ります。</p>
 </div>
 <div class="panel" style="display:grid;gap:11px;padding:16px;margin-top:14px">
 <b>📦 アルバムを別コピーで引き継ぐ（試験版）</b>
@@ -2012,6 +2014,50 @@ document.getElementById('syncReusePreflight').addEventListener('click',async()=>
    :'⚠️ 写真 '+checked+'枚・写真の配置 '+linked+'個を確認。再利用前に要確認 '+issues+'件があります。保存方式は変更していません。';
  }catch(e){out.textContent='⚠️ 確認できませんでした。既存データは変更していません。';}
  finally{btn.disabled=false}
+});
+
+// Test saved photo reuse in a separate database. Never write to the source album DB.
+document.getElementById('syncPhotoReuseTrial').addEventListener('click',async()=>{
+ const btn=document.getElementById('syncPhotoReuseTrial'),out=document.getElementById('syncPhotoReuseTrialResult');
+ btn.disabled=true;out.textContent='🧪 元の保存データを読み取り、別の試験領域に保存しています…';
+ let db=null;
+ try{
+  const originals=await getAllDrafts();
+  if(!originals.length)throw Error('保存済みアルバムがありません');
+  const original=originals.find(d=>Array.isArray(d.photos)&&d.photos.length&&Array.isArray(d.designElements));
+  if(!original)throw Error('試験できる保存形式のアルバムがありません');
+  const photos=original.photos;
+  for(const photo of photos){if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error('写真データが不完全です')}
+  const originalBytes=await Promise.all(photos.map(async p=>new Uint8Array(await p.blob.arrayBuffer())));
+  const name='omoide-photo-reuse-trial-v1';
+  const open=()=>new Promise((resolve,reject)=>{const req=indexedDB.open(name,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('drafts'))req.result.createObjectStore('drafts',{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('試験領域を開けません'))});
+  const action=(mode,operation)=>new Promise((resolve,reject)=>{
+   const tx=db.transaction('drafts',mode);let result;
+   const req=operation(tx.objectStore('drafts'));req.onsuccess=()=>{result=req.result};req.onerror=()=>reject(req.error||Error('試験保存に失敗'));
+   tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error||Error('試験保存に失敗'));tx.onabort=()=>reject(tx.error||Error('試験保存が中断'));
+  });
+  db=await open();
+  const copy={id:'reuse-trial-only',photos:photos.map(p=>({name:p.name,type:p.type,blob:p.blob})),
+   designElements:structuredClone(original.designElements),title:'保存方式試験（架空タイトル）',updatedAt:Date.now()};
+  await action('readwrite',store=>store.put(copy));
+  db.close();db=null;db=await open();
+  const after=await action('readonly',store=>store.get('reuse-trial-only'));
+  if(after?.photos?.length!==photos.length||after?.designElements?.length!==copy.designElements.length)throw Error('別コピーの構造が一致しません');
+  for(let n=0;n<photos.length;n++){
+   const got=after.photos[n]?.blob;
+   if(!(got instanceof Blob)||got.size!==photos[n].blob.size)throw Error((n+1)+'枚目の保存サイズが不一致');
+   const current=new Uint8Array(await got.arrayBuffer()),reference=originalBytes[n];
+   if(current.length!==reference.length||current.some((v,i)=>v!==reference[i]))throw Error((n+1)+'枚目の画像データが一致しません');
+   const url=URL.createObjectURL(got);
+   try{const img=await new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error((n+1)+'枚目が表示できません'));im.src=url});if(!img.naturalWidth||!img.naturalHeight)throw Error((n+1)+'枚目の画像サイズが不正')}
+   finally{URL.revokeObjectURL(url)}
+  }
+  // Verify the saved source has not been overwritten.
+  const sourceAgain=(await getAllDrafts()).find(d=>d.id===original.id);
+  if(!sourceAgain||sourceAgain.updatedAt!==original.updatedAt||sourceAgain.photos?.length!==photos.length)throw Error('元データの状態に変更がある可能性があります');
+  out.textContent='✅ 別コピー試験保存成功：写真 '+photos.length+'枚のデータ一致・画像表示を確認。元のアルバムは上書きしていません。試験用コピーは別の保存領域にあります。';
+ }catch(e){out.textContent='⚠️ 別コピー試験で確認事項：'+(e?.message||String(e))+'。元のアルバムへの書き込みは行っていません。'}
+ finally{if(db)db.close();btn.disabled=false}
 });
 
 const syncConnectionNote=document.getElementById('syncConnectionNote');
