@@ -1644,20 +1644,32 @@ $('#trialSplitMigration').addEventListener('click',async()=>{
 let splitSavedBackground='#ffffff';
 function setSplitPreviewBackground(value){
  const canvas=$('#trialSplitPreviewCanvas');
- const custom=kind=>'custom-pattern:'+encodeURIComponent(JSON.stringify({kind:kind,base:'#ffffff',colors:['#7bbde8','#ffd277'],size:12,gap:26}));
+ const custom=kind=>'custom-pattern:'+encodeURIComponent(JSON.stringify({kind,base:'#ffffff',colors:['#7bbde8','#ffd277'],size:12,gap:26}));
  const actual=value==='saved'?splitSavedBackground:value==='custom-check'?custom('check'):value==='custom-flower'?custom('flower'):value==='custom-star'?custom('star'):value;
+ // Use an independent background layer. It cannot be overridden by editor canvas CSS.
+ canvas.classList.remove('hasMyBg');
+ canvas.style.background='#ffffff';
+ let layer=canvas.querySelector('[data-split-background-layer]');
+ if(!layer){
+  layer=document.createElement('div');layer.dataset.splitBackgroundLayer='true';
+  layer.style.cssText='position:absolute;inset:0;pointer-events:none;z-index:0;background:#ffffff;';
+  canvas.prepend(layer);
+ }
  const img=myBgSettings(actual);
- canvas.classList.toggle('hasMyBg',!!img);
- for(const k of ['image','size','scale','position','opacity','blur'])canvas.style.removeProperty('--my-bg-'+k);
  if(img){
-  canvas.style.background='#ffffff';
-  canvas.style.setProperty('--my-bg-image','url("'+img.data+'")');
-  canvas.style.setProperty('--my-bg-size',img.fit==='contain'?'contain':'cover');
-  canvas.style.setProperty('--my-bg-scale',String((Number(img.zoom)||100)/100));
-  canvas.style.setProperty('--my-bg-position',(img.x??50)+'% '+(img.y??50)+'%');
-  canvas.style.setProperty('--my-bg-opacity',String((img.opacity??100)/100));
-  canvas.style.setProperty('--my-bg-blur',(img.blur??0)+'px');
- }else canvas.style.background=backgroundStyle(actual);
+  layer.style.background='#ffffff';
+  layer.style.backgroundImage='url("'+img.data+'")';
+  layer.style.backgroundRepeat='no-repeat';
+  layer.style.backgroundPosition=(img.x??50)+'% '+(img.y??50)+'%';
+  layer.style.backgroundSize=img.fit==='contain'?'contain':'cover';
+  layer.style.opacity=String((img.opacity??100)/100);
+  layer.style.filter='blur('+(img.blur??0)+'px)';
+  layer.style.transform='scale('+((Number(img.zoom)||100)/100)+')';
+ }else{
+  layer.style.background=backgroundStyle(actual);
+  layer.style.opacity='1';layer.style.filter='none';layer.style.transform='none';
+ }
+ for(const node of canvas.querySelectorAll('.designElement'))node.style.zIndex='1';
 }
 $('#trialSplitBackgroundTest').addEventListener('change',e=>{
  setSplitPreviewBackground(e.target.value);
