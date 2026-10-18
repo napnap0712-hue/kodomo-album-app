@@ -1796,9 +1796,13 @@ $('#safeMigrationTrial').addEventListener('click',async()=>{
   phase='途中失敗の模擬検証';
   await new Promise((resolve,reject)=>{
    const tx=db.transaction(['photos','edits','state'],'readwrite');
+   // An intentional abort fires request/transaction error events in Safari.
+   // Judge the rehearsal by onabort plus a subsequent read, not by onerror.
+   tx.onabort=()=>resolve();
+   tx.oncomplete=()=>reject(Error('中断したはずの処理が確定されました'));
+   tx.onerror=event=>event.preventDefault();
    tx.objectStore('photos').put({blob:new Blob([bytes[0]],{type:original.photos[0].blob.type})},'trial-'+original.id+'-0');
    tx.abort();
-   tx.onabort=resolve;tx.onerror=()=>reject(tx.error||Error('中断に失敗'));
   });
   if(await read('photos','trial-'+original.id+'-0')||await read('state','active'))throw Error('中断後に一部のデータが残りました');
   phase='全件コピー';
