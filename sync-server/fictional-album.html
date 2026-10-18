@@ -40,10 +40,28 @@ button.secondary{background:#ecf1f8;color:#344c6a}button:disabled{opacity:.5}
 <button type="button" id="resolveServer" class="secondary">📥 サーバーの最新版を採用（自分の編集を破棄）</button>
 <p class="muted" id="resolveMessageStatus" role="status"></p>
 </section>
-<p class="muted">4秒ごとに最新版を確認します。編集中の変更は勝手に上書きしません。ほかの端末が先に保存したときは競合として通知します。</p>
+<p class="muted">4秒ごとに最新版を確認します。未送信の編集はこの端末に一時保存し、再読み込み後も復元します。ほかの端末が先に保存したときは競合として通知します。</p>
 <p class="muted">🔒 HTTPS・ペアリング必須。ここから送信できるのは、あらかじめ決められた架空の文字列と背景の選択肢だけです。</p></main>
 <script>
 const ids=['title','message','color'];
+// Contains only the three fixed fictional selections. Never actual child information.
+const DRAFT_KEY='omoide-fictional-album-local-draft-v1';
+let options=null;
+function savedDraft(){
+ try{
+  const d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
+  if(!d||!Number.isSafeInteger(d.baseRevision)||d.baseRevision<0||!options)return null;
+  if(ids.some(k=>typeof d[k]!=='string'||!options[k]?.includes(d[k])))return null;
+  return d;
+ }catch{return null;}
+}
+function rememberDraft(){
+ if(!current||!options)return;
+ const d={baseRevision:current.revision,...selections()};
+ try{localStorage.setItem(DRAFT_KEY,JSON.stringify(d));}catch{}
+}
+function forgetDraft(){try{localStorage.removeItem(DRAFT_KEY)}catch{}}
+
 const labels={title:'タイトル',message:'メッセージ',color:'背景色'};
 const colors={peach:'ピンク',mint:'ミント',sky:'水色'};
 const els=Object.fromEntries(ids.map(id=>[id,document.getElementById(id)]));
@@ -53,7 +71,7 @@ const resolveStatus=document.getElementById('resolveMessageStatus');
 let current=null,busy=false,changed=false,remoteConflict=null;
 function selections(){return Object.fromEntries(ids.map(id=>[id,els[id].value]));}
 function paint(){document.getElementById('previewTitle').textContent=els.title.value;document.getElementById('previewMessage').textContent=els.message.value;document.getElementById('preview').className=els.color.value;}
-function setChoices(choices){for(const key of ids){els[key].replaceChildren();for(const value of choices[key]){const option=document.createElement('option');option.value=value;option.textContent=key==='color'?colors[value]:value;els[key].appendChild(option)}}}
+function setChoices(choices){options=choices;for(const key of ids){els[key].replaceChildren();for(const value of choices[key]){const option=document.createElement('option');option.value=value;option.textContent=key==='color'?colors[value]:value;els[key].appendChild(option)}}}
 function displayValue(key,value){return key==='color'?colors[value]||value:value;}
 function closeCompare(){remoteConflict=null;resolutionPanel.hidden=true;compareRows.replaceChildren();resolveStatus.textContent='';}
 function applyState(data){
@@ -61,7 +79,7 @@ function applyState(data){
  for(const key of ids)els[key].value=data[key];
  document.getElementById('revision').textContent='改訂 '+data.revision;
  document.getElementById('lastTime').textContent=data.updatedAt?'最終更新 '+new Date(data.updatedAt).toLocaleString('ja-JP'):'まだ変更されていません';
- changed=false;conflict.textContent='';closeCompare();paint();
+ changed=false;conflict.textContent='';closeCompare();paint();forgetDraft();
 }
 function showConflict(data){
  if(!data||!Number.isSafeInteger(data.revision))return;
@@ -106,7 +124,26 @@ async function init(){
  try{
   const response=await fetch('/fictional-album/choices',{cache:'no-store'});
   const data=await response.json();if(!response.ok)throw Error(data.message||'接続できません');
-  setChoices(data.choices);await refresh(true);
+  setChoices(data.choices);
+  const pending=savedDraft();
+  const latest=await getState();
+  applyState(latest);
+  if(pending){
+   current={...latest,revision:pending.baseRevision};
+   for(const key of ids)els[key].value=pending[key];
+   changed=ids.some(key=>pending[key]!==latest[key])||pending.baseRevision!==latest.revision;
+   paint();
+   if(changed){
+    rememberDraft();
+    if(latest.revision!==pending.baseRevision){
+     showConflict(latest);
+     status.textContent='⚠️ 端末内の未送信編集を復元しました。最新版との競合を確認してね。';
+    }else status.textContent='📝 端末内の未送信編集を復元しました。保存して同期できるよ。';
+   }else{
+    applyState(latest);
+    status.textContent='✅ サーバーの保存版を読み込みました';
+   }
+  }else status.textContent='✅ サーバーの保存版を読み込みました';
  }catch(e){status.textContent='⚠️ '+e.message+'。先にペアリングしてください。';}
 }
 function lockButtons(on){
@@ -118,7 +155,7 @@ async function sendSave(payload){
  return {code:r.status,data};
 }
 for(const key of ids)els[key].addEventListener('change',()=>{
- changed=true;paint();status.textContent='✏️ 編集中（まだサーバーには未保存）';
+ changed=true;paint();rememberDraft();status.textContent='✏️ 編集中（端末に一時保存・サーバーには未送信）';
  if(remoteConflict)showConflict(remoteConflict);
 });
 saveButton.onclick=async()=>{
@@ -130,7 +167,7 @@ saveButton.onclick=async()=>{
   if(code===409){showConflict(data.current||await getState());return;}
   if(code!==200)throw Error(data.message||'保存できませんでした');
   applyState(data.state);status.textContent=data.unchanged?'✅ 変更はありません（最新版です）':'✅ サーバーに保存しました。もう一方の端末にも反映されます。';
- }catch(e){status.textContent='⚠️ '+e.message+'。編集内容は画面に残っています。';}
+ }catch(e){status.textContent='⚠️ '+e.message+'。編集内容はこの端末にも残っています。';}
  finally{lockButtons(false);}
 };
 document.getElementById('resolveSave').onclick=async()=>{
@@ -149,7 +186,7 @@ document.getElementById('resolveSave').onclick=async()=>{
   if(code===409){showConflict(data.current||await getState());resolveStatus.textContent='⚠️ 確認中に別の更新が入りました。最新版と比較し直してね。';return;}
   if(code!==200)throw Error(data.message||'保存できませんでした');
   applyState(data.state);status.textContent='✅ 選んだ内容を新しい版として保存しました。';
- }catch(e){resolveStatus.textContent='⚠️ '+e.message+'。選択中の内容はまだ残っています。';}
+ }catch(e){resolveStatus.textContent='⚠️ '+e.message+'。選択中の内容はこの端末にも残っています。';}
  finally{lockButtons(false);}
 };
 document.getElementById('resolveServer').onclick=async()=>{
