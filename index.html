@@ -1662,15 +1662,30 @@ $('#trialSplitPreviewButton').addEventListener('click',async()=>{
    if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error((n+1)+'枚目の画像がありません');
    photos.push(photo.blob);splitPreviewPhotos.push(photo.blob);
   }
+  // Reuse the editor's background rules for colors, built-in/custom patterns and images.
   const background=String(edits.background||'#ffffff');
-  canvas.style.backgroundColor=/^#[0-9a-f]{3,8}$/i.test(background)?background:'#ffffff';
-  // Trial preview must show the saved page color, not the editor's guide/grid pattern.
-  canvas.style.backgroundImage='none';
-  canvas.style.background='none';
-  canvas.style.backgroundColor=/^#[0-9a-f]{3,8}$/i.test(background)?background:'#ffffff';
+  const myBackground=myBgSettings(background);
   canvas.classList.toggle('spreadCanvas',edits.layout!=='single'&&edits.layout!=='grid');
   canvas.classList.toggle('singleCanvas',edits.layout==='single');
   canvas.classList.toggle('gridCanvas',edits.layout==='grid');
+  canvas.classList.toggle('hasMyBg',!!myBackground);
+  canvas.style.removeProperty('--my-bg-image');
+  canvas.style.removeProperty('--my-bg-size');
+  canvas.style.removeProperty('--my-bg-scale');
+  canvas.style.removeProperty('--my-bg-position');
+  canvas.style.removeProperty('--my-bg-opacity');
+  canvas.style.removeProperty('--my-bg-blur');
+  if(myBackground){
+   canvas.style.background='#ffffff';
+   canvas.style.setProperty('--my-bg-image','url("'+myBackground.data+'")');
+   canvas.style.setProperty('--my-bg-size',myBackground.fit==='contain'?'contain':'cover');
+   canvas.style.setProperty('--my-bg-scale',String((Number(myBackground.zoom)||100)/100));
+   canvas.style.setProperty('--my-bg-position',(myBackground.x??50)+'% '+(myBackground.y??50)+'%');
+   canvas.style.setProperty('--my-bg-opacity',String((myBackground.opacity??100)/100));
+   canvas.style.setProperty('--my-bg-blur',(myBackground.blur??0)+'px');
+  }else{
+   canvas.style.background=backgroundStyle(background);
+  }
   const spread=Number.isInteger(edits.spreadIndex)?edits.spreadIndex:0;
   let photoCount=0,textCount=0,otherCount=0;
   // Use exactly the same element renderer/CSS as the regular editor, without editing or saving.
