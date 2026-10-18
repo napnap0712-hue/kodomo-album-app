@@ -1649,8 +1649,8 @@ $('#exportMigrationBackupFile').addEventListener('click',async()=>{
   }
   stage='編集情報の検証';
   if(!Array.isArray(metadata.designElements)||metadata.backupPhotoCount!==encodedPhotos.length)throw Error('編集情報の整合性に問題があります');
-  const document={format:'omoide-book-portable-backup',version:1,exportedAt:new Date().toISOString(),metadata,photos:encodedPhotos};
-  const raw=JSON.stringify(document);
+  const backupPayload={format:'omoide-book-portable-backup',version:1,exportedAt:new Date().toISOString(),metadata,photos:encodedPhotos};
+  const raw=JSON.stringify(backupPayload);
   const check=JSON.parse(raw);
   if(check.format!=='omoide-book-portable-backup'||check.photos.length!==metadata.backupPhotoCount||JSON.stringify(check.metadata.designElements)!==JSON.stringify(metadata.designElements))throw Error('ファイル内容の検証に失敗');
   stage='MacBookへの書き出し';
