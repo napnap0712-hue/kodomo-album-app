@@ -13,6 +13,7 @@ let pin='',expires=0;
 const {createSessionStore}=require('./pairing-store');
 const demoImage=require('./demo-image');
 const demoBatch=require('./demo-batch');
+const fictionalAlbum=require('./fictional-album').createStore();
 const batchStore=demoBatch.createStore();
 const demoImagePath=require('node:path').join(__dirname,'data','synthetic-demo-image.svg');
 let demoImageReceivedAt=null;
@@ -216,6 +217,27 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
     return res.end(bytes);
    }catch(e){return json(res,500,{message:'保存データの確認に失敗しました'});}
   }
+ }
+ // Fictional-only bidirectional album: no real photos, names or arbitrary input.
+ if(path==='/fictional-album'&&req.method==='GET'){
+  if(!tlsOptions)return json(res,403,{message:'HTTPSが必要です'});
+  if(!isPaired(req))return json(res,401,{message:'この端末をペアリングしてください'});
+  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'",'Cache-Control':'no-store','X-Frame-Options':'DENY'});
+  return res.end(fs.readFileSync(require('node:path').join(__dirname,'fictional-album.html')));
+ }
+ if(path.startsWith('/fictional-album/')){
+  if(!tlsOptions)return json(res,403,{message:'HTTPSが必要です'});
+  if(!isPaired(req))return json(res,401,{message:'この端末をペアリングしてください'});
+  if(req.method==='GET'&&path==='/fictional-album/choices')return json(res,200,{choices:fictionalAlbum.choices,syntheticOnly:true});
+  if(req.method==='GET'&&path==='/fictional-album/state')return json(res,200,{...fictionalAlbum.read(),syntheticOnly:true});
+  if(req.method==='POST'&&path==='/fictional-album/state'){
+   if(req.headers['content-type']!=='application/json')return json(res,415,{message:'JSONで送信してください'});
+   const chunks=[];let len=0;
+   for await(const part of req){len+=part.length;if(len>4096)return json(res,413,{message:'テストデータが大きすぎます'});chunks.push(part);}
+   let payload;try{payload=JSON.parse(Buffer.concat(chunks).toString('utf8'))}catch{return json(res,400,{message:'JSON形式が正しくありません'})}
+   try{const result=fictionalAlbum.save(payload);return json(res,result.status,{...result,syntheticOnly:true})}catch(e){console.error('fictional demo save error:',e.message);return json(res,500,{message:'保存処理でエラーが発生しました'})}
+  }
+  return json(res,404,{message:'このテスト機能はありません'});
  }
  if(req.method==='POST'&&path==='/unpair'){
   const token=pairingToken(req);if(token)sessionStore.remove(token);
