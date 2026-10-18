@@ -29,3 +29,18 @@ test('local storage deduplicates and resumes interrupted transfers',()=>{
   assert.equal(batch.createStore(dir).list().filter(x=>x.received).length,5);
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('partial transfer resumes without duplicating saved fixtures',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'omoide-retry-'));
+ try{
+  const store=batch.createStore(dir);
+  for(const f of batch.fixtures.slice(0,2))assert.deepEqual(store.put(f.id,f.bytes),{accepted:true,duplicate:false});
+  assert.equal(store.list().filter(x=>x.received).length,2);
+  const pending=batch.fixtures.filter(f=>!store.list().some(s=>s.id===f.id&&s.received));
+  assert.equal(pending.length,3);
+  for(const f of pending)assert.deepEqual(store.put(f.id,f.bytes),{accepted:true,duplicate:false});
+  assert.equal(store.list().filter(x=>x.received).length,5);
+  assert.equal(store.clearDemo(),5);
+  assert.equal(store.list().filter(x=>x.received).length,0);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
