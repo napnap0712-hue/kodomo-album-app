@@ -1903,6 +1903,7 @@ const fictionalPreviewPhotos=[];
 let fictionalEditEnabled=false,fictionalSelected=null;
 function resetFictionalEdit(){
  fictionalEditEnabled=false;fictionalSelected=null;
+ $('#fictionalSplitPreviewCanvas').style.pointerEvents='none';
  const toggle=$('#fictionalEditToggle'),tools=$('#fictionalEditTools');
  if(toggle)toggle.textContent='✏️ 架空アルバムを編集';
  if(tools)tools.hidden=true;
@@ -1920,6 +1921,7 @@ function setupFictionalEdit(){
  controls.append(toggle,tools);status.insertAdjacentElement('afterend',controls);
  toggle.addEventListener('click',()=>{
   fictionalEditEnabled=!fictionalEditEnabled;fictionalSelected=null;
+  $('#fictionalSplitPreviewCanvas').style.pointerEvents=fictionalEditEnabled?'auto':'none';
   toggle.textContent=fictionalEditEnabled?'🔒 編集を終了':'✏️ 架空アルバムを編集';
   tools.hidden=!fictionalEditEnabled;
   status.textContent=fictionalEditEnabled?'✏️ 架空写真をドラッグして移動。写真を選んで回転できます。変更は画面上だけで、保存されません。':'🔒 編集を終了しました。保存データは変更していません。';
