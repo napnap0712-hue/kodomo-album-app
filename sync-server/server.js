@@ -10,11 +10,16 @@ const HOST=process.env.OMOIDE_SYNC_HOST||'0.0.0.0';
 const PORT=Number(process.env.OMOIDE_SYNC_PORT||4318);
 if(!Number.isInteger(PORT)||PORT<1||PORT>65535)throw Error('Invalid port');
 let pin='',expires=0;
-const sessions=new Map(),failures=new Map();
+const {createSessionStore}=require('./pairing-store');
+// Persist only while HTTPS is configured. In HTTP demo mode sessions remain ephemeral.
+const sessionStore=createSessionStore({enabled:!!tlsOptions});
+const failures=new Map();
+const SESSION_DURATION_MS=tlsOptions?7*24*60*60*1000:60*60*1000;
+const SESSION_MAX_AGE=Math.floor(SESSION_DURATION_MS/1000);
 let demoRevision=0,demoValue=0; // Synthetic integer only; not persisted.
 const fakeChildren=['テスト園児A','テスト園児B','テスト園児C'];let fakeChildIndex=0,fakeChildRevision=0; // No names or photos are accepted from clients.
 function pairingToken(req){return /(?:^|;\s*)omoide_pair=([0-9a-f]{48})(?:;|$)/.exec(req.headers.cookie||'')?.[1]||null;}
-function pairedSession(req){const token=pairingToken(req);if(!token)return null;const session=sessions.get(token);if(!session||session.expires<=Date.now()){sessions.delete(token);return null;}return session;}
+function pairedSession(req){const token=pairingToken(req);if(!token)return null;return sessionStore.get(token);}
 function isPaired(req){return !!pairedSession(req);}
 function checkSameOrigin(req){return req.headers.origin===protocol+'://'+req.headers.host;}
 function isLoopback(req){return ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress);}
@@ -35,7 +40,7 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
    allowsRealChildData:false,
    allowsRealPhotos:false,
    authenticatedPairingDemo:true,
-   sessionPersistence:false,
+   sessionPersistence:sessionStore.enabled,
    message:tlsOptions?'HTTPSで通信中です。証明書の信頼と端末認証の本番要件は別途確認が必要です。':'HTTPのため暗号化されていません。架空データのテスト専用です。'
   });
  }
@@ -66,9 +71,9 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
    state.count++;if(state.count>=5)state.until=Date.now()+300000;failures.set(ip,state);
    return pairReply(403,'コードが違います。');
   }
-  const token=crypto.randomBytes(24).toString('hex');sessions.set(token,{id:crypto.randomBytes(8).toString('hex'),expires:Date.now()+3600000,createdAt:Date.now()});
+  const token=crypto.randomBytes(24).toString('hex');sessionStore.add(token,{id:crypto.randomBytes(8).toString('hex'),expires:Date.now()+SESSION_DURATION_MS,createdAt:Date.now()});
   renewPin();
-  return pairReply(200,'✅ iPhoneの接続テスト成功！写真の自動同期はまだ始まりません。','omoide_pair='+token+'; HttpOnly; Path=/; SameSite=Strict; Max-Age=3600'+(tlsOptions?'; Secure':''));
+  return pairReply(200,'✅ iPhoneの接続テスト成功！写真の自動同期はまだ始まりません。','omoide_pair='+token+'; HttpOnly; Path=/; SameSite=Strict; Max-Age='+SESSION_MAX_AGE+(tlsOptions?'; Secure':''));
  }
  if(path==='/demo-value'&&req.method==='GET'){
   if(!isPaired(req)&&!isLoopback(req))return json(res,401,{message:'ペアリングしてください'});
@@ -91,16 +96,16 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
   return json(res,200,{name:fakeChildren[fakeChildIndex],revision:fakeChildRevision,syntheticOnly:true});
  }
  if(req.method==='POST'&&path==='/unpair'){
-  const token=pairingToken(req);if(token)sessions.delete(token);
+  const token=pairingToken(req);if(token)sessionStore.remove(token);
   res.writeHead(303,{'Location':'/pair','Cache-Control':'no-store','Set-Cookie':'omoide_pair=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0'+(tlsOptions?'; Secure':'')});return res.end();
  }
  if(req.method==='GET'&&path==='/devices'){
   if(!isLoopback(req))return json(res,403,{message:'この操作はサーバーのパソコンのみです'});
-  const active=[...sessions.values()].filter(x=>x.expires>Date.now());return json(res,200,{activeDeviceCount:active.length,devices:active.map(s=>({id:s.id,expiresAt:new Date(s.expires).toISOString()})),storedOnDisk:false});
+  const active=sessionStore.list();return json(res,200,{activeDeviceCount:active.length,devices:active.map(s=>({id:s.id,expiresAt:new Date(s.expires).toISOString()})),storedOnDisk:sessionStore.enabled});
  }
  if(req.method==='POST'&&path==='/revoke-all'){
   if(!isLoopback(req))return json(res,403,{message:'この操作はサーバーのパソコンのみです'});
-  sessions.clear();renewPin();return json(res,200,{message:'すべての接続を解除しました。',activeDeviceCount:0});
+  sessionStore.clear();renewPin();return json(res,200,{message:'すべての接続を解除しました。',activeDeviceCount:0});
  }
  if(req.method==='GET'&&path==='/pair-status'){
   const session=pairedSession(req);
@@ -114,6 +119,6 @@ server.listen(PORT,HOST,()=>{
  for(const [name,devices]of Object.entries(os.networkInterfaces()))for(const net of devices||[])if(net.family==='IPv4'&&!net.internal)console.log(name+': '+protocol+'://'+net.address+':'+PORT+'/pair');
  renewPin();
  console.log('テスト数字の確認： '+protocol+'://localhost:'+PORT+'/demo-value');
- console.log(tlsOptions?'HTTPSモード：iPhone側で信頼できる証明書が必要です。':'HTTPテストモード：暗号化なし。架空データ以外を送らないでください。');
+ console.log(tlsOptions?'HTTPSモード：テスト端末の登録を7日間（最大）保存します。':'HTTPテストモード：暗号化なし・登録保存なし。架空データ以外を送らないでください。');
 });
 server.on('error',e=>{console.error('起動エラー:',e.message);process.exitCode=1});
