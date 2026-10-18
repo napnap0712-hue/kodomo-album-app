@@ -769,7 +769,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <div class="panel" style="display:grid;gap:12px;padding:16px;margin-top:14px">
 <label class="field">接続先の同期サーバー<input id="syncServerAddress" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://192.168.0.8:4318" aria-describedby="syncAddressHelp"></label>
 <p id="syncAddressHelp" class="muted">MacBookの同期サーバーをHTTPSで起動し、ターミナルに表示されたアドレスを入力してね。アドレスはこの端末のみに保存します。</p>
-<button class="secondary wide" id="syncCheckHealth" type="button">🔄 通信状態を再確認</button><button class="secondary wide" id="syncCheckPairing" type="button">🔐 この端末のペアリングを確認</button><button class="secondary wide" id="syncOpenStatus" type="button">🔍 接続・ペアリング状況を開く</button>
+<button class="secondary wide" id="syncCheckHealth" type="button">🔄 通信状態を再確認</button><button class="secondary wide" id="syncCheckPairing" type="button">🔐 この端末のペアリングを確認</button><button class="secondary wide" id="syncOpenStatus" type="button">🔍 接続・ペアリング状況を開く</button><button class="secondary wide" id="syncOpenFictionalAlbum" type="button">📚 架空アルバムの双方向同期テストを開く</button>
 <p id="syncUiMessage" class="muted" role="status">ここでは同期サーバーとの通信だけを確認します。アルバムの自動同期はまだできません。</p>
 </div>
 <p class="notice" style="margin-top:14px">🔒 この画面は接続先アドレスだけを扱います。アルバム・園児情報・写真・認証トークンは送信しません。まだ自動同期はできません。</p>
@@ -1696,6 +1696,15 @@ syncAddrEl.addEventListener('change',()=>{
   syncAddrEl.value=url.origin;
   syncUiMessage.textContent='接続先をこの端末だけに保存しました。接続状態はまだ未確認です。';syncCheckHealth();
  }catch{syncUiMessage.textContent='HTTPSの接続先だけを入力してね（例：https://192.168.0.8:4318）。';}
+});
+document.getElementById('syncOpenFictionalAlbum').addEventListener('click',()=>{
+ try{
+  const origin=syncServerOrigin();
+  const link=document.createElement('a');
+  link.href=origin+'/fictional-album';link.target='_blank';link.rel='noopener noreferrer';
+  document.body.append(link);link.click();link.remove();
+  syncUiMessage.textContent='架空アルバムの同期テストを開きました。実際のアルバムとは連携していません。';
+ }catch{syncUiMessage.textContent='HTTPSの同期サーバーのアドレスを入力してね。';}
 });
 document.getElementById('syncOpenStatus').addEventListener('click',()=>{
  try{
