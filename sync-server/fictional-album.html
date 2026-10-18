@@ -34,6 +34,9 @@ button.secondary{background:#ecf1f8;color:#344c6a}button:disabled{opacity:.5}tex
 <button id="draftExport" class="secondary" type="button">📋 この画面の編集を引き継ぎコードにする</button>
 <label for="draftTransfer">引き継ぎコード（コピーして新しい画面へ貼り付け）</label>
 <textarea id="draftTransfer" spellcheck="false" autocomplete="off" placeholder="ここに引き継ぎコードが表示されます。新しい画面ではここに貼り付けてください。"></textarea>
+<button id="draftDownload" class="secondary" type="button">💾 引き継ぎコードをファイルに保存</button>
+<label for="draftFile">保存した引き継ぎファイルを読み込む</label>
+<input id="draftFile" type="file" accept=".json,application/json">
 <button id="draftImport" class="secondary" type="button">📥 貼り付けた編集をこの画面に復元</button>
 <p class="muted" id="draftTransferStatus" role="status">コードはこの画面内で処理します。貼り付けだけではサーバーへ保存しません。</p>
 </section>
@@ -91,6 +94,30 @@ document.getElementById('draftExport').addEventListener('click',async()=>{
   transferArea.focus();transferArea.select();
   transferStatus.textContent='✅ コードを作成しました。コピーできない場合は選択されている文字列を手動でコピーしてね。';
  }
+});
+// Keep a portable copy outside origin-scoped storage so an IP change cannot hide it.
+document.getElementById('draftDownload').addEventListener('click',()=>{
+ if(!current||!options){transferStatus.textContent='⚠️ 画面が準備できていません。';return;}
+ const code=JSON.stringify({version:1,baseRevision:current.revision,...selections()});
+ const blob=new Blob([code],{type:'application/json'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;a.download='omoide-fictional-transfer.json';document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+ transferArea.value=code;
+ transferStatus.textContent='✅ 架空データの引き継ぎファイルを保存しました。新しい接続先ではファイルを選んでから復元を押してね。';
+});
+document.getElementById('draftFile').addEventListener('change',async event=>{
+ const file=event.target.files?.[0];if(!file)return;
+ try{
+  if(file.size>1024)throw Error('ファイルが大きすぎます');
+  const content=await file.text();
+  const parsed=JSON.parse(content);
+  if(!validTransfer(parsed))throw Error('引き継ぎコードの形式が違います');
+  transferArea.value=content;
+  transferStatus.textContent='✅ ファイルを読み込みました。「貼り付けた編集をこの画面に復元」を押すまでは変更しません。';
+ }catch(e){transferStatus.textContent='⚠️ '+e.message;}
+ event.target.value='';
 });
 document.getElementById('draftImport').addEventListener('click',async()=>{
  if(busy||!current||!options){transferStatus.textContent='⚠️ 接続と画面の準備を確認してね。';return;}
