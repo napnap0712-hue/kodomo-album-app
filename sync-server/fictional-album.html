@@ -298,7 +298,7 @@ saveButton.onclick=async()=>{
   if(code===409){const latest=data.current||await getState();if(!adoptMatchingServer(latest)&&!await tryMergeDisjoint(latest))showConflict(latest);return;}
   if(code!==200)throw Error(data.message||'保存できませんでした');
   applyState(data.state);status.textContent=data.unchanged?'✅ 変更はありません（最新版です）':'✅ サーバーに保存しました。もう一方の端末にも反映されます。';
- }catch(e){status.textContent='⚠️ '+e.message+'。編集内容はこの端末にも残っています。';}
+ }catch(e){preserveUnsentEdits();status.textContent='⚠️ 保存結果を確認できませんでした。編集中の内容は端末に保持しています。接続を確認してから再度保存してね。';}
  finally{lockButtons(false);}
 };
 document.getElementById('resolveSave').onclick=async()=>{
@@ -332,8 +332,23 @@ document.getElementById('resolveServer').onclick=async()=>{
  finally{lockButtons(false);}
 };
 document.getElementById('reload').onclick=()=>refresh(true);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
-setInterval(()=>{if(!document.hidden)refresh()},4000);
+// Preserve unsent edits before Safari moves the page into the background or closes it.
+function preserveUnsentEdits(){if(changed)rememberDraft();}
+window.addEventListener('pagehide',preserveUnsentEdits);
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden){preserveUnsentEdits();return;}
+ refresh();
+});
+// Do not send edits automatically after a reconnect: first compare revisions safely.
+window.addEventListener('online',()=>{
+ if(changed)status.textContent='📶 接続が戻りました。未送信の編集を保持したまま最新版を確認します。';
+ refresh();
+});
+window.addEventListener('offline',()=>{
+ preserveUnsentEdits();
+ status.textContent=changed?'📴 通信が切れました。変更はこの端末に一時保存しています。接続後に確認します。':'📴 通信が切れました。接続が戻ると最新版を確認します。';
+});
+setInterval(()=>{if(!document.hidden&&navigator.onLine)refresh()},4000);
 init();
 // Cache only this synthetic test screen. Never cache state/choices endpoints or real album data.
 if('serviceWorker' in navigator){
