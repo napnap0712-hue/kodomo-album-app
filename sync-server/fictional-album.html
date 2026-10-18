@@ -9,7 +9,7 @@ label{display:block;font-weight:700;margin:14px 0 6px;font-size:14px}
 select,button{font:inherit;width:100%;border-radius:12px;padding:13px;box-sizing:border-box}
 select{border:1px solid #cdd9e5;background:#fff}
 button{background:#3f7fd2;color:white;border:0;font-weight:750;margin-top:12px}
-button.secondary{background:#ecf1f8;color:#344c6a}button:disabled{opacity:.5}
+button.secondary{background:#ecf1f8;color:#344c6a}button:disabled{opacity:.5}textarea{font:13px ui-monospace,monospace;width:100%;box-sizing:border-box;min-height:98px;border:1px solid #cdd9e5;border-radius:10px;padding:10px;resize:vertical}
 .card{border:1px solid #e0e7f0;border-radius:16px;padding:16px;margin:15px 0}
 .muted{color:#687688;font-size:13px}.status{font-weight:700;margin:12px 0}
 #preview{padding:22px;border-radius:16px;text-align:center}
@@ -28,6 +28,15 @@ button.secondary{background:#ecf1f8;color:#344c6a}button:disabled{opacity:.5}
 <button type="button" id="save">💾 この変更をサーバーに保存</button>
 <button type="button" id="reload" class="secondary">🔄 サーバーの最新版を読み込む</button>
 <p id="conflict" class="status" role="alert"></p>
+<section class="card" aria-label="接続先が変わったときの編集引き継ぎ">
+<h2 style="font-size:18px;margin:0 0 6px">🔁 IPアドレス変更時の編集引き継ぎ</h2>
+<p class="muted">古いアドレスの画面で未送信の変更をコピーし、新しいアドレスの画面に貼り付けるテストです。実際の園児写真・名前は含まれません。</p>
+<button id="draftExport" class="secondary" type="button">📋 この画面の編集を引き継ぎコードにする</button>
+<label for="draftTransfer">引き継ぎコード（コピーして新しい画面へ貼り付け）</label>
+<textarea id="draftTransfer" spellcheck="false" autocomplete="off" placeholder="ここに引き継ぎコードが表示されます。新しい画面ではここに貼り付けてください。"></textarea>
+<button id="draftImport" class="secondary" type="button">📥 貼り付けた編集をこの画面に復元</button>
+<p class="muted" id="draftTransferStatus" role="status">コードはこの画面内で処理します。貼り付けだけではサーバーへ保存しません。</p>
+</section>
 <section id="resolutionPanel" hidden aria-label="競合内容の比較と解決">
 <h2>⚠️ 編集内容が競合しています</h2>
 <p class="muted">自分の編集と、サーバーに保存された最新版を比較してね。保存するまでどちらも勝手には上書きしません。</p>
@@ -61,6 +70,55 @@ function rememberDraft(){
  try{localStorage.setItem(DRAFT_KEY,JSON.stringify(d));}catch{}
 }
 function forgetDraft(){try{localStorage.removeItem(DRAFT_KEY)}catch{}}
+
+const transferArea=document.getElementById('draftTransfer');
+const transferStatus=document.getElementById('draftTransferStatus');
+function validTransfer(v){
+ return v&&typeof v==='object'&&!Array.isArray(v)&&
+ Object.keys(v).sort().join(',')==='baseRevision,color,message,title,version'&&
+ v.version===1&&Number.isSafeInteger(v.baseRevision)&&v.baseRevision>=0&&options&&
+ ids.every(k=>typeof v[k]==='string'&&options[k].includes(v[k]));
+}
+document.getElementById('draftExport').addEventListener('click',async()=>{
+ if(!current||!options){transferStatus.textContent='⚠️ 画面が準備できていません。以前の編集画面を開いたまま確認してね。';return;}
+ // Carry the original base revision across origins. No data leaves the browser here.
+ const code=JSON.stringify({version:1,baseRevision:current.revision,...selections()});
+ transferArea.value=code;
+ try{
+  await navigator.clipboard.writeText(code);
+  transferStatus.textContent='✅ 引き継ぎコードをコピーしました。新しいアドレスで貼り付けてね。';
+ }catch{
+  transferArea.focus();transferArea.select();
+  transferStatus.textContent='✅ コードを作成しました。コピーできない場合は選択されている文字列を手動でコピーしてね。';
+ }
+});
+document.getElementById('draftImport').addEventListener('click',async()=>{
+ if(busy||!current||!options){transferStatus.textContent='⚠️ 接続と画面の準備を確認してね。';return;}
+ let item;
+ try{if(transferArea.value.length>1024)throw Error('コードが長すぎます');item=JSON.parse(transferArea.value);}
+ catch(e){transferStatus.textContent='⚠️ 引き継ぎコードの形式を確認してね。';return;}
+ if(!validTransfer(item)){transferStatus.textContent='⚠️ 対応する架空アルバム用コードではありません。';return;}
+ if(changed&&!confirm('この画面には未送信の編集があります。上書きせず保存したい場合はキャンセルして、先にこの画面のコードをコピーしてください。貼り付けた編集に切り替えますか？'))return;
+ // Get the current server revision first so a stale source cannot overwrite newer work.
+ let latest;
+ try{latest=await getState();}
+ catch(e){transferStatus.textContent='⚠️ 最新版を取得できません。接続とペアリングを確認してね。コードはこの欄に残っています。';return;}
+ applyState(latest);
+ if(ids.every(k=>item[k]===latest[k])){
+  transferStatus.textContent='✅ 内容はサーバーの最新版と同じです。保存は不要だよ。';return;
+ }
+ current={...latest,revision:item.baseRevision};
+ for(const key of ids)els[key].value=item[key];
+ changed=true;paint();rememberDraft();
+ if(latest.revision!==item.baseRevision){
+  showConflict(latest);
+  status.textContent='⚠️ 引き継いだ編集とサーバー最新版が競合しています。比較して選んでね。';
+  transferStatus.textContent='✅ 編集内容を復元しました。サーバーの改訂が進んでいるので、競合画面から選んで保存してね。';
+ }else{
+  status.textContent='📝 編集内容を別のアドレスから引き継ぎました（未送信）';
+  transferStatus.textContent='✅ 編集内容を復元しました。「この変更をサーバーに保存」を押すと同期できます。';
+ }
+});
 
 const labels={title:'タイトル',message:'メッセージ',color:'背景色'};
 const colors={peach:'ピンク',mint:'ミント',sky:'水色'};
