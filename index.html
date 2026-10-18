@@ -739,7 +739,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor">
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
 <div class="editorPanel">
 <label class="field">アルバムのタイトル<input id="albumTitle" maxlength="80" placeholder="例：春のおさんぽ"></label>
 <div class="editorCanvasFirst"><div class="canvasZoomBar"><div id="historyControls" class="historyControls"><button id="undoEdit" type="button" disabled aria-label="元に戻す">←</button><button id="redoEdit" type="button" disabled aria-label="やり直す">→</button></div><div class="zoomCompactControls"><button type="button" id="zoomOut" aria-label="縮小">−</button><output id="zoomLevel">100%</output><button type="button" id="zoomIn" aria-label="拡大">＋</button><button type="button" id="zoomReset">100%</button></div><div class="editorModeCompact"><button type="button" id="panMode" aria-pressed="false" hidden>✋ ページ移動</button><button type="button" id="editMode" aria-pressed="true" hidden>✎ 写真・文字編集</button></div></div><div class="pageNav" hidden aria-hidden="true"><button id="prevSpread" type="button" tabindex="-1">‹ 前へ</button><span id="pageIndicator">1 / 1</span><button id="nextSpread" type="button" tabindex="-1">次へ ›</button></div>
@@ -1440,6 +1440,37 @@ function restoreEditRecovery(item){
 }
 function setEditorSaveState(state){const el=$('#editorSaveState');if(el)el.textContent=state}function scheduleEditorAutoSave(){clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;}function markEditorUnsaved(){editorSaveRevision++;setEditorSaveState('● 未保存の変更あり');scheduleEditorAutoSave();clearTimeout(editRecoveryTimer);editRecoveryTimer=setTimeout(saveEditRecovery,700)}
 const editorRoot=document.querySelector('[data-screen="editor"]');editorRoot.addEventListener('input',e=>{if(e.target.closest('button'))return;markEditorUnsaved()});editorRoot.addEventListener('change',markEditorUnsaved);editorRoot.addEventListener('pointerup',e=>{if(e.target.closest('button')&&e.target.id!=='saveDraft'&&e.target.id!=='exportImage')markEditorUnsaved()});
+// Experimental editor save: isolated DB only; never writes actual drafts or triggers sync.
+$('#trialSaveDraft').addEventListener('click',async()=>{
+ const button=$('#trialSaveDraft'),status=$('#editorStatus');
+ if(button.disabled)return;
+ if(!editorPhotoIntegrityOk||!files.length){status.textContent='⚠️ 写真が正常に読み込めないため試験保存を中止しました。';return}
+ button.disabled=true;status.textContent='🧪 写真を再変換せず別コピーへ試験保存しています…';
+ let db=null;
+ try{
+  const photos=[];
+  for(let i=0;i<files.length;i++){
+   const file=files[i];
+   if(!(file instanceof Blob)||!file.size)throw Error((i+1)+'枚目の写真を読み込めません');
+   photos.push({name:file.name||('photo-'+(i+1)),type:file.type||'image/jpeg',blob:file});
+  }
+  const elements=structuredClone(designElements);
+  if(elements.some(e=>e?.type==='photo'&&(!Number.isInteger(e.fileIndex)||e.fileIndex<0||e.fileIndex>=photos.length)))throw Error('写真の配置参照が不正');
+  const draft={id:'editor-trial-only',title:$('#albumTitle').value,background:$('#pageBackground').value,caption:$('#pageCaption').value,layout:$('#layoutMode').value,photoGap:photoGapPercent,spreadIndex,designElements:elements,photoAssignments:photoAssignments.map(v=>[...v]),photos,updatedAt:Date.now()};
+  const request=indexedDB.open('omoide-editor-trial-save-v1',1);
+  db=await new Promise((resolve,reject)=>{request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('drafts'))request.result.createObjectStore('drafts',{keyPath:'id'})};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||Error('試験用の保存領域を開けません'))});
+  const action=(mode,cb)=>new Promise((resolve,reject)=>{const tx=db.transaction('drafts',mode);let result;const req=cb(tx.objectStore('drafts'));req.onsuccess=()=>{result=req.result};req.onerror=()=>reject(req.error||Error('読み書き失敗'));tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error||Error('保存失敗'));tx.onabort=()=>reject(tx.error||Error('保存中断'))});
+  await action('readwrite',store=>store.put(draft));
+  const check=await action('readonly',store=>store.get('editor-trial-only'));
+  if(check?.photos?.length!==photos.length||check.designElements?.length!==elements.length||check.title!==draft.title)throw Error('試験保存の内容が一致しません');
+  for(let i=0;i<photos.length;i++){
+   const copy=check.photos[i]?.blob;
+   if(!(copy instanceof Blob)||copy.size!==photos[i].blob.size)throw Error((i+1)+'枚目の写真が一致しません');
+  }
+  status.textContent='✅ 試験保存成功：写真 '+photos.length+'枚と編集情報を別の保存領域に保存・読み直しました。元の下書きは変更していません。これは正式保存ではありません。';
+ }catch(e){status.textContent='⚠️ 試験保存できませんでした：'+(e?.message||String(e))+'。元の下書きは変更していません。'}
+ finally{if(db)db.close();button.disabled=false}
+});
 $('#saveDraft').addEventListener('click',async()=>{const button=$('#saveDraft');if(!editorPhotoIntegrityOk){setEditorSaveState('⚠ 写真を読み込めません');$('#editorStatus').textContent='写真の読み込みに問題があるため保存を停止しました。元データを保護しています。';return}if(editorSaveInProgress)return;clearTimeout(editorAutoSaveTimer);editorSaveInProgress=true;button.disabled=true;button.textContent='保存中…';const savingRevision=editorSaveRevision;setEditorSaveState('◌ 保存中…');$('#editorStatus').textContent='写真と編集内容を保存しています…';try{if(!files.length)throw new Error('保存する写真がありません。先に写真を追加してください');const photos=[];for(const file of files){const saved=await makeDurablePhoto(file);if(!saved.blob||!saved.blob.size)throw new Error('保存用の写真データが空です');let bytes;try{bytes=await saved.blob.arrayBuffer()}catch(error){if(error?.name!=='NotFoundError')throw new Error('写真の実データを読み取れません。元のアルバムは変更していません ('+(error?.name||'unknown')+')');const url=fileUrl(file);try{const response=await fetch(url);if(!response.ok)throw new Error('画像を取得できません');bytes=await response.arrayBuffer()}catch(recoveryError){throw new Error('写真の実データを復元できません。元のアルバムは変更していません (NotFoundError)')}}if(!bytes.byteLength)throw new Error('写真の実データが空です');const durableBlob=new Blob([bytes],{type:saved.type||'image/jpeg'});photos.push({name:saved.name,type:durableBlob.type,blob:durableBlob})}let thumbnail=null;try{const capture=await Promise.race([loadExportImageLibrary().then(lib=>lib($('#designCanvas'),{backgroundColor:'#ffffff',scale:1,useCORS:true,logging:false})),new Promise((_,reject)=>setTimeout(()=>reject(new Error('thumbnail timeout')),3500))]);const thumb=document.createElement('canvas');thumb.width=420;thumb.height=Math.max(180,Math.round(420*capture.height/capture.width));thumb.getContext('2d').drawImage(capture,0,0,thumb.width,thumb.height);thumbnail=thumb.toDataURL('image/jpeg',.68)}catch(e){console.warn('Thumbnail unavailable; keeping existing preview',e)}const draft={id:editingId||('draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),classId:selected.id,year:activeYear(),title:$('#albumTitle').value.trim()||'無題のアルバム',background:$('#pageBackground').value,caption:$('#pageCaption').value.trim(),layout:$('#layoutMode').value,photoGap:photoGapPercent,spreadIndex,designElements,photos,photoAssignments:photoAssignments.map(ids=>[...ids]),thumbnail,updatedAt:Date.now()};await putDraft(draft);editingId=draft.id;editRecoveryBaseline=draft.updatedAt;if(editorSaveRevision===savingRevision)clearEditRecovery(draft.id);if(pendingProjectSlot!==null){const slots=readProjectSlots();while(slots.length<=pendingProjectSlot)slots.push(null);slots[pendingProjectSlot]=draft.id;writeProjectSlots(slots)}$('#editorStatus').textContent='保存しました！クラスのページ一覧から開けます。';setEditorSaveState(editorSaveRevision===savingRevision?'✓ 保存済み':'● 保存中に変更あり');}catch(error){setEditorSaveState('⚠ 保存失敗');$('#editorStatus').textContent='保存できませんでした：'+(error&&error.message?error.message:'端末の保存領域を確認して、もう一度お試しください');}finally{editorSaveInProgress=false;button.disabled=false;button.textContent='下書きを保存';if(editorSaveRevision!==savingRevision&&$('#editorSaveState').textContent!=='⚠ 保存失敗')scheduleEditorAutoSave();}});
 let exportImageLibraryPromise=null;
 function loadExportImageLibrary(){
