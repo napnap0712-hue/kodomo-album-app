@@ -21,7 +21,7 @@ function createStore(folder=path.join(__dirname,'data')){
   return {revision:data.revision,title:data.title,message:data.message,color:data.color,updatedAt:typeof data.updatedAt==='string'?data.updatedAt:null};
  }
  function save(input){
-  if(!Number.isSafeInteger(input?.baseRevision)||input.baseRevision<0||!validFields(input))return {status:400,message:'固定の架空アルバムの選択肢だけを送れます'};
+  if(!input||Object.keys(input).some(key=>!['baseRevision','title','message','color'].includes(key))||!Number.isSafeInteger(input.baseRevision)||input.baseRevision<0||!validFields(input))return {status:400,message:'固定の架空アルバムの選択肢だけを送れます'};
   const current=read();
   if(input.baseRevision!==current.revision)return {status:409,message:'ほかの端末で更新されています。内容を確認して読み込み直してください。',current};
   if(current.title===input.title&&current.message===input.message&&current.color===input.color)return {status:200,unchanged:true,state:current};
