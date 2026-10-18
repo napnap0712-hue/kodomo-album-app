@@ -48,7 +48,7 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
   });
  }
  if(req.method==='GET'&&(path==='/'||path==='/health'))return json(res,200,{app:'omoide-book-sync-prototype',status:'ready',message:'接続テスト成功！写真やアルバムのデータはまだ送受信しません。',secureDataSyncEnabled:false,pairingTestAvailable:true});
- if(req.method==='GET'&&path==='/pair'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'"});return res.end(page);}
+ if(req.method==='GET'&&path==='/pair'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data: 'self'; frame-ancestors 'none'"});return res.end(page);}
  if(req.method==='POST'&&path==='/pair'){
   const ip=req.socket.remoteAddress||'unknown',state=failures.get(ip)||{count:0,until:0};
   if(state.until>Date.now())return json(res,429,{message:'試行回数の上限です。5分後に試してね。'});
