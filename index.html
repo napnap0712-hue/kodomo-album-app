@@ -711,6 +711,14 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .screen[data-screen="editor"] .photoEditPane .photoSelectionHint{margin:0;padding:22px 8px;text-align:center;color:#748196;font-size:14px;font-weight:600}
 .screen[data-screen="editor"] .photoEditPane .photoSelectionHint[hidden]{display:none!important}
 .screen[data-screen="editor"][data-editor-tab="photos"] .photoEditPane:not(.photoHasSelection) #elementTools{display:none!important}
+
+/* Keep the editor header usable as experimental buttons accumulate. */
+.screen[data-screen="editor"]>.top{display:flex;flex-wrap:wrap;align-items:flex-start}
+.screen[data-screen="editor"]>.top>.topText{flex:1 1 220px;min-width:180px}
+.screen[data-screen="editor"]>.top>.editorActions{flex:1 1 100%;width:100%;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.screen[data-screen="editor"]>.top>.editorActions>button{flex:0 1 auto;max-width:100%;min-width:0;padding:10px 12px;font-size:13px;white-space:normal;overflow-wrap:anywhere}
+.screen[data-screen="editor"]>.top>.editorActions>#editorSaveState{flex:0 1 auto}
+@media(max-width:599px){.screen[data-screen="editor"]>.top>.editorActions>button{flex:1 1 44%}}
 </style>
 </head>
 <body>
