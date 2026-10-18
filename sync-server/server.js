@@ -82,6 +82,13 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'",'Cache-Control':'no-store'});
   return res.end(syncStatusPage);
  }
+ if(req.method==='GET'&&path==='/pair-result'){
+  const ok=!!pairedSession(req);
+  res.writeHead(ok?200:401,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",'Cache-Control':'no-store'});
+  const title=ok?'✅ ペアリング完了！':'⚠️ ペアリング情報を確認できません';
+  const hint=ok?'このブラウザで登録できました。架空アルバムのテストへ進めます。':'ブラウザから認証用Cookieが届いていません。Safariの同じタブで /pair-status を確認してください。';
+  return res.end('<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ペアリングの結果</title><body style="font:16px system-ui;padding:22px;max-width:420px;margin:auto"><h2>'+title+'</h2><p>'+hint+'</p><p><a href="/pair-status">🔍 このブラウザの接続状態を確認</a></p><p><a href="/fictional-album">📚 架空アルバムの同期テスト</a></p><p><a href="/pair">ペアリング画面に戻る</a></p></body></html>');
+ }
  if(req.method==='GET'&&path==='/pair'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data: 'self'; frame-ancestors 'none'"});return res.end(page);}
  if(req.method==='POST'&&path==='/pair'){
   const ip=req.socket.remoteAddress||'unknown',state=failures.get(ip)||{count:0,until:0};
@@ -96,7 +103,7 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
   function pairReply(status,message,cookie){
    if(!formMode)return json(res,status,{message},cookie?{'Set-Cookie':cookie}:{});
    if(status===200){
-    res.writeHead(303,{'Location':'/pair','Set-Cookie':cookie,'Cache-Control':'no-store'});res.end();return;
+    res.writeHead(303,{'Location':'/pair-result','Set-Cookie':cookie,'Cache-Control':'no-store'});res.end();return;
    }
    const safe=message.replaceAll('&','&amp;').replaceAll('<','&lt;');
    res.writeHead(status,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
@@ -250,6 +257,14 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
  if(req.method==='POST'&&path==='/revoke-all'){
   if(!isLoopback(req))return json(res,403,{message:'この操作はサーバーのパソコンのみです'});
   sessionStore.clear();renewPin();return json(res,200,{message:'すべての接続を解除しました。',activeDeviceCount:0});
+ }
+ // Local-only diagnostics: never expose cookies, session IDs or tokens.
+ if(req.method==='GET'&&path==='/pair-debug'){
+  if(!isLoopback(req))return json(res,403,{message:'この確認はMacBook自身からのみ利用できます'});
+  const cookiePresent=!!pairingToken(req);
+  const session=pairedSession(req);
+  return json(res,200,{host:req.headers.host||'',transport:protocol,cookieReceived:cookiePresent,sessionRecognized:!!session,storedSessionCount:sessionStore.list().length,storageEnabled:sessionStore.enabled,
+   diagnosis:session?'このSafariはペアリング済みです':cookiePresent?'Cookieは届いていますが、登録が一致しません。接続先アドレスと再起動後の登録状態を確認してください。':'このアドレスからSafariのCookieが届いていません。ペアリング画面の結果を確認してください。'});
  }
  if(req.method==='GET'&&path==='/pair-status'){
   const session=pairedSession(req);
