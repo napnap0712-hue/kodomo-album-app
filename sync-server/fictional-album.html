@@ -15,6 +15,7 @@ button.secondary{background:#ecf1f8;color:#344c6a}button:disabled{opacity:.5}
 #preview{padding:22px;border-radius:16px;text-align:center}
 #preview.peach{background:#ffedf0}#preview.mint{background:#e8f8ed}#preview.sky{background:#e8f3ff}
 #preview h2{font-size:22px}#preview p{font-size:16px}
+#resolutionPanel[hidden]{display:none}#resolutionPanel{border:2px solid #e5b960;background:#fffaf0;border-radius:16px;padding:15px;margin:16px 0}#resolutionPanel h2{font-size:18px;margin:0 0 6px}.compare{width:100%;border-collapse:collapse;font-size:13px}.compare th,.compare td{border-bottom:1px solid #eadfbf;padding:10px 5px;text-align:left;overflow-wrap:anywhere}.compare th{font-size:12px;color:#665b47}.compare select{padding:9px;font-size:13px}.compare .small{font-size:12px;color:#685f50}button.warning{background:#9a711c}#resolutionPanel .muted{margin-bottom:0}
 </style></head><body><main><h1>📚 架空アルバム同期テスト</h1>
 <p class="muted">MacBookとiPhoneで同じ画面を開いて、架空の文字と背景を双方向に同期する実験です。実際のアルバム・写真は扱いません。</p>
 <p id="status" class="status" role="status">接続を確認中…</p>
@@ -27,6 +28,18 @@ button.secondary{background:#ecf1f8;color:#344c6a}button:disabled{opacity:.5}
 <button type="button" id="save">💾 この変更をサーバーに保存</button>
 <button type="button" id="reload" class="secondary">🔄 サーバーの最新版を読み込む</button>
 <p id="conflict" class="status" role="alert"></p>
+<section id="resolutionPanel" hidden aria-label="競合内容の比較と解決">
+<h2>⚠️ 編集内容が競合しています</h2>
+<p class="muted">自分の編集と、サーバーに保存された最新版を比較してね。保存するまでどちらも勝手には上書きしません。</p>
+<p class="muted" id="compareVersions"></p>
+<table class="compare"><thead><tr><th>項目</th><th>自分の編集</th><th>サーバーの最新版</th></tr></thead><tbody id="compareRows"></tbody></table>
+<label for="resolveTitle">タイトルをどちらから残す？</label><select id="resolveTitle"><option value="mine">自分の編集</option><option value="server">サーバーの最新版</option></select>
+<label for="resolveMessage">メッセージをどちらから残す？</label><select id="resolveMessage"><option value="mine">自分の編集</option><option value="server">サーバーの最新版</option></select>
+<label for="resolveColor">背景色をどちらから残す？</label><select id="resolveColor"><option value="mine">自分の編集</option><option value="server">サーバーの最新版</option></select>
+<button type="button" id="resolveSave" class="warning">💾 選んだ内容を新しい版として保存</button>
+<button type="button" id="resolveServer" class="secondary">📥 サーバーの最新版を採用（自分の編集を破棄）</button>
+<p class="muted" id="resolveMessageStatus" role="status"></p>
+</section>
 <p class="muted">4秒ごとに最新版を確認します。編集中の変更は勝手に上書きしません。ほかの端末が先に保存したときは競合として通知します。</p>
 <p class="muted">🔒 HTTPS・ペアリング必須。ここから送信できるのは、あらかじめ決められた架空の文字列と背景の選択肢だけです。</p></main>
 <script>
@@ -35,16 +48,39 @@ const labels={title:'タイトル',message:'メッセージ',color:'背景色'};
 const colors={peach:'ピンク',mint:'ミント',sky:'水色'};
 const els=Object.fromEntries(ids.map(id=>[id,document.getElementById(id)]));
 const status=document.getElementById('status'),conflict=document.getElementById('conflict'),saveButton=document.getElementById('save');
-let current=null,busy=false,changed=false,latestRevision=null;
+const resolutionPanel=document.getElementById('resolutionPanel'),compareRows=document.getElementById('compareRows');
+const resolveStatus=document.getElementById('resolveMessageStatus');
+let current=null,busy=false,changed=false,remoteConflict=null;
 function selections(){return Object.fromEntries(ids.map(id=>[id,els[id].value]));}
 function paint(){document.getElementById('previewTitle').textContent=els.title.value;document.getElementById('previewMessage').textContent=els.message.value;document.getElementById('preview').className=els.color.value;}
 function setChoices(choices){for(const key of ids){els[key].replaceChildren();for(const value of choices[key]){const option=document.createElement('option');option.value=value;option.textContent=key==='color'?colors[value]:value;els[key].appendChild(option)}}}
+function displayValue(key,value){return key==='color'?colors[value]||value:value;}
+function closeCompare(){remoteConflict=null;resolutionPanel.hidden=true;compareRows.replaceChildren();resolveStatus.textContent='';}
 function applyState(data){
- current=data;latestRevision=data.revision;
+ current=data;
  for(const key of ids)els[key].value=data[key];
  document.getElementById('revision').textContent='改訂 '+data.revision;
  document.getElementById('lastTime').textContent=data.updatedAt?'最終更新 '+new Date(data.updatedAt).toLocaleString('ja-JP'):'まだ変更されていません';
- changed=false;conflict.textContent='';paint();
+ changed=false;conflict.textContent='';closeCompare();paint();
+}
+function showConflict(data){
+ if(!data||!Number.isSafeInteger(data.revision))return;
+ const isNew=!remoteConflict||remoteConflict.revision!==data.revision;
+ remoteConflict=data;
+ resolutionPanel.hidden=false;
+ document.getElementById('compareVersions').textContent='自分が編集を始めた版: 改訂 '+current.revision+' ／ サーバーの最新版: 改訂 '+data.revision;
+ compareRows.replaceChildren();
+ const draft=selections();
+ for(const key of ids){
+  const tr=document.createElement('tr');
+  const header=document.createElement('th');header.scope='row';header.textContent=labels[key];
+  const mine=document.createElement('td');mine.textContent=displayValue(key,draft[key]);
+  const server=document.createElement('td');server.textContent=displayValue(key,data[key]);
+  tr.append(header,mine,server);compareRows.appendChild(tr);
+ }
+ if(isNew){for(const key of ids)document.getElementById('resolve'+key.charAt(0).toUpperCase()+key.slice(1)).value='mine';}
+ conflict.textContent='⚠️ 別の端末の保存版と競合しています。比較して解決方法を選んでね。';
+ status.textContent='⚠️ 競合を検出しました';
 }
 async function getState(){
  const r=await fetch('/fictional-album/state',{cache:'no-store'});
@@ -56,10 +92,12 @@ async function refresh(force=false){
  if(busy)return;
  try{
   const data=await getState();
-  if(!current||force){if(force&&changed&&!confirm('編集中の変更を破棄して最新版を読み込みますか？'))return;applyState(data);status.textContent='✅ サーバーの保存版を読み込みました';return;}
+  if(!current||force){
+   if(force&&changed&&!confirm('編集中の変更を破棄して最新版を読み込みますか？'))return;
+   applyState(data);status.textContent='✅ サーバーの保存版を読み込みました';return;
+  }
   if(data.revision!==current.revision){
-   latestRevision=data.revision;
-   if(changed){conflict.textContent='⚠️ 別の端末で改訂 '+data.revision+' が保存されました。こちらの編集中の変更は保持しています。';status.textContent='⚠️ 競合を検出しました';}
+   if(changed){showConflict(data);}
    else{applyState(data);status.textContent='✅ 別の端末の更新を自動で反映しました';}
   }
  }catch(e){status.textContent='⚠️ '+e.message+'。接続またはペアリングを確認してね。';}
@@ -71,18 +109,54 @@ async function init(){
   setChoices(data.choices);await refresh(true);
  }catch(e){status.textContent='⚠️ '+e.message+'。先にペアリングしてください。';}
 }
-for(const key of ids)els[key].addEventListener('change',()=>{changed=true;paint();status.textContent='✏️ 編集中（まだサーバーには未保存）';});
+function lockButtons(on){
+ busy=on;saveButton.disabled=on;document.getElementById('resolveSave').disabled=on;document.getElementById('resolveServer').disabled=on;
+}
+async function sendSave(payload){
+ const r=await fetch('/fictional-album/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ const data=await r.json();
+ return {code:r.status,data};
+}
+for(const key of ids)els[key].addEventListener('change',()=>{
+ changed=true;paint();status.textContent='✏️ 編集中（まだサーバーには未保存）';
+ if(remoteConflict)showConflict(remoteConflict);
+});
 saveButton.onclick=async()=>{
  if(!current||busy)return;
- busy=true;saveButton.disabled=true;
+ if(remoteConflict){showConflict(remoteConflict);return;}
+ lockButtons(true);
  try{
-  const r=await fetch('/fictional-album/state',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({baseRevision:current.revision,...selections()})});
-  const data=await r.json();
-  if(r.status===409){conflict.textContent='⚠️ 競合しました！別の端末が先に保存しています。編集内容は残っています。';status.textContent='⚠️ 保存されませんでした。最新版を確認してね。';return;}
-  if(!r.ok)throw Error(data.message||'保存できませんでした');
+  const {code,data}=await sendSave({baseRevision:current.revision,...selections()});
+  if(code===409){showConflict(data.current||await getState());return;}
+  if(code!==200)throw Error(data.message||'保存できませんでした');
   applyState(data.state);status.textContent=data.unchanged?'✅ 変更はありません（最新版です）':'✅ サーバーに保存しました。もう一方の端末にも反映されます。';
  }catch(e){status.textContent='⚠️ '+e.message+'。編集内容は画面に残っています。';}
- finally{busy=false;saveButton.disabled=false;}
+ finally{lockButtons(false);}
+};
+document.getElementById('resolveSave').onclick=async()=>{
+ if(!current||!remoteConflict||busy)return;
+ const remote=remoteConflict;
+ const draft=selections();
+ const merged={};
+ for(const key of ids){
+  const choice=document.getElementById('resolve'+key.charAt(0).toUpperCase()+key.slice(1)).value;
+  merged[key]=choice==='server'?remote[key]:draft[key];
+ }
+ if(!confirm('選んだ内容をサーバーへ保存します。別端末の更新がある場合は上書きせず再確認します。続けますか？'))return;
+ lockButtons(true);
+ try{
+  const {code,data}=await sendSave({baseRevision:remote.revision,...merged});
+  if(code===409){showConflict(data.current||await getState());resolveStatus.textContent='⚠️ 確認中に別の更新が入りました。最新版と比較し直してね。';return;}
+  if(code!==200)throw Error(data.message||'保存できませんでした');
+  applyState(data.state);status.textContent='✅ 選んだ内容を新しい版として保存しました。';
+ }catch(e){resolveStatus.textContent='⚠️ '+e.message+'。選択中の内容はまだ残っています。';}
+ finally{lockButtons(false);}
+};
+document.getElementById('resolveServer').onclick=()=>{
+ if(!remoteConflict||busy)return;
+ if(!confirm('自分の編集中の変更を破棄してサーバー版を表示しますか？'))return;
+ // Refresh first: another client may have saved since the comparison was shown.
+ refresh(true);
 };
 document.getElementById('reload').onclick=()=>refresh(true);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
