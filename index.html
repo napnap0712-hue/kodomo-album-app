@@ -2042,10 +2042,10 @@ $('#trialSyncBackground').addEventListener('click',async()=>{
  finally{if(db)db.close();btn.disabled=false}
 });
 // Read-only rendering of the independent portable-file restore.
-const restoredTrialUrls=[];
+const restoredTrialPhotos=[];
 function clearRestoredTrialPreview(){
- for(const url of restoredTrialUrls)URL.revokeObjectURL(url);
- restoredTrialUrls.length=0;
+ for(const photo of restoredTrialPhotos)releasePhotoUrl(photo);
+ restoredTrialPhotos.length=0;
  $('#restoredPortablePreviewCanvas').replaceChildren();
 }
 $('#viewRestoredPortableTrial').addEventListener('click',async()=>{
@@ -2064,8 +2064,8 @@ $('#viewRestoredPortableTrial').addEventListener('click',async()=>{
   for(let i=0;i<meta.restoredPhotoCount;i++){
    const item=await read('photos','photo-'+i);
    if(!(item?.blob instanceof Blob)||!item.blob.size)throw Error('写真'+(i+1)+'枚目を読み込めません');
-   const url=URL.createObjectURL(item.blob);restoredTrialUrls.push(url);
-   photos.push({name:item.name||'写真',type:item.type||item.blob.type,blob:item.blob,url});
+   // renderElementNode expects a Blob/File, not an object wrapping a Blob.
+   photos.push(item.blob);restoredTrialPhotos.push(item.blob);
   }
   canvas.classList.toggle('spreadCanvas',meta.layout!=='single'&&meta.layout!=='grid');
   canvas.classList.toggle('singleCanvas',meta.layout==='single');
