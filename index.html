@@ -775,6 +775,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <div id="savedNewSplitPreview" hidden style="margin-top:12px;border:1px solid #dbe4ef;padding:10px;border-radius:10px;background:white">
  <div id="savedNewSplitCanvas" class="designCanvas spreadCanvas" style="position:relative;width:100%;aspect-ratio:1.414/1;min-height:0;border:1px solid #cdd9e5;pointer-events:none"></div>
  <p id="savedNewSplitPreviewStatus" class="muted" role="status"></p>
+ <button id="resumeSavedNewSplitEdit" class="secondary" type="button" hidden>✏️ このアルバムの編集を再開</button>
 </div>
 <p id="editorStorageChoiceInfo" class="muted" role="status" style="margin:8px 0 0">従来の保存方式を使用中。分離保存は検証済みの試験コピーで先行利用できます。元アルバムは変更しません。</p>
 </section>
@@ -1964,10 +1965,39 @@ $('#safeSplitEditorSave').addEventListener('click',async()=>{
  }catch(error){status.textContent='⚠️ 試験保存を停止：'+(error?.message||String(error))+'。元アルバムは未変更です。';}
  finally{db?.close();button.disabled=false}
 });
+// Opening a validated split preview for editing does not write to either storage namespace.
+let savedNewSplitReady=null;
+$('#resumeSavedNewSplitEdit').addEventListener('click',async()=>{
+ const snapshot=savedNewSplitReady,button=$('#resumeSavedNewSplitEdit');
+ if(!snapshot)return;
+ button.disabled=true;
+ try{
+  if(safeSplitEditorMode)throw Error('既存の分離コピー編集中は開けません');
+  // Copy all values before replacing editor globals.
+  const meta=structuredClone(snapshot.meta),edits=structuredClone(snapshot.edits),photos=[...snapshot.photos];
+  for(const photo of photos)if(!(photo instanceof Blob)||!photo.size)throw Error('写真の読み込みに失敗しました');
+  files=photos;designElements=edits.designElements;photoAssignments=Array.isArray(edits.photoAssignments)?edits.photoAssignments.map(a=>Array.isArray(a)?a:[]):photos.map(()=>[]);
+  editingId=null;newAlbumSplitSelected=true;newAlbumSplitSavedId=meta.id;
+  $('#albumTitle').value=meta.title||'';$('#pageCaption').value=edits.caption||'';
+  $('#pageBackground').value=edits.background||'#ffffff';$('#layoutMode').value=edits.layout||'spread';
+  spreadIndex=Number.isInteger(edits.spreadIndex)?edits.spreadIndex:0;
+  photoGapPercent=Number.isFinite(Number(edits.photoGap))?Number(edits.photoGap):2;
+  $('#photoGap').value=photoGapPercent;$('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';
+  selectedElementId=null;selectedGroupIds.clear();activePhotoFolder='all';resetEditHistory();
+  syncPageSettingsChoices();refreshEditor();
+  editorPhotoIntegrityOk=true;
+  $('#saveDraft').disabled=false;$('#saveDraft').textContent='💾 分離保存';
+  syncStorageChoiceUi();setEditorSaveState('✓ 分離保存から復元');
+  $('#editorStatus').textContent='✅ 保存済みの新規分離アルバムを通常の編集画面で開きました。変更後は「💾 分離保存」で保存できます。';
+  $('#savedNewSplitPreview').hidden=true;$('#savedNewSplitCanvas').replaceChildren();
+ }catch(e){$('#savedNewSplitPreviewStatus').textContent='⚠️ 編集再開に失敗：'+(e?.message||String(e))}
+ finally{button.disabled=false}
+});
 // Read-only preview of recently saved split albums; never modifies any database.
 $('#viewSavedNewSplitAlbum').addEventListener('click',async()=>{
  const button=$('#viewSavedNewSplitAlbum'),panel=$('#savedNewSplitPreview'),canvas=$('#savedNewSplitCanvas'),status=$('#savedNewSplitPreviewStatus');
- if(!panel.hidden){panel.hidden=true;canvas.replaceChildren();return}
+ if(!panel.hidden){panel.hidden=true;canvas.replaceChildren();savedNewSplitReady=null;$('#resumeSavedNewSplitEdit').hidden=true;return}
+ savedNewSplitReady=null;$('#resumeSavedNewSplitEdit').hidden=true;
  button.disabled=true;canvas.replaceChildren();panel.hidden=false;status.textContent='保存済みアルバムを読み込み中…';
  let db=null;
  try{
@@ -1991,6 +2021,8 @@ $('#viewSavedNewSplitAlbum').addEventListener('click',async()=>{
    const node=renderElementNode({...el,id:'saved-new-split-'+i},canvas,photos);
    node.style.pointerEvents='none';
   }
+  savedNewSplitReady={meta:selectedAlbum,edits,photos};
+  $('#resumeSavedNewSplitEdit').hidden=false;
   status.textContent='✅ 新規分離アルバムを読み取り専用で復元：写真'+photos.length+'枚・配置'+edits.designElements.length+'個。保存データは未変更です。';
  }catch(e){canvas.replaceChildren();status.textContent='⚠️ 復元表示に失敗：'+(e?.message||String(e))}
  finally{db?.close();button.disabled=false}
