@@ -766,6 +766,12 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <div class="settingsRow"><b>🔐 この端末のペアリング</b><small id="syncPairingNote" role="status">⚪ 未確認（この画面で確認できます）</small><small>確認ボタンを押したときだけ、同期サーバーの専用画面で認証状況を調べます。</small></div><div class="settingsRow"><b>📸 写真・アルバムの同期</b><small>未実装：このアプリの写真や保存データはまだ転送されません。</small></div>
 <div class="settingsRow"><b>🧪 テスト画像</b><small>同期サーバー側でテスト画像の受信状況を確認できます。実際の園児写真とは無関係です。</small></div>
 </div>
+<div class="panel" style="display:grid;gap:10px;padding:16px;margin-top:14px">
+<b>📦 この端末の保存データを確認</b>
+<p class="muted">同期設計の確認用。保存済みアルバム件数・写真枚数・画像データ容量（目安）を、この端末内だけで集計します。写真・名前・アルバムの中身は表示・送信しません。</p>
+<button class="secondary wide" id="syncInspectLocal" type="button">🔍 端末内データを読み取り確認</button>
+<p id="syncLocalSummary" class="muted" role="status">未確認。保存データは変更しません。</p>
+</div>
 <div class="panel" style="display:grid;gap:12px;padding:16px;margin-top:14px">
 <label class="field">接続先の同期サーバー<input id="syncServerAddress" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://192.168.0.8:4318" aria-describedby="syncAddressHelp"></label>
 <p id="syncAddressHelp" class="muted">MacBookの同期サーバーをHTTPSで起動し、ターミナルに表示されたアドレスを入力してね。アドレスはこの端末のみに保存します。</p>
@@ -1614,6 +1620,29 @@ async function transferImportData(file){
 const syncAddrEl=document.getElementById('syncServerAddress');
 const syncUiMessage=document.getElementById('syncUiMessage');
 const syncAddressKey='omoide-sync-server-url-v1';
+// Read-only storage inventory for the user. No server request, no photo bytes or names.
+document.getElementById('syncInspectLocal').addEventListener('click',async()=>{
+ const button=document.getElementById('syncInspectLocal'),out=document.getElementById('syncLocalSummary');
+ button.disabled=true;out.textContent='端末内の保存データを確認しています…';
+ try{
+  const drafts=await getAllDrafts();
+  let totalPhotos=0,totalBytes=0,unknownBytes=0;
+  const years=new Set();
+  for(const d of drafts){
+   if(Number.isInteger(d.year))years.add(d.year);
+   for(const p of Array.isArray(d.photos)?d.photos:[]){
+    totalPhotos++;
+    const size=p?.blob?.size;
+    if(Number.isFinite(size)&&size>=0)totalBytes+=size;else unknownBytes++;
+   }
+  }
+  const mb=(totalBytes/1024/1024).toFixed(1);
+  out.textContent='✅ 保存済み下書き '+drafts.length+'件／写真 '+totalPhotos+'枚（下書き内の延べ枚数）／写真Blob容量の合計 約'+mb+'MB'+(unknownBytes?'／容量不明 '+unknownBytes+'枚':'')+'／年度情報あり '+years.size+'種類。サーバーには送信していません。';
+ }catch(e){
+  out.textContent='⚠️ 読み取りに失敗しました。データは変更していません。端末の空き容量やSafariの保存設定を確認してください。';
+ }finally{button.disabled=false;}
+});
+
 const syncConnectionNote=document.getElementById('syncConnectionNote');
 const syncPairingNote=document.getElementById('syncPairingNote');
 let pairingCheckReset=null;
