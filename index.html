@@ -1900,13 +1900,14 @@ $('#safeSplitEditorSave').addEventListener('click',async()=>{
 // Independent new-album rehearsal: synthetic SVGs only, never uses real photo arrays.
 // Render the independent synthetic new-album rehearsal, with no real album writes.
 const fictionalPreviewPhotos=[];
-let fictionalEditEnabled=false,fictionalSelected=null;
+let fictionalEditEnabled=false,fictionalSelected=null,fictionalWorkingEdit=null,fictionalDirty=false;
 function resetFictionalEdit(){
- fictionalEditEnabled=false;fictionalSelected=null;
+ fictionalEditEnabled=false;fictionalSelected=null;fictionalWorkingEdit=null;fictionalDirty=false;
  $('#fictionalSplitPreviewCanvas').style.pointerEvents='none';
  const toggle=$('#fictionalEditToggle'),tools=$('#fictionalEditTools');
  if(toggle)toggle.textContent='✏️ 架空アルバムを編集';
  if(tools)tools.hidden=true;
+ const save=$('#fictionalEditSave');if(save)save.disabled=true;
 }
 function setupFictionalEdit(){
  const panel=$('#fictionalSplitPreviewPanel'),status=$('#fictionalSplitPreviewStatus');
@@ -1915,22 +1916,42 @@ function setupFictionalEdit(){
  controls.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:10px 0';
  const toggle=document.createElement('button');toggle.id='fictionalEditToggle';toggle.type='button';toggle.textContent='✏️ 架空アルバムを編集';
  const tools=document.createElement('div');tools.id='fictionalEditTools';tools.hidden=true;tools.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
+ const save=document.createElement('button');save.id='fictionalEditSave';save.type='button';save.textContent='💾 編集情報だけ保存';save.disabled=true;
  const left=document.createElement('button'),right=document.createElement('button');
  left.type=right.type='button';left.textContent='↶ 左に15°';right.textContent='↷ 右に15°';
  for(const button of [left,right])tools.appendChild(button);
+ tools.appendChild(save);
  controls.append(toggle,tools);status.insertAdjacentElement('afterend',controls);
+ save.addEventListener('click',async()=>{
+  if(!fictionalEditEnabled||!fictionalWorkingEdit||!fictionalDirty)return;
+  save.disabled=true;let db=null;
+  try{
+   const req=indexedDB.open('omoide-fictional-new-split-v1');
+   db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('架空領域を開けません'))});
+   if(!db.objectStoreNames.contains('state')||!db.objectStoreNames.contains('edits')||!db.objectStoreNames.contains('photos'))throw Error('架空領域が不完全です');
+   const read=(store,key)=>new Promise((resolve,reject)=>{const tx=db.transaction(store,'readonly'),r=tx.objectStore(store).get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||Error('読み込みに失敗'))});
+   const state=await read('state','active'),existing=await read('edits','album');
+   if(!state?.ready||!existing||state.photoCount!==3||existing.photoCount!==3||fictionalWorkingEdit.photoCount!==3)throw Error('架空アルバムの状態が一致しません');
+   if(fictionalWorkingEdit.designElements.length!==existing.designElements.length||fictionalWorkingEdit.designElements.some((el,i)=>el.id!==existing.designElements[i].id||el.type!==existing.designElements[i].type||el.fileIndex!==existing.designElements[i].fileIndex))throw Error('写真の構成が一致しません');
+   const snapshot=structuredClone(fictionalWorkingEdit);
+   await new Promise((resolve,reject)=>{const tx=db.transaction('edits','readwrite');tx.objectStore('edits').put(snapshot,'album');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('編集情報の保存に失敗'));tx.onabort=()=>reject(tx.error||Error('編集情報の保存が中断されました'))});
+   fictionalDirty=false;status.textContent='✅ 架空アルバムの編集情報だけを保存しました。写真3枚・元アルバム・バックアップは変更していません。';
+  }catch(e){status.textContent='⚠️ 編集情報を保存できません：'+(e?.message||String(e));}
+  finally{db?.close();save.disabled=!fictionalDirty;}
+ });
  toggle.addEventListener('click',()=>{
   fictionalEditEnabled=!fictionalEditEnabled;fictionalSelected=null;
   $('#fictionalSplitPreviewCanvas').style.pointerEvents=fictionalEditEnabled?'auto':'none';
   toggle.textContent=fictionalEditEnabled?'🔒 編集を終了':'✏️ 架空アルバムを編集';
   tools.hidden=!fictionalEditEnabled;
-  status.textContent=fictionalEditEnabled?'✏️ 架空写真をドラッグして移動。写真を選んで回転できます。変更は画面上だけで、保存されません。':'🔒 編集を終了しました。保存データは変更していません。';
+  status.textContent=fictionalEditEnabled?'✏️ 写真を移動・回転して「編集情報だけ保存」を押してね。':'🔒 編集を終了しました。未保存の変更は閉じると消えます。';
  });
  for(const [button,step] of [[left,-15],[right,15]])button.addEventListener('click',()=>{
   if(!fictionalEditEnabled||!fictionalSelected)return;
   const {node,element}=fictionalSelected;
   element.rotation=((Number(element.rotation)||0)+step+360)%360;
   node.style.transform='rotate('+element.rotation+'deg)';
+  fictionalDirty=true;save.disabled=false;
   status.textContent='✏️ 架空写真を回転しました（未保存）。';
  });
 }
@@ -1946,6 +1967,7 @@ function attachFictionalDrag(node,element){
    if(!fictionalEditEnabled)return;
    const x=Math.max(0,Math.min(100-(Number(element.w)||0),originX+(e.clientX-startX)/rect.width*100));
    const y=Math.max(0,Math.min(100-(Number(element.h)||0),originY+(e.clientY-startY)/rect.height*100));
+   if(x!==element.x||y!==element.y){fictionalDirty=true;const save=$('#fictionalEditSave');if(save)save.disabled=false;}
    element.x=x;element.y=y;node.style.left=x+'%';node.style.top=y+'%';
   };
   const end=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);window.removeEventListener('pointercancel',end)};
@@ -1981,17 +2003,18 @@ $('#fictionalSplitPreviewButton').addEventListener('click',async()=>{
    if(!(item?.blob instanceof Blob)||!item.blob.size)throw Error('架空写真'+(i+1)+'がありません');
    photos.push(item.blob);fictionalPreviewPhotos.push(item.blob);
   }
+  fictionalWorkingEdit=structuredClone(edit);
   canvas.style.background=backgroundStyle(edit.background||'#ffffff');
   canvas.classList.toggle('spreadCanvas',edit.layout==='spread');
   canvas.classList.toggle('singleCanvas',edit.layout==='single');
   canvas.classList.toggle('gridCanvas',edit.layout==='grid');
   let images=0,texts=0;
-  for(const [index,el] of edit.designElements.entries()){
-   if((el.page||0)!==(edit.spreadIndex||0))continue;
+  for(const [index,el] of fictionalWorkingEdit.designElements.entries()){
+   if((el.page||0)!==(fictionalWorkingEdit.spreadIndex||0))continue;
    if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||!photos[el.fileIndex]))throw Error('写真参照に問題があります');
    if(!['photo','text','sticker'].includes(el.type))continue;
    const node=renderElementNode({...el,id:'fictional-preview-'+index},canvas,photos);
-   if(el.type==='photo')attachFictionalDrag(node,{...el});
+   if(el.type==='photo')attachFictionalDrag(node,el);
    else node.style.pointerEvents='none';
    if(el.type==='photo'){
     images++;
