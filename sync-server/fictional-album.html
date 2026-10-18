@@ -305,4 +305,9 @@ document.getElementById('reload').onclick=()=>refresh(true);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 setInterval(()=>{if(!document.hidden)refresh()},4000);
 init();
+// Cache only this synthetic test screen. Never cache state/choices endpoints or real album data.
+if('serviceWorker' in navigator){
+ navigator.serviceWorker.register('/fictional-album/offline-sw.js',{scope:'/fictional-album'})
+  .catch(()=>{ /* Offline startup is optional; ordinary online syncing still works. */ });
+}
 </script></body></html>
