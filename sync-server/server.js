@@ -27,7 +27,12 @@ const fakeChildren=['テスト園児A','テスト園児B','テスト園児C'];le
 function pairingToken(req){return /(?:^|;\s*)omoide_pair=([0-9a-f]{48})(?:;|$)/.exec(req.headers.cookie||'')?.[1]||null;}
 function pairedSession(req){const token=pairingToken(req);if(!token)return null;return sessionStore.get(token);}
 function isPaired(req){return !!pairedSession(req);}
-function checkSameOrigin(req){return req.headers.origin===protocol+'://'+req.headers.host;}
+function checkSameOrigin(req){
+ const expected=protocol+'://'+req.headers.host;
+ if(req.headers.origin)return req.headers.origin===expected;
+ // Safari may omit Origin on same-origin form submissions. Require a trusted Referer.
+ try{return new URL(req.headers.referer).origin===expected&&req.headers['sec-fetch-site']!=='cross-site';}catch{return false;}
+}
 function isLoopback(req){return ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress);}
 // Read-only health endpoint is accessible from local album UI; no pairing, tokens or photos.
 function permittedHealthOrigin(req){
@@ -81,6 +86,11 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
  if(req.method==='GET'&&path==='/sync-status'){
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'",'Cache-Control':'no-store'});
   return res.end(syncStatusPage);
+ }
+ if(req.method==='GET'&&path==='/pair-help'){
+  if(!isLoopback(req))return json(res,403,{message:'MacBookからのみ確認できます'});
+  return json(res,200,{host:req.headers.host,https:!!tlsOptions,safariCookieReceived:!!pairingToken(req),sessionRecognized:!!pairedSession(req),
+    sessionCount:sessionStore.list().length,help:'同じSafariのタブで /pair を開き、新しい6桁コードを入力した後の /pair-result を確認してください。'});
  }
  if(req.method==='GET'&&path==='/pair-result'){
   const ok=!!pairedSession(req);
