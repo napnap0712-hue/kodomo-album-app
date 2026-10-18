@@ -781,6 +781,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p id="syncAlbumReopenStressResult" class="muted" role="status">未実施。テスト専用領域を使い、実際のアルバムは変更しません。</p>
 <button class="secondary wide" id="syncDurablePhotoTest" type="button">🔬 正式保存の写真処理を架空画像で検証</button>
 <p id="syncDurablePhotoResult" class="muted" role="status">未実施。実際のアルバムを読み書きしません。</p>
+<button class="secondary wide" id="syncReusePhotoTest" type="button">♻️ 写真を作り直さない編集保存テスト</button>
+<p id="syncReusePhotoResult" class="muted" role="status">未実施。架空画像を専用の保存領域で検証します。</p>
 </div>
 <div class="panel" style="display:grid;gap:11px;padding:16px;margin-top:14px">
 <b>📦 アルバムを別コピーで引き継ぐ（試験版）</b>
@@ -1946,6 +1948,40 @@ document.getElementById('syncDurablePhotoTest').addEventListener('click',async()
   out.textContent='✅ 正式保存で使う写真変換・再Blob化・画像表示が架空画像で10回成功。実際のアルバムは未変更です。';
  }catch(e){out.textContent='⚠️ '+(e?.message||String(e))+'。実際のアルバムは変更していません。'}
  finally{btn.disabled=false}
+});
+
+// Test metadata-only updates preserving the exact stored Blob (no conversion/readback at write time).
+document.getElementById('syncReusePhotoTest').addEventListener('click',async()=>{
+ const btn=document.getElementById('syncReusePhotoTest'),out=document.getElementById('syncReusePhotoResult');btn.disabled=true;
+ let db=null;out.textContent='🧪 架空アルバムの写真を保ったまま編集を保存中…';
+ try{
+  const cv=document.createElement('canvas');cv.width=48;cv.height=48;
+  const cx=cv.getContext('2d');cx.fillStyle='#3599c6';cx.fillRect(0,0,48,48);cx.fillStyle='#ffde76';cx.fillRect(9,9,30,30);
+  const photo=await new Promise((resolve,reject)=>cv.toBlob(b=>b?resolve(b):reject(Error('架空写真を生成できません')),'image/png'));
+  const initialBytes=new Uint8Array(await photo.arrayBuffer());
+  const open=()=>new Promise((resolve,reject)=>{const req=indexedDB.open('omoide-synthetic-photo-reuse-v1',1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('drafts'))req.result.createObjectStore('drafts',{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('試験領域を開けません'))});
+  const run=(mode,operation)=>new Promise((resolve,reject)=>{const tx=db.transaction('drafts',mode);const req=operation(tx.objectStore('drafts'));let result;req.onsuccess=()=>{result=req.result};req.onerror=()=>reject(req.error||Error('読み書き失敗'));tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(tx.error||Error('保存失敗'));tx.onabort=()=>reject(tx.error||Error('保存中断'))});
+  db=await open();
+  await run('readwrite',store=>store.put({id:'synthetic-reuse',photos:[{name:'sample.png',type:'image/png',blob:photo}],title:'最初',designElements:[{type:'photo',fileIndex:0,x:1}],revision:0}));
+  for(let i=1;i<=20;i++){
+   const old=await run('readonly',store=>store.get('synthetic-reuse'));
+   if(!(old?.photos?.[0]?.blob instanceof Blob))throw Error(i+'回目：写真を取得できません');
+   // Keep stored photo record as-is, replacing only editable metadata.
+   const updated={...old,title:'編集 '+i,designElements:[{type:'photo',fileIndex:0,x:i}],revision:i};
+   await run('readwrite',store=>store.put(updated));
+   db.close();db=await open();
+   const saved=await run('readonly',store=>store.get('synthetic-reuse'));
+   if(saved?.revision!==i||saved.title!=='編集 '+i||saved.designElements?.[0]?.x!==i||saved.designElements?.[0]?.fileIndex!==0)throw Error(i+'回目：編集情報が一致しません');
+   const actual=new Uint8Array(await saved.photos[0].blob.arrayBuffer());
+   if(actual.length!==initialBytes.length||actual.some((b,k)=>b!==initialBytes[k]))throw Error(i+'回目：写真のデータが変わりました');
+   const url=URL.createObjectURL(saved.photos[0].blob);
+   try{const img=await new Promise((resolve,reject)=>{const el=new Image();el.onload=()=>resolve(el);el.onerror=()=>reject(Error('写真を表示できません'));el.src=url});if(img.naturalWidth!==48||img.naturalHeight!==48)throw Error('画像の寸法不一致')}
+   finally{URL.revokeObjectURL(url)}
+   out.textContent='🧪 '+i+'/20回：写真を再生成せず編集内容を保存・確認中…';
+  }
+  out.textContent='✅ 写真を再変換せず、編集情報のみ20回更新成功。全回で写真データと表示が正常でした。実際のアルバムは未変更です。';
+ }catch(e){out.textContent='⚠️ '+(e?.message||String(e))+'。実際のアルバムは変更していません。'}
+ finally{if(db)db.close();btn.disabled=false}
 });
 
 const syncConnectionNote=document.getElementById('syncConnectionNote');
