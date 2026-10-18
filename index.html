@@ -765,7 +765,13 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <div id="newSplitAlbumReadonlyView" hidden style="margin-top:10px">
 <strong style="font-size:12px">空の新規アルバム（独立データのプレビュー）</strong>
 <div class="designCanvas spreadCanvas" id="newSplitAlbumReadonlyCanvas" style="width:100%;aspect-ratio:1.414/1;position:relative;min-height:0;border:1px solid #cdd9e5;border-radius:7px;pointer-events:none"></div>
-<p class="muted">この画面は表示専用です。従来の編集画面や保存データは切り替えていません。</p>
+<button type="button" class="secondary" id="newSplitEditToggle">✏️ 新規アルバムの編集エリアを開く</button>
+<div id="newSplitEditPanel" hidden style="padding:12px;margin-top:8px;border:1px solid #dbe4ef;border-radius:10px;background:white">
+<strong>新規アルバム専用編集エリア（試験）</strong>
+<p class="muted">既存の編集画面とは独立しています。写真追加・保存はまだできません。</p>
+<label>アルバム名 <input id="newSplitEditTitle" value="新しいアルバム" style="width:100%;padding:8px"></label>
+<p id="newSplitEditState" class="muted">まだ保存されません。</p>
+</div><p class="muted">従来の編集画面や保存データは切り替えていません。</p>
 </div>
 </section>
 <section id="fictionalSplitPreviewPanel" hidden style="margin:12px 0;padding:14px;min-width:0;border:1px solid #cdd9e5;border-radius:12px;background:#f7faff">
@@ -1939,6 +1945,11 @@ $('#prepareNewSplitAlbum').addEventListener('click',async()=>{
  }catch(e){status.textContent='⚠️ 新規アルバムの準備に失敗：'+(e?.message||String(e));}
  finally{db?.close();button.disabled=false;}
 });
+$('#newSplitEditToggle').addEventListener('click',()=>{
+ const panel=$('#newSplitEditPanel');panel.hidden=!panel.hidden;
+ $('#newSplitEditToggle').textContent=panel.hidden?'✏️ 新規アルバムの編集エリアを開く':'🔒 編集エリアを閉じる';
+});
+$('#newSplitEditTitle').addEventListener('input',()=>{$('#newSplitEditState').textContent='編集中（未保存）。元のデータは変更されません。'});
 $('#openNewSplitAlbum').addEventListener('click',async()=>{
  const button=$('#openNewSplitAlbum'),status=$('#newSplitAlbumPrepStatus'),view=$('#newSplitAlbumReadonlyView');
  button.disabled=true;let db=null;
@@ -1957,6 +1968,10 @@ $('#openNewSplitAlbum').addEventListener('click',async()=>{
   canvas.classList.toggle('spreadCanvas',edits.layout==='spread');
   canvas.classList.toggle('singleCanvas',edits.layout==='single');
   view.hidden=false;
+  $('#newSplitEditPanel').hidden=true;
+  $('#newSplitEditToggle').textContent='✏️ 新規アルバムの編集エリアを開く';
+  $('#newSplitEditTitle').value=album.title||'新しいアルバム';
+  $('#newSplitEditState').textContent='まだ保存されません。';
   status.textContent='✅ 保存済みの空アルバムを独立領域から読み込んで表示しました（写真0枚・配置0個）。元データは未変更です。';
  }catch(e){view.hidden=true;status.textContent='⚠️ 空アルバムを開けません：'+(e?.message||String(e));}
  finally{db?.close();button.disabled=false}
