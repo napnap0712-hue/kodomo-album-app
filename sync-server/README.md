@@ -124,3 +124,22 @@ OMOIDE_TLS_CERT=sync-server/certs/cert.pem OMOIDE_TLS_KEY=sync-server/certs/key.
 ```sh
 node --test sync-server/demo-image.test.js
 ```
+
+## 第6段階：テスト画像5枚の一括送信・重複防止・再送
+
+1. HTTPSサーバーを起動して、iPhoneで `https://<パソコンのIP>:4318/pair` を開きます。ペアリング済みなら再登録不要です。
+2. 「📚 テスト画像5枚をまとめて同期」→「テスト画像5枚を送信」をタップします。
+3. iPhoneに「新しく保存5枚／重複をスキップ0枚」のように表示されます。
+4. MacBookのSafariで `https://localhost:4318/demo-batch/list` を開き、5件とも `received:true` かを確認します。
+5. 各画像は `https://localhost:4318/demo-batch/view/flower` などから閲覧できます。
+6. iPhoneで同じボタンをもう一度押すと、すでに保存された画像は重複保存せず、スキップ数が増えます。通信が途中で止まった場合も同じボタンで再送できます。
+
+保存先： `sync-server/data/demo-batch/`。テスト用に生成した固定イラスト5件だけで、実際の写真・園児名・アルバムには触れません。HTTPSとペアリングが必要です。
+
+開発者テスト：
+
+```sh
+node --test sync-server/demo-batch.test.js
+```
+
+注意：この段階の再送はボタンを再度押す方式で、Safariのバックグラウンド自動再送ではありません。写真ライブラリとの連携・本番の写真自動同期は未実装です。
