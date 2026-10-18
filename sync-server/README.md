@@ -64,3 +64,29 @@ node sync-server/server.js
 HTTPSモード時は `https://<パソコンのIP>:4318/pair` にアクセスしてください。iPhoneにも発行元の信頼設定が必要です。**ブラウザの証明書警告を無視して進む運用はしないでください。** 秘密鍵はGitHubへコミットしないでください。
 
 > HTTPS対応はサーバーの土台だけです。端末認証の永続化、端末の取り消し、保護された写真保存、編集競合の処理、バックアップや自動同期は未実装です。園児の写真など実データを使う前に追加の安全設計とテストが必要です。
+
+## MacBook NeoでのHTTPS接続テスト（mkcert）
+
+今のHTTPテストはそのまま残ります。HTTPSは**テスト用の架空データのみ**使用します。証明書をMacBookに生成し、iPhoneでも信頼させる手順が必要です。
+
+1. MacBookでHomebrewがあるか確認： `brew --version`
+2. Homebrewがある場合、 `brew install mkcert` 、続いて `mkcert -install`
+3. `mkdir -p sync-server/certs`
+4. MacBookのローカルIPアドレスを確認： `ipconfig getifaddr en0`
+5. **実際のIPアドレスに置き換えて**証明書を生成：
+
+```sh
+mkcert -cert-file sync-server/certs/cert.pem -key-file sync-server/certs/key.pem localhost 127.0.0.1 192.168.0.8
+```
+
+6. すでに起動中の4318番サーバーは Control+C で停止してから、以下でHTTPS起動：
+
+```sh
+OMOIDE_TLS_CERT=sync-server/certs/cert.pem OMOIDE_TLS_KEY=sync-server/certs/key.pem node sync-server/server.js
+```
+
+7. MacBookで `https://localhost:4318/security-status` を開き、 `"encrypted":true` を確認する。
+8. iPhoneから `https://192.168.0.8:4318/security-status` にアクセスするには、 `mkcert -CAROOT` で表示したディレクトリの **rootCA.pem（公開CA証明書）だけ** をiPhoneにAirDropして、iPhoneの設定でプロファイルをインストールし、証明書の信頼設定で有効にする必要があります。作業後は端末の管理方針に従って不要なテスト用CAを取り除いてください。
+9. **rootCA-key.pem、sync-server/certs/key.pem は絶対に共有・GitHub登録しないこと。** 証明書の警告を無視して進まないこと。証明書を信頼させる操作は、個人所有のテスト端末だけに限定すること。
+
+この方法は開発中のローカル認証局による暗号化テスト用です。園の本番端末や園児の写真を扱うための運用・監査・端末権限は別途設計します。
