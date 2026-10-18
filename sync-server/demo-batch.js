@@ -39,6 +39,7 @@ function createStore(dir=path.join(__dirname,'data','demo-batch')){
   return bytes;
  }
  function list(){return fixtures.map(({id,index,digest})=>({id,number:index+1,digest,received:!!get(id)}));}
- return {put,get,list};
+ function clearDemo(){let count=0;for(const {id} of fixtures){const file=filename(id);if(fs.existsSync(file)){fs.unlinkSync(file);count++;}}return count;}
+ return {put,get,list,clearDemo};
 }
 module.exports={fixtures,byId,sameBytes,createStore};
