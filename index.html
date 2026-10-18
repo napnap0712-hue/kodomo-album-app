@@ -771,6 +771,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p class="muted">同期設計の確認用。保存済みアルバム件数・写真枚数・画像データ容量（目安）を、この端末内だけで集計します。写真・名前・アルバムの中身は表示・送信しません。</p>
 <button class="secondary wide" id="syncInspectLocal" type="button">🔍 端末内データを読み取り確認</button>
 <p id="syncLocalSummary" class="muted" role="status">未確認。保存データは変更しません。</p>
+<button class="secondary wide" id="syncInspectSeparation" type="button">🧩 写真と配置情報の分離を確認</button>
+<p id="syncSeparationSummary" class="muted" role="status">未確認。読み取り専用・送信なし。</p>
 </div>
 <div class="panel" style="display:grid;gap:11px;padding:16px;margin-top:14px">
 <b>📦 アルバムを別コピーで引き継ぐ（試験版）</b>
@@ -1751,6 +1753,31 @@ document.getElementById('syncInspectLocal').addEventListener('click',async()=>{
   out.textContent='✅ 保存済み下書き '+drafts.length+'件／写真 '+totalPhotos+'枚（下書き内の延べ枚数）／写真Blob容量の合計 約'+mb+'MB'+(unknownBytes?'／容量不明 '+unknownBytes+'枚':'')+'／年度情報あり '+years.size+'種類。サーバーには送信していません。';
  }catch(e){
   out.textContent='⚠️ 読み取りに失敗しました。データは変更していません。端末の空き容量やSafariの保存設定を確認してください。';
+ }finally{button.disabled=false;}
+});
+
+// Read-only structural check. Only aggregate numbers are shown; never serialize photo blobs,
+// thumbnails, text, sticker source images, child names or album titles.
+document.getElementById('syncInspectSeparation').addEventListener('click',async()=>{
+ const button=document.getElementById('syncInspectSeparation');
+ const output=document.getElementById('syncSeparationSummary');
+ button.disabled=true;output.textContent='端末内の保存形式を確認しています…';
+ try{
+  const drafts=await getAllDrafts();
+  let photos=0,photoElements=0,otherElements=0,invalidLinks=0,missingStructure=0;
+  for(const draft of drafts){
+   if(!Array.isArray(draft.photos)||!Array.isArray(draft.designElements)){missingStructure++;continue;}
+   photos+=draft.photos.length;
+   for(const el of draft.designElements){
+    if(el?.type==='photo'){
+     photoElements++;
+     if(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=draft.photos.length)invalidLinks++;
+    }else otherElements++;
+   }
+  }
+  output.textContent='📋 保存済みアルバム '+drafts.length+'件／写真 '+photos+'枚／写真の配置 '+photoElements+'個／その他の編集要素 '+otherElements+'個／写真参照の要確認 '+invalidLinks+'個／旧形式など要確認 '+missingStructure+'件。端末内で件数だけを確認しました。データの変更・送信はありません。';
+ }catch(e){
+  output.textContent='⚠️ 端末内データの確認に失敗しました。保存データは変更していません。';
  }finally{button.disabled=false;}
 });
 
