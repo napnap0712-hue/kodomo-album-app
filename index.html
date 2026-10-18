@@ -756,6 +756,12 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </div>
 <p id="editorStorageChoiceInfo" class="muted" role="status" style="margin:8px 0 0">従来の保存方式を使用中。分離保存は検証済みの試験コピーで先行利用できます。元アルバムは変更しません。</p>
 </section>
+<section id="newSplitAlbumPrepPanel" style="margin:12px 0;padding:12px;border:1px solid #dbe4ef;border-radius:12px;background:#fff">
+<strong style="font-size:13px">🌱 新規アルバムの分離保存（準備段階）</strong>
+<p class="muted" style="font-size:12px">元アルバムとは別の保存領域に、写真0枚の空アルバムだけ作成します。正式保存方式は変更しません。</p>
+<button class="secondary" type="button" id="prepareNewSplitAlbum">🆕 空の分離アルバムを作成</button>
+<p id="newSplitAlbumPrepStatus" class="muted" role="status"></p>
+</section>
 <section id="fictionalSplitPreviewPanel" hidden style="margin:12px 0;padding:14px;min-width:0;border:1px solid #cdd9e5;border-radius:12px;background:#f7faff">
 <strong>🌼 架空の新規アルバム（読み取り専用）</strong>
 <p id="fictionalSplitPreviewStatus" class="muted" role="status"></p>
@@ -1896,6 +1902,36 @@ $('#safeSplitEditorSave').addEventListener('click',async()=>{
   status.textContent='✅ 検証済み分離コピーの編集情報だけを保存しました。元アルバムと写真データは未変更です。';
  }catch(error){status.textContent='⚠️ 試験保存を停止：'+(error?.message||String(error))+'。元アルバムは未変更です。';}
  finally{db?.close();button.disabled=false}
+});
+// Separate opt-in namespace for future new split albums. Never access original or trial databases.
+$('#prepareNewSplitAlbum').addEventListener('click',async()=>{
+ const button=$('#prepareNewSplitAlbum'),status=$('#newSplitAlbumPrepStatus');
+ button.disabled=true;let db=null;
+ try{
+  const request=indexedDB.open('omoide-new-split-albums-v1',1);
+  db=await new Promise((resolve,reject)=>{
+   request.onupgradeneeded=()=>{
+    const d=request.result;
+    for(const name of ['albums','photos','edits'])if(!d.objectStoreNames.contains(name))d.createObjectStore(name);
+   };
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error||Error('新規保存領域を開けません'));
+   request.onblocked=()=>reject(Error('保存領域が別のタブで使用されています'));
+  });
+  const id='new-'+crypto.randomUUID();
+  const album={id,title:'新しいアルバム',photoCount:0,createdAt:new Date().toISOString(),storage:'split-v1',ready:true};
+  const edits={albumId:id,background:'#ffffff',layout:'spread',spreadIndex:0,designElements:[],photoCount:0};
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction(['albums','edits'],'readwrite');
+   tx.objectStore('albums').add(album,id);
+   tx.objectStore('edits').add(edits,id);
+   tx.oncomplete=resolve;
+   tx.onerror=()=>reject(tx.error||Error('空アルバムの作成に失敗'));
+   tx.onabort=()=>reject(tx.error||Error('空アルバムの作成が中断されました'));
+  });
+  status.textContent='✅ 独立した分離保存領域に空の新規アルバムを作成しました（写真0枚）。元アルバムとバックアップは変更していません。';
+ }catch(e){status.textContent='⚠️ 新規アルバムの準備に失敗：'+(e?.message||String(e));}
+ finally{db?.close();button.disabled=false;}
 });
 // Independent new-album rehearsal: synthetic SVGs only, never uses real photo arrays.
 // Render the independent synthetic new-album rehearsal, with no real album writes.
