@@ -747,7 +747,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor">
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
 <section id="restoredPortablePreviewPanel" hidden style="margin:12px 0;padding:14px;min-width:0;border-radius:12px;border:1px solid #cdd9e5;background:#f7faff">
 <b>📖 ファイルから復元した試験アルバム（読み取り専用）</b>
 <p id="restoredPortablePreviewStatus" class="muted" role="status"></p>
@@ -1750,6 +1750,53 @@ $('#exportMigrationBackupFile').addEventListener('click',async()=>{
   status.textContent='✅ 保護バックアップの書き出しを開始しました：写真'+encodedPhotos.length+'枚をSHA-256で照合済み。Safariのダウンロードを確認してね。元アルバムは未変更です。';
  }catch(e){status.textContent='⚠️ '+stage+'：'+(e?.message||String(e))+'。元アルバムは未変更です。'}
  finally{db?.close();if(url)setTimeout(()=>URL.revokeObjectURL(url),60000);button.disabled=false}
+});
+// Read-only pre-migration audit: compare the original, immutable backup and split copy.
+$('#preMigrationSafetyAudit').addEventListener('click',async()=>{
+ const button=$('#preMigrationSafetyAudit'),status=$('#editorStatus');
+ button.disabled=true;
+ const openReadOnly=async name=>new Promise((resolve,reject)=>{
+  const request=indexedDB.open(name);
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||Error('検証用データベースを開けません'));
+ });
+ const get=async(db,store,key)=>new Promise((resolve,reject)=>{
+  if(!db.objectStoreNames.contains(store)){reject(Error('必要な保存領域がありません: '+store));return}
+  const request=db.transaction(store,'readonly').objectStore(store).get(key);
+  request.onsuccess=()=>resolve(request.result);
+  request.onerror=()=>reject(request.error||Error('照合情報を読み取れません'));
+ });
+ const digest=async(blob)=>{
+  if(!(blob instanceof Blob)||!blob.size)throw Error('写真データが空か無効です');
+  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()))).map(v=>v.toString(16).padStart(2,'0')).join('');
+ };
+ let backupDb=null,splitDb=null;
+ try{
+  if(!editingId)throw Error('保存済みアルバムを開いてね');
+  const original=(await getAllDrafts()).find(d=>d.id===editingId);
+  if(!original||!Array.isArray(original.photos)||!Array.isArray(original.designElements))throw Error('元アルバムが見つかりません');
+  backupDb=await openReadOnly('omoide-pre-migration-backup-v1');
+  splitDb=await openReadOnly('omoide-split-migration-trial-v1');
+  const backup=await get(backupDb,'meta','backup');
+  const split=await get(splitDb,'edits','album');
+  if(!backup||backup.id!==original.id)throw Error('このアルバムの保護用バックアップがありません');
+  if(!split)throw Error('分離保存の試験コピーがありません');
+  const total=original.photos.length;
+  if(backup.backupPhotoCount!==total||split.photoCount!==total)throw Error('写真枚数に違いがあります');
+  if(!Array.isArray(backup.designElements)||!Array.isArray(split.designElements))throw Error('配置情報に問題があります');
+  if(JSON.stringify(backup.designElements)!==JSON.stringify(original.designElements))throw Error('元アルバムと移行前バックアップの配置情報に違いがあります');
+  for(let i=0;i<total;i++){
+   status.textContent='🔎 移行前の安全チェック：写真'+(i+1)+'/'+total+'枚';
+   const sourceHash=await digest(original.photos[i]?.blob);
+   const back=await get(backupDb,'photos','photo-'+i);
+   const trial=await get(splitDb,'photos','photo-'+i);
+   if(sourceHash!==await digest(back?.blob))throw Error('写真'+(i+1)+'：保護用バックアップが元写真と一致しません');
+   if(sourceHash!==await digest(trial?.blob))throw Error('写真'+(i+1)+'：分離保存コピーが元写真と一致しません');
+  }
+  status.textContent='✅ 移行前安全チェック成功：元アルバム・保護用バックアップ・分離保存コピーの写真'+total+'枚が一致。元データとバックアップの配置'+original.designElements.length+'個も一致。試験コピーの配置変更は比較対象外です。書き込みは行っていません。';
+ }catch(error){
+  status.textContent='⚠️ 移行前安全チェックを停止：'+(error?.message||String(error))+'。元のアルバムは変更していません。';
+ }finally{backupDb?.close();splitDb?.close();button.disabled=false}
 });
 $('#createMigrationBackup').addEventListener('click',async()=>{
  const button=$('#createMigrationBackup'),status=$('#editorStatus');button.disabled=true;
