@@ -22,6 +22,19 @@ const page="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><meta
 const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]),async(req,res)=>{
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
  const path=new URL(req.url,'http://localhost').pathname;
+ if(req.method==='GET'&&path==='/security-status'){
+  return json(res,200,{
+   transport:tlsOptions?'https':'http',
+   encrypted:!!tlsOptions,
+   browserTrustNeedsVerification:!!tlsOptions,
+   demoOnly:true,
+   allowsRealChildData:false,
+   allowsRealPhotos:false,
+   authenticatedPairingDemo:true,
+   sessionPersistence:false,
+   message:tlsOptions?'HTTPSで通信中です。証明書の信頼と端末認証の本番要件は別途確認が必要です。':'HTTPのため暗号化されていません。架空データのテスト専用です。'
+  });
+ }
  if(req.method==='GET'&&(path==='/'||path==='/health'))return json(res,200,{app:'omoide-book-sync-prototype',status:'ready',message:'接続テスト成功！写真やアルバムのデータはまだ送受信しません。',secureDataSyncEnabled:false,pairingTestAvailable:true});
  if(req.method==='GET'&&path==='/pair'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'"});return res.end(page);}
  if(req.method==='POST'&&path==='/pair'){
