@@ -1,0 +1,8 @@
+# Local TLS keys, device data, and Node dependencies must never be committed
+sync-server/certs/
+sync-server/data/
+sync-server/*.pem
+sync-server/*.key
+sync-server/*.p12
+node_modules/
+.DS_Store
