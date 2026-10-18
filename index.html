@@ -1900,6 +1900,58 @@ $('#safeSplitEditorSave').addEventListener('click',async()=>{
 // Independent new-album rehearsal: synthetic SVGs only, never uses real photo arrays.
 // Render the independent synthetic new-album rehearsal, with no real album writes.
 const fictionalPreviewPhotos=[];
+let fictionalEditEnabled=false,fictionalSelected=null;
+function resetFictionalEdit(){
+ fictionalEditEnabled=false;fictionalSelected=null;
+ const toggle=$('#fictionalEditToggle'),tools=$('#fictionalEditTools');
+ if(toggle)toggle.textContent='✏️ 架空アルバムを編集';
+ if(tools)tools.hidden=true;
+}
+function setupFictionalEdit(){
+ const panel=$('#fictionalSplitPreviewPanel'),status=$('#fictionalSplitPreviewStatus');
+ if($('#fictionalEditToggle'))return;
+ const controls=document.createElement('div');
+ controls.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:10px 0';
+ const toggle=document.createElement('button');toggle.id='fictionalEditToggle';toggle.type='button';toggle.textContent='✏️ 架空アルバムを編集';
+ const tools=document.createElement('div');tools.id='fictionalEditTools';tools.hidden=true;tools.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
+ const left=document.createElement('button'),right=document.createElement('button');
+ left.type=right.type='button';left.textContent='↶ 左に15°';right.textContent='↷ 右に15°';
+ for(const button of [left,right])tools.appendChild(button);
+ controls.append(toggle,tools);status.insertAdjacentElement('afterend',controls);
+ toggle.addEventListener('click',()=>{
+  fictionalEditEnabled=!fictionalEditEnabled;fictionalSelected=null;
+  toggle.textContent=fictionalEditEnabled?'🔒 編集を終了':'✏️ 架空アルバムを編集';
+  tools.hidden=!fictionalEditEnabled;
+  status.textContent=fictionalEditEnabled?'✏️ 架空写真をドラッグして移動。写真を選んで回転できます。変更は画面上だけで、保存されません。':'🔒 編集を終了しました。保存データは変更していません。';
+ });
+ for(const [button,step] of [[left,-15],[right,15]])button.addEventListener('click',()=>{
+  if(!fictionalEditEnabled||!fictionalSelected)return;
+  const {node,element}=fictionalSelected;
+  element.rotation=((Number(element.rotation)||0)+step+360)%360;
+  node.style.transform='rotate('+element.rotation+'deg)';
+  status.textContent='✏️ 架空写真を回転しました（未保存）。';
+ });
+}
+function attachFictionalDrag(node,element){
+ node.style.touchAction='none';
+ node.addEventListener('pointerdown',event=>{
+  if(!fictionalEditEnabled||event.button>0)return;
+  event.preventDefault();event.stopImmediatePropagation();
+  fictionalSelected={node,element};
+  const rect=$('#fictionalSplitPreviewCanvas').getBoundingClientRect();
+  const startX=event.clientX,startY=event.clientY,originX=Number(element.x)||0,originY=Number(element.y)||0;
+  const move=e=>{
+   if(!fictionalEditEnabled)return;
+   const x=Math.max(0,Math.min(100-(Number(element.w)||0),originX+(e.clientX-startX)/rect.width*100));
+   const y=Math.max(0,Math.min(100-(Number(element.h)||0),originY+(e.clientY-startY)/rect.height*100));
+   element.x=x;element.y=y;node.style.left=x+'%';node.style.top=y+'%';
+  };
+  const end=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);window.removeEventListener('pointercancel',end)};
+  window.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',end,{once:true});
+  window.addEventListener('pointercancel',end,{once:true});
+ },true);
+}
 function clearFictionalSplitPreview(){
  for(const photo of fictionalPreviewPhotos)releasePhotoUrl(photo);
  fictionalPreviewPhotos.length=0;
@@ -1907,8 +1959,8 @@ function clearFictionalSplitPreview(){
 }
 $('#fictionalSplitPreviewButton').addEventListener('click',async()=>{
  const button=$('#fictionalSplitPreviewButton'),panel=$('#fictionalSplitPreviewPanel'),status=$('#fictionalSplitPreviewStatus'),canvas=$('#fictionalSplitPreviewCanvas');
- if(!panel.hidden){panel.hidden=true;clearFictionalSplitPreview();return}
- button.disabled=true;panel.hidden=false;clearFictionalSplitPreview();status.textContent='🌼 架空アルバムを読み込み中…';
+ if(!panel.hidden){panel.hidden=true;resetFictionalEdit();clearFictionalSplitPreview();return}
+ button.disabled=true;panel.hidden=false;resetFictionalEdit();clearFictionalSplitPreview();status.textContent='🌼 架空アルバムを読み込み中…';
  let db=null;
  try{
   const req=indexedDB.open('omoide-fictional-new-split-v1');
@@ -1937,7 +1989,8 @@ $('#fictionalSplitPreviewButton').addEventListener('click',async()=>{
    if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||!photos[el.fileIndex]))throw Error('写真参照に問題があります');
    if(!['photo','text','sticker'].includes(el.type))continue;
    const node=renderElementNode({...el,id:'fictional-preview-'+index},canvas,photos);
-   node.style.pointerEvents='none';
+   if(el.type==='photo')attachFictionalDrag(node,{...el});
+   else node.style.pointerEvents='none';
    if(el.type==='photo'){
     images++;
     const img=node.querySelector('img');
@@ -1948,6 +2001,7 @@ $('#fictionalSplitPreviewButton').addEventListener('click',async()=>{
     });
    }else if(el.type==='text')texts++;
   }
+  setupFictionalEdit();
   status.textContent='✅ 架空アルバムの表示成功：画像'+images+'個・文字'+texts+'個。元のアルバムは未変更です。';
  }catch(e){status.textContent='⚠️ 架空アルバムの表示に失敗：'+(e?.message||String(e))+'。元のアルバムは未変更です。'}
  finally{db?.close();button.disabled=false}
