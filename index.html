@@ -773,6 +773,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p id="syncLocalSummary" class="muted" role="status">未確認。保存データは変更しません。</p>
 <button class="secondary wide" id="syncInspectSeparation" type="button">🧩 写真と配置情報の分離を確認</button>
 <p id="syncSeparationSummary" class="muted" role="status">未確認。読み取り専用・送信なし。</p>
+<button class="secondary wide" id="syncPhotoSafetyTest" type="button">🧪 架空写真の保存安全テスト</button>
+<p id="syncPhotoSafetyResult" class="muted" role="status">未実施。実際のアルバムとは別の保存領域を使用します。</p>
 </div>
 <div class="panel" style="display:grid;gap:11px;padding:16px;margin-top:14px">
 <b>📦 アルバムを別コピーで引き継ぐ（試験版）</b>
@@ -1802,6 +1804,33 @@ document.getElementById('syncInspectSeparation').addEventListener('click',async(
  }catch(e){
   output.textContent='⚠️ 端末内データの確認に失敗しました。保存データは変更していません。';
  }finally{button.disabled=false;}
+});
+
+// Synthetic-only IndexedDB stress test. Does not read or write the real album DB.
+document.getElementById('syncPhotoSafetyTest').addEventListener('click',async()=>{
+ const button=document.getElementById('syncPhotoSafetyTest'),out=document.getElementById('syncPhotoSafetyResult');
+ button.disabled=true;out.textContent='🧪 架空写真を作成し、別の保存領域で読み書きを確認中…';
+ let db;
+ try{
+  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#65a9df';ctx.fillRect(0,0,64,64);
+  ctx.fillStyle='#fff0a0';ctx.fillRect(12,12,38,38);
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(v=>v?resolve(v):reject(Error('テスト画像の生成失敗')),'image/png'));
+  const original=new Uint8Array(await blob.arrayBuffer());
+  const name='omoide-synthetic-photo-safety-v1';
+  db=await new Promise((resolve,reject)=>{const req=indexedDB.open(name,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('test'))req.result.createObjectStore('test')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('テスト領域を開けません'))});
+  const access=(mode,operation)=>new Promise((resolve,reject)=>{const tx=db.transaction('test',mode);const req=operation(tx.objectStore('test'));req.onerror=()=>reject(req.error||Error('テスト操作に失敗'));req.onsuccess=()=>resolve(req.result);tx.onerror=()=>reject(tx.error||Error('保存に失敗'))});
+  for(let i=1;i<=15;i++){
+   await access('readwrite',store=>store.put({photos:[{blob}],designElements:[{type:'photo',fileIndex:0,x:i,y:10}],revision:i},'sample'));
+   const record=await access('readonly',store=>store.get('sample'));
+   if(record?.revision!==i||record?.designElements?.[0]?.fileIndex!==0||!(record.photos?.[0]?.blob instanceof Blob))throw Error(i+'回目：構造が一致しません');
+   const current=new Uint8Array(await record.photos[0].blob.arrayBuffer());
+   if(current.length!==original.length||current.some((v,k)=>v!==original[k]))throw Error(i+'回目：画像データが一致しません');
+   out.textContent='🧪 '+i+'/15回：架空画像と配置情報の一致を確認中…';
+  }
+  out.textContent='✅ 架空写真の保存・読み込み15回成功。画像データも毎回一致しました。実際の写真・アルバムは未変更です。';
+ }catch(e){out.textContent='⚠️ テストで問題を検出しました：'+(e?.message||String(e))+'。実際のアルバムは変更していません。';}
+ finally{if(db)db.close();button.disabled=false;}
 });
 
 const syncConnectionNote=document.getElementById('syncConnectionNote');
