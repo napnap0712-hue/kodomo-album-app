@@ -729,7 +729,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 #trialSplitPreviewButton,#newSplitAlbumPrepPanel,
 #fictionalSplitPreviewPanel,#recoveryGuidePanel,
 #restoredPortablePreviewPanel,#trialSplitPreviewPanel,
-#safeSplitEditorToggle,#safeSplitEditorSave{display:none!important}
+#safeSplitEditorToggle{display:none!important}
+#safeSplitEditorSave:not([hidden]){display:inline-flex!important}
 </style>
 </head>
 <body>
@@ -1838,7 +1839,7 @@ function syncStorageChoiceUi(){
  legacy.style.background=safeSplitEditorMode?'#f3f5f7':'#dcecff';
  split.style.background=safeSplitEditorMode?'#dcecff':'#f3f5f7';
  info.textContent=safeSplitEditorMode
-  ?'🔒 分離保存の先行利用中。写真は試験コピーにあり、編集情報は「試験コピーだけ保存」で保存します。通常の下書き保存は無効です。'
+  ?'🔒 分離保存中。編集情報は「💾 分離保存」で保存します。写真データと従来のアルバムは変更しません。'
   :'従来の保存方式を使用中。分離保存は検証済みの試験コピーで先行利用できます。元アルバムは変更しません。';
 }
 $('#storageChooseSplit').addEventListener('click',()=>{
@@ -1855,6 +1856,7 @@ $('#storageChooseLegacy').addEventListener('click',()=>{
 function setSafeSplitEditorUi(on){
  safeSplitEditorMode=on;
  $('#safeSplitEditorSave').hidden=!on;
+ $('#safeSplitEditorSave').textContent='💾 分離保存';
  $('#safeSplitEditorToggle').textContent=on?'↩ 元のアルバム編集画面に戻る':'🧪 分離コピーを編集画面で試す';
  $('#saveDraft').disabled=on;
  syncStorageChoiceUi();
@@ -1900,7 +1902,7 @@ $('#safeSplitEditorToggle').addEventListener('click',async()=>{
   $('#layoutMode').value=edits.layout||'spread';
   syncPageSettingsChoices();
   selectedElementId=null;selectedGroupIds.clear();refreshEditor();
-  status.textContent='🧪 検証済み分離コピーを通常の編集画面に表示中。変更は「試験コピーだけ保存」で保存。元アルバムには書き込みません。';
+  status.textContent='✅ 分離保存コピーを編集画面に表示しました。「💾 分離保存」で編集情報だけ保存できます。';
  }catch(error){status.textContent='⚠️ 試験編集の開始・終了：'+(error?.message||String(error));}
  finally{db?.close();button.disabled=false}
 });
