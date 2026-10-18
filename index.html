@@ -955,13 +955,28 @@ async function renderSplitProjectCards(){
   const rows=await new Promise((resolve,reject)=>{const q=db.transaction('albums','readonly').objectStore('albums').getAll();q.onsuccess=()=>resolve(q.result||[]);q.onerror=()=>reject(q.error)});
   const visible=rows.filter(a=>a&&a.storage==='split-v1'&&a.ready&&a.classId===selected.id&&a.year===activeYear()&&a.photoCount>0).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   if(!visible.length)return;
+  // Use only truly unoccupied legacy slots, without writing split IDs into legacy mappings.
+  const legacySlots=readProjectSlots();
+  const emptySlots=[...document.querySelectorAll('#projectGrid [data-project-slot]')].filter(btn=>!legacySlots[Number(btn.dataset.projectSlot)]);
   visible.forEach((a,i)=>{
+   const available=emptySlots.shift();
+   if(available){
+    const btn=available.cloneNode(false);
+    btn.className='projectCard hasProject';
+    btn.dataset.projectSlot=available.dataset.projectSlot;
+    const preview=document.createElement('span');preview.className='projectCardPreview';preview.textContent='🌱';
+    const label=document.createElement('span');label.className='projectCardName';label.textContent=available.querySelector('.projectCardName')?.textContent||String(Number(btn.dataset.projectSlot)+1);
+    btn.append(preview,label);btn.title=a.title||'分離保存ページ';
+    btn.addEventListener('click',()=>openSplitProjectFromList(a.id));
+    available.replaceWith(btn);
+    return;
+   }
    const btn=document.createElement('button');btn.type='button';btn.className='projectCard hasProject';
    const preview=document.createElement('span');preview.className='projectCardPreview';preview.textContent='📖';
    const label=document.createElement('span');label.className='projectCardName';label.textContent=a.title||('分離ページ '+(i+1));
    btn.append(preview,label);btn.addEventListener('click',()=>openSplitProjectFromList(a.id));grid.append(btn);
   });
-  host.hidden=false;
+  host.hidden=!grid.children.length;
  }finally{db?.close()}
 }
 async function openSplitProjectFromList(id){
