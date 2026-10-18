@@ -731,6 +731,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 #restoredPortablePreviewPanel,#trialSplitPreviewPanel,
 #safeSplitEditorToggle{display:none!important}
 #safeSplitEditorSave:not([hidden]){display:inline-flex!important}
+#newSplitAlbumPrepPanel.newSplitChoiceActive{display:block!important}
 </style>
 </head>
 <body>
@@ -1844,7 +1845,13 @@ function syncStorageChoiceUi(){
 }
 $('#storageChooseSplit').addEventListener('click',()=>{
  if(safeSplitEditorMode)return;
- if(!editingId){$('#editorStorageChoiceInfo').textContent='保存済みアルバムを開いてから選んでね。';return}
+ if(!editingId){
+  const panel=$('#newSplitAlbumPrepPanel');
+  panel.classList.add('newSplitChoiceActive');
+  $('#editorStorageChoiceInfo').textContent='🌱 新規アルバムの分離保存準備を開きました。独立領域の作成済みアルバムを開けます。通常の保存方式はまだ切り替えていません。';
+  $('#openNewSplitAlbum').click();
+  return;
+ }
  if(!confirm('現在の未保存編集は試験コピーに引き継がれません。検証済みの分離コピーを開きますか？'))return;
  $('#safeSplitEditorToggle').click();
 });
