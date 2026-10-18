@@ -760,7 +760,13 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <strong style="font-size:13px">🌱 新規アルバムの分離保存（準備段階）</strong>
 <p class="muted" style="font-size:12px">元アルバムとは別の保存領域に、写真0枚の空アルバムだけ作成します。正式保存方式は変更しません。</p>
 <button class="secondary" type="button" id="prepareNewSplitAlbum">🆕 空の分離アルバムを作成</button>
+<button class="secondary" type="button" id="openNewSplitAlbum" style="margin-left:6px">📖 作成済みの空アルバムを開く</button>
 <p id="newSplitAlbumPrepStatus" class="muted" role="status"></p>
+<div id="newSplitAlbumReadonlyView" hidden style="margin-top:10px">
+<strong style="font-size:12px">空の新規アルバム（独立データのプレビュー）</strong>
+<div class="designCanvas spreadCanvas" id="newSplitAlbumReadonlyCanvas" style="width:100%;aspect-ratio:1.414/1;position:relative;min-height:0;border:1px solid #cdd9e5;border-radius:7px;pointer-events:none"></div>
+<p class="muted">この画面は表示専用です。従来の編集画面や保存データは切り替えていません。</p>
+</div>
 </section>
 <section id="fictionalSplitPreviewPanel" hidden style="margin:12px 0;padding:14px;min-width:0;border:1px solid #cdd9e5;border-radius:12px;background:#f7faff">
 <strong>🌼 架空の新規アルバム（読み取り専用）</strong>
@@ -1932,6 +1938,28 @@ $('#prepareNewSplitAlbum').addEventListener('click',async()=>{
   status.textContent='✅ 独立した分離保存領域に空の新規アルバムを作成しました（写真0枚）。元アルバムとバックアップは変更していません。';
  }catch(e){status.textContent='⚠️ 新規アルバムの準備に失敗：'+(e?.message||String(e));}
  finally{db?.close();button.disabled=false;}
+});
+$('#openNewSplitAlbum').addEventListener('click',async()=>{
+ const button=$('#openNewSplitAlbum'),status=$('#newSplitAlbumPrepStatus'),view=$('#newSplitAlbumReadonlyView');
+ button.disabled=true;let db=null;
+ try{
+  const req=indexedDB.open('omoide-new-split-albums-v1');
+  db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('保存領域を開けません'));req.onblocked=()=>reject(Error('別のタブで使用中です'))});
+  if(!db.objectStoreNames.contains('albums')||!db.objectStoreNames.contains('edits'))throw Error('新規保存領域がありません');
+  const albums=await new Promise((resolve,reject)=>{const tx=db.transaction('albums','readonly'),q=tx.objectStore('albums').getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error||Error('アルバム一覧を読めません'))});
+  const album=albums.filter(v=>v?.storage==='split-v1'&&v?.ready&&v.photoCount===0).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+  if(!album)throw Error('作成済みの空アルバムが見つかりません');
+  const edits=await new Promise((resolve,reject)=>{const tx=db.transaction('edits','readonly'),q=tx.objectStore('edits').get(album.id);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error||Error('編集情報を読めません'))});
+  if(!edits||edits.albumId!==album.id||edits.photoCount!==0||!Array.isArray(edits.designElements)||edits.designElements.length!==0)throw Error('空アルバムの編集情報が一致しません');
+  const canvas=$('#newSplitAlbumReadonlyCanvas');
+  canvas.replaceChildren();
+  canvas.style.background=backgroundStyle(edits.background||'#ffffff');
+  canvas.classList.toggle('spreadCanvas',edits.layout==='spread');
+  canvas.classList.toggle('singleCanvas',edits.layout==='single');
+  view.hidden=false;
+  status.textContent='✅ 保存済みの空アルバムを独立領域から読み込んで表示しました（写真0枚・配置0個）。元データは未変更です。';
+ }catch(e){view.hidden=true;status.textContent='⚠️ 空アルバムを開けません：'+(e?.message||String(e));}
+ finally{db?.close();button.disabled=false}
 });
 // Independent new-album rehearsal: synthetic SVGs only, never uses real photo arrays.
 // Render the independent synthetic new-album rehearsal, with no real album writes.
