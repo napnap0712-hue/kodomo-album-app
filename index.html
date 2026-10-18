@@ -971,7 +971,6 @@ async function renderSplitProjectCards(){
     const index=Number(available.dataset.projectSlot);
     taken.add(index);freeByIndex.delete(index);
     if(positions[a.id]!==index){positions[a.id]=index;}
-   if(available){
     const btn=available.cloneNode(false);
     btn.className='projectCard hasProject';
     btn.dataset.projectSlot=available.dataset.projectSlot;
