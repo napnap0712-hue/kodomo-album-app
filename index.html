@@ -963,6 +963,7 @@ async function renderSplitProjectCards(){
   const legacySlots=readProjectSlots(),positions=readSplitPagePositions(),taken=new Set();
   const emptySlots=[...document.querySelectorAll('#projectGrid [data-project-slot]')].filter(btn=>!legacySlots[Number(btn.dataset.projectSlot)]);
   const freeByIndex=new Map(emptySlots.map(btn=>[Number(btn.dataset.projectSlot),btn]));
+  const photoPreviews=[];
   visible.forEach((a,i)=>{
    const savedIndex=positions[a.id];
    let available=Number.isInteger(savedIndex)&&!taken.has(savedIndex)?freeByIndex.get(savedIndex):null;
@@ -975,6 +976,7 @@ async function renderSplitProjectCards(){
     btn.className='projectCard hasProject';
     btn.dataset.projectSlot=available.dataset.projectSlot;
     const preview=document.createElement('span');preview.className='projectCardPreview';preview.textContent='🌱';
+    photoPreviews.push({albumId:a.id,preview});
     const label=document.createElement('span');label.className='projectCardName';label.textContent=available.querySelector('.projectCardName')?.textContent||String(Number(btn.dataset.projectSlot)+1);
     btn.append(preview,label);btn.title=a.title||'分離保存ページ';
     btn.addEventListener('click',()=>openSplitProjectFromList(a.id));
@@ -983,9 +985,25 @@ async function renderSplitProjectCards(){
    }
    const btn=document.createElement('button');btn.type='button';btn.className='projectCard hasProject';
    const preview=document.createElement('span');preview.className='projectCardPreview';preview.textContent='📖';
+   photoPreviews.push({albumId:a.id,preview});
    const label=document.createElement('span');label.className='projectCardName';label.textContent=a.title||('分離ページ '+(i+1));
    btn.append(preview,label);btn.addEventListener('click',()=>openSplitProjectFromList(a.id));grid.append(btn);
   });
+  // Read only the first image for a lightweight visual cue; never modify stored photos.
+  if(db.objectStoreNames.contains('photos')){
+   await Promise.all(photoPreviews.map(({albumId,preview})=>new Promise(resolve=>{
+    const q=db.transaction('photos','readonly').objectStore('photos').get(albumId+':photo-0');
+    q.onerror=()=>resolve();
+    q.onsuccess=()=>{
+     if(!(q.result?.blob instanceof Blob)||!q.result.blob.size){resolve();return}
+     const url=URL.createObjectURL(q.result.blob),img=document.createElement('img');
+     img.className='projectThumbnail';img.alt='保存した写真のプレビュー';img.draggable=false;
+     img.onload=()=>{if(preview.isConnected)preview.replaceChildren(img);URL.revokeObjectURL(url);resolve()};
+     img.onerror=()=>{URL.revokeObjectURL(url);resolve()};
+     img.src=url;
+    };
+   })));
+  }
   writeSplitPagePositions(positions);
   host.hidden=!grid.children.length;
  }finally{db?.close()}
