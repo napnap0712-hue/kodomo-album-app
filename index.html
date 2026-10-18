@@ -732,6 +732,10 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 #safeSplitEditorToggle{display:none!important}
 #safeSplitEditorSave:not([hidden]){display:inline-flex!important}
 #newSplitAlbumPrepPanel.newSplitChoiceActive{display:block!important}
+/* Keep the previous editor canvas intact but out of view during isolated new-album preparation. */
+.screen[data-screen="editor"].newSplitPreparation .editorPanel{display:none!important}
+.screen[data-screen="editor"].newSplitPreparation #newSplitAlbumReadonlyView{display:block!important}
+.screen[data-screen="editor"].newSplitPreparation #newSplitAlbumReadonlyView>p{display:none!important}
 </style>
 </head>
 <body>
@@ -940,6 +944,10 @@ async function getAllDrafts(){const db=await openDraftDb();return new Promise((r
 async function deleteProjectDrafts(ids){const db=await openDraftDb();return new Promise((resolve,reject)=>{let tx;try{tx=db.transaction(STORE_NAME,'readwrite');ids.forEach(id=>tx.objectStore(STORE_NAME).delete(id));tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error||new Error('削除に失敗しました'))};tx.onabort=()=>{db.close();reject(tx.error||new Error('削除が中断されました'))}}catch(e){db.close();reject(e)}})}
 async function putDraft(draft){if(safeSplitEditorMode)throw new Error('試験モード中は正式アルバムへの書き込みを禁止しています');const db=await openDraftDb();return new Promise((resolve,reject)=>{let tx;try{tx=db.transaction(STORE_NAME,'readwrite');tx.objectStore(STORE_NAME).put(draft);tx.oncomplete=()=>{db.close();resolve();};tx.onerror=()=>{db.close();reject(tx.error||new Error('保存に失敗しました'));};tx.onabort=()=>{db.close();reject(tx.error||new Error('保存が中断されました'));};}catch(error){db.close();reject(error);}});}
 function show(id){
+ if(id!=='editor'){
+  document.querySelector('.screen[data-screen="editor"]').classList.remove('newSplitPreparation');
+  $('#newSplitAlbumPrepPanel').classList.remove('newSplitChoiceActive');
+ }
  if(id!=='editor'&&safeSplitEditorMode){
   // Leaving the editor must never leave trial blobs/metadata in the regular editor.
   clearTimeout(editRecoveryTimer);clearTimeout(editorAutoSaveTimer);
@@ -1848,17 +1856,26 @@ $('#storageChooseSplit').addEventListener('click',()=>{
  if(!editingId){
   const panel=$('#newSplitAlbumPrepPanel');
   panel.classList.add('newSplitChoiceActive');
-  $('#newSplitAlbumReadonlyView').hidden=true;
+  document.querySelector('.screen[data-screen="editor"]').classList.add('newSplitPreparation');
+  $('#newSplitAlbumReadonlyCanvas').replaceChildren();
+  $('#newSplitAlbumReadonlyCanvas').style.background='#ffffff';
+  $('#newSplitAlbumReadonlyView').hidden=false;
   $('#newSplitEditPanel').hidden=true;
   $('#newSplitEditToggle').textContent='✏️ 新規アルバムの編集エリアを開く';
   $('#editorStorageChoiceInfo').textContent='🌱 新規アルバムの準備画面です。前に保存したアルバムを自動で読み込むことはありません。新しく作る場合は「空の分離アルバムを作成」を押してね。';
-  $('#newSplitAlbumPrepStatus').textContent='まだ新規アルバムは選択されていません。保存済みアルバムは未変更です。';
+  $('#newSplitAlbumPrepStatus').textContent='🌱 新規用の空の見開きを表示中（未保存）。以前の編集画面は一時的に隠してあり、保存済みデータはそのままです。';
   return;
  }
  if(!confirm('現在の未保存編集は試験コピーに引き継がれません。検証済みの分離コピーを開きますか？'))return;
  $('#safeSplitEditorToggle').click();
 });
 $('#storageChooseLegacy').addEventListener('click',()=>{
+ if(document.querySelector('.screen[data-screen="editor"]').classList.contains('newSplitPreparation')){
+  document.querySelector('.screen[data-screen="editor"]').classList.remove('newSplitPreparation');
+  $('#newSplitAlbumPrepPanel').classList.remove('newSplitChoiceActive');
+  $('#newSplitAlbumReadonlyView').hidden=true;
+  syncStorageChoiceUi();return;
+ }
  if(!safeSplitEditorMode)return;
  if(!confirm('試験コピーの未保存編集は破棄されます。必要なら先に「試験コピーだけ保存」を押してね。従来のアルバムに戻りますか？'))return;
  $('#safeSplitEditorToggle').click();
