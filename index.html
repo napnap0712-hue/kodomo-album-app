@@ -775,6 +775,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p id="syncSeparationSummary" class="muted" role="status">未確認。読み取り専用・送信なし。</p>
 <button class="secondary wide" id="syncPhotoSafetyTest" type="button">🧪 架空写真の保存安全テスト</button>
 <p id="syncPhotoSafetyResult" class="muted" role="status">未実施。実際のアルバムとは別の保存領域を使用します。</p>
+<button class="secondary wide" id="syncImageReopenTest" type="button">🖼️ 架空写真の再表示テスト</button>
+<p id="syncImageReopenResult" class="muted" role="status">未実施。写真の表示処理だけを別領域でテストします。</p>
 </div>
 <div class="panel" style="display:grid;gap:11px;padding:16px;margin-top:14px">
 <b>📦 アルバムを別コピーで引き継ぐ（試験版）</b>
@@ -1831,6 +1833,43 @@ document.getElementById('syncPhotoSafetyTest').addEventListener('click',async()=
   out.textContent='✅ 架空写真の保存・読み込み15回成功。画像データも毎回一致しました。実際の写真・アルバムは未変更です。';
  }catch(e){out.textContent='⚠️ テストで問題を検出しました：'+(e?.message||String(e))+'。実際のアルバムは変更していません。';}
  finally{if(db)db.close();button.disabled=false;}
+});
+
+// Reopen an isolated synthetic saved image through the same browser image-decoding path.
+document.getElementById('syncImageReopenTest').addEventListener('click',async()=>{
+ const button=document.getElementById('syncImageReopenTest'),out=document.getElementById('syncImageReopenResult');
+ button.disabled=true;out.textContent='🧪 架空写真を再読み込みして表示確認中…';
+ let db=null;
+ try{
+  const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#489ed1';ctx.fillRect(0,0,64,64);ctx.fillStyle='#ffec79';ctx.fillRect(14,12,38,40);
+  const blob=await new Promise((resolve,reject)=>canvas.toBlob(v=>v?resolve(v):reject(Error('画像生成失敗')),'image/png'));
+  const dbName='omoide-synthetic-photo-reopen-v1';
+  const open=()=>new Promise((resolve,reject)=>{const req=indexedDB.open(dbName,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('images'))req.result.createObjectStore('images')};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('テスト領域を開けません'))});
+  const transact=(mode,run)=>new Promise((resolve,reject)=>{const tx=db.transaction('images',mode);const req=run(tx.objectStore('images'));req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('読み書き失敗'));tx.onabort=()=>reject(tx.error||Error('処理中断'))});
+  db=await open();
+  await transact('readwrite',store=>store.put({blob,layout:{type:'photo',fileIndex:0}},'sample'));
+  db.close();db=null;
+  db=await open();
+  const record=await transact('readonly',store=>store.get('sample'));
+  if(!(record?.blob instanceof Blob)||!record.blob.size||record.layout?.fileIndex!==0)throw Error('保存した画像または配置が不正');
+  const url=URL.createObjectURL(record.blob);
+  try{
+   const img=await new Promise((resolve,reject)=>{
+    const image=new Image();const timer=setTimeout(()=>reject(Error('画像表示が時間内に完了しません')),5000);
+    image.onload=()=>{clearTimeout(timer);resolve(image)};
+    image.onerror=()=>{clearTimeout(timer);reject(Error('画像の表示に失敗'))};
+    image.src=url;
+   });
+   if(img.naturalWidth!==64||img.naturalHeight!==64)throw Error('画像の寸法が一致しません');
+   const outputCanvas=document.createElement('canvas');outputCanvas.width=64;outputCanvas.height=64;
+   const outputCtx=outputCanvas.getContext('2d');outputCtx.drawImage(img,0,0);
+   const pixel=outputCtx.getImageData(24,24,1,1).data;
+   if(pixel[0]<200||pixel[1]<170||pixel[2]>180)throw Error('描画した画像の色が一致しません');
+   out.textContent='✅ 架空写真を保存→データベースを開き直す→Safariで画像表示→描画確認まで成功。実際の写真は未変更です。';
+  }finally{URL.revokeObjectURL(url)}
+ }catch(e){out.textContent='⚠️ 再表示テストで問題を検出：'+(e?.message||String(e))+'。実際の写真は変更していません。'}
+ finally{if(db)db.close();button.disabled=false}
 });
 
 const syncConnectionNote=document.getElementById('syncConnectionNote');
