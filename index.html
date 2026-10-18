@@ -1835,9 +1835,8 @@ $('#safeSplitEditorSave').addEventListener('click',async()=>{
   const req=indexedDB.open('omoide-safe-migration-trial-v1');
   db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('試験領域を開けません'))});
   const prefix='trial-'+safeSplitEditorOriginId+'-';
-  const txread=db.transaction(['state','edits'],'readonly');
-  const get=key=>new Promise((resolve,reject)=>{const r=txread.objectStore(key==='active'?'state':'edits').get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
-  const state=await get('active'),old=await get(prefix+'edit');
+  const read= (store,key)=>new Promise((resolve,reject)=>{const tx=db.transaction(store,'readonly'),r=tx.objectStore(store).get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||Error('試験情報を読めません'))});
+  const state=await read('state','active'),old=await read('edits',prefix+'edit');
   if(!state?.ready||state.albumId!==safeSplitEditorOriginId||!old)throw Error('試験保存先が検証済みではありません');
   await new Promise((resolve,reject)=>{
    const tx=db.transaction('edits','readwrite');
