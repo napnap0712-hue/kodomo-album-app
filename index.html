@@ -747,7 +747,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor">
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
 <section id="trialSplitPreviewPanel" hidden style="margin:12px 0;padding:14px;background:#f7faff;border:1px solid #cdd9e5;border-radius:12px">
 <b>📖 分離保存した試験コピー（独立テスト）</b>
 <p id="trialSplitPreviewStatus" class="muted" role="status"></p>
@@ -1620,6 +1620,57 @@ $('#trialSplitStore').addEventListener('click',async()=>{
  finally{if(db)db.close();button.disabled=false}
 });
 // Migration rehearsal: copies existing draft photos and edits into distinct stores; original untouched.
+// One-time safety backup in an independent database. Never overwrite a backup or the real draft.
+$('#createMigrationBackup').addEventListener('click',async()=>{
+ const button=$('#createMigrationBackup'),status=$('#editorStatus');button.disabled=true;
+ let db=null,stage='準備';
+ try{
+  if(!editingId)throw Error('保存済みアルバムを開いてね');
+  stage='元アルバムの読み取り';
+  const source=(await getAllDrafts()).find(item=>item.id===editingId);
+  if(!source||!Array.isArray(source.photos)||!source.photos.length||!Array.isArray(source.designElements))throw Error('元データの確認に失敗');
+  const bytes=[];
+  for(let i=0;i<source.photos.length;i++){
+   stage='元写真 '+(i+1)+'枚目の読み取り';
+   const blob=source.photos[i]?.blob;
+   if(!(blob instanceof Blob)||!blob.size)throw Error('写真データがありません');
+   bytes.push(new Uint8Array(await blob.arrayBuffer()));
+  }
+  const name='omoide-pre-migration-backup-v1';
+  const request=indexedDB.open(name,1);
+  db=await new Promise((resolve,reject)=>{
+   request.onupgradeneeded=()=>{const d=request.result;for(const store of ['meta','photos'])if(!d.objectStoreNames.contains(store))d.createObjectStore(store)};
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error||Error('バックアップ領域を開けません'));
+  });
+  const read=(store,key)=>new Promise((resolve,reject)=>{const tx=db.transaction(store,'readonly'),r=tx.objectStore(store).get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||Error('読み取りに失敗'))});
+  const existing=await read('meta','backup');
+  if(existing)throw Error('すでに移行前バックアップがあります。上書きせず保護しました');
+  const metadata={...source,photos:undefined,backupPhotoCount:source.photos.length,backupCreatedAt:new Date().toISOString()};
+  stage='保護用コピーを書き込み';
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction(['meta','photos'],'readwrite');
+   tx.objectStore('meta').add(metadata,'backup');
+   bytes.forEach((data,i)=>{
+    const photo=source.photos[i];
+    tx.objectStore('photos').add({name:photo.name||'',type:photo.type||photo.blob.type,blob:new Blob([data],{type:photo.type||photo.blob.type})},'photo-'+i);
+   });
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('コピーの書き込みに失敗'));tx.onabort=()=>reject(tx.error||Error('バックアップを完了できません'));
+  });
+  stage='バックアップの検証';
+  const stored=await read('meta','backup');
+  if(stored?.id!==source.id||stored.backupPhotoCount!==bytes.length||JSON.stringify(stored.designElements)!==JSON.stringify(source.designElements))throw Error('編集情報が一致しません');
+  for(let i=0;i<bytes.length;i++){
+   stage='バックアップ写真 '+(i+1)+'枚目の検証';
+   const photo=await read('photos','photo-'+i);
+   if(!(photo?.blob instanceof Blob))throw Error('コピー写真がありません');
+   const copy=new Uint8Array(await photo.blob.arrayBuffer()),expected=bytes[i];
+   if(copy.length!==expected.length||copy.some((v,j)=>v!==expected[j]))throw Error('写真データが一致しません');
+  }
+  status.textContent='✅ 移行前バックアップ作成・検証成功：写真'+bytes.length+'枚と配置'+source.designElements.length+'個が一致しました。元アルバムは未変更です。バックアップはこのSafari内に保管しています。';
+ }catch(error){status.textContent='⚠️ '+stage+'：'+(error?.message||String(error))+'。元アルバムは未変更です。';}
+ finally{db?.close();button.disabled=false}
+});
 $('#trialSplitMigration').addEventListener('click',async()=>{
  const button=$('#trialSplitMigration'),status=$('#editorStatus');button.disabled=true;let db=null,stage='開始';
  try{
