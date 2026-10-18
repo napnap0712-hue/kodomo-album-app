@@ -743,7 +743,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <section id="trialSplitPreviewPanel" hidden style="margin:12px 0;padding:14px;background:#f7faff;border:1px solid #cdd9e5;border-radius:12px">
 <b>📖 分離保存した試験コピー（読み取り専用）</b>
 <p id="trialSplitPreviewStatus" class="muted" role="status"></p>
-<div id="trialSplitPreviewCanvas" style="width:100%;aspect-ratio:1.414/1;position:relative;overflow:hidden;background:white;border:1px solid #cdd9e5;border-radius:7px"></div>
+<div id="trialSplitPreviewCanvas" class="designCanvas spreadCanvas" style="border:1px solid #cdd9e5;border-radius:7px;pointer-events:none"></div>
 <p class="muted">編集や正式保存はできません。元のアルバムには触れません。</p>
 </section>
 <div id="trialCopyPreview" hidden style="background:#f7faff;border:1px solid #cdd9e5;border-radius:12px;padding:12px;margin:12px 0"><b>🧪 試験コピーの写真表示（読み取り専用）</b><p id="trialCopyPreviewStatus" class="muted" role="status"></p><div id="trialCopyImages" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(85px,1fr));gap:8px"></div></div><div class="editorPanel">
@@ -1641,10 +1641,10 @@ $('#trialSplitMigration').addEventListener('click',async()=>{
  finally{if(db)db.close();button.disabled=false}
 });
 // Reconstruct a read-only spread preview using ONLY the isolated migrated stores.
-const splitPreviewUrls=[];
+const splitPreviewUrls=[];const splitPreviewPhotos=[];
 function clearSplitPreview(){
  for(const url of splitPreviewUrls)URL.revokeObjectURL(url);
- splitPreviewUrls.length=0;$('#trialSplitPreviewCanvas').replaceChildren();
+ splitPreviewUrls.length=0;for(const blob of splitPreviewPhotos)releasePhotoUrl(blob);splitPreviewPhotos.length=0;$('#trialSplitPreviewCanvas').replaceChildren();
 }
 $('#trialSplitPreviewButton').addEventListener('click',async()=>{
  const button=$('#trialSplitPreviewButton'),panel=$('#trialSplitPreviewPanel'),status=$('#trialSplitPreviewStatus'),canvas=$('#trialSplitPreviewCanvas');
@@ -1657,33 +1657,32 @@ $('#trialSplitPreviewButton').addEventListener('click',async()=>{
   const read=(store,key)=>new Promise((resolve,reject)=>{const tx=db.transaction(store,'readonly'),r=tx.objectStore(store).get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||Error('試験コピーを読み込めません'))});
   const edits=await read('edits','album');if(!edits||!Array.isArray(edits.designElements)||!Number.isInteger(edits.photoCount))throw Error('先に移行コピーの検証を実行してね');
   const photos=[];
-  for(let n=0;n<edits.photoCount;n++){const photo=await read('photos','photo-'+n);if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error((n+1)+'枚目の画像がありません');photos.push(photo.blob)}
+  for(let n=0;n<edits.photoCount;n++){
+   const photo=await read('photos','photo-'+n);
+   if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error((n+1)+'枚目の画像がありません');
+   photos.push(photo.blob);splitPreviewPhotos.push(photo.blob);
+  }
   const background=String(edits.background||'#ffffff');
   canvas.style.backgroundColor=/^#[0-9a-f]{3,8}$/i.test(background)?background:'#ffffff';
+  canvas.classList.toggle('spreadCanvas',edits.layout!=='single'&&edits.layout!=='grid');
+  canvas.classList.toggle('singleCanvas',edits.layout==='single');
+  canvas.classList.toggle('gridCanvas',edits.layout==='grid');
   const spread=Number.isInteger(edits.spreadIndex)?edits.spreadIndex:0;
   let photoCount=0,textCount=0,otherCount=0;
-  for(const el of edits.designElements){
+  // Use exactly the same element renderer/CSS as the regular editor, without editing or saving.
+  for(const [index,el] of edits.designElements.entries()){
    if((el?.page||0)!==spread)continue;
-   const node=document.createElement('div');
-   const num=(v,defaultVal)=>Number.isFinite(Number(v))?Math.max(0,Math.min(100,Number(v))):defaultVal;
-   node.style.cssText='position:absolute;overflow:hidden;box-sizing:border-box;';
-   node.style.left=num(el.x,0)+'%';node.style.top=num(el.y,0)+'%';
-   node.style.width=Math.max(1,num(el.w,20))+'%';node.style.height=Math.max(1,num(el.h,20))+'%';
+   if(!['photo','text','sticker'].includes(el.type)){otherCount++;continue}
+   if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||!photos[el.fileIndex]))throw Error('写真の参照が不正です');
+   const previewEl={...el,id:'split-preview-'+index};
+   const node=renderElementNode(previewEl,canvas,photos);
+   node.style.pointerEvents='none';
    if(el.type==='photo'){
-    if(!Number.isInteger(el.fileIndex)||!photos[el.fileIndex])throw Error('写真の参照が不正です');
-    const src=URL.createObjectURL(photos[el.fileIndex]);splitPreviewUrls.push(src);
-    const img=document.createElement('img');img.src=src;img.alt='試験コピー内の写真';
-    img.style.cssText='width:100%;height:100%;display:block;object-fit:cover';
-    if(el.fit==='contain')img.style.objectFit='contain';
-    await new Promise((resolve,reject)=>{img.onload=()=>resolve();img.onerror=()=>reject(Error('写真が表示できません'))});
-    node.appendChild(img);photoCount++;
-   }else if(el.type==='text'){
-    node.textContent=String(el.text||'');
-    node.style.color=String(el.color||'#333333');
-    node.style.fontSize='clamp(8px,1.6vw,18px)';node.style.whiteSpace='pre-wrap';
-    textCount++;
-   }else{otherCount++;continue}
-   canvas.appendChild(node);
+    photoCount++;
+    const img=node.querySelector('img');
+    if(img)await new Promise((resolve,reject)=>{if(img.complete&&img.naturalWidth){resolve();return}img.addEventListener('load',resolve,{once:true});img.addEventListener('error',()=>reject(Error('写真が表示できません')),{once:true})});
+   }else if(el.type==='text')textCount++;
+   else otherCount++;
   }
   status.textContent='✅ 試験コピーを表示しました：写真の配置 '+photoCount+'個・文字 '+textCount+'個（他の装飾 '+otherCount+'個は簡易プレビュー対象外）。元のアルバムは未変更です。';
  }catch(e){status.textContent='⚠️ '+(e?.message||String(e))+'。元アルバムは未変更です。'}
