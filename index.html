@@ -783,6 +783,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p id="syncDurablePhotoResult" class="muted" role="status">未実施。実際のアルバムを読み書きしません。</p>
 <button class="secondary wide" id="syncReusePhotoTest" type="button">♻️ 写真を作り直さない編集保存テスト</button>
 <p id="syncReusePhotoResult" class="muted" role="status">未実施。架空画像を専用の保存領域で検証します。</p>
+<button class="secondary wide" id="syncReusePreflight" type="button">🛡️ 既存写真の再利用準備チェック（読み取りのみ）</button>
+<p id="syncReusePreflightResult" class="muted" role="status">未確認。写真は保存し直さず、元のデータを変更しません。</p>
 </div>
 <div class="panel" style="display:grid;gap:11px;padding:16px;margin-top:14px">
 <b>📦 アルバムを別コピーで引き継ぐ（試験版）</b>
@@ -1982,6 +1984,34 @@ document.getElementById('syncReusePhotoTest').addEventListener('click',async()=>
   out.textContent='✅ 写真を再変換せず、編集情報のみ20回更新成功。全回で写真データと表示が正常でした。実際のアルバムは未変更です。';
  }catch(e){out.textContent='⚠️ '+(e?.message||String(e))+'。実際のアルバムは変更していません。'}
  finally{if(db)db.close();btn.disabled=false}
+});
+
+// Safe preflight for future photo-reusing saves: inspect only. No modifications or network.
+document.getElementById('syncReusePreflight').addEventListener('click',async()=>{
+ const btn=document.getElementById('syncReusePreflight'),out=document.getElementById('syncReusePreflightResult');
+ btn.disabled=true;out.textContent='🔍 保存済み写真の再利用条件を端末内で確認中…';
+ try{
+  const drafts=await getAllDrafts();let checked=0,issues=0,linked=0;
+  for(const draft of drafts){
+   const photos=Array.isArray(draft.photos)?draft.photos:[];
+   if(!Array.isArray(draft.photos)||!Array.isArray(draft.designElements)){issues++;continue}
+   for(const photo of photos){
+    checked++;
+    if(!(photo?.blob instanceof Blob)||!photo.blob.size){issues++;continue}
+    try{const buffer=await photo.blob.arrayBuffer();if(!buffer.byteLength||buffer.byteLength!==photo.blob.size)issues++}
+    catch{issues++}
+   }
+   for(const element of draft.designElements){
+    if(element?.type!=='photo')continue;
+    linked++;
+    if(!Number.isInteger(element.fileIndex)||element.fileIndex<0||element.fileIndex>=photos.length)issues++;
+   }
+  }
+  out.textContent=issues===0
+   ?'✅ 写真 '+checked+'枚・写真の配置 '+linked+'個を確認。再利用の事前条件に問題は見つかりませんでした。元の保存データは未変更（新方式はまだ有効にしていません）。'
+   :'⚠️ 写真 '+checked+'枚・写真の配置 '+linked+'個を確認。再利用前に要確認 '+issues+'件があります。保存方式は変更していません。';
+ }catch(e){out.textContent='⚠️ 確認できませんでした。既存データは変更していません。';}
+ finally{btn.disabled=false}
 });
 
 const syncConnectionNote=document.getElementById('syncConnectionNote');
