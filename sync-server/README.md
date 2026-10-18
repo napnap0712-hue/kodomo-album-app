@@ -36,3 +36,31 @@ MacBook/Windows側で `http://localhost:4318/pair` を開いて確認。
 - iPhone画面の数字は3秒ごとに自動更新されます。MacBookでは `/demo-value` を再読み込みして一致を確認できます。
 - 送受信するのは数字（0〜99）だけです。サーバー停止で消えます。
 - セキュリティ未完成のため本物の園児情報・写真・アルバムデータは使えません。
+
+## 架空の園児データ同期テスト
+- iPhoneの `/pair` 画面で6桁コードを入力してペアリングします。
+- 「次のテスト園児に切り替える」を押すと、架空の固定データ「テスト園児A→B→C」を順に切り替えます。
+- MacBookやWindowsの `http://localhost:4318/demo-child` を更新すると、同じ架空の名前が表示されます。
+- ブラウザの画面表示は3秒ごとに取得します。自由入力や実在園児データの送信・保存は実装していません。
+
+## HTTPS起動の準備（任意・開発者向け）
+標準の `node sync-server/server.js` は引き続き**HTTP（暗号化なし）テスト専用**です。
+信頼できるLAN内でのみ、架空のテストデータを使ってください。
+
+Node.jsのHTTPSモードは、認証局が署名した**対象IPアドレス用の証明書**と秘密鍵の両方がある場合だけ起動します。macOS / Windows とも環境変数で指定できます。
+
+macOS（実際のパスに読み替え）:
+```sh
+OMOIDE_TLS_CERT=/path/to/your/cert.pem OMOIDE_TLS_KEY=/path/to/your/key.pem node sync-server/server.js
+```
+
+Windows PowerShell（実際のパスに読み替え）:
+```powershell
+$env:OMOIDE_TLS_CERT="C:\\path\\to\\cert.pem"
+$env:OMOIDE_TLS_KEY="C:\\path\\to\\key.pem"
+node sync-server/server.js
+```
+
+HTTPSモード時は `https://<パソコンのIP>:4318/pair` にアクセスしてください。iPhoneにも発行元の信頼設定が必要です。**ブラウザの証明書警告を無視して進む運用はしないでください。** 秘密鍵はGitHubへコミットしないでください。
+
+> HTTPS対応はサーバーの土台だけです。端末認証の永続化、端末の取り消し、保護された写真保存、編集競合の処理、バックアップや自動同期は未実装です。園児の写真など実データを使う前に追加の安全設計とテストが必要です。
