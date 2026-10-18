@@ -213,3 +213,7 @@ node --test sync-server/demo-batch.test.js
 これはHTTPSの同期サーバー上での架空データの双方向編集テストであり、おもいでブックの実際のアルバムとの自動同期は未実装です。Safariがバックグラウンドで停止すると、自動更新も停止することがあります。
 
 開発者テスト：`node --test sync-server/fictional-album.test.js`
+
+## ペアリング後も未接続になる場合の診断
+
+最新版では6桁コードが受理されると `/pair-result` に遷移し、SafariからCookieが実際に返送されるか確認してから完了と表示します。MacBookで `https://localhost:4318/pair-debug` を開くと、Cookieを受信したか、有効な保存セッションに一致するか、登録件数だけを表示します。秘密のCookieやトークン、端末IDは表示しません。`/pair-debug` はMacBook自身（localhost）からだけ開けます。IPアドレス `192.168.*` と `localhost` はCookieの保存先が別です。実データは送信されません。
