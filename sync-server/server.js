@@ -1,7 +1,11 @@
 'use strict';
 // TEST ONLY. No photo, child, album, or backup data transfer endpoints.
 // Plain HTTP is NOT encrypted. A secure pairing protocol is required for production.
-const http=require('node:http'),os=require('node:os'),crypto=require('node:crypto');
+const http=require('node:http'),https=require('node:https'),fs=require('node:fs'),os=require('node:os'),crypto=require('node:crypto');
+const TLS_CERT=process.env.OMOIDE_TLS_CERT,TLS_KEY=process.env.OMOIDE_TLS_KEY;
+if(Boolean(TLS_CERT)!==Boolean(TLS_KEY))throw Error('HTTPSには証明書と秘密鍵の両方を指定してください');
+const tlsOptions=TLS_CERT?{cert:fs.readFileSync(TLS_CERT),key:fs.readFileSync(TLS_KEY)}:null;
+const protocol=tlsOptions?'https':'http';
 const HOST=process.env.OMOIDE_SYNC_HOST||'0.0.0.0';
 const PORT=Number(process.env.OMOIDE_SYNC_PORT||4318);
 if(!Number.isInteger(PORT)||PORT<1||PORT>65535)throw Error('Invalid port');
@@ -14,7 +18,7 @@ function isLoopback(req){return ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(
 function renewPin(){pin=String(crypto.randomInt(100000,1000000));expires=Date.now()+300000;failures.clear();console.log('【テスト用6桁確認コード】 '+pin+'（5分間有効）');}
 function json(res,status,obj,headers={}){const data=JSON.stringify(obj);res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(data),...headers});res.end(data);}
 const page="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>おもいでブック ペアリングテスト</title><style>body{font-family:system-ui;background:#f4f7fb;color:#24344a;max-width:460px;padding:24px;margin:auto}main{background:white;border-radius:18px;padding:24px}input,button{font:inherit;box-sizing:border-box;width:100%;padding:13px;border-radius:10px;margin-top:10px}input{border:1px solid #b9c6d7;text-align:center;font-size:24px;letter-spacing:4px}button{background:#317ddd;color:white;border:0}small{color:#66748a}</style></head><body><main><h2>📱 おもいでブック</h2><h3>Wi-Fi接続テスト</h3><p>MacBookのターミナルに表示された6桁の確認コードを入力してね。</p><form method=\"POST\" action=\"/pair\"><input id=\"code\" name=\"code\" maxlength=\"6\" inputmode=\"numeric\" pattern=\"[0-9]{6}\" required placeholder=\"000000\"><button id=\"pair\" type=\"submit\">接続を確認</button></form><p id=\"status\" role=\"status\"></p><section id=\"demo\" hidden><hr><h3>🔄 テスト数字の同期</h3><p>今の数字：<strong id=\"value\">0</strong></p><button id=\"increase\">数字を1増やす</button><p id=\"demoStatus\" role=\"status\"></p><small>数字だけを3秒ごとに確認。写真・園児情報とは連携しません。</small></section><small>⚠️ テスト専用です。通信は暗号化されていません。写真・園児情報は送信しません。</small></main><script>async function refreshDemo(){if(document.getElementById('demo').hidden)return;try{const r=await fetch('/demo-value',{cache:'no-store'});if(!r.ok){document.getElementById('demo').hidden=true;return;}const j=await r.json();document.getElementById('value').textContent=String(j.value);}catch(e){document.getElementById('demoStatus').textContent='通信待機中…';}}document.getElementById('increase').onclick=async()=>{try{const r=await fetch('/demo-increment',{method:'POST'});const j=await r.json();document.getElementById('demoStatus').textContent=r.ok?'✅ テスト数字を送信しました':j.message;await refreshDemo();}catch(e){document.getElementById('demoStatus').textContent='接続に失敗しました';}};fetch('/pair-status').then(r=>r.json()).then(j=>{document.getElementById('demo').hidden=!j.paired;refreshDemo()});setInterval(refreshDemo,3000);</script></body></html>";
-const server=http.createServer(async(req,res)=>{
+const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]),async(req,res)=>{
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
  const path=new URL(req.url,'http://localhost').pathname;
  if(req.method==='GET'&&(path==='/'||path==='/health'))return json(res,200,{app:'omoide-book-sync-prototype',status:'ready',message:'接続テスト成功！写真やアルバムのデータはまだ送受信しません。',secureDataSyncEnabled:false,pairingTestAvailable:true});
@@ -46,7 +50,7 @@ const server=http.createServer(async(req,res)=>{
   }
   const token=crypto.randomBytes(24).toString('hex');sessions.set(token,Date.now()+3600000);
   renewPin();
-  return pairReply(200,'✅ iPhoneの接続テスト成功！写真の自動同期はまだ始まりません。','omoide_pair='+token+'; HttpOnly; Path=/; SameSite=Strict; Max-Age=3600');
+  return pairReply(200,'✅ iPhoneの接続テスト成功！写真の自動同期はまだ始まりません。','omoide_pair='+token+'; HttpOnly; Path=/; SameSite=Strict; Max-Age=3600'+(tlsOptions?'; Secure':''));
  }
  if(path==='/demo-value'&&req.method==='GET'){
   if(!isPaired(req)&&!isLoopback(req))return json(res,401,{message:'ペアリングしてください'});
@@ -54,7 +58,7 @@ const server=http.createServer(async(req,res)=>{
  }
  if(path==='/demo-increment'&&req.method==='POST'){
   if(!isPaired(req)&&!isLoopback(req))return json(res,401,{message:'ペアリングしてください'});
-  if(!isLoopback(req)){const origin=req.headers.origin; if(origin&&origin!=='http://'+req.headers.host)return json(res,403,{message:'接続元を確認してください'});}
+  if(!isLoopback(req)){const origin=req.headers.origin; if(origin&&origin!==protocol+'://'+req.headers.host)return json(res,403,{message:'接続元を確認してください'});}
   demoValue=(demoValue+1)%100;demoRevision++;
   return json(res,200,{value:demoValue,revision:demoRevision,syntheticOnly:true});
  }
@@ -66,10 +70,10 @@ const server=http.createServer(async(req,res)=>{
 });
 server.listen(PORT,HOST,()=>{
  console.log('おもいでブック：ペアリングの接続テスト');
- console.log('Mac/Windows: http://localhost:'+PORT+'/pair');
- for(const [name,devices]of Object.entries(os.networkInterfaces()))for(const net of devices||[])if(net.family==='IPv4'&&!net.internal)console.log(name+': http://'+net.address+':'+PORT+'/pair');
+ console.log('Mac/Windows: '+protocol+'://localhost:'+PORT+'/pair');
+ for(const [name,devices]of Object.entries(os.networkInterfaces()))for(const net of devices||[])if(net.family==='IPv4'&&!net.internal)console.log(name+': '+protocol+'://'+net.address+':'+PORT+'/pair');
  renewPin();
- console.log('テスト数字の確認： http://localhost:'+PORT+'/demo-value');
- console.log('注意：HTTPは暗号化されません。テスト数字以外のデータを送らないでください。');
+ console.log('テスト数字の確認： '+protocol+'://localhost:'+PORT+'/demo-value');
+ console.log(tlsOptions?'HTTPSモード：iPhone側で信頼できる証明書が必要です。':'HTTPテストモード：暗号化なし。架空データ以外を送らないでください。');
 });
 server.on('error',e=>{console.error('起動エラー:',e.message);process.exitCode=1});
