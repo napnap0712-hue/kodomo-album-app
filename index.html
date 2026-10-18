@@ -684,6 +684,9 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 @media(max-width:700px){.screen[data-screen="editor"] .canvasZoomBar .editorModeCompact{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important}.screen[data-screen="editor"] .canvasZoomBar .historyControls button,.screen[data-screen="editor"] .canvasZoomBar .zoomCompactControls button{width:33px!important;min-width:33px!important;height:36px!important;min-height:36px!important}.screen[data-screen="editor"] .canvasZoomBar #zoomReset{width:44px!important;min-width:44px!important}}
 /* Hide the text/element inspector completely while browsing stamps. */
 .screen[data-screen="editor"][data-editor-tab="stamps"] .textTabUnifiedCard,.screen[data-screen="editor"][data-editor-tab="stamps"] #elementTools{display:none!important}
+/* Restore photo crop/transparency inspector when opened from the photo tab. */
+@media(max-width:599px){.screen[data-screen="editor"][data-editor-tab="photos"] #elementTools.photoInspector.mobileTextInspector:not(.photoInspectorClosed){display:flex!important}}
+@media(min-width:600px){.screen[data-screen="editor"][data-editor-tab="photos"] #elementTools.photoInspector:not(.photoInspectorClosed){display:flex!important}}
 </style>
 </head>
 <body>
