@@ -58,6 +58,9 @@ button.secondary{background:#ecf1f8;color:#344c6a}button:disabled{opacity:.5}tex
 const ids=['title','message','color'];
 // Contains only the three fixed fictional selections. Never actual child information.
 const DRAFT_KEY='omoide-fictional-album-local-draft-v1';
+const CACHE_KEY='omoide-fictional-album-last-known-v1';
+function offlineCache(){try{const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(!c||!c.choices||!c.state||!Number.isSafeInteger(c.state.revision)||c.state.revision<0)return null;const valid=ids.every(k=>Array.isArray(c.choices[k])&&c.choices[k].length>0&&c.choices[k].every(v=>typeof v==='string')&&c.choices[k].includes(c.state[k]));return valid?c:null;}catch{return null;}}
+function rememberSnapshot(state){if(!options||!state)return;try{localStorage.setItem(CACHE_KEY,JSON.stringify({choices:options,state}));}catch{}}
 let options=null;
 function savedDraft(){
  try{
@@ -189,6 +192,7 @@ async function getState(){
  const r=await fetch('/fictional-album/state',{cache:'no-store'});
  const data=await r.json();
  if(!r.ok)throw Error(data.message||'読み込みに失敗しました');
+ rememberSnapshot(data);
  return data;
 }
 async function refresh(force=false){
@@ -206,12 +210,21 @@ async function refresh(force=false){
  }catch(e){status.textContent='⚠️ '+e.message+'。接続またはペアリングを確認してね。';}
 }
 async function init(){
+ let offline=false;
  try{
-  const response=await fetch('/fictional-album/choices',{cache:'no-store'});
-  const data=await response.json();if(!response.ok)throw Error(data.message||'接続できません');
-  setChoices(data.choices);
+  let latest;
+  try{
+   const response=await fetch('/fictional-album/choices',{cache:'no-store'});
+   const data=await response.json();if(!response.ok)throw Error(data.message||'接続できません');
+   setChoices(data.choices);
+   latest=await getState();
+  }catch(e){
+   // Never use a cached snapshot as evidence of a current server revision.
+   const cached=offlineCache();
+   if(!cached)throw e;
+   offline=true;setChoices(cached.choices);latest=cached.state;
+  }
   const pending=savedDraft();
-  const latest=await getState();
   applyState(latest);
   if(pending){
    current={...latest,revision:pending.baseRevision};
@@ -220,16 +233,19 @@ async function init(){
    paint();
    if(changed){
     rememberDraft();
-    if(latest.revision!==pending.baseRevision){
+    if(!offline&&latest.revision!==pending.baseRevision){
      showConflict(latest);
      status.textContent='⚠️ 端末内の未送信編集を復元しました。最新版との競合を確認してね。';
-    }else status.textContent='📝 端末内の未送信編集を復元しました。保存して同期できるよ。';
-   }else{
+    }else status.textContent=offline?'📴 オフラインで端末内の編集を復元しました。再接続後に最新版と照合します。':'📝 端末内の未送信編集を復元しました。保存して同期できるよ。';
+   }else if(!offline){
     applyState(latest);
     status.textContent='✅ サーバーの保存版を読み込みました';
    }
-  }else status.textContent='✅ サーバーの保存版を読み込みました';
- }catch(e){status.textContent='⚠️ '+e.message+'。先にペアリングしてください。';}
+  }
+  if(offline){
+   status.textContent=changed?'📴 オフラインで編集中。端末に保存しています。接続が戻るまでサーバーへは送信しません。':'📴 オフラインです。端末に残る架空データを表示中。編集は端末に保存します。';
+  }else if(!changed)status.textContent='✅ サーバーの保存版を読み込みました';
+ }catch(e){status.textContent='⚠️ '+e.message+'。初回はオンラインでペアリングと読み込みが必要です。';}
 }
 function lockButtons(on){
  busy=on;saveButton.disabled=on;document.getElementById('resolveSave').disabled=on;document.getElementById('resolveServer').disabled=on;
