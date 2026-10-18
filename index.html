@@ -779,6 +779,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p id="syncImageReopenResult" class="muted" role="status">未実施。写真の表示処理だけを別領域でテストします。</p>
 <button class="secondary wide" id="syncAlbumReopenStress" type="button">📚 架空アルバムの編集・再表示20回テスト</button>
 <p id="syncAlbumReopenStressResult" class="muted" role="status">未実施。テスト専用領域を使い、実際のアルバムは変更しません。</p>
+<button class="secondary wide" id="syncDurablePhotoTest" type="button">🔬 正式保存の写真処理を架空画像で検証</button>
+<p id="syncDurablePhotoResult" class="muted" role="status">未実施。実際のアルバムを読み書きしません。</p>
 </div>
 <div class="panel" style="display:grid;gap:11px;padding:16px;margin-top:14px">
 <b>📦 アルバムを別コピーで引き継ぐ（試験版）</b>
@@ -1912,6 +1914,38 @@ document.getElementById('syncAlbumReopenStress').addEventListener('click',async(
   out.textContent='✅ 架空アルバムの編集・保存・再読み込み・写真表示が20回すべて成功。実際のアルバムは未変更です。';
  }catch(e){out.textContent='⚠️ '+(e?.message||String(e))+'。実際のアルバムは変更していません。'}
  finally{if(db)db.close();button.disabled=false}
+});
+
+// Exercise the actual makeDurablePhoto and Blob round-trip with synthetic file data only.
+document.getElementById('syncDurablePhotoTest').addEventListener('click',async()=>{
+ const btn=document.getElementById('syncDurablePhotoTest'),out=document.getElementById('syncDurablePhotoResult');
+ btn.disabled=true;out.textContent='🔬 架空画像で写真の正式保存処理を確認しています…';
+ try{
+  const c=document.createElement('canvas');c.width=64;c.height=64;
+  const ctx=c.getContext('2d');ctx.fillStyle='#3d9bd7';ctx.fillRect(0,0,64,64);
+  ctx.fillStyle='#fbd060';ctx.fillRect(12,12,38,38);
+  const blob=await new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('架空画像生成に失敗')),'image/png'));
+  const input=new File([blob],'synthetic-only.png',{type:'image/png'});
+  const original=new Uint8Array(await input.arrayBuffer());
+  for(let i=0;i<10;i++){
+   const saved=await makeDurablePhoto(input);
+   if(!(saved.blob instanceof Blob)||!saved.blob.size)throw Error(i+1+'回目：画像の保存データが空');
+   const bytes=await saved.blob.arrayBuffer();
+   if(!bytes.byteLength)throw Error(i+1+'回目：画像の読み取りに失敗');
+   const durableBlob=new Blob([bytes],{type:saved.type||'image/jpeg'});
+   const after=new Uint8Array(await durableBlob.arrayBuffer());
+   if(after.length!==original.length||after.some((v,j)=>v!==original[j]))throw Error(i+1+'回目：画像データが一致しません');
+   const url=URL.createObjectURL(durableBlob);
+   try{
+    const img=await new Promise((resolve,reject)=>{
+     const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('画像を表示できません'));image.src=url;
+    });
+    if(img.naturalWidth!==64||img.naturalHeight!==64)throw Error(i+1+'回目：画像サイズ不一致');
+   }finally{URL.revokeObjectURL(url)}
+  }
+  out.textContent='✅ 正式保存で使う写真変換・再Blob化・画像表示が架空画像で10回成功。実際のアルバムは未変更です。';
+ }catch(e){out.textContent='⚠️ '+(e?.message||String(e))+'。実際のアルバムは変更していません。'}
+ finally{btn.disabled=false}
 });
 
 const syncConnectionNote=document.getElementById('syncConnectionNote');
