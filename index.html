@@ -989,20 +989,20 @@ async function renderSplitProjectCards(){
    const label=document.createElement('span');label.className='projectCardName';label.textContent=a.title||('分離ページ '+(i+1));
    btn.append(preview,label);btn.addEventListener('click',()=>openSplitProjectFromList(a.id));grid.append(btn);
   });
-  // Read only the first image for a lightweight visual cue; never modify stored photos.
-  if(db.objectStoreNames.contains('photos')){
-   await Promise.all(photoPreviews.map(({albumId,preview})=>new Promise(resolve=>{
-    const q=db.transaction('photos','readonly').objectStore('photos').get(albumId+':photo-0');
-    q.onerror=()=>resolve();
-    q.onsuccess=()=>{
-     if(!(q.result?.blob instanceof Blob)||!q.result.blob.size){resolve();return}
-     const url=URL.createObjectURL(q.result.blob),img=document.createElement('img');
-     img.className='projectThumbnail';img.alt='保存した写真のプレビュー';img.draggable=false;
-     img.onload=()=>{if(preview.isConnected)preview.replaceChildren(img);URL.revokeObjectURL(url);resolve()};
-     img.onerror=()=>{URL.revokeObjectURL(url);resolve()};
-     img.src=url;
-    };
-   })));
+  // Build the same full-spread thumbnail as legacy drafts, reading split data only.
+  if(db.objectStoreNames.contains('photos')&&db.objectStoreNames.contains('edits')){
+   const read=(store,key)=>new Promise((resolve,reject)=>{const q=db.transaction(store,'readonly').objectStore(store).get(key);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)});
+   await Promise.all(photoPreviews.map(async({albumId,preview})=>{
+    try{
+     const album=visible.find(a=>a.id===albumId),edits=await read('edits',albumId);
+     if(!album||!edits||edits.albumId!==albumId||!Array.isArray(edits.designElements)||edits.photoCount!==album.photoCount)return;
+     const photos=[];
+     for(let i=0;i<album.photoCount;i++){const p=await read('photos',albumId+':photo-'+i);if(!(p?.blob instanceof Blob)||!p.blob.size)return;photos.push(p)}
+     const url=await makeProjectThumbnail({background:edits.background,designElements:edits.designElements,spreadIndex:edits.spreadIndex,photos});
+     const img=document.createElement('img');img.className='projectThumbnail';img.alt='保存した見開きページ';img.draggable=false;img.src=url;
+     if(preview.isConnected)preview.replaceChildren(img);
+    }catch(e){console.warn('Split thumbnail unavailable',e)}
+   }));
   }
   writeSplitPagePositions(positions);
   host.hidden=!grid.children.length;
