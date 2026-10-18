@@ -695,6 +695,16 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .screen[data-screen="editor"][data-editor-tab="photos"] .photoManager #elementTools .photoTabs button{height:44px!important;min-height:44px!important;flex:1;border-radius:0!important}
 .screen[data-screen="editor"][data-editor-tab="photos"] .photoManager #elementTools .mobileInspectorHeader{display:none!important}
 .screen[data-screen="editor"][data-editor-tab="photos"] .photoManager #elementTools .photoPane{position:static!important;max-height:none!important;overflow:visible!important}
+/* Photo tab: compact add/edit segmented switch; keep existing photo controls intact. */
+.screen[data-screen="editor"] .photoSectionTabs{display:flex;gap:0;border:1px solid #d6e0ed;border-radius:11px;overflow:hidden;background:#f3f6fa;margin-bottom:12px}
+.screen[data-screen="editor"] .photoSectionTabs button{flex:1;min-width:0;height:44px;min-height:44px;padding:0 8px;border:0;border-right:1px solid #d6e0ed;border-radius:0;background:transparent;color:#45546c;font-size:13px;font-weight:700}
+.screen[data-screen="editor"] .photoSectionTabs button:last-child{border-right:0}
+.screen[data-screen="editor"] .photoSectionTabs button.active{background:#438cda;color:#fff}
+.screen[data-screen="editor"] .photoAddPane[hidden],.screen[data-screen="editor"] .photoEditPane[hidden]{display:none!important}
+.screen[data-screen="editor"][data-editor-tab="photos"] .photoEditPane #elementTools{display:flex!important;position:static!important;inset:auto!important;transform:none!important;opacity:1!important;visibility:visible!important;width:100%!important;max-width:100%!important;max-height:none!important;min-height:0!important;overflow:visible!important;box-sizing:border-box!important;margin:0!important;padding:12px!important;border:1px solid #dce2eb!important;border-radius:14px!important;background:#fff!important;box-shadow:none!important;flex-direction:column!important;gap:8px!important}
+.screen[data-screen="editor"][data-editor-tab="photos"] .photoEditPane #elementTools .textToolTabs,.screen[data-screen="editor"][data-editor-tab="photos"] .photoEditPane #elementTools .textToolPane,.screen[data-screen="editor"][data-editor-tab="photos"] .photoEditPane #elementTools .textOnlyTool{display:none!important}
+.screen[data-screen="editor"][data-editor-tab="photos"] .photoEditPane #elementTools .photoInspectorHeader{display:flex!important}
+.screen[data-screen="editor"][data-editor-tab="photos"] .photoEditPane #elementTools .photoTabs{display:flex!important}
 </style>
 </head>
 <body>
@@ -856,6 +866,27 @@ zoomCanvas.addEventListener('touchmove',event=>{if(event.touches.length!==2||!zo
 zoomCanvas.addEventListener('touchend',event=>{if(event.touches.length<2)zoomTouchDistance=0;},{passive:true});
 let activeEditorTab='none';
 
+let activePhotoSection='add';
+function setupPhotoSectionTabs(){
+ const manager=document.querySelector('.screen[data-screen="editor"] .photoManager');if(!manager||manager.querySelector('.photoSectionTabs'))return;
+ const tabs=document.createElement('div');tabs.className='photoSectionTabs';tabs.setAttribute('role','tablist');
+ const add=document.createElement('button');add.type='button';add.textContent='写真追加';add.dataset.photoSection='add';
+ const edit=document.createElement('button');edit.type='button';edit.textContent='写真編集';edit.dataset.photoSection='edit';
+ tabs.append(add,edit);manager.prepend(tabs);
+ const addPane=document.createElement('div');addPane.className='photoAddPane';
+ const children=[...manager.children].filter(el=>el!==tabs&&el.id!=='elementTools');
+ children.forEach(el=>addPane.append(el));manager.append(addPane);
+ const editPane=document.createElement('div');editPane.className='photoEditPane';manager.append(editPane);
+ [add,edit].forEach(button=>button.addEventListener('click',()=>setPhotoSection(button.dataset.photoSection)));
+ setPhotoSection('add');
+}
+function setPhotoSection(section){
+ activePhotoSection=section;
+ const manager=document.querySelector('.screen[data-screen="editor"] .photoManager');if(!manager)return;
+ manager.querySelectorAll('.photoSectionTabs button').forEach(b=>{const on=b.dataset.photoSection===section;b.classList.toggle('active',on);b.setAttribute('aria-selected',String(on))});
+ const add=manager.querySelector('.photoAddPane'),edit=manager.querySelector('.photoEditPane');
+ if(add)add.hidden=section!=='add';if(edit)edit.hidden=section!=='edit';
+}
 function setupUnifiedTextTab(){
   const editor=document.querySelector('.screen[data-screen="editor"]');
   const toolbar=editor?.querySelector('.designToolbar');
@@ -865,8 +896,9 @@ function setupUnifiedTextTab(){
   if(!card){card=document.createElement('div');card.className='textTabUnifiedCard';toolbar.parentNode.insertBefore(card,toolbar);card.append(toolbar,tools);}
 }
 setupUnifiedTextTab();
+setupPhotoSectionTabs();
 
-function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===tab?'none':tab;activeEditorTab=next;const tools=$('#elementTools'),textCard=document.querySelector('.screen[data-screen="editor"] .textTabUnifiedCard'),photoManager=document.querySelector('.screen[data-screen="editor"] .photoManager');if(tools&&textCard&&photoManager){if(next==='photos'){photoManager.appendChild(tools);photoInspectorOpen=true;}else{textCard.appendChild(tools);}}const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab=next;document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.toggle('active',b.dataset.editorTab===next));$('#seasonStickerPanel').hidden=next!=='stamps';if(next==='stamps')renderSeasonStickerPanel();if(next==='text'||next==='photos')syncElementTools();const settings=document.querySelector('.pageSettings');settings.open=next==='background'||next==='layout';if(next==='background'||next==='layout'){const pageTab=next;document.querySelectorAll('[data-page-tab]').forEach(b=>b.classList.toggle('active',b.dataset.pageTab===pageTab));document.querySelectorAll('[data-page-pane]').forEach(p=>p.hidden=p.dataset.pagePane!==pageTab);}}
+function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===tab?'none':tab;activeEditorTab=next;const tools=$('#elementTools'),textCard=document.querySelector('.screen[data-screen="editor"] .textTabUnifiedCard'),photoManager=document.querySelector('.screen[data-screen="editor"] .photoManager');if(tools&&textCard&&photoManager){if(next==='photos'){(photoManager.querySelector('.photoEditPane')||photoManager).appendChild(tools);photoInspectorOpen=true;setPhotoSection(activePhotoSection);}else{textCard.appendChild(tools);}}const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab=next;document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.toggle('active',b.dataset.editorTab===next));$('#seasonStickerPanel').hidden=next!=='stamps';if(next==='stamps')renderSeasonStickerPanel();if(next==='text'||next==='photos')syncElementTools();const settings=document.querySelector('.pageSettings');settings.open=next==='background'||next==='layout';if(next==='background'||next==='layout'){const pageTab=next;document.querySelectorAll('[data-page-tab]').forEach(b=>b.classList.toggle('active',b.dataset.pageTab===pageTab));document.querySelectorAll('[data-page-pane]').forEach(p=>p.hidden=p.dataset.pagePane!==pageTab);}}
 
 document.querySelectorAll('[data-editor-tab]').forEach(b=>b.addEventListener('click',()=>switchEditorTab(b.dataset.editorTab)));
 function startEditingWithSelectedPhotos(){if(!files.length)return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;resetEditHistory();resetEditHistory();$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';syncPageSettingsChoices();$('#editorStatus').textContent=files.length+'枚の写真を編集中です。下書き保存を押すと、この端末に保存されます。';refreshEditor();show('editor');switchEditorTab('none');}
