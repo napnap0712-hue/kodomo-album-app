@@ -747,7 +747,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor">
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
 <section id="trialSplitPreviewPanel" hidden style="margin:12px 0;padding:14px;background:#f7faff;border:1px solid #cdd9e5;border-radius:12px">
 <b>📖 分離保存した試験コピー（独立テスト）</b>
 <p id="trialSplitPreviewStatus" class="muted" role="status"></p>
@@ -1622,6 +1622,36 @@ $('#trialSplitStore').addEventListener('click',async()=>{
 // Migration rehearsal: copies existing draft photos and edits into distinct stores; original untouched.
 // One-time safety backup in an independent database. Never overwrite a backup or the real draft.
 // Export a self-contained portable backup. Read ONLY the already-verified isolated backup.
+// Strictly read-only: parse and verify a downloaded portable backup without restoring it.
+$('#verifyPortableBackup').addEventListener('click',()=>$('#portableBackupFileInput').click());
+$('#portableBackupFileInput').addEventListener('change',async event=>{
+ const input=event.currentTarget,button=$('#verifyPortableBackup'),status=$('#editorStatus'),file=input.files?.[0];
+ if(!file)return;
+ button.disabled=true;
+ try{
+  if(file.size>200*1024*1024)throw Error('ファイルが大きすぎます（200MBまで）');
+  status.textContent='🔍 バックアップを読み取り中…';
+  const payload=JSON.parse(await file.text());
+  if(payload?.format!=='omoide-book-portable-backup'||payload.version!==1)throw Error('対応していないバックアップ形式です');
+  const metadata=payload.metadata,photos=payload.photos;
+  if(!metadata||!Array.isArray(metadata.designElements)||!Array.isArray(photos)||!Number.isInteger(metadata.backupPhotoCount)||metadata.backupPhotoCount!==photos.length)throw Error('編集情報または写真枚数が一致しません');
+  if(photos.length<1||photos.length>10000)throw Error('写真枚数を確認できません');
+  for(const [index,el] of metadata.designElements.entries()){
+   if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=photos.length))throw Error('配置'+(index+1)+'個目の写真参照が不正です');
+  }
+  for(let i=0;i<photos.length;i++){
+   const p=photos[i];status.textContent='🔍 写真データの照合 '+(i+1)+'/'+photos.length;
+   if(typeof p?.base64!=='string'||typeof p.sha256!=='string'||!Number.isInteger(p.size)||p.size<1)throw Error((i+1)+'枚目の情報が不正です');
+   const binary=atob(p.base64),bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));
+   if(bytes.length!==p.size)throw Error((i+1)+'枚目のサイズが一致しません');
+   const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');
+   if(digest!==p.sha256)throw Error((i+1)+'枚目の写真データが一致しません');
+  }
+  status.textContent='✅ ファイル検証成功：写真'+photos.length+'枚・配置'+metadata.designElements.length+'個。全写真のSHA-256が一致しました。読み取りだけで、アルバムや試験コピーは未変更です。';
+ }catch(error){
+  status.textContent='⚠️ ファイル検証失敗：'+(error?.message||String(error))+'。アルバムは変更していません。';
+ }finally{input.value='';button.disabled=false}
+});
 $('#exportMigrationBackupFile').addEventListener('click',async()=>{
  const button=$('#exportMigrationBackupFile'),status=$('#editorStatus');button.disabled=true;
  let db=null,stage='準備',url=null;
