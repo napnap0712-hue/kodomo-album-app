@@ -11,6 +11,9 @@ const PORT=Number(process.env.OMOIDE_SYNC_PORT||4318);
 if(!Number.isInteger(PORT)||PORT<1||PORT>65535)throw Error('Invalid port');
 let pin='',expires=0;
 const {createSessionStore}=require('./pairing-store');
+const demoImage=require('./demo-image');
+const demoImagePath=require('node:path').join(__dirname,'data','synthetic-demo-image.svg');
+let demoImageReceivedAt=null;
 // Persist only while HTTPS is configured. In HTTP demo mode sessions remain ephemeral.
 const sessionStore=createSessionStore({enabled:!!tlsOptions});
 const failures=new Map();
@@ -26,7 +29,7 @@ function isLoopback(req){return ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(
 
 function renewPin(){pin=String(crypto.randomInt(100000,1000000));expires=Date.now()+300000;failures.clear();console.log('【テスト用6桁確認コード】 '+pin+'（5分間有効）');}
 function json(res,status,obj,headers={}){const data=JSON.stringify(obj);res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(data),...headers});res.end(data);}
-const page="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>おもいでブック ペアリングテスト</title><style>body{font-family:system-ui;background:#f4f7fb;color:#24344a;max-width:460px;padding:24px;margin:auto}main{background:white;border-radius:18px;padding:24px}input,button{font:inherit;box-sizing:border-box;width:100%;padding:13px;border-radius:10px;margin-top:10px}input{border:1px solid #b9c6d7;text-align:center;font-size:24px;letter-spacing:4px}button{background:#317ddd;color:white;border:0}small{color:#66748a}</style></head><body><main><h2>📱 おもいでブック</h2><h3>Wi-Fi接続テスト</h3><p>MacBookのターミナルに表示された6桁の確認コードを入力してね。</p><form method=\"POST\" action=\"/pair\"><input id=\"code\" name=\"code\" maxlength=\"6\" inputmode=\"numeric\" pattern=\"[0-9]{6}\" required placeholder=\"000000\"><button id=\"pair\" type=\"submit\">接続を確認</button></form><p id=\"status\" role=\"status\"></p><section id=\"pairedInfo\" hidden><p>✅ この端末はペアリング済みです。</p><form method=\"POST\" action=\"/unpair\"><button type=\"submit\" style=\"background:#707989\">この端末の接続を解除</button></form></section><section id=\"demo\" hidden><hr><h3>🔄 テスト数字の同期</h3><p>今の数字：<strong id=\"value\">0</strong></p><button id=\"increase\">数字を1増やす</button><p id=\"demoStatus\" role=\"status\"></p><small>数字だけを3秒ごとに確認。写真・園児情報とは連携しません。</small><hr><h3>👶 架空の園児データ同期</h3><p>選択中：<strong id=\"fakeName\">テスト園児A</strong></p><button id=\"fakeNext\" type=\"button\">次のテスト園児に切り替える</button><p id=\"fakeStatus\" role=\"status\"></p><small>テスト園児A〜Cの固定文字列のみ。実際の名前や写真は送れません。</small></section><small>⚠️ テスト専用です。実際の写真・園児情報は送信しません。HTTPS未設定時は通信が暗号化されません。</small></main><script>async function refreshDemo(){if(document.getElementById('demo').hidden)return;try{const r=await fetch('/demo-value',{cache:'no-store'});if(!r.ok){document.getElementById('demo').hidden=true;return;}const j=await r.json();document.getElementById('value').textContent=String(j.value);}catch(e){document.getElementById('demoStatus').textContent='通信待機中…';}}document.getElementById('increase').onclick=async()=>{try{const r=await fetch('/demo-increment',{method:'POST'});const j=await r.json();document.getElementById('demoStatus').textContent=r.ok?'✅ テスト数字を送信しました':j.message;await refreshDemo();}catch(e){document.getElementById('demoStatus').textContent='接続に失敗しました';}};fetch('/pair-status').then(r=>r.json()).then(j=>{document.getElementById('demo').hidden=!j.paired;document.getElementById('pairedInfo').hidden=!j.paired;refreshDemo()});setInterval(refreshDemo,3000);async function refreshFake(){if(document.getElementById('demo').hidden)return;try{const r=await fetch('/demo-child',{cache:'no-store'});if(!r.ok)return;const d=await r.json();document.getElementById('fakeName').textContent=d.name;}catch(e){document.getElementById('fakeStatus').textContent='通信待機中…';}}document.getElementById('fakeNext').onclick=async()=>{try{const r=await fetch('/demo-child-next',{method:'POST'});document.getElementById('fakeStatus').textContent=r.ok?'✅ 架空の園児データを送信しました':'送信できませんでした';await refreshFake();}catch(e){document.getElementById('fakeStatus').textContent='通信できませんでした';}};setInterval(refreshFake,3000);</script></body></html>";
+const page="<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>おもいでブック ペアリングテスト</title><style>body{font-family:system-ui;background:#f4f7fb;color:#24344a;max-width:460px;padding:24px;margin:auto}main{background:white;border-radius:18px;padding:24px}input,button{font:inherit;box-sizing:border-box;width:100%;padding:13px;border-radius:10px;margin-top:10px}input{border:1px solid #b9c6d7;text-align:center;font-size:24px;letter-spacing:4px}button{background:#317ddd;color:white;border:0}small{color:#66748a}</style></head><body><main><h2>📱 おもいでブック</h2><h3>Wi-Fi接続テスト</h3><p>MacBookのターミナルに表示された6桁の確認コードを入力してね。</p><form method=\"POST\" action=\"/pair\"><input id=\"code\" name=\"code\" maxlength=\"6\" inputmode=\"numeric\" pattern=\"[0-9]{6}\" required placeholder=\"000000\"><button id=\"pair\" type=\"submit\">接続を確認</button></form><p id=\"status\" role=\"status\"></p><section id=\"pairedInfo\" hidden><p>✅ この端末はペアリング済みです。</p><form method=\"POST\" action=\"/unpair\"><button type=\"submit\" style=\"background:#707989\">この端末の接続を解除</button></form></section><section id=\"demo\" hidden><hr><h3>🔄 テスト数字の同期</h3><p>今の数字：<strong id=\"value\">0</strong></p><button id=\"increase\">数字を1増やす</button><p id=\"demoStatus\" role=\"status\"></p><small>数字だけを3秒ごとに確認。写真・園児情報とは連携しません。</small><hr><h3>👶 架空の園児データ同期</h3><p>選択中：<strong id=\"fakeName\">テスト園児A</strong></p><button id=\"fakeNext\" type=\"button\">次のテスト園児に切り替える</button><p id=\"fakeStatus\" role=\"status\"></p><small>テスト園児A〜Cの固定文字列のみ。実際の名前や写真は送れません。</small><hr><h3>📸 テスト画像の送信</h3><p>下のイラストはアプリ内で用意した架空画像だよ。</p><img id=\"sampleDemoImage\" alt=\"テスト画像\" style=\"display:block;width:100%;max-width:320px;border-radius:12px;margin:8px auto\"><button type=\"button\" id=\"sendDemoImage\">このテスト画像をMacBookへ送る</button><p id=\"imageDemoStatus\" role=\"status\"></p><small>自分の写真を選ぶ機能はありません。決まったテスト画像だけを送ります。</small></section><small>⚠️ テスト専用です。実際の写真・園児情報は送信しません。HTTPS未設定時は通信が暗号化されません。</small></main><script>async function refreshDemo(){if(document.getElementById('demo').hidden)return;try{const r=await fetch('/demo-value',{cache:'no-store'});if(!r.ok){document.getElementById('demo').hidden=true;return;}const j=await r.json();document.getElementById('value').textContent=String(j.value);}catch(e){document.getElementById('demoStatus').textContent='通信待機中…';}}document.getElementById('increase').onclick=async()=>{try{const r=await fetch('/demo-increment',{method:'POST'});const j=await r.json();document.getElementById('demoStatus').textContent=r.ok?'✅ テスト数字を送信しました':j.message;await refreshDemo();}catch(e){document.getElementById('demoStatus').textContent='接続に失敗しました';}};fetch('/pair-status').then(r=>r.json()).then(j=>{document.getElementById('demo').hidden=!j.paired;document.getElementById('pairedInfo').hidden=!j.paired;refreshDemo()});setInterval(refreshDemo,3000);async function refreshFake(){if(document.getElementById('demo').hidden)return;try{const r=await fetch('/demo-child',{cache:'no-store'});if(!r.ok)return;const d=await r.json();document.getElementById('fakeName').textContent=d.name;}catch(e){document.getElementById('fakeStatus').textContent='通信待機中…';}}document.getElementById('fakeNext').onclick=async()=>{try{const r=await fetch('/demo-child-next',{method:'POST'});document.getElementById('fakeStatus').textContent=r.ok?'✅ 架空の園児データを送信しました':'送信できませんでした';await refreshFake();}catch(e){document.getElementById('fakeStatus').textContent='通信できませんでした';}};setInterval(refreshFake,3000);const demoImageText=decodeURIComponent('__DEMO_SVG_URI__');document.getElementById('sampleDemoImage').src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(demoImageText);document.getElementById('sendDemoImage').onclick=async()=>{const output=document.getElementById('imageDemoStatus');output.textContent='送信しています…';try{const r=await fetch('/demo-image/upload',{method:'POST',headers:{'Content-Type':'image/svg+xml'},body:new TextEncoder().encode(demoImageText)});const result=await r.json();output.textContent=r.ok?'✅ テスト画像を送信・保存しました。MacBookで画像を確認してね。':result.message||'送信に失敗しました';}catch(e){output.textContent='通信できませんでした：'+e.message}};</script></body></html>".replace('__DEMO_SVG_URI__',encodeURIComponent(demoImage.SVG));
 const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]),async(req,res)=>{
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
  const path=new URL(req.url,'http://localhost').pathname;
@@ -95,6 +98,46 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
   fakeChildIndex=(fakeChildIndex+1)%fakeChildren.length;fakeChildRevision++;
   return json(res,200,{name:fakeChildren[fakeChildIndex],revision:fakeChildRevision,syntheticOnly:true});
  }
+
+ // HTTPS-only synthetic illustration test. No user-selected images are accepted.
+ if(path==='/demo-image/upload'&&req.method==='POST'){
+  if(!tlsOptions)return json(res,403,{message:'HTTPSで起動してください'});
+  if(!isPaired(req))return json(res,401,{message:'この端末をペアリングしてください'});
+  if(req.headers['content-type']!=='image/svg+xml')return json(res,415,{message:'テスト画像のみ送信できます'});
+  const chunks=[];let length=0;
+  for await(const chunk of req){
+   length+=chunk.length;
+   if(length>8192)return json(res,413,{message:'画像が大きすぎます'});
+   chunks.push(chunk);
+  }
+  const bytes=Buffer.concat(chunks);
+  if(!demoImage.validPayload(bytes))return json(res,422,{message:'内蔵のテスト画像以外は受け付けません'});
+  const folder=require('node:path').dirname(demoImagePath);
+  fs.mkdirSync(folder,{recursive:true,mode:0o700});
+  const temp=demoImagePath+'.'+process.pid+'.tmp';
+  try{
+   fs.writeFileSync(temp,bytes,{flag:'wx',mode:0o600});
+   fs.renameSync(temp,demoImagePath);
+   try{fs.chmodSync(demoImagePath,0o600)}catch{}
+  }catch(err){try{fs.unlinkSync(temp)}catch{};return json(res,500,{message:'テスト画像を保存できませんでした'});}
+  demoImageReceivedAt=new Date().toISOString();
+  return json(res,200,{message:'テスト画像を保存しました',bytes:bytes.length,syntheticOnly:true});
+ }
+ if(path==='/demo-image/view'&&req.method==='GET'){
+  if(!tlsOptions)return json(res,403,{message:'HTTPSが必要です'});
+  if(!isPaired(req)&&!isLoopback(req))return json(res,401,{message:'ペアリングしてください'});
+  if(!fs.existsSync(demoImagePath))return json(res,404,{message:'まだテスト画像が届いていません'});
+  const bytes=fs.readFileSync(demoImagePath);
+  if(!demoImage.validPayload(bytes))return json(res,500,{message:'保存画像がテスト画像と一致しません'});
+  res.writeHead(200,{'Content-Type':'image/svg+xml; charset=utf-8','Content-Length':bytes.length,'Content-Security-Policy':"default-src 'none'; sandbox",'Cache-Control':'no-store'});
+  return res.end(bytes);
+ }
+ if(path==='/demo-image/status'&&req.method==='GET'){
+  if(!tlsOptions)return json(res,403,{message:'HTTPSが必要です'});
+  if(!isPaired(req)&&!isLoopback(req))return json(res,401,{message:'ペアリングしてください'});
+  const exists=fs.existsSync(demoImagePath);
+  return json(res,200,{received:exists,syntheticOnly:true,imageUrl:exists?'/demo-image/view':null,receivedAt:demoImageReceivedAt});
+ }
  if(req.method==='POST'&&path==='/unpair'){
   const token=pairingToken(req);if(token)sessionStore.remove(token);
   res.writeHead(303,{'Location':'/pair','Cache-Control':'no-store','Set-Cookie':'omoide_pair=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0'+(tlsOptions?'; Secure':'')});return res.end();
@@ -109,7 +152,7 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
  }
  if(req.method==='GET'&&path==='/pair-status'){
   const session=pairedSession(req);
-  return json(res,200,{paired:!!session,deviceId:session?.id||null,expiresAt:session?new Date(session.expires).toISOString():null,dataSyncEnabled:false,demoEnabled:true});
+  return json(res,200,{paired:!!session,deviceId:session?.id||null,expiresAt:session?new Date(session.expires).toISOString():null,dataSyncEnabled:false,demoEnabled:true,syntheticImageDemo:true});
  }
  return json(res,404,{error:'not_found'});
 });
