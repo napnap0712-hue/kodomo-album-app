@@ -1848,8 +1848,11 @@ $('#storageChooseSplit').addEventListener('click',()=>{
  if(!editingId){
   const panel=$('#newSplitAlbumPrepPanel');
   panel.classList.add('newSplitChoiceActive');
-  $('#editorStorageChoiceInfo').textContent='🌱 新規アルバムの分離保存準備を開きました。独立領域の作成済みアルバムを開けます。通常の保存方式はまだ切り替えていません。';
-  $('#openNewSplitAlbum').click();
+  $('#newSplitAlbumReadonlyView').hidden=true;
+  $('#newSplitEditPanel').hidden=true;
+  $('#newSplitEditToggle').textContent='✏️ 新規アルバムの編集エリアを開く';
+  $('#editorStorageChoiceInfo').textContent='🌱 新規アルバムの準備画面です。前に保存したアルバムを自動で読み込むことはありません。新しく作る場合は「空の分離アルバムを作成」を押してね。';
+  $('#newSplitAlbumPrepStatus').textContent='まだ新規アルバムは選択されていません。保存済みアルバムは未変更です。';
   return;
  }
  if(!confirm('現在の未保存編集は試験コピーに引き継がれません。検証済みの分離コピーを開きますか？'))return;
