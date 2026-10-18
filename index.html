@@ -771,6 +771,11 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="secondary" id="storageChooseLegacy" aria-pressed="true">従来の保存</button>
 <button type="button" class="secondary" id="storageChooseSplit" aria-pressed="false">分離保存（先行利用）</button>
 </div>
+<button type="button" class="secondary" id="viewSavedNewSplitAlbum" style="margin-top:9px">📖 保存した新規分離アルバムを確認</button>
+<div id="savedNewSplitPreview" hidden style="margin-top:12px;border:1px solid #dbe4ef;padding:10px;border-radius:10px;background:white">
+ <div id="savedNewSplitCanvas" class="designCanvas spreadCanvas" style="position:relative;width:100%;aspect-ratio:1.414/1;min-height:0;border:1px solid #cdd9e5;pointer-events:none"></div>
+ <p id="savedNewSplitPreviewStatus" class="muted" role="status"></p>
+</div>
 <p id="editorStorageChoiceInfo" class="muted" role="status" style="margin:8px 0 0">従来の保存方式を使用中。分離保存は検証済みの試験コピーで先行利用できます。元アルバムは変更しません。</p>
 </section>
 <section id="newSplitAlbumPrepPanel" style="margin:12px 0;padding:12px;border:1px solid #dbe4ef;border-radius:12px;background:#fff">
@@ -1957,6 +1962,37 @@ $('#safeSplitEditorSave').addEventListener('click',async()=>{
   });
   status.textContent='✅ 検証済み分離コピーの編集情報だけを保存しました。元アルバムと写真データは未変更です。';
  }catch(error){status.textContent='⚠️ 試験保存を停止：'+(error?.message||String(error))+'。元アルバムは未変更です。';}
+ finally{db?.close();button.disabled=false}
+});
+// Read-only preview of recently saved split albums; never modifies any database.
+$('#viewSavedNewSplitAlbum').addEventListener('click',async()=>{
+ const button=$('#viewSavedNewSplitAlbum'),panel=$('#savedNewSplitPreview'),canvas=$('#savedNewSplitCanvas'),status=$('#savedNewSplitPreviewStatus');
+ if(!panel.hidden){panel.hidden=true;canvas.replaceChildren();return}
+ button.disabled=true;canvas.replaceChildren();panel.hidden=false;status.textContent='保存済みアルバムを読み込み中…';
+ let db=null;
+ try{
+  const req=indexedDB.open('omoide-new-split-albums-v1');
+  db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('分離保存領域を開けません'));req.onblocked=()=>reject(Error('保存領域が使用中です'))});
+  for(const name of ['albums','edits','photos'])if(!db.objectStoreNames.contains(name))throw Error('分離保存領域が不完全です');
+  const read=(store,key)=>new Promise((resolve,reject)=>{const q=db.transaction(store,'readonly').objectStore(store).get(key);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error||Error('読み込みに失敗'))});
+  const albums=await new Promise((resolve,reject)=>{const q=db.transaction('albums','readonly').objectStore('albums').getAll();q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error||Error('一覧を取得できません'))});
+  const selectedAlbum=albums.filter(a=>a?.ready&&a.storage==='split-v1'&&a.photoCount>0).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+  if(!selectedAlbum)throw Error('写真入りの新規分離アルバムがありません');
+  const edits=await read('edits',selectedAlbum.id);
+  if(!edits||edits.albumId!==selectedAlbum.id||edits.photoCount!==selectedAlbum.photoCount||!Array.isArray(edits.designElements))throw Error('編集情報が一致しません');
+  const photos=[];
+  for(let i=0;i<edits.photoCount;i++){const photo=await read('photos',selectedAlbum.id+':photo-'+i);if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error('写真'+(i+1)+'が読み込めません');photos.push(photo.blob)}
+  for(const el of edits.designElements)if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||!photos[el.fileIndex]))throw Error('写真参照が一致しません');
+  canvas.style.background=backgroundStyle(edits.background||'#ffffff');
+  canvas.classList.toggle('spreadCanvas',edits.layout==='spread');
+  canvas.classList.toggle('singleCanvas',edits.layout==='single');
+  for(const [i,el] of edits.designElements.entries()){
+   if((el.page||0)!==(edits.spreadIndex||0)||!['photo','text','sticker'].includes(el.type))continue;
+   const node=renderElementNode({...el,id:'saved-new-split-'+i},canvas,photos);
+   node.style.pointerEvents='none';
+  }
+  status.textContent='✅ 新規分離アルバムを読み取り専用で復元：写真'+photos.length+'枚・配置'+edits.designElements.length+'個。保存データは未変更です。';
+ }catch(e){canvas.replaceChildren();status.textContent='⚠️ 復元表示に失敗：'+(e?.message||String(e))}
  finally{db?.close();button.disabled=false}
 });
 // Separate opt-in namespace for future new split albums. Never access original or trial databases.
