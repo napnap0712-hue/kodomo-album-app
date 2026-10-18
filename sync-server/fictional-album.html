@@ -152,11 +152,16 @@ document.getElementById('resolveSave').onclick=async()=>{
  }catch(e){resolveStatus.textContent='⚠️ '+e.message+'。選択中の内容はまだ残っています。';}
  finally{lockButtons(false);}
 };
-document.getElementById('resolveServer').onclick=()=>{
+document.getElementById('resolveServer').onclick=async()=>{
  if(!remoteConflict||busy)return;
  if(!confirm('自分の編集中の変更を破棄してサーバー版を表示しますか？'))return;
- // Refresh first: another client may have saved since the comparison was shown.
- refresh(true);
+ lockButtons(true);
+ try{
+  const latest=await getState();
+  applyState(latest);
+  status.textContent='✅ サーバーの最新版を採用しました。';
+ }catch(e){resolveStatus.textContent='⚠️ '+e.message+'。自分の編集中の内容は保持しています。';}
+ finally{lockButtons(false);}
 };
 document.getElementById('reload').onclick=()=>refresh(true);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
