@@ -73,6 +73,7 @@ function savedDraft(){
 function rememberDraft(){
  if(!current||!options)return;
  const d={baseRevision:current.revision,...selections()};
+ if(baseValues)d.baseValues={...baseValues};
  try{localStorage.setItem(DRAFT_KEY,JSON.stringify(d));}catch{}
 }
 function forgetDraft(){try{localStorage.removeItem(DRAFT_KEY)}catch{}}
@@ -138,6 +139,7 @@ document.getElementById('draftImport').addEventListener('click',async()=>{
   transferStatus.textContent='✅ 内容はサーバーの最新版と同じです。保存は不要だよ。';return;
  }
  current={...latest,revision:item.baseRevision};
+ baseValues=null;
  for(const key of ids)els[key].value=item[key];
  changed=true;paint();rememberDraft();
  if(latest.revision!==item.baseRevision){
@@ -156,7 +158,7 @@ const els=Object.fromEntries(ids.map(id=>[id,document.getElementById(id)]));
 const status=document.getElementById('status'),conflict=document.getElementById('conflict'),saveButton=document.getElementById('save');
 const resolutionPanel=document.getElementById('resolutionPanel'),compareRows=document.getElementById('compareRows');
 const resolveStatus=document.getElementById('resolveMessageStatus');
-let current=null,busy=false,changed=false,remoteConflict=null;
+let current=null,busy=false,changed=false,remoteConflict=null,baseValues=null;
 function selections(){return Object.fromEntries(ids.map(id=>[id,els[id].value]));}
 function paint(){document.getElementById('previewTitle').textContent=els.title.value;document.getElementById('previewMessage').textContent=els.message.value;document.getElementById('preview').className=els.color.value;}
 function setChoices(choices){options=choices;for(const key of ids){els[key].replaceChildren();for(const value of choices[key]){const option=document.createElement('option');option.value=value;option.textContent=key==='color'?colors[value]:value;els[key].appendChild(option)}}}
@@ -164,6 +166,7 @@ function displayValue(key,value){return key==='color'?colors[value]||value:value
 function closeCompare(){remoteConflict=null;resolutionPanel.hidden=true;compareRows.replaceChildren();resolveStatus.textContent='';}
 function applyState(data){
  current=data;
+ baseValues=Object.fromEntries(ids.map(k=>[k,data[k]]));
  for(const key of ids)els[key].value=data[key];
  document.getElementById('revision').textContent='改訂 '+data.revision;
  document.getElementById('lastTime').textContent=data.updatedAt?'最終更新 '+new Date(data.updatedAt).toLocaleString('ja-JP'):'まだ変更されていません';
@@ -175,6 +178,25 @@ function adoptMatchingServer(data){
  applyState(data);
  status.textContent='✅ 編集内容は最新版と同じです。自動で同期状態を更新しました。';
  return true;
+}
+async function tryMergeDisjoint(data){
+ if(!changed||!baseValues||!data||!Number.isSafeInteger(data.revision))return false;
+ const mine=selections(),merged={};
+ for(const key of ids){
+  const myChanged=mine[key]!==baseValues[key];
+  const serverChanged=data[key]!==baseValues[key];
+  if(myChanged&&serverChanged&&mine[key]!==data[key])return false;
+  merged[key]=myChanged?mine[key]:data[key];
+ }
+ if(ids.every(k=>merged[k]===data[k])){adoptMatchingServer(data);return true;}
+ lockButtons(true);
+ try{
+  const result=await sendSave({baseRevision:data.revision,...merged});
+  if(result.code===200){applyState(result.data.state);status.textContent='✅ 別々の項目の変更を自動統合して保存しました。';return true;}
+  if(result.code===409){showConflict(result.data.current||await getState());return true;}
+  showConflict(data);return true;
+ }catch(e){status.textContent='⚠️ 自動統合の送信に失敗しました。変更は端末に残っています。';return true;}
+ finally{lockButtons(false);}
 }
 function showConflict(data){
  if(!data||!Number.isSafeInteger(data.revision))return;
@@ -212,7 +234,7 @@ async function refresh(force=false){
    applyState(data);status.textContent='✅ サーバーの保存版を読み込みました';return;
   }
   if(data.revision!==current.revision){
-   if(changed){showConflict(data);}
+   if(changed){if(!adoptMatchingServer(data)&&!await tryMergeDisjoint(data))showConflict(data);}
    else{applyState(data);status.textContent='✅ 別の端末の更新を自動で反映しました';}
   }
  }catch(e){status.textContent='⚠️ '+e.message+'。接続またはペアリングを確認してね。';}
@@ -236,14 +258,14 @@ async function init(){
   applyState(latest);
   if(pending){
    current={...latest,revision:pending.baseRevision};
+   baseValues=ids.every(k=>typeof pending.baseValues?.[k]==='string'&&options[k].includes(pending.baseValues[k]))?{...pending.baseValues}:null;
    for(const key of ids)els[key].value=pending[key];
    changed=ids.some(key=>pending[key]!==latest[key])||pending.baseRevision!==latest.revision;
    paint();
    if(changed){
     rememberDraft();
     if(!offline&&latest.revision!==pending.baseRevision){
-     showConflict(latest);
-     status.textContent='⚠️ 端末内の未送信編集を復元しました。最新版との競合を確認してね。';
+     if(!adoptMatchingServer(latest)&&!await tryMergeDisjoint(latest)){showConflict(latest);status.textContent='⚠️ 端末内の未送信編集を復元しました。最新版との競合を確認してね。';}
     }else status.textContent=offline?'📴 オフラインで端末内の編集を復元しました。再接続後に最新版と照合します。':'📝 端末内の未送信編集を復元しました。保存して同期できるよ。';
    }else if(!offline){
     applyState(latest);
@@ -273,7 +295,7 @@ saveButton.onclick=async()=>{
  lockButtons(true);
  try{
   const {code,data}=await sendSave({baseRevision:current.revision,...selections()});
-  if(code===409){showConflict(data.current||await getState());return;}
+  if(code===409){const latest=data.current||await getState();if(!adoptMatchingServer(latest)&&!await tryMergeDisjoint(latest))showConflict(latest);return;}
   if(code!==200)throw Error(data.message||'保存できませんでした');
   applyState(data.state);status.textContent=data.unchanged?'✅ 変更はありません（最新版です）':'✅ サーバーに保存しました。もう一方の端末にも反映されます。';
  }catch(e){status.textContent='⚠️ '+e.message+'。編集内容はこの端末にも残っています。';}
