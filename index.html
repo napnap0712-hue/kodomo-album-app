@@ -742,7 +742,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
 <section id="trialSplitPreviewPanel" hidden style="margin:12px 0;padding:14px;background:#f7faff;border:1px solid #cdd9e5;border-radius:12px">
 <b>📖 分離保存した試験コピー（読み取り専用）</b>
-<p id="trialSplitPreviewStatus" class="muted" role="status"></p>
+<p id="trialSplitPreviewStatus" class="muted" role="status"></p><label style="display:block;margin:8px 0;font-size:13px">背景の表示テスト（プレビューのみ）<select id="trialSplitBackgroundTest" style="width:100%;padding:8px;margin-top:5px"><option value="saved">試験コピーの保存済み背景</option><option value="pattern-dots">ドット柄</option><option value="pattern-lines">斜線柄</option><option value="custom-check">チェック柄</option><option value="custom-flower">花柄</option><option value="custom-star">星柄</option></select></label>
 <div id="trialSplitPreviewCanvas" class="designCanvas spreadCanvas" style="border:1px solid #cdd9e5;border-radius:7px;pointer-events:none"></div>
 <p class="muted">編集や正式保存はできません。元のアルバムには触れません。</p>
 </section>
@@ -1641,6 +1641,28 @@ $('#trialSplitMigration').addEventListener('click',async()=>{
  finally{if(db)db.close();button.disabled=false}
 });
 // Reconstruct a read-only spread preview using ONLY the isolated migrated stores.
+let splitSavedBackground='#ffffff';
+function setSplitPreviewBackground(value){
+ const canvas=$('#trialSplitPreviewCanvas');
+ const custom=kind=>'custom-pattern:'+encodeURIComponent(JSON.stringify({kind:kind,base:'#ffffff',colors:['#7bbde8','#ffd277'],size:12,gap:26}));
+ const actual=value==='saved'?splitSavedBackground:value==='custom-check'?custom('check'):value==='custom-flower'?custom('flower'):value==='custom-star'?custom('star'):value;
+ const img=myBgSettings(actual);
+ canvas.classList.toggle('hasMyBg',!!img);
+ for(const k of ['image','size','scale','position','opacity','blur'])canvas.style.removeProperty('--my-bg-'+k);
+ if(img){
+  canvas.style.background='#ffffff';
+  canvas.style.setProperty('--my-bg-image','url("'+img.data+'")');
+  canvas.style.setProperty('--my-bg-size',img.fit==='contain'?'contain':'cover');
+  canvas.style.setProperty('--my-bg-scale',String((Number(img.zoom)||100)/100));
+  canvas.style.setProperty('--my-bg-position',(img.x??50)+'% '+(img.y??50)+'%');
+  canvas.style.setProperty('--my-bg-opacity',String((img.opacity??100)/100));
+  canvas.style.setProperty('--my-bg-blur',(img.blur??0)+'px');
+ }else canvas.style.background=backgroundStyle(actual);
+}
+$('#trialSplitBackgroundTest').addEventListener('change',e=>{
+ setSplitPreviewBackground(e.target.value);
+ $('#trialSplitPreviewStatus').textContent='🎨 プレビューの背景だけを変更しました。試験コピーと元のアルバムは未変更です。';
+});
 const splitPreviewUrls=[];const splitPreviewPhotos=[];
 function clearSplitPreview(){
  for(const url of splitPreviewUrls)URL.revokeObjectURL(url);
@@ -1662,30 +1684,12 @@ $('#trialSplitPreviewButton').addEventListener('click',async()=>{
    if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error((n+1)+'枚目の画像がありません');
    photos.push(photo.blob);splitPreviewPhotos.push(photo.blob);
   }
-  // Reuse the editor's background rules for colors, built-in/custom patterns and images.
-  const background=String(edits.background||'#ffffff');
-  const myBackground=myBgSettings(background);
+  splitSavedBackground=String(edits.background||'#ffffff');
   canvas.classList.toggle('spreadCanvas',edits.layout!=='single'&&edits.layout!=='grid');
   canvas.classList.toggle('singleCanvas',edits.layout==='single');
   canvas.classList.toggle('gridCanvas',edits.layout==='grid');
-  canvas.classList.toggle('hasMyBg',!!myBackground);
-  canvas.style.removeProperty('--my-bg-image');
-  canvas.style.removeProperty('--my-bg-size');
-  canvas.style.removeProperty('--my-bg-scale');
-  canvas.style.removeProperty('--my-bg-position');
-  canvas.style.removeProperty('--my-bg-opacity');
-  canvas.style.removeProperty('--my-bg-blur');
-  if(myBackground){
-   canvas.style.background='#ffffff';
-   canvas.style.setProperty('--my-bg-image','url("'+myBackground.data+'")');
-   canvas.style.setProperty('--my-bg-size',myBackground.fit==='contain'?'contain':'cover');
-   canvas.style.setProperty('--my-bg-scale',String((Number(myBackground.zoom)||100)/100));
-   canvas.style.setProperty('--my-bg-position',(myBackground.x??50)+'% '+(myBackground.y??50)+'%');
-   canvas.style.setProperty('--my-bg-opacity',String((myBackground.opacity??100)/100));
-   canvas.style.setProperty('--my-bg-blur',(myBackground.blur??0)+'px');
-  }else{
-   canvas.style.background=backgroundStyle(background);
-  }
+  $('#trialSplitBackgroundTest').value='saved';
+  setSplitPreviewBackground('saved');
   const spread=Number.isInteger(edits.spreadIndex)?edits.spreadIndex:0;
   let photoCount=0,textCount=0,otherCount=0;
   // Use exactly the same element renderer/CSS as the regular editor, without editing or saving.
