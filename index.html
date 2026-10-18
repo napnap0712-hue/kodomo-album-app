@@ -730,6 +730,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 #fictionalSplitPreviewPanel,#recoveryGuidePanel,
 #restoredPortablePreviewPanel,#trialSplitPreviewPanel,
 #safeSplitEditorToggle{display:none!important}
+/* Staff-facing editor uses the automatic save path; retain development controls and handlers without displaying them. */
+#editorStorageChoice{display:none!important}
 #safeSplitEditorSave:not([hidden]){display:inline-flex!important}
 #newSplitAlbumPrepPanel.newSplitChoiceActive{display:block!important}
 /* Keep the previous editor canvas intact but out of view during isolated new-album preparation. */
