@@ -754,6 +754,13 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
 <button class="secondary" type="button" id="trialSplitEditToggle">✏️ 試験コピーの配置を編集</button>
 <button class="secondary" type="button" id="trialSplitEditSave" disabled>💾 試験コピーだけ保存</button>
+<div id="trialSplitTransformTools" hidden style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;padding:8px;border:1px solid #cdd9e5;border-radius:10px">
+<span id="trialSplitSelectedLabel" style="font-size:12px">写真を選択してね</span>
+<button type="button" class="secondary" id="trialSplitShrink">－ 小さく</button>
+<button type="button" class="secondary" id="trialSplitGrow">＋ 大きく</button>
+<button type="button" class="secondary" id="trialSplitRotateLeft">↶ 左へ15°</button>
+<button type="button" class="secondary" id="trialSplitRotateRight">↷ 右へ15°</button>
+</div>
 </div><label style="display:block;margin:8px 0;font-size:13px">背景の表示テスト（プレビューのみ）<select id="trialSplitBackgroundTest" style="width:100%;padding:8px;margin-top:5px"><option value="saved">試験コピーの保存済み背景</option><option value="pattern-dots">ドット柄</option><option value="pattern-lines">斜線柄</option><option value="custom-check">チェック柄</option><option value="custom-flower">花柄</option><option value="custom-star">星柄</option></select></label>
 <div id="trialSplitPreviewCanvas" class="designCanvas spreadCanvas" style="border:1px solid #cdd9e5;border-radius:7px;pointer-events:none"></div>
 <p class="muted">配置を動かす操作だけを試せます。保存先は試験コピー専用で、元のアルバムには触れません。</p>
@@ -1687,10 +1694,15 @@ $('#trialSplitBackgroundTest').addEventListener('change',e=>{
  setSplitPreviewBackground(e.target.value);
  $('#trialSplitPreviewStatus').textContent='🎨 プレビューの背景だけを変更しました。試験コピーと元のアルバムは未変更です。';
 });
-let splitEditSnapshot=null,splitEditEnabled=false,splitEditDirty=false;
+let splitEditSnapshot=null,splitEditEnabled=false,splitEditDirty=false,splitSelectedEl=null,splitSelectedNode=null;
 function syncSplitEditControls(){
  $('#trialSplitEditToggle').textContent=splitEditEnabled?'🔒 試験コピーの編集を終了':'✏️ 試験コピーの配置を編集';
  $('#trialSplitEditSave').disabled=!splitEditEnabled||!splitEditDirty;
+ $('#trialSplitTransformTools').hidden=!splitEditEnabled;
+ const hasPhoto=!!splitSelectedEl&&splitSelectedEl.type==='photo'&&splitEditEnabled;
+ for(const id of ['trialSplitShrink','trialSplitGrow','trialSplitRotateLeft','trialSplitRotateRight'])$('#'+id).disabled=!hasPhoto;
+ $('#trialSplitSelectedLabel').textContent=hasPhoto?'選択中：写真（大きさ '+Math.round(Number(splitSelectedEl.w)||0)+'% × '+Math.round(Number(splitSelectedEl.h)||0)+'%、回転 '+Math.round(Number(splitSelectedEl.rotation)||0)+'°）':'写真をタップして選択';
+
  const canvas=$('#trialSplitPreviewCanvas');
  canvas.style.pointerEvents=splitEditEnabled?'auto':'none';
  for(const node of canvas.querySelectorAll('.designElement'))node.style.pointerEvents=splitEditEnabled?'auto':'none';
@@ -1718,11 +1730,35 @@ $('#trialSplitEditSave').addEventListener('click',async()=>{
  }catch(e){status.textContent='⚠️ 試験コピーの保存に失敗：'+(e?.message||String(e))}
  finally{db?.close();syncSplitEditControls()}
 });
+function modifySplitSelectedPhoto(kind){
+ if(!splitEditEnabled||!splitSelectedEl||splitSelectedEl.type!=='photo'||!splitSelectedNode)return;
+ const el=splitSelectedEl,node=splitSelectedNode;
+ if(kind==='grow'||kind==='shrink'){
+  const factor=kind==='grow'?1.1:1/1.1;
+  const oldW=Number(el.w)||20,oldH=Number(el.h)||20;
+  const ratio=Math.min(factor, (100/(oldW||1)),(100/(oldH||1)));
+  const w=Math.max(4,Math.min(100,oldW*ratio)),h=Math.max(4,Math.min(100,oldH*ratio));
+  el.x=Math.max(0,Math.min(100-w,(Number(el.x)||0)+(oldW-w)/2));
+  el.y=Math.max(0,Math.min(100-h,(Number(el.y)||0)+(oldH-h)/2));
+  el.w=w;el.h=h;
+  node.style.left=el.x+'%';node.style.top=el.y+'%';node.style.width=w+'%';node.style.height=h+'%';
+ }else{
+  const angle=kind==='left'?-15:15;
+  el.rotation=((Number(el.rotation)||0)+angle+360)%360;
+  node.style.transform='rotate('+el.rotation+'deg)';
+ }
+ splitEditDirty=true;syncSplitEditControls();
+}
+$('#trialSplitShrink').addEventListener('click',()=>modifySplitSelectedPhoto('shrink'));
+$('#trialSplitGrow').addEventListener('click',()=>modifySplitSelectedPhoto('grow'));
+$('#trialSplitRotateLeft').addEventListener('click',()=>modifySplitSelectedPhoto('left'));
+$('#trialSplitRotateRight').addEventListener('click',()=>modifySplitSelectedPhoto('right'));
 function attachSplitDrag(node,element){
  node.style.touchAction='none';
  node.addEventListener('pointerdown',event=>{
   if(!splitEditEnabled||event.button>0)return;
   event.preventDefault();event.stopImmediatePropagation();
+  splitSelectedEl=element;splitSelectedNode=node;syncSplitEditControls();
   const canvas=$('#trialSplitPreviewCanvas'),rect=canvas.getBoundingClientRect();
   const startX=event.clientX,startY=event.clientY,originX=Number(element.x)||0,originY=Number(element.y)||0;
   const move=e=>{
@@ -1826,7 +1862,7 @@ $('#trialSyncBackground').addEventListener('click',async()=>{
 });
 $('#trialSplitPreviewButton').addEventListener('click',async()=>{
  const button=$('#trialSplitPreviewButton'),panel=$('#trialSplitPreviewPanel'),status=$('#trialSplitPreviewStatus'),canvas=$('#trialSplitPreviewCanvas');
- if(!panel.hidden){panel.hidden=true;clearSplitPreview();splitEditSnapshot=null;splitEditEnabled=false;splitEditDirty=false;syncSplitEditControls();return}
+ if(!panel.hidden){panel.hidden=true;clearSplitPreview();splitEditSnapshot=null;splitSelectedEl=null;splitSelectedNode=null;splitEditEnabled=false;splitEditDirty=false;syncSplitEditControls();return}
  button.disabled=true;panel.hidden=false;clearSplitPreview();status.textContent='📖 試験コピーからページを再現しています…';
  let db=null;
  try{
@@ -1840,7 +1876,7 @@ $('#trialSplitPreviewButton').addEventListener('click',async()=>{
    if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error((n+1)+'枚目の画像がありません');
    photos.push(photo.blob);splitPreviewPhotos.push(photo.blob);
   }
-  splitEditSnapshot=structuredClone(edits);splitEditEnabled=false;splitEditDirty=false;
+  splitEditSnapshot=structuredClone(edits);splitSelectedEl=null;splitSelectedNode=null;splitEditEnabled=false;splitEditDirty=false;
   splitSavedBackground=String(edits.background||'#ffffff');
   canvas.classList.toggle('spreadCanvas',edits.layout!=='single'&&edits.layout!=='grid');
   canvas.classList.toggle('singleCanvas',edits.layout==='single');
