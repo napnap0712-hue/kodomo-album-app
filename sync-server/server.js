@@ -28,6 +28,17 @@ function pairedSession(req){const token=pairingToken(req);if(!token)return null;
 function isPaired(req){return !!pairedSession(req);}
 function checkSameOrigin(req){return req.headers.origin===protocol+'://'+req.headers.host;}
 function isLoopback(req){return ['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress);}
+// Read-only health endpoint is accessible from local album UI; no pairing, tokens or photos.
+function permittedHealthOrigin(req){
+ const origin=req.headers.origin;
+ if(!origin)return null;
+ try{
+  const u=new URL(origin),host=(req.headers.host||'').split(':')[0];
+  const allowed=u.origin==='https://omoide-book-dev.pages.dev'||((u.protocol==='http:'||u.protocol==='https:')&&u.port==='3000'&&[host,'localhost','127.0.0.1'].includes(u.hostname));
+  return allowed?u.origin:null;
+ }catch{return null;}
+}
+
 
 function renewPin(){pin=String(crypto.randomInt(100000,1000000));expires=Date.now()+300000;failures.clear();console.log('【テスト用6桁確認コード】 '+pin+'（5分間有効）');}
 function json(res,status,obj,headers={}){const data=JSON.stringify(obj);res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Content-Length':Buffer.byteLength(data),...headers});res.end(data);}
@@ -50,7 +61,16 @@ const server=(tlsOptions?https:http).createServer(...(tlsOptions?[tlsOptions]:[]
    message:tlsOptions?'HTTPSで通信中です。証明書の信頼と端末認証の本番要件は別途確認が必要です。':'HTTPのため暗号化されていません。架空データのテスト専用です。'
   });
  }
- if(req.method==='GET'&&(path==='/'||path==='/health'))return json(res,200,{app:'omoide-book-sync-prototype',status:'ready',message:'接続テスト成功！写真やアルバムのデータはまだ送受信しません。',secureDataSyncEnabled:false,pairingTestAvailable:true});
+ if(path==='/health'){
+  const origin=permittedHealthOrigin(req);
+  const cors=origin?{'Access-Control-Allow-Origin':origin,'Vary':'Origin'}:{};
+  if(req.method==='OPTIONS'){
+   if(!origin)return json(res,403,{message:'許可されていない接続元です'});
+   res.writeHead(204,{...cors,'Access-Control-Allow-Methods':'GET, OPTIONS','Access-Control-Allow-Private-Network':'true','Access-Control-Max-Age':'600'});return res.end();
+  }
+  if(req.method==='GET')return json(res,200,{app:'omoide-book-sync-prototype',status:'ready',https:!!tlsOptions,photoSyncEnabled:false,demoOnly:true},cors);
+ }
+ if(req.method==='GET'&&path==='/')return json(res,200,{app:'omoide-book-sync-prototype',status:'ready',message:'接続テスト成功！写真やアルバムのデータはまだ送受信しません。',secureDataSyncEnabled:false,pairingTestAvailable:true});
  if(req.method==='GET'&&path==='/sync-status'){
   res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Content-Security-Policy':"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'",'Cache-Control':'no-store'});
   return res.end(syncStatusPage);
