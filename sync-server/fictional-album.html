@@ -169,8 +169,16 @@ function applyState(data){
  document.getElementById('lastTime').textContent=data.updatedAt?'最終更新 '+new Date(data.updatedAt).toLocaleString('ja-JP'):'まだ変更されていません';
  changed=false;conflict.textContent='';closeCompare();paint();forgetDraft();
 }
+function sameSelections(data){return !!data&&ids.every(key=>selections()[key]===data[key]);}
+function adoptMatchingServer(data){
+ if(!sameSelections(data))return false;
+ applyState(data);
+ status.textContent='✅ 編集内容は最新版と同じです。自動で同期状態を更新しました。';
+ return true;
+}
 function showConflict(data){
  if(!data||!Number.isSafeInteger(data.revision))return;
+ if(adoptMatchingServer(data))return;
  const isNew=!remoteConflict||remoteConflict.revision!==data.revision;
  remoteConflict=data;
  resolutionPanel.hidden=false;
