@@ -36,3 +36,25 @@ test('reject arbitrary text, photos and invalid revision',()=>{
   assert.equal(store.save({...input,baseRevision:0}).unchanged,true);
  }finally{fs.rmSync(directory,{recursive:true,force:true});}
 });
+
+test('conflict resolution can retain one remote field and two local fields',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'omoide-resolve-'));
+ try{
+  const store=createStore(dir),original=store.read();
+  const remote=store.save({baseRevision:original.revision,title:choices.title[1],message:choices.message[1],color:choices.color[1]});
+  assert.equal(remote.status,200);
+  const mine={title:choices.title[2],message:choices.message[2],color:choices.color[2]};
+  const stale=store.save({baseRevision:original.revision,...mine});
+  assert.equal(stale.status,409);
+  assert.equal(stale.current.revision,remote.state.revision);
+  const resolved=store.save({baseRevision:stale.current.revision,title:mine.title,message:remote.state.message,color:mine.color});
+  assert.equal(resolved.status,200);
+  assert.equal(resolved.state.revision,remote.state.revision+1);
+  assert.equal(store.read().message,choices.message[1]);
+  assert.equal(store.read().title,choices.title[2]);
+  assert.equal(store.read().color,choices.color[2]);
+  const race=store.save({baseRevision:stale.current.revision,...mine});
+  assert.equal(race.status,409);
+  assert.equal(store.read().message,choices.message[1]);
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+});
