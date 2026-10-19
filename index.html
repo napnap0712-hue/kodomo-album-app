@@ -3009,6 +3009,7 @@ $('#trialSplitPreviewButton').addEventListener('click',async()=>{
 });
 let newAlbumSplitOrigin=null;
 let splitUnsavedRevision=0;
+let splitAutoSaveFailures=0;
 async function saveNewSplitAlbum(){
  if(!newAlbumSplitSavedId)newAlbumSplitOrigin=null;
  if(newAlbumSplitSaveBusy)return;
@@ -3057,11 +3058,26 @@ async function saveNewSplitAlbum(){
   });
   newAlbumSplitSavedId=id;
   const changedDuringSave=editorSaveRevision!==savingSplitRevision;
+  splitAutoSaveFailures=0;
   if(!changedDuringSave){splitUnsavedRevision=0;try{localStorage.removeItem(SPLIT_RECOVERY_PREFIX+id)}catch(e){console.warn('一時記録の削除を保留',e)}}
   if(changedDuringSave)scheduleEditorAutoSave();
   status.textContent='✅ '+(newAlbumSplitOrigin?.migrationSourceId?'既存アルバムの分離保存が完了しました':'新規アルバムを分離保存しました')+'：写真'+photos.length+'枚・配置'+els.length+'個。'+(newAlbumSplitOrigin?.migrationSourceId?'元のアルバムは保持されています。':'従来のアルバムとバックアップは未変更です。');
   setEditorSaveState(changedDuringSave?'● 続きの変更を保存待ち':'✓ 自動保存済み');
- }catch(e){status.textContent='⚠️ 分離保存できません：'+(e?.message||String(e));setEditorSaveState('⚠ 保存失敗')}
+ }catch(e){
+  // Keep the original and recovery snapshot; retry only a limited number of times.
+  if(newAlbumSplitSavedId){
+   splitUnsavedRevision=splitUnsavedRevision||editorSaveRevision||1;
+   saveSplitEditRecovery();
+  }
+  status.textContent='⚠️ 分離保存できません：'+(e?.message||String(e))+'。編集内容は残しています。';
+  setEditorSaveState('⚠ 保存失敗');
+  if(newAlbumSplitSavedId&&splitAutoSaveFailures<3&&document.querySelector('[data-screen="editor"]')?.classList.contains('active')){
+   splitAutoSaveFailures++;
+   const retryId=newAlbumSplitSavedId,delay=Math.min(30000,3000*Math.pow(2,splitAutoSaveFailures-1));
+   clearTimeout(editorAutoSaveTimer);
+   editorAutoSaveTimer=setTimeout(()=>{editorAutoSaveTimer=null;if(newAlbumSplitSelected&&newAlbumSplitSavedId===retryId&&!newAlbumSplitSaveBusy&&editorPhotoIntegrityOk)saveNewSplitAlbum()},delay);
+  }
+ }
  finally{db?.close();newAlbumSplitSaveBusy=false;button.disabled=false;button.textContent='💾 保存'}
 }
 $('#saveDraft').addEventListener('click',async()=>{if(newAlbumSplitSelected){await saveNewSplitAlbum();return}if(safeSplitEditorMode){$('#editorStatus').textContent='🔒 試験モードでは元アルバムへの保存は禁止です。「試験コピーだけ保存」を使ってね。';return}const button=$('#saveDraft');if(!editorPhotoIntegrityOk){setEditorSaveState('⚠ 写真を読み込めません');$('#editorStatus').textContent='写真の読み込みに問題があるため保存を停止しました。元データを保護しています。';return}if(editorSaveInProgress)return;clearTimeout(editorAutoSaveTimer);editorSaveInProgress=true;button.disabled=true;button.textContent='保存中…';const savingRevision=editorSaveRevision;setEditorSaveState('◌ 保存中…');$('#editorStatus').textContent='写真と編集内容を保存しています…';try{if(!files.length)throw new Error('保存する写真がありません。先に写真を追加してください');const photos=[];for(const file of files){const saved=await makeDurablePhoto(file);if(!saved.blob||!saved.blob.size)throw new Error('保存用の写真データが空です');let bytes;try{bytes=await saved.blob.arrayBuffer()}catch(error){if(error?.name!=='NotFoundError')throw new Error('写真の実データを読み取れません。元のアルバムは変更していません ('+(error?.name||'unknown')+')');const url=fileUrl(file);try{const response=await fetch(url);if(!response.ok)throw new Error('画像を取得できません');bytes=await response.arrayBuffer()}catch(recoveryError){throw new Error('写真の実データを復元できません。元のアルバムは変更していません (NotFoundError)')}}if(!bytes.byteLength)throw new Error('写真の実データが空です');const durableBlob=new Blob([bytes],{type:saved.type||'image/jpeg'});photos.push({name:saved.name,type:durableBlob.type,blob:durableBlob})}let thumbnail=null;try{const capture=await Promise.race([loadExportImageLibrary().then(lib=>lib($('#designCanvas'),{backgroundColor:'#ffffff',scale:1,useCORS:true,logging:false})),new Promise((_,reject)=>setTimeout(()=>reject(new Error('thumbnail timeout')),3500))]);const thumb=document.createElement('canvas');thumb.width=420;thumb.height=Math.max(180,Math.round(420*capture.height/capture.width));thumb.getContext('2d').drawImage(capture,0,0,thumb.width,thumb.height);thumbnail=thumb.toDataURL('image/jpeg',.68)}catch(e){console.warn('Thumbnail unavailable; keeping existing preview',e)}const draft={id:editingId||('draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),classId:selected.id,year:activeYear(),title:$('#albumTitle').value.trim()||'無題のアルバム',background:$('#pageBackground').value,caption:$('#pageCaption').value.trim(),layout:$('#layoutMode').value,photoGap:photoGapPercent,spreadIndex,designElements,photos,photoAssignments:photoAssignments.map(ids=>[...ids]),thumbnail,updatedAt:Date.now()};await putDraft(draft);editingId=draft.id;editRecoveryBaseline=draft.updatedAt;if(editorSaveRevision===savingRevision)clearEditRecovery(draft.id);if(pendingProjectSlot!==null){const slots=readProjectSlots();while(slots.length<=pendingProjectSlot)slots.push(null);slots[pendingProjectSlot]=draft.id;writeProjectSlots(slots)}$('#editorStatus').textContent='保存しました！クラスのページ一覧から開けます。';setEditorSaveState(editorSaveRevision===savingRevision?'✓ 保存済み':'● 保存中に変更あり');}catch(error){setEditorSaveState('⚠ 保存失敗');$('#editorStatus').textContent='保存できませんでした：'+(error&&error.message?error.message:'端末の保存領域を確認して、もう一度お試しください');}finally{editorSaveInProgress=false;button.disabled=false;button.textContent='下書きを保存';if(editorSaveRevision!==savingRevision&&$('#editorSaveState').textContent!=='⚠ 保存失敗')scheduleEditorAutoSave();}});
