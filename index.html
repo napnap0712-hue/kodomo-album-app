@@ -1380,26 +1380,43 @@ async function renderFaceReferencePanel(){
  }
 }
 // Optional on-device FaceDetector API. Never upload photos or alter assignments.
+let localFaceDetectorPromise=null;
+async function loadLocalFaceDetector(){
+ if(!localFaceDetectorPromise)localFaceDetectorPromise=(async()=>{
+  // Only JavaScript/WASM/model files are downloaded. Photo pixels remain on this device.
+  const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/+esm');
+  const fileset=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm');
+  return vision.FaceDetector.createFromOptions(fileset,{
+   baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'},
+   runningMode:'IMAGE',minDetectionConfidence:0.5
+  });
+ })().catch(error=>{localFaceDetectorPromise=null;throw error});
+ return localFaceDetectorPromise;
+}
 $('#detectFacesOnDevice').addEventListener('click',async()=>{
  const button=$('#detectFacesOnDevice'),status=$('#faceDetectionStatus');
- if(typeof window.FaceDetector!=='function'){status.textContent='⚠️ このSafariでは顔検出APIを利用できません。写真・振り分けは変更していません。';return}
  if(!files.length){status.textContent='写真を取り込んでから確認してください。';return}
- let detector;try{detector=new window.FaceDetector({fastMode:true,maxDetectedFaces:30})}catch(e){status.textContent='⚠️ この端末では顔検出を開始できません。';return}
  button.disabled=true;let done=0,failed=0;
  try{
+  status.textContent='顔検出プログラムを読み込み中…（初回はネット接続が必要です。写真は送信しません）';
+  const detector=await loadLocalFaceDetector();
   for(let i=0;i<files.length;i++){
-   if(!$('#photoAssignGrid').isConnected)break;
-   const card=$('#photoAssignGrid').children[i];if(!card)continue;
-   let line=card.querySelector('.faceDetectionResult');if(!line){line=document.createElement('small');line.className='faceDetectionResult';line.style.cssText='display:block;padding:6px 10px;color:#526277';card.append(line)}
+   const card=$('#photoAssignGrid').children[i];if(!card)break;
+   let line=card.querySelector('.faceDetectionResult');
+   if(!line){line=document.createElement('small');line.className='faceDetectionResult';line.style.cssText='display:block;padding:6px 10px;color:#526277';card.append(line)}
+   let bitmap=null;
    try{
-    const bitmap=await createImageBitmap(files[i],{resizeWidth:640,resizeHeight:640,resizeQuality:'medium'});
-    try{const faces=await detector.detect(bitmap);line.textContent='👤 検出した顔：'+faces.length+'人（確認用）'}finally{bitmap.close()}
-   }catch(e){failed++;line.textContent='⚠️ この写真は検出できませんでした'}
+    bitmap=await createImageBitmap(files[i]);
+    const result=detector.detect(bitmap);
+    line.textContent='👤 検出した顔：'+(result.detections?.length||0)+'人（確認用）';
+   }catch(e){failed++;line.textContent='⚠️ この写真は検出できませんでした';console.warn('Face detection failed for image',i,e)}
+   finally{bitmap?.close()}
    done++;status.textContent='端末内で確認中 '+done+'/'+files.length+'枚';
-   if(i%5===0)await new Promise(resolve=>setTimeout(resolve,0));
+   if(i%3===0)await new Promise(resolve=>setTimeout(resolve,0));
   }
-  status.textContent='✅ 顔の人数確認：'+done+'枚'+(failed?'（検出できなかった写真 '+failed+'枚）':'')+'。園児の振り分けは変更していません。';
- }finally{button.disabled=false}
+  status.textContent='✅ 顔の人数確認：'+done+'枚'+(failed?'（検出不可 '+failed+'枚）':'')+'。園児の振り分けは変更していません。';
+ }catch(e){status.textContent='⚠️ 顔検出プログラムの読み込みに失敗しました。ネット接続を確認してください。写真・振り分けは変更していません。';console.warn('FaceDetector initialization error',e)}
+ finally{button.disabled=false}
 });
 function renderPhotoAssignmentPage(){
  const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);grid.innerHTML='';renderFaceReferencePanel();
