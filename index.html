@@ -3226,6 +3226,18 @@ async function saveNewSplitAlbum(){
    }
    previousSnapshot={albumId:id,savedAt:Date.now(),meta:prevMeta,edits:prevEdit,photos:prevPhotos};
   }
+  // Skip overwriting photo records whose bytes and metadata are unchanged.
+  // History still retains its own complete snapshot, and edited photos use the normal write path.
+  const unchangedPhotos=new Set();
+  if(previousSnapshot&&previousSnapshot.photos.length===photos.length){
+   for(let i=0;i<photos.length;i++){
+    const before=previousSnapshot.photos[i],after=photos[i];
+    if(before.name!==after.name||before.blob.type!==after.blob.type||before.blob.size!==after.blob.size)continue;
+    const [a,b]=await Promise.all([before.blob.arrayBuffer(),after.blob.arrayBuffer()]);
+    const x=new Uint8Array(a),y=new Uint8Array(b);
+    if(x.length===y.length&&!x.some((value,j)=>value!==y[j]))unchangedPhotos.add(i);
+   }
+  }
   await new Promise((resolve,reject)=>{
    const tx=db.transaction(['albums','photos','edits','history'],'readwrite');
    if(previousSnapshot){
@@ -3239,7 +3251,7 @@ async function saveNewSplitAlbum(){
    }
    // Commit photo objects and editing metadata atomically in the isolated namespace.
    const p=tx.objectStore('photos');
-   photos.forEach((photo,i)=>p.put(photo,id+':photo-'+i));
+   photos.forEach((photo,i)=>{if(!unchangedPhotos.has(i))p.put(photo,id+':photo-'+i)});
    tx.objectStore('edits').put(edits,id);
    tx.objectStore('albums').put(meta,id);
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('分離保存に失敗'));tx.onabort=()=>reject(tx.error||Error('保存を中断しました'));
