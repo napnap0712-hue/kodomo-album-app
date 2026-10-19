@@ -3068,6 +3068,12 @@ async function saveNewSplitAlbum(){
        if(oldPhotos.some(p=>!(p?.blob instanceof Blob)||!p.blob.size))return;
        const history=tx.objectStore('history'),key=id+':'+Date.now()+':'+crypto.randomUUID();
        history.put({albumId:id,savedAt:Date.now(),meta:previous,edits:oldEdits,photos:oldPhotos},key);
+       // Limit newly created history to the latest five saved snapshots per album.
+       const keys=history.getAllKeys();
+       keys.onsuccess=()=>{
+        const older=(keys.result||[]).filter(k=>typeof k==='string'&&k.startsWith(id+':')).sort();
+        for(const stale of older.slice(0,Math.max(0,older.length-4)))history.delete(stale);
+       };
       };
       if(!remaining)finish();
       for(let i=0;i<previous.photoCount;i++){
