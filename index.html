@@ -770,7 +770,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <section class="screen" data-screen="photoAssign">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
 <div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真をそのまま利用します。未登録の場合のみここから写真を追加できます。まだ自動判定は行いません。</p><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
-<div id="photoAssignGrid" class="assignGrid"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="photoAssignGrid" class="assignGrid"></div>
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
@@ -1379,6 +1379,28 @@ async function renderFaceReferencePanel(){
   try{const saved=await faceReferenceRead(key);if(token!==faceReferenceRenderId)return;status.textContent=kid.facePhoto?'✅ 管理画面の顔写真を使用':saved?.blob instanceof Blob?'✅ 個別登録済み':'未登録';if(!kid.facePhoto&&saved?.blob instanceof Blob){const img=document.createElement('img');const url=URL.createObjectURL(saved.blob);img.src=url;img.alt=kid.name+'さんの登録写真';img.style.cssText='width:100%;height:100%;object-fit:cover';img.onload=()=>URL.revokeObjectURL(url);img.onerror=()=>{URL.revokeObjectURL(url);photoPreview.textContent='⚠️'};photoPreview.replaceChildren(img)}}catch(e){status.textContent='⚠️ 読み取り不可'}
  }
 }
+// Optional on-device FaceDetector API. Never upload photos or alter assignments.
+$('#detectFacesOnDevice').addEventListener('click',async()=>{
+ const button=$('#detectFacesOnDevice'),status=$('#faceDetectionStatus');
+ if(typeof window.FaceDetector!=='function'){status.textContent='⚠️ このSafariでは顔検出APIを利用できません。写真・振り分けは変更していません。';return}
+ if(!files.length){status.textContent='写真を取り込んでから確認してください。';return}
+ let detector;try{detector=new window.FaceDetector({fastMode:true,maxDetectedFaces:30})}catch(e){status.textContent='⚠️ この端末では顔検出を開始できません。';return}
+ button.disabled=true;let done=0,failed=0;
+ try{
+  for(let i=0;i<files.length;i++){
+   if(!$('#photoAssignGrid').isConnected)break;
+   const card=$('#photoAssignGrid').children[i];if(!card)continue;
+   let line=card.querySelector('.faceDetectionResult');if(!line){line=document.createElement('small');line.className='faceDetectionResult';line.style.cssText='display:block;padding:6px 10px;color:#526277';card.append(line)}
+   try{
+    const bitmap=await createImageBitmap(files[i],{resizeWidth:640,resizeHeight:640,resizeQuality:'medium'});
+    try{const faces=await detector.detect(bitmap);line.textContent='👤 検出した顔：'+faces.length+'人（確認用）'}finally{bitmap.close()}
+   }catch(e){failed++;line.textContent='⚠️ この写真は検出できませんでした'}
+   done++;status.textContent='端末内で確認中 '+done+'/'+files.length+'枚';
+   if(i%5===0)await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  status.textContent='✅ 顔の人数確認：'+done+'枚'+(failed?'（検出できなかった写真 '+failed+'枚）':'')+'。園児の振り分けは変更していません。';
+ }finally{button.disabled=false}
+});
 function renderPhotoAssignmentPage(){
  const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);grid.innerHTML='';renderFaceReferencePanel();
  files.forEach((file,index)=>{
