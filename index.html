@@ -3117,7 +3117,7 @@ async function backupSavedSplitAlbum(id){
  try{
   const open=(name,version)=>new Promise((resolve,reject)=>{
    const req=version?indexedDB.open(name,version):indexedDB.open(name);
-   if(version)req.onupgradeneeded=()=>{for(const store of ['backups'])if(!req.result.objectStoreNames.contains(store))req.result.createObjectStore(store)};
+   if(version)req.onupgradeneeded=()=>{for(const store of ['backups','previousBackups'])if(!req.result.objectStoreNames.contains(store))req.result.createObjectStore(store)};
    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('保存領域を開けません'));
   });
   source=await open('omoide-new-split-albums-v1');
@@ -3134,11 +3134,14 @@ async function backupSavedSplitAlbum(id){
    photos.push(photo);
   }
   for(const el of edits.designElements)if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=photos.length))throw Error('写真の参照が不正です');
-  backup=await open('omoide-split-automatic-backups-v1',1);
+  backup=await open('omoide-split-automatic-backups-v1',2);
   const snapshot={albumId:id,savedAt:Date.now(),meta:structuredClone(meta),edits:structuredClone(edits),photos};
-  // A single transaction replaces only this album's backup after all source reads succeeded.
+  const existingBackup=await read(backup,'backups',id);
+  // Preserve the previously verified backup separately before replacing the latest one.
+  // Both writes commit in one transaction; no existing backup is deleted on failure.
   await new Promise((resolve,reject)=>{
-   const tx=backup.transaction('backups','readwrite');
+   const tx=backup.transaction(['backups','previousBackups'],'readwrite');
+   if(existingBackup?.albumId===id&&existingBackup?.meta?.id===id&&Array.isArray(existingBackup.photos)&&existingBackup.photos.length===existingBackup.meta.photoCount)tx.objectStore('previousBackups').put(existingBackup,id);
    tx.objectStore('backups').put(snapshot,id);
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('バックアップ保存に失敗'));tx.onabort=()=>reject(tx.error||Error('バックアップ保存が中断'));
   });
