@@ -89,6 +89,7 @@ if(start)start.addEventListener('click',async()=>{
     if(vec.length!==512||vec.some(v=>!Number.isFinite(v)))throw Error('AuraFace特徴抽出に失敗');
 
     embeddings.push({vector:vec,group:item.group,label:item.group+'-'+(item.group==='A'?index+1:index-first.length+1)});
+   }finally{bitmap.close()}
    }catch(e){failures.push(index+1);console.warn('AuraFace batch comparison sample failed',index,e)}
    await new Promise(resolve=>setTimeout(resolve,0));
   }
@@ -101,7 +102,7 @@ if(start)start.addEventListener('click',async()=>{
   const summarize=arr=>arr.length?('最小 '+Math.min(...arr.map(v=>v.score)).toFixed(4)+' / 最大 '+Math.max(...arr.map(v=>v.score)).toFixed(4)):'比較なし';
   const overlap=same.length&&different.length&&Math.min(...same.map(v=>v.score))<=Math.max(...different.map(v=>v.score));
   status.style.whiteSpace='pre-line';
-  status.textContent='✅ '+embeddings.length+'枚解析（失敗 '+failures.length+'枚）\n同じ園児 '+same.length+'組：'+summarize(same)+'\n違う園児 '+different.length+'組：'+summarize(different)+'\n比較値の範囲が重なる：'+(overlap?'あり':'なし（今回の写真に限る）')+'\n写真・特徴データ・結果は保存も送信もしません。自動振り分けもしません。';
+  status.textContent=['✅ '+embeddings.length+'枚解析（失敗 '+failures.length+'枚）','同じ園児 '+same.length+'組：'+summarize(same),'違う園児 '+different.length+'組：'+summarize(different),'比較値の範囲が重なる：'+(overlap?'あり':'なし（今回の写真に限る）'),'写真・特徴データ・結果は保存も送信もしません。自動振り分けもしません。'].join(String.fromCharCode(10));
   const heading=document.createElement('strong');heading.textContent='別の園児なのに比較値が高い組（上位5件）';results.append(heading);
   for(const item of different.sort((a,b)=>b.score-a.score).slice(0,5)){
    const p=document.createElement('p');p.className='muted';p.textContent=item.x+' と '+item.y+'：'+item.score.toFixed(4);results.append(p);
