@@ -1,0 +1,54 @@
+name: Bundle local Human face recognition
+on:
+  push:
+    branches: [prototype-multiselect-lock-20261017]
+    paths:
+      - .github/workflows/bundle-human-recognition.yml
+permissions:
+  contents: write
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prototype-multiselect-lock-20261017
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Human and bundle face-only models
+        run: |
+          npm install --no-save --ignore-scripts --no-package-lock --prefix /tmp/human-assets @vladmandic/human@3.3.6
+          mkdir -p face-recognition/models
+          cp /tmp/human-assets/node_modules/@vladmandic/human/dist/human.esm.js face-recognition/human.esm.js
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('/tmp/human-assets/node_modules/@vladmandic/human/models')
+          for name in ('blazeface','facemesh','faceres'):
+              candidates=list(root.glob(name+'.json'))
+              if not candidates:
+                  raise SystemExit(f'Face model absent: {name}')
+              model=candidates[0]
+              text=model.read_text()
+              import json
+              data=json.loads(text)
+              selected=[model.name]
+              for weight in data.get('weightsManifest',[]):
+                  selected.extend(weight.get('paths',[]))
+              for item in selected:
+                  source=root/item
+                  if not source.is_file():raise SystemExit(f'Missing weight: {item}')
+                  dest=Path('face-recognition/models')/item
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  dest.write_bytes(source.read_bytes())
+          PY
+          test -s face-recognition/human.esm.js
+      - name: Commit local recognition assets
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add face-recognition
+          if ! git diff --cached --quiet; then
+            git commit -m "Bundle Human face recognition code and models locally"
+            git push origin HEAD:prototype-multiselect-lock-20261017
+          fi
