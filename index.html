@@ -1381,13 +1381,27 @@ async function renderFaceReferencePanel(){
 }
 // Optional on-device FaceDetector API. Never upload photos or alter assignments.
 let localFaceDetectorPromise=null;
+let faceDetectorLoadStage='準備';
 async function loadLocalFaceDetector(){
  if(!localFaceDetectorPromise)localFaceDetectorPromise=(async()=>{
-  // Only JavaScript/WASM/model files are downloaded. Photo pixels remain on this device.
-  const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/+esm');
-  const fileset=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm');
+  // Download executable/model resources only. Never send photos to third-party servers.
+  faceDetectorLoadStage='JavaScript読み込み';
+  let vision;
+  try{vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/+esm')}
+  catch(firstError){
+   console.warn('Primary MediaPipe CDN unavailable',firstError);
+   vision=await import('https://esm.sh/@mediapipe/tasks-vision@0.10.22');
+  }
+  faceDetectorLoadStage='WASM読み込み';
+  let fileset;
+  try{fileset=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm')}
+  catch(firstError){
+   console.warn('Primary WASM CDN unavailable',firstError);
+   fileset=await vision.FilesetResolver.forVisionTasks('https://unpkg.com/@mediapipe/tasks-vision@0.10.22/wasm');
+  }
+  faceDetectorLoadStage='顔検出モデルの初期化';
   return vision.FaceDetector.createFromOptions(fileset,{
-   baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite'},
+   baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite',delegate:'CPU'},
    runningMode:'IMAGE',minDetectionConfidence:0.5
   });
  })().catch(error=>{localFaceDetectorPromise=null;throw error});
@@ -1415,7 +1429,7 @@ $('#detectFacesOnDevice').addEventListener('click',async()=>{
    if(i%3===0)await new Promise(resolve=>setTimeout(resolve,0));
   }
   status.textContent='✅ 顔の人数確認：'+done+'枚'+(failed?'（検出不可 '+failed+'枚）':'')+'。園児の振り分けは変更していません。';
- }catch(e){status.textContent='⚠️ 顔検出プログラムの読み込みに失敗しました。ネット接続を確認してください。写真・振り分けは変更していません。';console.warn('FaceDetector initialization error',e)}
+ }catch(e){status.textContent='⚠️ '+faceDetectorLoadStage+'で失敗しました：'+(e?.message||String(e)).slice(0,160)+'。写真・振り分けは変更していません。';console.warn('FaceDetector initialization error at '+faceDetectorLoadStage,e)}
  finally{button.disabled=false}
 });
 function renderPhotoAssignmentPage(){
