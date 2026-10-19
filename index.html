@@ -3149,7 +3149,14 @@ async function backupSavedSplitAlbum(id){
   });
   const verified=await read(backup,'backups',id);
   if(verified?.albumId!==id||verified.meta?.updatedAt!==meta.updatedAt||verified.photos?.length!==photos.length||verified.edits?.designElements?.length!==edits.designElements.length)throw Error('バックアップ照合に失敗');
-  for(let i=0;i<photos.length;i++)if(verified.photos[i]?.blob?.size!==photos[i].blob.size)throw Error('写真のサイズ照合に失敗');
+  if(JSON.stringify(verified.edits)!==JSON.stringify(edits)||JSON.stringify(verified.meta)!==JSON.stringify(meta))throw Error('バックアップの編集情報が一致しません');
+  for(let i=0;i<photos.length;i++){
+   const copied=verified.photos[i]?.blob,original=photos[i].blob;
+   if(!(copied instanceof Blob)||copied.size!==original.size)throw Error('写真'+(i+1)+'のサイズ照合に失敗');
+   const [sourceBytes,copyBytes]=await Promise.all([original.arrayBuffer(),copied.arrayBuffer()]);
+   const source=new Uint8Array(sourceBytes),copy=new Uint8Array(copyBytes);
+   if(source.length!==copy.length||source.some((byte,j)=>byte!==copy[j]))throw Error('写真'+(i+1)+'の内容が一致しません');
+  }
   return true;
  }finally{source?.close();backup?.close()}
 }
