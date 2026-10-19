@@ -769,7 +769,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
-<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="testRecognitionComparison" class="secondary" type="button">🔍 最初の写真で顔照合を試す</button><span id="recognitionComparisonStatus" class="muted" role="status">候補のみ表示・振り分けは変更しません。</span></div><div id="recognitionComparisonResults" style="margin:5px 0 10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button id="testRecognitionBatch" class="secondary" type="button">📸 まとめて顔照合</button><label style="display:inline-flex;align-items:center;gap:5px;font-size:13px">対象 <select id="recognitionBatchSize" aria-label="顔照合する写真の枚数"><option value="5">5枚</option><option value="20">20枚</option><option value="all">すべて</option></select></label><button id="cancelRecognitionBatch" class="secondary" type="button" disabled>中断</button><span id="recognitionBatchStatus" class="muted" role="status">候補のみ表示・自動確定なし。</span></div><div id="recognitionBatchResults"></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
+<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="testRecognitionComparison" class="secondary" type="button">🔍 最初の写真で顔照合を試す</button><span id="recognitionComparisonStatus" class="muted" role="status">候補のみ表示・振り分けは変更しません。</span></div><div id="recognitionComparisonResults" style="margin:5px 0 10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button id="testRecognitionBatch" class="secondary" type="button">📸 まとめて顔照合</button><label style="display:inline-flex;align-items:center;gap:5px;font-size:13px">対象 <select id="recognitionBatchSize" aria-label="顔照合する写真の枚数"><option value="5">5枚</option><option value="20">20枚</option><option value="all">すべて</option></select></label><button id="cancelRecognitionBatch" class="secondary" type="button" disabled>中断</button><span id="recognitionBatchStatus" class="muted" role="status">候補のみ表示・自動確定なし。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="confirmSelectedRecognition" class="secondary" type="button" disabled>✅ 選択した園児をまとめて確定</button><span id="recognitionSelectedCount" class="muted">選択 0件</span></div><div id="recognitionBatchResults"></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="photoAssignGrid" class="assignGrid"></div>
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
@@ -1490,13 +1490,30 @@ $('#testRecognitionComparison').addEventListener('click',async()=>{
  finally{button.disabled=false}
 });
 // Batch candidate preview never changes photoAssignments until the teacher confirms a person.
+let recognitionPendingConfirmations=[];
+function updateRecognitionSelectionCount(){
+ const pending=recognitionPendingConfirmations.filter(item=>item.checkbox.checked&&item.select.value&&!item.confirmed);
+ $('#recognitionSelectedCount').textContent='選択 '+pending.length+'件（先生が選んだものだけ）';
+ $('#confirmSelectedRecognition').disabled=!pending.length||!$('#testRecognitionBatch').disabled;
+}
+$('#confirmSelectedRecognition').addEventListener('click',()=>{
+ const selectedItems=recognitionPendingConfirmations.filter(item=>item.checkbox.checked&&item.select.value&&!item.confirmed);
+ if(!selectedItems.length)return;
+ for(const item of selectedItems){
+  photoAssignments[item.index]=[...new Set([...(photoAssignments[item.index]||[]),item.select.value])];
+  item.confirmed=true;item.checkbox.checked=false;item.checkbox.disabled=true;item.select.disabled=true;
+  item.feedback.textContent='✅ 確定済み';
+ }
+ renderPhotoAssignmentPage();updateRecognitionSelectionCount();
+ $('#recognitionBatchStatus').textContent='✅ 選択した'+selectedItems.length+'件を振り分けに追加しました。ほかの登録は保持しています。';
+});
 let cancelFaceBatch=false;
 $('#cancelRecognitionBatch').addEventListener('click',()=>{cancelFaceBatch=true;$('#recognitionBatchStatus').textContent='中断を受け付けました。現在の写真の処理後に停止します。'});
 $('#testRecognitionBatch').addEventListener('click',async()=>{
  const button=$('#testRecognitionBatch'),status=$('#recognitionBatchStatus'),host=$('#recognitionBatchResults');
  const kids=getChildren(selected.id);
  if(!files.length){status.textContent='先に写真を取り込んでください。';return}
- button.disabled=true;cancelFaceBatch=false;$('#cancelRecognitionBatch').disabled=false;host.replaceChildren();
+ button.disabled=true;cancelFaceBatch=false;$('#cancelRecognitionBatch').disabled=false;recognitionPendingConfirmations=[];host.replaceChildren();updateRecognitionSelectionCount();
  try{
   status.textContent='登録済みの基準顔を準備中…';
   const human=await loadHumanRecognition(),refs=[];
@@ -1535,20 +1552,27 @@ $('#testRecognitionBatch').addEventListener('click',async()=>{
     // Intentionally do not preselect guessed identities for batch approval.
     const confirm=document.createElement('button');confirm.type='button';confirm.className='secondary';confirm.style.cssText='padding:6px 8px;font-size:12px';confirm.textContent='この園児で確定';
     const feedback=document.createElement('span');feedback.style.fontSize='12px';
+    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.setAttribute('aria-label','写真'+(index+1)+'の顔'+(faceIndex+1)+'を一括確定の対象にする');checkbox.title='先生が園児を選んだときだけ一括確定の対象にします';
+    checkbox.addEventListener('change',updateRecognitionSelectionCount);
+    choose.addEventListener('change',()=>{if(!choose.value)checkbox.checked=false;updateRecognitionSelectionCount()});
+    const pending={index,select:choose,checkbox,feedback,confirmed:false};
+    recognitionPendingConfirmations.push(pending);
     confirm.onclick=()=>{
      if(!choose.value){feedback.textContent='園児を選択してね';return}
      photoAssignments[index]=[...new Set([...(photoAssignments[index]||[]),choose.value])];
      renderPhotoAssignmentPage();
+     pending.confirmed=true;checkbox.checked=false;checkbox.disabled=true;choose.disabled=true;updateRecognitionSelectionCount();
      feedback.textContent='✅ '+(kids.find(k=>k.id===choose.value)?.name||'園児')+'を写真'+(index+1)+'へ追加しました';
     };
-    line.append(note,choose,confirm,feedback);group.append(line);
+    const selectionLabel=document.createElement('label');selectionLabel.style.cssText='display:inline-flex;align-items:center;gap:4px;font-size:12px';selectionLabel.append(checkbox,document.createTextNode('まとめて確定の対象'));
+    line.append(note,choose,selectionLabel,confirm,feedback);group.append(line);
    }
    host.append(group);processed++;
    await new Promise(resolve=>setTimeout(resolve,0));
   }
   status.textContent=(cancelFaceBatch?'⏹ 中断しました：':'✅ 照合完了：')+processed+'/'+count+'枚（登録基準 '+refs.length+'人'+(failures?'・失敗 '+failures+'枚':'')+'）。確定ボタンを押すまで振り分けは変わりません。';
  }catch(e){status.textContent='⚠️ 複数枚の照合に失敗：'+(e?.message||String(e)).slice(0,120);console.warn('Batch face comparison',e)}
- finally{button.disabled=false;$('#cancelRecognitionBatch').disabled=true}
+ finally{button.disabled=false;$('#cancelRecognitionBatch').disabled=true;updateRecognitionSelectionCount()}
 });
 async function renderFaceReferencePanel(){
  const host=$('#faceReferenceList');if(!host)return;
