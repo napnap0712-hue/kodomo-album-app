@@ -1441,19 +1441,22 @@ $('#clusterPhotoFaces').addEventListener('click',async()=>{
    }catch(e){console.warn('Group face scan failed',index,e)}
    await new Promise(resolve=>setTimeout(resolve,0));
   }
-  // Sort closest neighbor similarities, but keep uncertain faces in their own groups.
-  const threshold=0.72,margin=0.04,nearest=samples.map((a,i)=>{
-   let best=-1,bestScore=-Infinity,second=-Infinity;
-   samples.forEach((b,j)=>{if(i===j||a.index===b.index)return;const score=faceEmbeddingSimilarity(a.embedding,b.embedding);if(score===null)return;if(score>bestScore){second=bestScore;bestScore=score;best=j}else if(score>second)second=score});
-   return {best,score:bestScore,margin:bestScore-second};
-  });
-  const parent=samples.map((_,i)=>i),find=i=>{while(parent[i]!==i)i=parent[i];return i};
-  for(let i=0;i<samples.length;i++){const n=nearest[i];if(n.best<0||n.score<threshold||n.margin<margin)continue;
-   const peer=nearest[n.best];if(peer.best!==i||peer.score<threshold)continue;
-   const a=find(i),b=find(n.best);if(a!==b)parent[b]=a;
+  // Greedy complete-link clustering: every member must resemble each member in its group.
+  // Faces from the same photo cannot be merged as one person.
+  const threshold=0.72,groupsList=[];
+  const ranked=samples.map((sample,i)=>({sample,i})).sort((a,b)=>a.sample.index-b.sample.index);
+  for(const entry of ranked){
+   let winner=-1,winnerScore=-Infinity;
+   for(let g=0;g<groupsList.length;g++){
+    const group=groupsList[g];if(group.some(v=>v.sample.index===entry.sample.index))continue;
+    const scores=group.map(v=>faceEmbeddingSimilarity(v.sample.embedding,entry.sample.embedding));
+    const weakest=Math.min(...scores);
+    if(weakest>=threshold&&weakest>winnerScore){winner=g;winnerScore=weakest}
+   }
+   if(winner>=0)groupsList[winner].push(entry);
+   else groupsList.push([entry]);
   }
-  const groups=new Map();
-  samples.forEach((sample,i)=>{const key=find(i);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(sample)});
+  const groups=new Map(groupsList.map((group,i)=>[i,group.map(v=>v.sample)]));
   const sorted=[...groups.values()].sort((a,b)=>b.length-a.length);
   for(const [i,group] of sorted.entries()){
    const card=document.createElement('div');card.style.cssText='border:1px solid #dce4ef;border-radius:12px;padding:10px';
@@ -1465,7 +1468,7 @@ $('#clusterPhotoFaces').addEventListener('click',async()=>{
    }
    card.append(row);host.append(card);
   }
-  status.textContent=(stopFaceGrouping?'⏹ 中断：':'✅ グループ化完了：')+samples.length+'顔 / '+sorted.length+'グループ（最大20枚）。まだ園児名・振り分けは変更していません。';
+  status.textContent=(stopFaceGrouping?'⏹ 中断：':'✅ グループ化完了：')+samples.length+'顔 / '+sorted.length+'グループ（最大20枚・慎重な試験分類）。まだ園児名・振り分けは変更していません。';
  }catch(e){status.textContent='⚠️ グループ化失敗：'+(e?.message||String(e)).slice(0,150);console.warn('Face grouping failed',e)}
  finally{btn.disabled=false;stop.disabled=true}
 });
