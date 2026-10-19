@@ -1420,57 +1420,99 @@ async function humanFacesFromBlob(human,blob){
  return ((await human.detect(canvas)).face||[]).map(face=>({...face,imageWidth:canvas.width,imageHeight:canvas.height}));
  }finally{bitmap.close()}
 }
-// Group faces by their embeddings, independently from reference-photo identity matching.
-// A conservative, reciprocal nearest-neighbor grouping avoids transitive chain merges.
+// Preview-only face clustering. Does not mutate photo assignments, album records, or face references.
 let stopFaceGrouping=false;
-$('#stopFaceGrouping').addEventListener('click',()=>{stopFaceGrouping=true;$('#faceGroupingStatus').textContent='中断を受け付けました。現在の写真の処理後に止まります。'});
+$('#stopFaceGrouping').addEventListener('click',()=>{stopFaceGrouping=true;$('#faceGroupingStatus').textContent='中断を受け付けました。現在の写真の解析後に止まります。'});
 $('#clusterPhotoFaces').addEventListener('click',async()=>{
  const btn=$('#clusterPhotoFaces'),stop=$('#stopFaceGrouping'),status=$('#faceGroupingStatus'),host=$('#faceGroupingResults');
  if(!files.length){status.textContent='先に写真を取り込んでください。';return}
  btn.disabled=true;stop.disabled=false;stopFaceGrouping=false;host.replaceChildren();
+ const urls=[];
+ const wait=()=>new Promise(resolve=>setTimeout(resolve,0));
+ const photoThumb=async sample=>{
+  const canvas=document.createElement('canvas');canvas.width=100;canvas.height=100;
+  const ctx=canvas.getContext('2d'),bitmap=await createImageBitmap(files[sample.index]);
+  try{
+   const scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
+   const [x,y,w,h]=sample.box;
+   const margin=Math.max(w,h)*.22;
+   const sx=Math.max(0,(x-margin)/scale),sy=Math.max(0,(y-margin)/scale);
+   const ex=Math.min(bitmap.width,(x+w+margin)/scale),ey=Math.min(bitmap.height,(y+h+margin)/scale);
+   if(ex<=sx||ey<=sy)throw Error('顔範囲が不正です');
+   const side=Math.max(ex-sx,ey-sy),dx=(100-(ex-sx)/side*100)/2,dy=(100-(ey-sy)/side*100)/2;
+   ctx.fillStyle='#eef2f7';ctx.fillRect(0,0,100,100);
+   ctx.drawImage(bitmap,sx,sy,ex-sx,ey-sy,dx,dy,(ex-sx)/side*100,(ey-sy)/side*100);
+   return canvas.toDataURL('image/jpeg',.76);
+  }finally{bitmap.close()}
+ };
  try{
-  const human=await loadHumanRecognition(),samples=[],count=Math.min(files.length,20);
+  const human=await loadHumanRecognition(),samples=[],count=files.length;
+  let failed=0,noFace=0,noDescription=0;
   for(let index=0;index<count;index++){
    if(stopFaceGrouping)break;
-   status.textContent='同じ顔を解析中 '+(index+1)+' / '+count+'枚';
+   status.textContent='顔を解析中 '+(index+1)+' / '+count+'枚（検出 '+samples.length+'顔）。中断できます。';
    try{
     const faces=await humanFacesFromBlob(human,files[index]);
-    for(const face of faces){if(Array.isArray(face.embedding)&&face.embedding.length){
-     samples.push({index,box:face.box,embedding:face.embedding});
-    }}
-   }catch(e){console.warn('Group face scan failed',index,e)}
-   await new Promise(resolve=>setTimeout(resolve,0));
+    if(!faces.length)noFace++;
+    for(const face of faces){
+     if(Array.isArray(face.embedding)&&face.embedding.length&&Array.isArray(face.box)&&face.box.length===4){
+      samples.push({index,box:face.box,embedding:face.embedding});
+     }else noDescription++;
+    }
+   }catch(e){failed++;console.warn('Group face scan failed',index,e)}
+   await wait();
   }
-  // Greedy complete-link clustering: every member must resemble each member in its group.
-  // Faces from the same photo cannot be merged as one person.
-  const threshold=0.72,groupsList=[];
-  const ranked=samples.map((sample,i)=>({sample,i})).sort((a,b)=>a.sample.index-b.sample.index);
-  for(const entry of ranked){
-   let winner=-1,winnerScore=-Infinity;
-   for(let g=0;g<groupsList.length;g++){
-    const group=groupsList[g];if(group.some(v=>v.sample.index===entry.sample.index))continue;
-    const scores=group.map(v=>faceEmbeddingSimilarity(v.sample.embedding,entry.sample.embedding));
-    const weakest=Math.min(...scores);
-    if(weakest>=threshold&&weakest>winnerScore){winner=g;winnerScore=weakest}
+  // Complete-link clustering: all faces in a group must mutually agree.
+  // Never combine faces appearing in the same original photo.
+  // This is a preview heuristic, NOT a calibrated probability or accuracy guarantee.
+  const threshold=.72,groups=[];
+  for(const sample of samples){
+   let winner=-1,best=-Infinity;
+   for(let i=0;i<groups.length;i++){
+    const group=groups[i];
+    if(group.some(v=>v.index===sample.index))continue;
+    const scores=group.map(v=>faceEmbeddingSimilarity(v.embedding,sample.embedding));
+    if(scores.some(v=>v===null))continue;
+    const min=Math.min(...scores);
+    if(min>=threshold&&min>best){best=min;winner=i}
    }
-   if(winner>=0)groupsList[winner].push(entry);
-   else groupsList.push([entry]);
+   if(winner>=0)groups[winner].push(sample);else groups.push([sample]);
   }
-  const groups=new Map(groupsList.map((group,i)=>[i,group.map(v=>v.sample)]));
-  const sorted=[...groups.values()].sort((a,b)=>b.length-a.length);
-  for(const [i,group] of sorted.entries()){
-   const card=document.createElement('div');card.style.cssText='border:1px solid #dce4ef;border-radius:12px;padding:10px';
-   const title=document.createElement('strong');title.textContent='顔グループ '+(i+1)+'：'+group.length+'個の顔（'+new Set(group.map(g=>g.index)).size+'枚の写真）';card.append(title);
-   const row=document.createElement('div');row.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-top:8px';
-   for(const sample of group.slice(0,10)){
-    const box=document.createElement('span');box.style.cssText='display:inline-block;padding:6px 8px;background:#f3f6fa;border-radius:8px;font-size:12px';
-    box.textContent='写真'+(sample.index+1)+'・顔';row.append(box);
+  groups.sort((a,b)=>b.length-a.length);
+  const intro=document.createElement('p');
+  intro.className='muted';
+  intro.textContent='試験結果のみ表示します。同じ顔でも別グループになることや、別人が混ざることがあります。園児フォルダ・写真・保存データは変更しません。';
+  host.append(intro);
+  for(let i=0;i<groups.length;i++){
+   const group=groups[i],card=document.createElement('section');
+   card.style.cssText='border:1px solid #dce4ef;border-radius:13px;padding:12px;margin-bottom:10px;background:#fff';
+   const title=document.createElement('strong');
+   title.textContent='顔グループ '+(i+1)+' ／ '+new Set(group.map(v=>v.index)).size+'枚';
+   card.append(title);
+   const row=document.createElement('div');
+   row.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-top:9px';
+   for(const sample of group){
+    const item=document.createElement('div');
+    const label=document.createElement('small');
+    label.textContent='写真 '+(sample.index+1);
+    label.style.cssText='display:block;text-align:center;color:#5c6978';
+    try{
+     const img=document.createElement('img');
+     img.src=await photoThumb(sample);img.alt='写真'+(sample.index+1)+'から切り抜いた顔';
+     img.style.cssText='width:100%;aspect-ratio:1;object-fit:cover;border-radius:9px;background:#eef2f7';
+     item.append(img);
+    }catch(e){
+     const fallback=document.createElement('span');fallback.textContent='顔画像なし';item.append(fallback);
+    }
+    item.append(label);row.append(item);
    }
    card.append(row);host.append(card);
+   if(i%5===0)await wait();
   }
-  status.textContent=(stopFaceGrouping?'⏹ 中断：':'✅ グループ化完了：')+samples.length+'顔 / '+sorted.length+'グループ（最大20枚・慎重な試験分類）。まだ園児名・振り分けは変更していません。';
+  const scanned=stopFaceGrouping?new Set(samples.map(v=>v.index)).size:count;
+  status.textContent=(stopFaceGrouping?'⏹ 途中終了：':'✅ 解析完了：')+count+'枚中'+(stopFaceGrouping?'一部':'全件')+'を処理・'+samples.length+'顔 / '+groups.length+'グループ。顔なし '+noFace+'枚、特徴抽出不可 '+noDescription+'顔、解析失敗 '+failed+'枚。結果は一時表示のみ。';
  }catch(e){status.textContent='⚠️ グループ化失敗：'+(e?.message||String(e)).slice(0,150);console.warn('Face grouping failed',e)}
- finally{btn.disabled=false;stop.disabled=true}
+ finally{btn.disabled=false;stop.disabled=true;urls.forEach(url=>URL.revokeObjectURL(url))}
 });
 $('#testRecognitionComparison').addEventListener('click',async()=>{
  const button=$('#testRecognitionComparison'),status=$('#recognitionComparisonStatus');
