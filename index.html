@@ -1045,9 +1045,9 @@ async function ensureLegacySplitShadow(draft){
   }
   const els=structuredClone(draft.designElements);
   for(const el of els)if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=photos.length))throw Error('配置の写真参照が不正です');
-  const request=indexedDB.open('omoide-new-split-albums-v1',1);
+  const request=indexedDB.open('omoide-new-split-albums-v1',2);
   db=await new Promise((resolve,reject)=>{
-   request.onupgradeneeded=()=>{for(const name of ['albums','photos','edits'])if(!request.result.objectStoreNames.contains(name))request.result.createObjectStore(name)};
+   request.onupgradeneeded=()=>{for(const name of ['albums','photos','edits','history'])if(!request.result.objectStoreNames.contains(name))request.result.createObjectStore(name)};
    request.onsuccess=()=>resolve(request.result);
    request.onerror=()=>reject(request.error||Error('分離保存領域を開けません'));
    request.onblocked=()=>reject(Error('分離保存領域が使用中です'));
@@ -1094,7 +1094,7 @@ async function openSplitProjectFromList(id){
  try{
   const req=indexedDB.open('omoide-new-split-albums-v1');
   db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('保存領域を開けません'))});
-  for(const name of ['albums','photos','edits'])if(!db.objectStoreNames.contains(name))throw Error('分離保存のデータが不足しています');
+  for(const name of ['albums','photos','edits','history'])if(!db.objectStoreNames.contains(name))throw Error('分離保存のデータが不足しています');
   const read=(store,key)=>new Promise((resolve,reject)=>{const q=db.transaction(store,'readonly').objectStore(store).get(key);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)});
   const meta=await read('albums',id);
   if(!meta||!meta.ready||meta.storage!=='split-v1'||meta.classId!==selected.id||meta.year!==activeYear())throw Error('このクラス・年度のページを確認できません');
@@ -2245,11 +2245,11 @@ $('#prepareNewSplitAlbum').addEventListener('click',async()=>{
  const button=$('#prepareNewSplitAlbum'),status=$('#newSplitAlbumPrepStatus');
  button.disabled=true;let db=null;
  try{
-  const request=indexedDB.open('omoide-new-split-albums-v1',1);
+  const request=indexedDB.open('omoide-new-split-albums-v1',2);
   db=await new Promise((resolve,reject)=>{
    request.onupgradeneeded=()=>{
     const d=request.result;
-    for(const name of ['albums','photos','edits'])if(!d.objectStoreNames.contains(name))d.createObjectStore(name);
+    for(const name of ['albums','photos','edits','history'])if(!d.objectStoreNames.contains(name))d.createObjectStore(name);
    };
    request.onsuccess=()=>resolve(request.result);
    request.onerror=()=>reject(request.error||Error('新規保存領域を開けません'));
