@@ -1387,10 +1387,10 @@ async function loadLocalFaceDetector(){
   // Download executable/model resources only. Never send photos to third-party servers.
   faceDetectorLoadStage='JavaScript読み込み';
   let vision;
-  try{vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/+esm')}
+  try{vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/vision_bundle.mjs')}
   catch(firstError){
    console.warn('Primary MediaPipe CDN unavailable',firstError);
-   vision=await import('https://esm.sh/@mediapipe/tasks-vision@0.10.22');
+   vision=await import('https://unpkg.com/@mediapipe/tasks-vision@0.10.22/vision_bundle.mjs');
   }
   faceDetectorLoadStage='WASM読み込み';
   let fileset;
