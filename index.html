@@ -1357,6 +1357,10 @@ async function getFaceReferenceBlob(kid){
  return saved?.blob instanceof Blob?saved.blob:null;
 }
 async function faceReferenceSave(key,photo){const db=await openFaceReferenceDB();try{await new Promise((resolve,reject)=>{const tx=db.transaction('references','readwrite');tx.objectStore('references').put({blob:photo,createdAt:Date.now()},key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('写真を保存できません'));tx.onabort=()=>reject(tx.error||Error('保存を中断しました'))})}finally{db.close()}}
+// Save only the selected face rectangle; the registered source photo stays untouched.
+function faceSelectionKey(childId){return 'omoide-face-selection-v1:'+activeYear()+':'+selected.id+':'+childId}
+function readFaceSelection(childId){try{return JSON.parse(localStorage.getItem(faceSelectionKey(childId))||'null')}catch{return null}}
+function saveFaceSelection(childId,box,source){localStorage.setItem(faceSelectionKey(childId),JSON.stringify({box,source}))}
 let faceReferenceRenderId=0;
 async function renderFaceReferencePanel(){
  const host=$('#faceReferenceList');if(!host)return;
@@ -1390,8 +1394,25 @@ async function renderFaceReferencePanel(){
     const canvas=document.createElement('canvas');const scale=Math.min(1,600/Math.max(bitmap.width,bitmap.height));canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.style.cssText='display:block;width:100%;height:auto';
     const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);ctx.strokeStyle='#00c98d';ctx.fillStyle='#00c98d';ctx.lineWidth=Math.max(2,canvas.width/130);ctx.font='bold '+Math.max(12,canvas.width/18)+'px sans-serif';
     for(const [i,face] of faces.entries()){const box=face.boundingBox;if(!box)continue;const x=box.originX*scale,y=box.originY*scale,w=box.width*scale,h=box.height*scale;ctx.strokeRect(x,y,w,h);ctx.fillText(String(i+1),Math.max(2,x+4),Math.max(16,y+20))}
-    preview.append(canvas);row.append(preview);
-    status.textContent=faces.length===1?'✅ 顔を1人検出':faces.length===0?'⚠️ 顔を検出できません':'⚠️ 顔を'+faces.length+'人検出（緑の枠を確認してください）';
+    preview.append(canvas);
+    if(faces.length){
+     const choices=document.createElement('div');choices.style.cssText='display:flex;gap:5px;flex-wrap:wrap;padding:7px';
+     const source=kid.facePhoto?'admin:'+kid.facePhoto.length+':'+kid.facePhoto.slice(-30):'custom:'+blob.size+':'+blob.type;
+     const saved=readFaceSelection(kid.id);
+     for(const [i,face] of faces.entries()){
+      if(!face.boundingBox)continue;
+      const box=face.boundingBox;
+      const normalized={x:box.originX/bitmap.width,y:box.originY/bitmap.height,w:box.width/bitmap.width,h:box.height/bitmap.height};
+      const pick=document.createElement('button');pick.type='button';pick.className='secondary';pick.style.cssText='font-size:12px;padding:5px 8px';
+      const active=saved?.source===source&&saved.box&&Math.abs(saved.box.x-normalized.x)<0.04&&Math.abs(saved.box.y-normalized.y)<0.04;
+      pick.textContent=(active?'✅ ':'')+'顔'+(i+1)+'を基準にする';
+      pick.onclick=()=>{try{saveFaceSelection(kid.id,normalized,source);choices.querySelectorAll('button').forEach(b=>b.textContent=b.textContent.replace('✅ ',''));pick.textContent='✅ 顔'+(i+1)+'を基準にする';status.textContent='✅ 顔'+(i+1)+'を基準に選択しました（写真は変更なし）'}catch(e){status.textContent='⚠️ 顔の選択を保存できません'}};
+      choices.append(pick);
+     }
+     preview.append(choices);
+    }
+    row.append(preview);
+    status.textContent=faces.length===1?'✅ 顔を1人検出':faces.length===0?'⚠️ 顔を検出できません':'⚠️ 顔を'+faces.length+'人検出（基準にする顔を選んでください）';
    }catch(e){status.textContent='⚠️ 確認できません：'+(e?.message||String(e)).slice(0,75)}
    finally{bitmap?.close();check.disabled=false}
   };
