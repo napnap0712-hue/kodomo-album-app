@@ -1085,9 +1085,7 @@ async function renderSplitProjectCards(){
     const label=document.createElement('span');label.className='projectCardName';label.textContent=available.querySelector('.projectCardName')?.textContent||String(Number(btn.dataset.projectSlot)+1);
     btn.append(preview,label);btn.title=a.title||'分離保存ページ';
     btn.dataset.splitAlbumId=a.id;btn.addEventListener('click',()=>{if(projectDeleteMode){const key='split:'+a.id;projectDeleteSelection.has(key)?projectDeleteSelection.delete(key):projectDeleteSelection.add(key);refreshProjectDeleteUI();return}openSplitProjectFromList(a.id)});
-    const trashButton=document.createElement('button');trashButton.type='button';trashButton.className='secondary';trashButton.textContent='🗑';trashButton.title='ゴミ箱へ移動';trashButton.style.cssText='position:absolute;right:4px;bottom:4px;z-index:2;padding:5px;min-height:28px';
-    trashButton.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('「'+(a.title||'無題のアルバム')+'」をゴミ箱へ移動しますか？写真や保存履歴は消えません。'))return;await setSplitTrashState(a.id,true);await renderProjects()});
-    const wrapper=document.createElement('div');wrapper.style.cssText='position:relative;min-width:0';btn.style.width='100%';wrapper.append(btn,trashButton);if(projectDeleteMode)trashButton.hidden=true;
+    const wrapper=document.createElement('div');wrapper.style.cssText='position:relative;min-width:0';btn.style.width='100%';wrapper.append(btn);
     available.replaceWith(wrapper);
     return;
    }
@@ -1096,8 +1094,7 @@ async function renderSplitProjectCards(){
    photoPreviews.push({albumId:a.id,preview});
    const label=document.createElement('span');label.className='projectCardName';label.textContent=a.title||('分離ページ '+(i+1));
    btn.append(preview,label);btn.dataset.splitAlbumId=a.id;btn.addEventListener('click',()=>{if(projectDeleteMode){const key='split:'+a.id;projectDeleteSelection.has(key)?projectDeleteSelection.delete(key):projectDeleteSelection.add(key);refreshProjectDeleteUI();return}openSplitProjectFromList(a.id)});
-   const trashButton=document.createElement('button');trashButton.type='button';trashButton.className='secondary';trashButton.textContent='🗑 ゴミ箱へ';trashButton.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('「'+(a.title||'無題のアルバム')+'」をゴミ箱へ移動しますか？'))return;await setSplitTrashState(a.id,true);await renderProjects()});
-   const wrapper=document.createElement('div');wrapper.style.cssText='display:grid;gap:5px';wrapper.append(btn,trashButton);if(projectDeleteMode)trashButton.hidden=true;grid.append(wrapper);
+   const wrapper=document.createElement('div');wrapper.style.cssText='display:grid;gap:5px';wrapper.append(btn);grid.append(wrapper);
   });
   // Build the same full-spread thumbnail as legacy drafts, reading split data only.
   if(db.objectStoreNames.contains('photos')&&db.objectStoreNames.contains('edits')){
