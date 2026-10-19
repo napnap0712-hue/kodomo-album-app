@@ -3036,7 +3036,34 @@ document.getElementById('viewSplitHistory').addEventListener('click',async()=>{
      preview.replaceChildren(img,note);
     }catch(err){preview.textContent='⚠️ 履歴を表示できません：'+(err?.message||String(err))}
    });
-   item.append(previewButton,preview);entries.appendChild(item)});
+   const restoreButton=document.createElement('button');restoreButton.type='button';restoreButton.className='secondary';restoreButton.textContent='↩ この履歴から復元';restoreButton.style.margin='8px 0 0 8px';
+   restoreButton.addEventListener('click',()=>{
+    try{
+     if(newAlbumSplitSaveBusy||splitUnsavedRevision)throw Error('未保存の変更があります。保存完了後にもう一度操作してください');
+     if(row.albumId!==newAlbumSplitSavedId||row.meta?.id!==newAlbumSplitSavedId||!Array.isArray(row.photos)||!Array.isArray(row.edits?.designElements)||row.photos.length!==row.meta.photoCount||row.edits.photoCount!==row.photos.length)throw Error('履歴データを照合できません');
+     if(row.photos.some(p=>!(p?.blob instanceof Blob)||!p.blob.size)||row.edits.designElements.some(e=>e.type==='photo'&&(!Number.isInteger(e.fileIndex)||e.fileIndex<0||e.fileIndex>=row.photos.length)))throw Error('履歴の写真または配置が不完全です');
+     if(!confirm('この履歴の写真・配置・文字を編集画面に読み込みますか？\\n現在の保存データはまだ上書きしません。内容を確認して「💾 保存」で確定できます。'))return;
+     files=row.photos.map(p=>p.blob);
+     designElements=structuredClone(row.edits.designElements);
+     photoAssignments=Array.isArray(row.edits.photoAssignments)?structuredClone(row.edits.photoAssignments):files.map(()=>[]);
+     $('#albumTitle').value=row.meta.title||'';
+     $('#pageBackground').value=row.edits.background||'#ffffff';
+     $('#pageCaption').value=row.edits.caption||'';
+     $('#layoutMode').value=row.edits.layout||'spread';
+     spreadIndex=Number.isInteger(row.edits.spreadIndex)?row.edits.spreadIndex:0;
+     photoGapPercent=Number.isFinite(Number(row.edits.photoGap))?Number(row.edits.photoGap):2;
+     $('#photoGap').value=photoGapPercent;
+     $('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';
+     selectedElementId=null;selectedGroupIds.clear();editorPhotoIntegrityOk=true;
+     resetEditHistory();refreshEditor();markEditorUnsaved();
+     // Explicit confirmation is required to commit restored content; avoid autosaving immediately.
+     clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;
+     document.getElementById('splitHistoryPanel').hidden=true;
+     $('#editorStatus').textContent='↩ 履歴を編集画面に読み込みました。確認後に「💾 保存」を押して復元を確定してください。元の保存データは未変更です。';
+     setEditorSaveState('● 履歴復元・未確定');
+    }catch(error){alert('履歴の復元を開始できません：'+(error?.message||String(error)))}
+   });
+   item.append(previewButton,restoreButton,preview);entries.appendChild(item)});
  }catch(e){entries.textContent='履歴を読み込めませんでした：'+(e?.message||String(e))}finally{db?.close()}
 });
 document.getElementById('closeSplitHistory').addEventListener('click',()=>{document.getElementById('splitHistoryPanel').hidden=true});
