@@ -90,7 +90,7 @@ if(start)start.addEventListener('click',async()=>{
 
     embeddings.push({vector:vec,group:item.group,label:item.group+'-'+(item.group==='A'?index+1:index-first.length+1)});
    }finally{bitmap.close()}
-   }catch(e){failures.push(index+1);console.warn('AuraFace batch comparison sample failed',index,e)}
+   }catch(e){failures.push({number:index+1,reason:String(e?.message||e).slice(0,120)});console.warn('AuraFace batch comparison sample failed',index,e)}
    await new Promise(resolve=>setTimeout(resolve,0));
   }
   if(cancelled){status.textContent='⏹ 中断しました。結果・写真は保存していません。';return}
@@ -107,7 +107,7 @@ if(start)start.addEventListener('click',async()=>{
   for(const item of different.sort((a,b)=>b.score-a.score).slice(0,5)){
    const p=document.createElement('p');p.className='muted';p.textContent=item.x+' と '+item.y+'：'+item.score.toFixed(4);results.append(p);
   }
-  if(failures.length){const p=document.createElement('p');p.className='muted';p.textContent='解析失敗：'+failures.map(n=>n+'枚目').join('、');results.append(p)}
+  if(failures.length){const p=document.createElement('p');p.className='muted';p.textContent='解析失敗：'+failures.map(f=>f.number+'枚目：'+f.reason).join(' ／ ');results.append(p)}
  }catch(e){console.warn('AuraFace batch comparison',e);status.textContent='⚠️ 一括比較失敗：'+String(e?.message||e).slice(0,180)}
  finally{try{await session?.release()}catch{}start.disabled=false;cancel.disabled=true}
 });
