@@ -1417,7 +1417,7 @@ async function humanFacesFromBlob(human,blob){
  const resize=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
  canvas.width=Math.max(1,Math.round(bitmap.width*resize));canvas.height=Math.max(1,Math.round(bitmap.height*resize));
  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
- return (await human.detect(canvas)).face||[];
+ return ((await human.detect(canvas)).face||[]).map(face=>({...face,imageWidth:canvas.width,imageHeight:canvas.height}));
  }finally{bitmap.close()}
 }
 $('#testRecognitionComparison').addEventListener('click',async()=>{
