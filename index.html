@@ -959,7 +959,7 @@ async function renderSplitProjectCards(){
   db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
   if(!db.objectStoreNames.contains('albums'))return;
   const rows=await new Promise((resolve,reject)=>{const q=db.transaction('albums','readonly').objectStore('albums').getAll();q.onsuccess=()=>resolve(q.result||[]);q.onerror=()=>reject(q.error)});
-  const visible=rows.filter(a=>a&&a.storage==='split-v1'&&a.ready&&a.classId===selected.id&&a.year===activeYear()&&a.photoCount>0).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const visible=rows.filter(a=>a&&a.storage==='split-v1'&&a.ready&&!a.migrationSourceId&&a.classId===selected.id&&a.year===activeYear()&&a.photoCount>0).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   if(!visible.length)return;
   // Use only truly unoccupied legacy slots, without writing split IDs into legacy mappings.
   const legacySlots=readProjectSlots(),positions=readSplitPagePositions(),taken=new Set();
@@ -1009,6 +1009,66 @@ async function renderSplitProjectCards(){
   writeSplitPagePositions(positions);
   host.hidden=!grid.children.length;
  }finally{db?.close()}
+}
+// Migration stage 1: verified shadow copy only. The legacy draft remains authoritative.
+async function ensureLegacySplitShadow(draft){
+ if(!draft||!draft.id||!Array.isArray(draft.photos)||!draft.photos.length||!Array.isArray(draft.designElements))return false;
+ const id='legacy-shadow-'+draft.id;
+ let db=null;
+ try{
+  const photos=[];
+  for(let i=0;i<draft.photos.length;i++){
+   const source=draft.photos[i],blob=source?.blob;
+   if(!(blob instanceof Blob)||!blob.size)throw Error('元写真の実データがありません');
+   const bytes=await blob.arrayBuffer();
+   if(bytes.byteLength!==blob.size)throw Error('元写真の読み取りサイズが一致しません');
+   photos.push({blob:new Blob([bytes],{type:blob.type||source.type||'image/jpeg'}),name:source.name||('photo-'+i)});
+  }
+  const els=structuredClone(draft.designElements);
+  for(const el of els)if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=photos.length))throw Error('配置の写真参照が不正です');
+  const request=indexedDB.open('omoide-new-split-albums-v1',1);
+  db=await new Promise((resolve,reject)=>{
+   request.onupgradeneeded=()=>{for(const name of ['albums','photos','edits'])if(!request.result.objectStoreNames.contains(name))request.result.createObjectStore(name)};
+   request.onsuccess=()=>resolve(request.result);
+   request.onerror=()=>reject(request.error||Error('分離保存領域を開けません'));
+   request.onblocked=()=>reject(Error('分離保存領域が使用中です'));
+  });
+  const read=(store,key)=>new Promise((resolve,reject)=>{
+   const q=db.transaction(store,'readonly').objectStore(store).get(key);
+   q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error||Error('照合の読み込みに失敗'));
+  });
+  const existing=await read('albums',id);
+  // Do not overwrite a shadow copy that might already contain unrelated or newer data.
+  if(existing){
+   if(existing.migrationSourceId!==draft.id||existing.sourceUpdatedAt!==draft.updatedAt)return false;
+  }else{
+   const meta={id,title:draft.title||'無題のアルバム',photoCount:photos.length,storage:'split-v1',ready:false,migrationSourceId:draft.id,sourceUpdatedAt:draft.updatedAt,classId:draft.classId,year:draft.year??baseYear(),updatedAt:Date.now()};
+   const edits={albumId:id,photoCount:photos.length,designElements:els,background:draft.background||'#ffffff',layout:draft.layout||'spread',spreadIndex:draft.spreadIndex||0,caption:draft.caption||'',photoGap:draft.photoGap,photoAssignments:structuredClone(draft.photoAssignments||[])};
+   await new Promise((resolve,reject)=>{
+    const tx=db.transaction(['albums','photos','edits'],'readwrite'),store=tx.objectStore('photos');
+    photos.forEach((photo,i)=>store.put(photo,id+':photo-'+i));
+    tx.objectStore('edits').put(edits,id);tx.objectStore('albums').put(meta,id);
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('コピー保存に失敗'));tx.onabort=()=>reject(tx.error||Error('コピー保存が中断'));
+   });
+  }
+  const copied=await read('albums',id),editCopy=await read('edits',id);
+  if(!copied||copied.migrationSourceId!==draft.id||copied.sourceUpdatedAt!==draft.updatedAt||copied.photoCount!==photos.length||!editCopy||editCopy.photoCount!==photos.length||JSON.stringify(editCopy.designElements)!==JSON.stringify(els))throw Error('編集情報が一致しません');
+  for(let i=0;i<photos.length;i++){
+   const p=await read('photos',id+':photo-'+i);
+   if(!(p?.blob instanceof Blob)||p.blob.size!==photos[i].blob.size)throw Error('写真'+(i+1)+'のサイズが一致しません');
+   const a=new Uint8Array(await p.blob.arrayBuffer()),b=new Uint8Array(await photos[i].blob.arrayBuffer());
+   if(a.length!==b.length||a.some((value,j)=>value!==b[j]))throw Error('写真'+(i+1)+'の内容が一致しません');
+  }
+  if(!copied.ready){
+   await new Promise((resolve,reject)=>{
+    const tx=db.transaction('albums','readwrite');
+    tx.objectStore('albums').put({...copied,ready:true},id);
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('照合結果の記録に失敗'));tx.onabort=()=>reject(tx.error||Error('照合結果の記録が中断'));
+   });
+  }
+  return true;
+ }catch(e){console.warn('旧アルバムの分離コピーを保留（元データは維持）',e);return false}
+ finally{db?.close()}
 }
 async function openSplitProjectFromList(id){
  let db=null;
@@ -1610,7 +1670,7 @@ $('#nextSpread').addEventListener('click',()=>{spreadIndex=Math.min(Math.max(0,M
 let editorPhotoIntegrityOk=true;function savedPhotoDiagnostic(file){return {name:(file.name||'').slice(-12),type:file.type||'unknown',bytes:file.size||0}};
 async function inspectSavedPhotoBytes(file){try{if(typeof file.slice!=='function'||typeof file.arrayBuffer!=='function')return '保存形式がBlobではありません';const head=new Uint8Array(await file.slice(0,24).arrayBuffer());const jpg=head[0]===255&&head[1]===216&&head[2]===255;const png=head[0]===137&&head[1]===80&&head[2]===78&&head[3]===71;const webp=String.fromCharCode(...head.slice(0,4))==='RIFF'&&String.fromCharCode(...head.slice(8,12))==='WEBP';return jpg?'JPEGヘッダー正常':png?'PNGヘッダー':webp?'WebPヘッダー':'画像ヘッダー不明 ('+Array.from(head.slice(0,6)).map(v=>v.toString(16).padStart(2,'0')).join(' ')+')'}catch(e){return 'ファイル読み取り失敗 ('+(e&&e.name?e.name:'unknown')+')'}}
 async function verifySavedPhotoDisplay(file){async function check(){return new Promise(resolve=>{const img=new Image(),url=fileUrl(file);let done=false;const timeout=setTimeout(()=>finish(false),8000);function finish(ok){if(done)return;done=true;clearTimeout(timeout);img.onload=null;img.onerror=null;resolve(ok)}img.onload=()=>finish(img.naturalWidth>0);img.onerror=()=>finish(false);img.src=url;})}if(await check())return true;releasePhotoUrl(file);if(await check())return true;return recoverPhotoWithDataUrl(file)}
-async function loadDraft(id){newAlbumSplitSelected=false;newAlbumSplitSavedId=null;$('#saveDraft').textContent='下書きを保存';try{editorPhotoIntegrityOk=false;const item=(await getAllDrafts()).find(draft=>draft.id===id&&draftInYear(draft));if(!item)return;editingId=item.id;editRecoveryBaseline=item.updatedAt;selected=classes.find(c=>c.id===item.classId)||selected;$('#albumTitle').value=item.title||'';$('#pageBackground').value=item.background||'#ffffff';$('#pageCaption').value=item.caption||'';$('#layoutMode').value=item.layout||'spread';syncPageSettingsChoices();photoGapPercent=Number.isFinite(Number(item.photoGap))?Math.max(0,Math.min(15,Number(item.photoGap))):2;$('#photoGap').value=photoGapPercent;$('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';document.querySelectorAll('[data-gap]').forEach(b=>b.classList.toggle('active',Number(b.dataset.gap)===photoGapPercent));lastArrangeMode=null;autoArrangeStep=-1;freeLayoutBase=null;$('#photoFit').value='cover';if(!Array.isArray(item.photos)||!item.photos.length)throw new Error('保存データに写真がありません');files=item.photos.map((photo,index)=>{if(!photo.blob||typeof photo.blob.size!=='number'||photo.blob.size===0)throw new Error('写真'+(index+1)+'の保存データが空です。元の編集画面から再保存してください');const restored=photo.blob;const name=photo.name||('photo-'+(index+1)+'.jpg');const type=restored.type||photo.type||(/\.hei[cf]$/i.test(name)?'image/heic':'image/jpeg');return restored instanceof Blob?restored:new File([restored],name,{type,lastModified:Date.now()});});photoAssignments=Array.isArray(item.photoAssignments)?item.photoAssignments.map(v=>Array.isArray(v)?v:[]):files.map(()=>[]);activePhotoFolder='all';spreadIndex=item.spreadIndex||0;selectedGroupIds.clear();multiSelectMode=false;designElements=Array.isArray(item.designElements)?item.designElements:files.map((file,index)=>({id:elementId(),type:'photo',fileIndex:index,x:(index%2)*48+3,y:15,w:44,h:58,opacity:100,page:Math.floor(index/2),fit:'cover'}));designElements.forEach((el,index)=>{if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=files.length)){const validPhotoIndexes=designElements.slice(0,index).filter(item=>item.type==='photo').length;el.fileIndex=Math.min(validPhotoIndexes,files.length-1);}});selectedElementId=null;refreshEditor();clearTimeout(editorAutoSaveTimer);editorSaveRevision++;setEditorSaveState('◌ 写真を確認中…');show('editor');let checks=[];for(const file of files){checks.push(await verifySavedPhotoDisplay(file))}if(checks.some(ok=>!ok)){await new Promise(resolve=>setTimeout(resolve,450));for(let i=0;i<files.length;i++){if(!checks[i])checks[i]=await verifySavedPhotoDisplay(files[i])}}renderPhotoStrip();renderSpread(files);editorPhotoIntegrityOk=checks.every(Boolean);if(editorPhotoIntegrityOk){const recovered=restoreEditRecovery(item);if(recovered){renderSpread(files);setEditorSaveState('📝 編集情報を復元しました（未保存）');$('#editorStatus').textContent='一時保存から復元しました。下書きを保存して確定してね。';}else{setEditorSaveState('✓ 保存済み');$('#editorStatus').textContent='保存済みの下書きを開きました。'}}else{setEditorSaveState('⚠ 写真を読み込めません');const bad=checks.findIndex(ok=>!ok);const byteInfo=bad>=0?await inspectSavedPhotoBytes(files[bad]):'';$('#editorStatus').textContent='保存済み写真 '+checks.filter(Boolean).length+'/'+checks.length+'枚。'+(bad>=0?'最初の未表示: '+(bad+1)+'番、'+files[bad].type+'、'+Math.round(files[bad].size/1024)+'KB、'+byteInfo+'。':'')+'保存・自動保存は停止中。元データは変更していません。';}}catch(error){console.error('下書きの写真復元に失敗しました',error);alert('下書きを開けませんでした。'+(error&&error.message?'\n'+error.message:''));}}
+async function loadDraft(id){newAlbumSplitSelected=false;newAlbumSplitSavedId=null;$('#saveDraft').textContent='下書きを保存';try{editorPhotoIntegrityOk=false;const item=(await getAllDrafts()).find(draft=>draft.id===id&&draftInYear(draft));if(!item)return;/* Best-effort copy; never block or replace legacy editing. */ ensureLegacySplitShadow(item).catch(e=>console.warn('Copy deferred',e));editingId=item.id;editRecoveryBaseline=item.updatedAt;selected=classes.find(c=>c.id===item.classId)||selected;$('#albumTitle').value=item.title||'';$('#pageBackground').value=item.background||'#ffffff';$('#pageCaption').value=item.caption||'';$('#layoutMode').value=item.layout||'spread';syncPageSettingsChoices();photoGapPercent=Number.isFinite(Number(item.photoGap))?Math.max(0,Math.min(15,Number(item.photoGap))):2;$('#photoGap').value=photoGapPercent;$('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';document.querySelectorAll('[data-gap]').forEach(b=>b.classList.toggle('active',Number(b.dataset.gap)===photoGapPercent));lastArrangeMode=null;autoArrangeStep=-1;freeLayoutBase=null;$('#photoFit').value='cover';if(!Array.isArray(item.photos)||!item.photos.length)throw new Error('保存データに写真がありません');files=item.photos.map((photo,index)=>{if(!photo.blob||typeof photo.blob.size!=='number'||photo.blob.size===0)throw new Error('写真'+(index+1)+'の保存データが空です。元の編集画面から再保存してください');const restored=photo.blob;const name=photo.name||('photo-'+(index+1)+'.jpg');const type=restored.type||photo.type||(/\.hei[cf]$/i.test(name)?'image/heic':'image/jpeg');return restored instanceof Blob?restored:new File([restored],name,{type,lastModified:Date.now()});});photoAssignments=Array.isArray(item.photoAssignments)?item.photoAssignments.map(v=>Array.isArray(v)?v:[]):files.map(()=>[]);activePhotoFolder='all';spreadIndex=item.spreadIndex||0;selectedGroupIds.clear();multiSelectMode=false;designElements=Array.isArray(item.designElements)?item.designElements:files.map((file,index)=>({id:elementId(),type:'photo',fileIndex:index,x:(index%2)*48+3,y:15,w:44,h:58,opacity:100,page:Math.floor(index/2),fit:'cover'}));designElements.forEach((el,index)=>{if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=files.length)){const validPhotoIndexes=designElements.slice(0,index).filter(item=>item.type==='photo').length;el.fileIndex=Math.min(validPhotoIndexes,files.length-1);}});selectedElementId=null;refreshEditor();clearTimeout(editorAutoSaveTimer);editorSaveRevision++;setEditorSaveState('◌ 写真を確認中…');show('editor');let checks=[];for(const file of files){checks.push(await verifySavedPhotoDisplay(file))}if(checks.some(ok=>!ok)){await new Promise(resolve=>setTimeout(resolve,450));for(let i=0;i<files.length;i++){if(!checks[i])checks[i]=await verifySavedPhotoDisplay(files[i])}}renderPhotoStrip();renderSpread(files);editorPhotoIntegrityOk=checks.every(Boolean);if(editorPhotoIntegrityOk){const recovered=restoreEditRecovery(item);if(recovered){renderSpread(files);setEditorSaveState('📝 編集情報を復元しました（未保存）');$('#editorStatus').textContent='一時保存から復元しました。下書きを保存して確定してね。';}else{setEditorSaveState('✓ 保存済み');$('#editorStatus').textContent='保存済みの下書きを開きました。'}}else{setEditorSaveState('⚠ 写真を読み込めません');const bad=checks.findIndex(ok=>!ok);const byteInfo=bad>=0?await inspectSavedPhotoBytes(files[bad]):'';$('#editorStatus').textContent='保存済み写真 '+checks.filter(Boolean).length+'/'+checks.length+'枚。'+(bad>=0?'最初の未表示: '+(bad+1)+'番、'+files[bad].type+'、'+Math.round(files[bad].size/1024)+'KB、'+byteInfo+'。':'')+'保存・自動保存は停止中。元データは変更していません。';}}catch(error){console.error('下書きの写真復元に失敗しました',error);alert('下書きを開けませんでした。'+(error&&error.message?'\n'+error.message:''));}}
 let editorSaveRevision=0,editorAutoSaveTimer=null,editorSaveInProgress=false;
 let editRecoveryBaseline=null,editRecoveryTimer=null;
 const EDIT_RECOVERY_KEY='omoide-edit-recovery-v1';
