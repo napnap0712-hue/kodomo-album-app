@@ -769,7 +769,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
-<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真をそのまま利用します。未登録の場合のみここから写真を追加できます。まだ自動判定は行いません。</p><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
+<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="photoAssignGrid" class="assignGrid"></div>
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
@@ -1375,7 +1375,21 @@ async function renderFaceReferencePanel(){
   const key=faceReferenceKey(kid.id);
   input.addEventListener('change',async()=>{const photo=input.files?.[0];if(!photo)return; if(!photo.type.startsWith('image/')){alert('画像ファイルを選んでください');return}label.style.pointerEvents='none';status.textContent='保存中…';try{await faceReferenceSave(key,photo);status.textContent='✅ 個別登録済み';if(!kid.facePhoto){const img=document.createElement('img');const url=URL.createObjectURL(photo);img.src=url;img.alt=kid.name+'さんの登録写真';img.style.cssText='width:100%;height:100%;object-fit:cover';img.onload=()=>URL.revokeObjectURL(url);img.onerror=()=>{URL.revokeObjectURL(url);photoPreview.textContent='⚠️'};photoPreview.replaceChildren(img)}$('#faceReferenceStatus').textContent=kid.name+'さんの基準写真を端末内に保存しました。'}catch(e){status.textContent='⚠️ 保存失敗';alert(e?.message||String(e))}finally{label.style.pointerEvents='';input.value=''}});
   if(kid.facePhoto){label.hidden=true;const img=document.createElement('img');img.src=kid.facePhoto;img.alt=kid.name+'さんの登録写真';img.style.cssText='width:100%;height:100%;object-fit:cover';img.onerror=()=>photoPreview.replaceChildren(document.createTextNode('⚠️'));photoPreview.replaceChildren(img)}
-  row.append(identity,status,label);host.append(row);
+  const check=document.createElement('button');check.type='button';check.className='secondary';check.style.cssText='padding:7px 9px;font-size:12px';check.textContent='顔をチェック';
+  check.onclick=async()=>{
+   check.disabled=true;let bitmap=null;
+   try{
+    status.textContent='顔を確認中…';
+    const blob=await getFaceReferenceBlob(kid);
+    if(!blob){status.textContent='⚠️ 基準写真がありません';return}
+    const detector=await loadLocalFaceDetector();
+    bitmap=await createImageBitmap(blob);
+    const faces=detector.detect(bitmap).detections||[];
+    status.textContent=faces.length===1?'✅ 顔を1人検出':faces.length===0?'⚠️ 顔を検出できません':'⚠️ 顔を'+faces.length+'人検出（基準写真は1人がおすすめ）';
+   }catch(e){status.textContent='⚠️ 確認できません：'+(e?.message||String(e)).slice(0,75)}
+   finally{bitmap?.close();check.disabled=false}
+  };
+  row.append(identity,status,label,check);host.append(row);
   try{const saved=await faceReferenceRead(key);if(token!==faceReferenceRenderId)return;status.textContent=kid.facePhoto?'✅ 管理画面の顔写真を使用':saved?.blob instanceof Blob?'✅ 個別登録済み':'未登録';if(!kid.facePhoto&&saved?.blob instanceof Blob){const img=document.createElement('img');const url=URL.createObjectURL(saved.blob);img.src=url;img.alt=kid.name+'さんの登録写真';img.style.cssText='width:100%;height:100%;object-fit:cover';img.onload=()=>URL.revokeObjectURL(url);img.onerror=()=>{URL.revokeObjectURL(url);photoPreview.textContent='⚠️'};photoPreview.replaceChildren(img)}}catch(e){status.textContent='⚠️ 読み取り不可'}
  }
 }
