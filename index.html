@@ -769,7 +769,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
-<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="testRecognitionComparison" class="secondary" type="button">🔍 最初の写真で顔照合を試す</button><span id="recognitionComparisonStatus" class="muted" role="status">候補のみ表示・振り分けは変更しません。</span></div><div id="recognitionComparisonResults" style="margin:5px 0 10px"></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
+<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="testRecognitionComparison" class="secondary" type="button">🔍 最初の写真で顔照合を試す</button><span id="recognitionComparisonStatus" class="muted" role="status">候補のみ表示・振り分けは変更しません。</span></div><div id="recognitionComparisonResults" style="margin:5px 0 10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button id="testRecognitionBatch" class="secondary" type="button">📸 5枚まとめて顔照合</button><span id="recognitionBatchStatus" class="muted" role="status">候補のみ表示・自動確定なし。</span></div><div id="recognitionBatchResults"></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="photoAssignGrid" class="assignGrid"></div>
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
@@ -1487,6 +1487,62 @@ $('#testRecognitionComparison').addEventListener('click',async()=>{
   });
   status.textContent='✅ 写真1枚で候補を表示（基準顔 '+references.length+'人・検出顔 '+detected.length+'人）。比較値は正解率ではありません。振り分け未変更。';
  }catch(e){status.textContent='⚠️ 照合できません：'+(e?.message||String(e)).slice(0,130);console.warn('Face comparison failed',e)}
+ finally{button.disabled=false}
+});
+// Batch candidate preview never changes photoAssignments until the teacher confirms a person.
+$('#testRecognitionBatch').addEventListener('click',async()=>{
+ const button=$('#testRecognitionBatch'),status=$('#recognitionBatchStatus'),host=$('#recognitionBatchResults');
+ const kids=getChildren(selected.id);
+ if(!files.length){status.textContent='先に写真を取り込んでください。';return}
+ button.disabled=true;host.replaceChildren();
+ try{
+  status.textContent='登録済みの基準顔を準備中…';
+  const human=await loadHumanRecognition(),refs=[];
+  for(const kid of kids){
+   try{
+    const blob=await getFaceReferenceBlob(kid);if(!blob)continue;
+    const faces=await humanFacesFromBlob(human,blob);
+    const source=kid.facePhoto?'admin:'+kid.facePhoto.length+':'+kid.facePhoto.slice(-30):'custom:'+blob.size+':'+blob.type;
+    const saved=readFaceSelection(kid.id);
+    let chosen=faces[0];
+    if(saved?.source===source&&saved.box&&faces.length>1){
+     const center={x:saved.box.x+saved.box.w/2,y:saved.box.y+saved.box.h/2};
+     chosen=faces.reduce((best,face)=>{const distance=f=>{const b=f.box;if(!b)return Infinity;return Math.hypot((b[0]+b[2]/2)/f.imageWidth-center.x,(b[1]+b[3]/2)/f.imageHeight-center.y)};return distance(face)<distance(best)?face:best},chosen);
+    }
+    if(chosen?.embedding?.length)refs.push({id:kid.id,name:kid.name,embedding:chosen.embedding});
+   }catch(e){console.warn('Batch reference skipped',kid.name,e)}
+  }
+  if(!refs.length){status.textContent='⚠️ 比較できる基準写真がありません。';return}
+  // Limit initial check to 5 photos so it stays responsive on iPhone as well.
+  const count=Math.min(files.length,5);
+  for(let index=0;index<count;index++){
+   status.textContent='顔識別中 '+(index+1)+' / '+count+'枚（振り分け未変更）';
+   const faces=await humanFacesFromBlob(human,files[index]);
+   const group=document.createElement('div');group.style.cssText='border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin:8px 0';
+   const title=document.createElement('strong');title.textContent='写真'+(index+1)+'：'+files[index].name+'（顔'+faces.length+'人）';group.append(title);
+   for(let faceIndex=0;faceIndex<faces.length;faceIndex++){
+    const face=faces[faceIndex],rated=refs.map(ref=>({...ref,score:faceEmbeddingSimilarity(face.embedding,ref.embedding)})).filter(ref=>ref.score!==null).sort((a,b)=>b.score-a.score);
+    const line=document.createElement('div');line.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:9px 0';
+    const note=document.createElement('span');note.textContent='顔'+(faceIndex+1)+'：'+(rated.length?'候補 '+rated.slice(0,2).map(r=>r.name+' ('+r.score.toFixed(3)+')').join(' / '):'特徴データなし');
+    const choose=document.createElement('select');choose.setAttribute('aria-label','写真'+(index+1)+' 顔'+(faceIndex+1)+'の園児');
+    const empty=document.createElement('option');empty.value='';empty.textContent='未確認・保留';choose.append(empty);
+    kids.forEach(k=>{const opt=document.createElement('option');opt.value=k.id;opt.textContent=k.name;choose.append(opt)});
+    // Intentionally do not preselect guessed identities for batch approval.
+    const confirm=document.createElement('button');confirm.type='button';confirm.className='secondary';confirm.style.cssText='padding:6px 8px;font-size:12px';confirm.textContent='この園児で確定';
+    const feedback=document.createElement('span');feedback.style.fontSize='12px';
+    confirm.onclick=()=>{
+     if(!choose.value){feedback.textContent='園児を選択してね';return}
+     photoAssignments[index]=[...new Set([...(photoAssignments[index]||[]),choose.value])];
+     renderPhotoAssignmentPage();
+     feedback.textContent='✅ '+(kids.find(k=>k.id===choose.value)?.name||'園児')+'を写真'+(index+1)+'へ追加しました';
+    };
+    line.append(note,choose,confirm,feedback);group.append(line);
+   }
+   host.append(group);
+   await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  status.textContent='✅ 最初の'+count+'枚の候補を表示（登録基準 '+refs.length+'人）。園児の確定ボタンを押すまで振り分けは変わりません。';
+ }catch(e){status.textContent='⚠️ 複数枚の照合に失敗：'+(e?.message||String(e)).slice(0,120);console.warn('Batch face comparison',e)}
  finally{button.disabled=false}
 });
 async function renderFaceReferencePanel(){
