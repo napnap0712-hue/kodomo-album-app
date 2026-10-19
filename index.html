@@ -3160,6 +3160,20 @@ async function backupSavedSplitAlbum(id){
   return true;
  }finally{source?.close();backup?.close()}
 }
+// Cache immutable source-Blob conversions for this browser session only.
+// Stored album data and rollback/history formats remain unchanged.
+const splitDurablePhotoCache=new WeakMap();
+async function durableSplitPhoto(file){
+ if(!(file instanceof Blob))throw Error('写真データを確認できません');
+ const cached=splitDurablePhotoCache.get(file);
+ if(cached)return cached;
+ const converted=await makeDurablePhoto(file);
+ const bytes=await converted.blob.arrayBuffer();
+ if(!bytes.byteLength)throw Error('写真の実データが空です');
+ const result={blob:new Blob([bytes],{type:converted.type||converted.blob.type}),name:converted.name||file.name||'photo'};
+ splitDurablePhotoCache.set(file,result);
+ return result;
+}
 async function saveNewSplitAlbum(){
  if(!newAlbumSplitSavedId)newAlbumSplitOrigin=null;
  if(newAlbumSplitSaveBusy)return;
@@ -3171,12 +3185,7 @@ async function saveNewSplitAlbum(){
  try{
   if(!files.length)throw Error('保存する写真がありません。写真を追加してください');
   const photos=[];
-  for(const f of files){
-   const durable=await makeDurablePhoto(f);
-   const bytes=await durable.blob.arrayBuffer();
-   if(!bytes.byteLength)throw Error('写真の実データが空です');
-   photos.push({blob:new Blob([bytes],{type:durable.type||durable.blob.type}),name:durable.name||f.name||'photo'});
-  }
+  for(const f of files)photos.push(await durableSplitPhoto(f));
   // Storage estimates are advisory only: Safari may report approximate quotas.
   if(navigator.storage?.estimate){
    try{
