@@ -770,7 +770,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <section class="screen" data-screen="photoAssign">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
 <div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="testRecognitionComparison" class="secondary" type="button">🔍 最初の写真で顔照合を試す</button><span id="recognitionComparisonStatus" class="muted" role="status">候補のみ表示・振り分けは変更しません。</span></div><div id="recognitionComparisonResults" style="margin:5px 0 10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button id="testRecognitionBatch" class="secondary" type="button">📸 まとめて顔照合</button><label style="display:inline-flex;align-items:center;gap:5px;font-size:13px">対象 <select id="recognitionBatchSize" aria-label="顔照合する写真の枚数"><option value="5">5枚</option><option value="20">20枚</option><option value="all">すべて</option></select></label><button id="cancelRecognitionBatch" class="secondary" type="button" disabled>中断</button><span id="recognitionBatchStatus" class="muted" role="status">候補のみ表示・自動確定なし。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="confirmSelectedRecognition" class="secondary" type="button" disabled>✅ 選択した園児をまとめて確定</button><span id="recognitionSelectedCount" class="muted">選択 0件</span></div><label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;margin:5px 0"><input id="recognitionHideConfirmed" type="checkbox"> 未確認の顔だけ表示</label><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0"><button id="applyRecognitionDraft" class="secondary" type="button" disabled>📂 AI候補を仮振り分け</button><span id="recognitionDraftStatus" class="muted">照合結果を確認してから仮振り分けできます。</span></div><div id="recognitionBatchResults"></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
-<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="photoAssignGrid" class="assignGrid"></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="assignmentFolderBar" style="display:flex;flex-wrap:wrap;gap:7px;margin:12px 0"></div><p id="assignmentFolderHint" class="muted">フォルダを選ぶと、その園児に紐づいた写真だけ表示します。</p><div id="photoAssignGrid" class="assignGrid"></div>
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
@@ -1500,8 +1500,8 @@ $('#applyRecognitionDraft').addEventListener('click',()=>{
   const existing=new Set(photoAssignments[entry.index]||[]);
   if(!existing.has(entry.id)){existing.add(entry.id);photoAssignments[entry.index]=[...existing];added++}
  }
- renderPhotoAssignmentPage();
- $('#recognitionDraftStatus').textContent='✅ '+suggestions.length+'顔の候補を仮振り分け（新規紐づけ '+added+'件）。園児フォルダから修正できます。';
+ activeAssignmentFolder='all';renderPhotoAssignmentPage();
+ $('#recognitionDraftStatus').textContent='✅ '+suggestions.length+'顔の候補を仮振り分け（新規紐づけ '+added+'件）。下の園児別フォルダで確認できます。';
  $('#applyRecognitionDraft').disabled=true;
 });
 
@@ -1732,9 +1732,26 @@ $('#detectFacesOnDevice').addEventListener('click',async()=>{
  }catch(e){status.textContent='⚠️ '+faceDetectorLoadStage+'で失敗しました：'+(e?.message||String(e)).slice(0,160)+'。写真・振り分けは変更していません。';console.warn('FaceDetector initialization error at '+faceDetectorLoadStage,e)}
  finally{button.disabled=false}
 });
+let activeAssignmentFolder='all';
+function renderAssignmentFolderBar(){
+ const bar=$('#assignmentFolderBar');if(!bar)return;
+ const kids=getChildren(selected.id),options=[{id:'all',name:'📷 全写真'},{id:'unassigned',name:'🔎 未振り分け'},...kids.map(k=>({id:String(k.id),name:'📁 '+k.name}))];
+ if(activeAssignmentFolder!=='all'&&activeAssignmentFolder!=='unassigned'&&!kids.some(k=>String(k.id)===activeAssignmentFolder))activeAssignmentFolder='all';
+ bar.replaceChildren();
+ for(const folder of options){
+  const count=folder.id==='all'?files.length:folder.id==='unassigned'?files.filter((_,i)=>!(photoAssignments[i]||[]).length).length:files.filter((_,i)=>(photoAssignments[i]||[]).some(id=>String(id)===folder.id)).length;
+  const btn=document.createElement('button');btn.type='button';btn.className=folder.id===activeAssignmentFolder?'primary':'secondary';btn.style.cssText='padding:7px 10px;font-size:12px';
+  btn.textContent=folder.name+' '+count;
+  btn.onclick=()=>{activeAssignmentFolder=folder.id;renderPhotoAssignmentPage()};
+  bar.append(btn);
+ }
+ const hint=$('#assignmentFolderHint');if(hint)hint.textContent=activeAssignmentFolder==='all'?'全写真を表示中':activeAssignmentFolder==='unassigned'?'未振り分けの写真を表示中（AIの要確認候補も含みます）':'園児フォルダを表示中。名前を追加・解除すると自動的に更新します。';
+}
 function renderPhotoAssignmentPage(){
- const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);grid.innerHTML='';renderFaceReferencePanel();
+ const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);grid.innerHTML='';renderAssignmentFolderBar();renderFaceReferencePanel();
  files.forEach((file,index)=>{
+  if(activeAssignmentFolder==='unassigned'&&(photoAssignments[index]||[]).length)return;
+  if(activeAssignmentFolder!=='all'&&activeAssignmentFolder!=='unassigned'&&!(photoAssignments[index]||[]).some(id=>String(id)===activeAssignmentFolder))return;
   const card=document.createElement('article');card.className='assignCard';
   const image=document.createElement('img');image.src=fileUrl(file);image.alt=file.name;image.loading='lazy';image.decoding='async';
   const photoWrap=document.createElement('div');photoWrap.style.cssText='position:relative;flex:0 0 100px;width:100px;height:110px;overflow:hidden;border-radius:10px';image.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:10px';photoWrap.append(image);
