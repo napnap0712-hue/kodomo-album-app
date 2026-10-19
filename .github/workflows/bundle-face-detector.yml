@@ -1,0 +1,41 @@
+name: Bundle local face detector
+on:
+  push:
+    branches: [prototype-multiselect-lock-20261017]
+    paths:
+      - .github/workflows/bundle-face-detector.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prototype-multiselect-lock-20261017
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Get pinned face detector runtime
+        run: |
+          npm install --no-save --ignore-scripts --no-package-lock --prefix /tmp/face-assets @mediapipe/tasks-vision@0.10.22
+          mkdir -p face-detector/wasm
+          cp /tmp/face-assets/node_modules/@mediapipe/tasks-vision/vision_bundle.mjs face-detector/vision_bundle.mjs
+          cp /tmp/face-assets/node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.wasm face-detector/wasm/
+          cp /tmp/face-assets/node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.js face-detector/wasm/
+          cp /tmp/face-assets/node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_nosimd_internal.wasm face-detector/wasm/
+          cp /tmp/face-assets/node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_nosimd_internal.js face-detector/wasm/
+      - name: Download pinned face detector model
+        run: |
+          curl --fail --location --retry 3 -o face-detector/blaze_face_short_range.tflite https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite
+          test -s face-detector/blaze_face_short_range.tflite
+      - name: Commit local assets to working branch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add face-detector
+          if ! git diff --cached --quiet; then
+            git commit -m "Bundle MediaPipe face detector runtime and model locally"
+            git push origin HEAD:prototype-multiselect-lock-20261017
+          fi
