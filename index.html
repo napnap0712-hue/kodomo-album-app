@@ -1494,7 +1494,7 @@ let recognitionPendingConfirmations=[];
 function updateRecognitionSelectionCount(){
  const pending=recognitionPendingConfirmations.filter(item=>item.checkbox.checked&&item.select.value&&!item.confirmed);
  $('#recognitionSelectedCount').textContent='選択 '+pending.length+'件（先生が選んだものだけ）';
- $('#confirmSelectedRecognition').disabled=!pending.length||!$('#testRecognitionBatch').disabled;
+ $('#confirmSelectedRecognition').disabled=!pending.length;
 }
 $('#confirmSelectedRecognition').addEventListener('click',()=>{
  const selectedItems=recognitionPendingConfirmations.filter(item=>item.checkbox.checked&&item.select.value&&!item.confirmed);
