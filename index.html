@@ -3010,7 +3010,7 @@ $('#trialSplitPreviewButton').addEventListener('click',async()=>{
 document.getElementById('viewSplitHistory').addEventListener('click',async()=>{
  const panel=document.getElementById('splitHistoryPanel'),entries=document.getElementById('splitHistoryEntries');
  if(!newAlbumSplitSavedId)return;
- panel.hidden=false;entries.textContent='履歴を読み込み中…';let db=null;
+ panel.hidden=false;entries.textContent='履歴を読み込み中…';panel.scrollIntoView({behavior:'smooth',block:'start'});let db=null;
  try{
   const request=indexedDB.open('omoide-new-split-albums-v1',2);
   db=await new Promise((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||Error('履歴を開けません'))});
@@ -3107,6 +3107,7 @@ async function saveNewSplitAlbum(){
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('分離保存に失敗'));tx.onabort=()=>reject(tx.error||Error('保存を中断しました'));
   });
   newAlbumSplitSavedId=id;
+  $('#viewSplitHistory').hidden=false;
   const changedDuringSave=editorSaveRevision!==savingSplitRevision;
   splitAutoSaveFailures=0;
   if(!changedDuringSave){splitUnsavedRevision=0;try{localStorage.removeItem(SPLIT_RECOVERY_PREFIX+id)}catch(e){console.warn('一時記録の削除を保留',e)}}
