@@ -2,10 +2,33 @@
 const el=id=>document.getElementById(id);
 const start=el('auraBatchStart'),cancel=el('auraBatchCancel'),status=el('auraBatchStatus'),results=el('auraBatchResults');
 let cancelled=false;
+const staged={A:[],B:[]};
+for(const group of ['A','B']){
+ const input=el('auraBatchGroup'+group),host=el('auraBatchList'+group);
+ const render=()=>{
+  host.replaceChildren();
+  const count=document.createElement('span');count.textContent=staged[group].length+'枚選択済み';host.append(count);
+  staged[group].forEach((file,index)=>{
+   const line=document.createElement('div');line.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0';
+   const name=document.createElement('span');name.textContent=(index+1)+'. '+file.name;name.style.cssText='overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+   const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='×';remove.setAttribute('aria-label',file.name+'を取り消す');remove.style.padding='5px 11px';
+   remove.addEventListener('click',()=>{staged[group].splice(index,1);render()});
+   line.append(name,remove);host.append(line);
+  });
+ };
+ input?.addEventListener('change',()=>{
+  for(const file of Array.from(input.files||[])){
+   if(staged.A.length+staged.B.length>=20){status.textContent='最大20枚までです。';break}
+   staged[group].push(file);
+  }
+  input.value='';render();
+ });
+ render();
+}
 const cosine=(x,y)=>{let dot=0,aa=0,bb=0;for(let k=0;k<x.length;k++){dot+=x[k]*y[k];aa+=x[k]*x[k];bb+=y[k]*y[k]}return dot/Math.sqrt(aa*bb)};
 if(cancel)cancel.addEventListener('click',()=>{cancelled=true;status.textContent='中断を受け付けました。';});
 if(start)start.addEventListener('click',async()=>{
- const first=Array.from(el('auraBatchGroupA')?.files||[]),second=Array.from(el('auraBatchGroupB')?.files||[]);
+ const first=[...staged.A],second=[...staged.B];
  if(first.length<2||second.length<2){status.textContent='園児A・園児Bそれぞれ、1人だけ写っている写真を2枚以上選んでください。';return}
  if(first.length+second.length>20){status.textContent='最初は端末負荷を抑えるため、合計20枚以内で試してください。';return}
  const chosen=[...first.map(file=>({file,group:'A'})),...second.map(file=>({file,group:'B'}))];
