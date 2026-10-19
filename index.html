@@ -769,7 +769,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
-<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
+<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="testRecognitionComparison" class="secondary" type="button">🔍 最初の写真で顔照合を試す</button><span id="recognitionComparisonStatus" class="muted" role="status">候補のみ表示・振り分けは変更しません。</span></div><div id="recognitionComparisonResults" style="margin:5px 0 10px"></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="photoAssignGrid" class="assignGrid"></div>
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
@@ -1402,6 +1402,61 @@ $('#testFaceRecognitionEngine').addEventListener('click',async()=>{
    status.textContent=descriptions.length?'✅ 専用AI動作成功：'+count+'人検出・特徴データ'+descriptions[0].embedding.length+'要素（結果は保存しません）':'⚠️ 専用AIは動きましたが特徴データが生成されませんでした（検出'+count+'人）。';
   }finally{bitmap.close()}
  }catch(e){status.textContent='⚠️ 顔識別AIの確認に失敗：'+(e?.message||String(e)).slice(0,150);console.warn('Local Human recognition check',e)}
+ finally{button.disabled=false}
+});
+// Preview-only identity comparison; no class assignments or embeddings are persisted.
+function faceEmbeddingSimilarity(a,b){
+ if(!a||!b||a.length!==b.length)return null;
+ let dot=0,aa=0,bb=0;
+ for(let i=0;i<a.length;i++){dot+=a[i]*b[i];aa+=a[i]*a[i];bb+=b[i]*b[i]}
+ return aa&&bb?dot/Math.sqrt(aa*bb):null;
+}
+async function humanFacesFromBlob(human,blob){
+ const bitmap=await createImageBitmap(blob);
+ try{const canvas=document.createElement('canvas');
+ const resize=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
+ canvas.width=Math.max(1,Math.round(bitmap.width*resize));canvas.height=Math.max(1,Math.round(bitmap.height*resize));
+ canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+ return (await human.detect(canvas)).face||[];
+ }finally{bitmap.close()}
+}
+$('#testRecognitionComparison').addEventListener('click',async()=>{
+ const button=$('#testRecognitionComparison'),status=$('#recognitionComparisonStatus');
+ const kids=getChildren(selected.id),references=[];
+ if(!files.length){status.textContent='先に写真を取り込んでください。';return}
+ button.disabled=true;
+ try{
+  status.textContent='端末内で園児の基準顔を準備中…';
+  const human=await loadHumanRecognition();
+  for(const kid of kids){
+   const blob=await getFaceReferenceBlob(kid);if(!blob)continue;
+   try{
+    const faces=await humanFacesFromBlob(human,blob);
+    const source=kid.facePhoto?'admin:'+kid.facePhoto.length+':'+kid.facePhoto.slice(-30):'custom:'+blob.size+':'+blob.type;
+    const saved=readFaceSelection(kid.id);
+    let chosen=faces[0];
+    if(saved?.source===source&&saved.box&&faces.length>1){
+     const bx=saved.box;
+     chosen=faces.reduce((best,face)=>{
+      const measure=f=>{const b=f.box;if(!b)return -Infinity;const cx=(b[0]+b[2]/2)/Math.max(1,f.imageWidth||1),cy=(b[1]+b[3]/2)/Math.max(1,f.imageHeight||1);return -Math.hypot(cx-(bx.x+bx.w/2),cy-(bx.y+bx.h/2))};
+      return measure(face)>measure(best)?face:best;
+     },chosen);
+    }
+    if(chosen?.embedding?.length)references.push({name:kid.name,embedding:chosen.embedding});
+   }catch(e){console.warn('Face reference compare skipped',kid.name,e)}
+  }
+  if(!references.length){status.textContent='⚠️ 比較できる基準顔がありません。';return}
+  status.textContent='写真1枚の顔を照合中…';
+  const detected=await humanFacesFromBlob(human,files[0]);
+  const host=$('#recognitionComparisonResults');host.replaceChildren();
+  detected.forEach((face,i)=>{
+   const line=document.createElement('div');line.style.cssText='padding:5px 0;font-size:13px';
+   const rated=references.map(ref=>({name:ref.name,similarity:faceEmbeddingSimilarity(face.embedding,ref.embedding)})).filter(x=>x.similarity!==null).sort((a,b)=>b.similarity-a.similarity);
+   line.textContent='顔'+(i+1)+'の候補：'+(rated.length?rated.slice(0,3).map(v=>v.name+'（比較値 '+v.similarity.toFixed(3)+'）').join('、'):'特徴が取れませんでした');
+   host.append(line);
+  });
+  status.textContent='✅ 写真1枚で候補を表示（基準顔 '+references.length+'人・検出顔 '+detected.length+'人）。比較値は正解率ではありません。振り分け未変更。';
+ }catch(e){status.textContent='⚠️ 照合できません：'+(e?.message||String(e)).slice(0,130);console.warn('Face comparison failed',e)}
  finally{button.disabled=false}
 });
 async function renderFaceReferencePanel(){
