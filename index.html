@@ -1434,6 +1434,8 @@ $('#testRecognitionComparison').addEventListener('click',async()=>{
     const faces=await humanFacesFromBlob(human,blob);
     const source=kid.facePhoto?'admin:'+kid.facePhoto.length+':'+kid.facePhoto.slice(-30):'custom:'+blob.size+':'+blob.type;
     const saved=readFaceSelection(kid.id);
+    // Do not silently learn the wrong child from a group reference photo.
+    if(faces.length>1&&!(saved?.source===source&&saved.box)){console.warn('Multiple faces in reference; choose the child first',kid.name);continue}
     let chosen=faces[0];
     if(saved?.source===source&&saved.box&&faces.length>1){
      const bx=saved.box;
@@ -1564,7 +1566,7 @@ $('#testRecognitionBatch').addEventListener('click',async()=>{
    for(let faceIndex=0;faceIndex<faces.length;faceIndex++){
     const face=faces[faceIndex],rated=refs.map(ref=>({...ref,score:faceEmbeddingSimilarity(face.embedding,ref.embedding)})).filter(ref=>ref.score!==null).sort((a,b)=>b.score-a.score);
     // Conservative initial draft rule. Ambiguous faces are left for manual review.
-    if(rated.length&&rated[0].score>=0.70&&(rated.length===1||rated[0].score-rated[1].score>=0.06))
+    if(rated.length&&rated[0].score>=0.82&&(rated.length===1||rated[0].score-rated[1].score>=0.12))
      recognitionDraftSuggestions.push({index,id:rated[0].id,score:rated[0].score});
 
     const line=document.createElement('div');line.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:9px 0';
@@ -1595,7 +1597,7 @@ $('#testRecognitionBatch').addEventListener('click',async()=>{
   }
   status.textContent=(cancelFaceBatch?'⏹ 中断しました：':'✅ 照合完了：')+processed+'/'+count+'枚（登録基準 '+refs.length+'人'+(failures?'・失敗 '+failures+'枚':'')+'）。';
   $('#applyRecognitionDraft').disabled=!recognitionDraftSuggestions.length;
-  $('#recognitionDraftStatus').textContent='AIの仮振り分け候補 '+recognitionDraftSuggestions.length+'件（暫定条件：比較値0.70以上・次点との差0.06以上）。押すまでは変更しません。';
+  $('#recognitionDraftStatus').textContent='AIの仮振り分け候補 '+recognitionDraftSuggestions.length+'件（慎重設定：比較値0.82以上・次点との差0.12以上。精度保証ではありません）。押すまでは変更しません。';
  }catch(e){status.textContent='⚠️ 複数枚の照合に失敗：'+(e?.message||String(e)).slice(0,120);console.warn('Batch face comparison',e)}
  finally{button.disabled=false;$('#cancelRecognitionBatch').disabled=true;updateRecognitionSelectionCount()}
 });
