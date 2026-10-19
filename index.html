@@ -3073,6 +3073,43 @@ let newAlbumSplitOrigin=null;
 let splitUnsavedRevision=0;
 let splitAutoSaveFailures=0;
 let pendingHistoryRestoreId=null;
+// Independent on-device backup namespace; never touches NAS or legacy databases.
+async function backupSavedSplitAlbum(id){
+ let source=null,backup=null;
+ try{
+  const open=(name,version)=>new Promise((resolve,reject)=>{
+   const req=version?indexedDB.open(name,version):indexedDB.open(name);
+   if(version)req.onupgradeneeded=()=>{for(const store of ['backups'])if(!req.result.objectStoreNames.contains(store))req.result.createObjectStore(store)};
+   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('保存領域を開けません'));
+  });
+  source=await open('omoide-new-split-albums-v1');
+  const read=(db,store,key)=>new Promise((resolve,reject)=>{
+   const req=db.transaction(store,'readonly').objectStore(store).get(key);
+   req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  });
+  const meta=await read(source,'albums',id),edits=await read(source,'edits',id);
+  if(!meta?.ready||edits?.albumId!==id||edits.photoCount!==meta.photoCount||!Array.isArray(edits.designElements))throw Error('バックアップ元の編集情報が不完全です');
+  const photos=[];
+  for(let i=0;i<meta.photoCount;i++){
+   const photo=await read(source,'photos',id+':photo-'+i);
+   if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error('バックアップ元の写真が不完全です');
+   photos.push(photo);
+  }
+  for(const el of edits.designElements)if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=photos.length))throw Error('写真の参照が不正です');
+  backup=await open('omoide-split-automatic-backups-v1',1);
+  const snapshot={albumId:id,savedAt:Date.now(),meta:structuredClone(meta),edits:structuredClone(edits),photos};
+  // A single transaction replaces only this album's backup after all source reads succeeded.
+  await new Promise((resolve,reject)=>{
+   const tx=backup.transaction('backups','readwrite');
+   tx.objectStore('backups').put(snapshot,id);
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('バックアップ保存に失敗'));tx.onabort=()=>reject(tx.error||Error('バックアップ保存が中断'));
+  });
+  const verified=await read(backup,'backups',id);
+  if(verified?.albumId!==id||verified.meta?.updatedAt!==meta.updatedAt||verified.photos?.length!==photos.length||verified.edits?.designElements?.length!==edits.designElements.length)throw Error('バックアップ照合に失敗');
+  for(let i=0;i<photos.length;i++)if(verified.photos[i]?.blob?.size!==photos[i].blob.size)throw Error('写真のサイズ照合に失敗');
+  return true;
+ }finally{source?.close();backup?.close()}
+}
 async function saveNewSplitAlbum(){
  if(!newAlbumSplitSavedId)newAlbumSplitOrigin=null;
  if(newAlbumSplitSaveBusy)return;
@@ -3151,6 +3188,13 @@ async function saveNewSplitAlbum(){
   if(changedDuringSave)scheduleEditorAutoSave();
   status.textContent='✅ '+(newAlbumSplitOrigin?.migrationSourceId?'既存アルバムの分離保存が完了しました':'新規アルバムを分離保存しました')+'：写真'+photos.length+'枚・配置'+els.length+'個。'+(newAlbumSplitOrigin?.migrationSourceId?'元のアルバムは保持されています。':'従来のアルバムとバックアップは未変更です。');
   setEditorSaveState(changedDuringSave?'● 続きの変更を保存待ち':'✓ 自動保存済み');
+  // Backup failure never rolls back a confirmed album save; report separately.
+  backupSavedSplitAlbum(id).then(()=>{
+   if(newAlbumSplitSavedId===id&&!splitUnsavedRevision)setEditorSaveState('✓ 保存済み・端末内バックアップ済み');
+  }).catch(error=>{
+   console.warn('自動バックアップを作成できません',error);
+   if(newAlbumSplitSavedId===id)setEditorSaveState('⚠ アルバム保存済み・バックアップ要確認');
+  });
  }catch(e){
   // Keep the original and recovery snapshot; retry only a limited number of times.
   if(newAlbumSplitSavedId){
