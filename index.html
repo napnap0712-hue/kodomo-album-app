@@ -42,7 +42,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .photoManagerHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
 .photoManagerHead strong{font-size:13px}.photoManagerHead span{font-size:11px;color:#7b8794}
 .photoStrip{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 8px;scroll-snap-type:x proximity}
-.photoThumb{position:relative;flex:0 0 78px;scroll-snap-align:start;content-visibility:auto;contain-intrinsic-size:78px 112px}
+.photoThumb{position:relative;flex:0 0 78px;scroll-snap-align:start}
 .photoThumb img{display:block;width:78px;height:70px;object-fit:cover;border-radius:10px;background:#f2f4f6}
 .photoThumb .photoRemove{position:absolute;top:3px;right:3px;width:27px;height:27px;min-height:27px;border:0;border-radius:50%;background:#303946dd;color:white;font-size:18px;line-height:1;padding:0;z-index:2}.photoThumb{cursor:pointer}.photoThumb:focus-visible{outline:2px solid #588ee6;outline-offset:2px}.photoThumb img{cursor:pointer}
 .photoThumb small{display:block;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#657181;margin-top:4px}
@@ -1323,7 +1323,7 @@ function renderChildPhotoFolders(){
  options.forEach(k=>{const option=document.createElement('option');option.value=k.id;const count=childPhotoUsedCount(k.id);option.textContent=k.name+(k.id==='all'||k.id==='unassigned'?'':(count>=goal?' ✅':'')+' ('+count+'/'+goal+'枚)');select.append(option)});
  select.value=activePhotoFolder;select.addEventListener('change',()=>{activePhotoFolder=select.value;renderPhotoStrip()});host.replaceChildren(select);renderClassPhotoSummary('photoUsageSummary',true);
 }
-function renderPhotoStrip(){renderChildPhotoFolders();const strip=$('#photoStrip'),fragment=document.createDocumentFragment(),previousScrollLeft=strip.scrollLeft;$('#photoManagerCount').textContent=files.length+'枚';files.forEach((file,index)=>{if(activePhotoFolder==='unassigned'&&(photoAssignments[index]||[]).length)return;if(activePhotoFolder!=='all'&&activePhotoFolder!=='unassigned'&&!(photoAssignments[index]||[]).includes(activePhotoFolder))return;const item=document.createElement('div');item.className='photoThumb';item.tabIndex=0;item.setAttribute('role','button');item.setAttribute('aria-label',file.name+'をページに追加');const img=document.createElement('img');img.src=fileUrl(file);img.alt=file.name;img.loading='lazy';img.decoding='async';img.style.cursor='pointer';const remove=document.createElement('button');remove.type='button';remove.className='photoRemove';remove.textContent='×';remove.setAttribute('aria-label',file.name+'を写真一覧から削除');remove.addEventListener('click',event=>{event.stopPropagation();releasePhotoUrl(files[index]);files.splice(index,1);photoAssignments.splice(index,1);designElements=designElements.filter(el=>el.type!=='photo'||el.fileIndex!==index);designElements.forEach(el=>{if(el.type==='photo'&&el.fileIndex>index)el.fileIndex--;});selectedElementId=null;renderPhotoStrip();renderSpread(files);});const name=document.createElement('small');name.textContent=file.name;item.addEventListener('click',event=>{if(event.target.closest('button'))return;placePhotoOnPage(index);});item.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();placePhotoOnPage(index);}});const assign=document.createElement('button');assign.type='button';assign.textContent='振り分け';assign.className='photoAssignButton';
+function renderPhotoStrip(){renderChildPhotoFolders();const strip=$('#photoStrip'),fragment=document.createDocumentFragment(),previousScrollLeft=strip.scrollLeft;$('#photoManagerCount').textContent=files.length+'枚';files.forEach((file,index)=>{if(activePhotoFolder==='unassigned'&&(photoAssignments[index]||[]).length)return;if(activePhotoFolder!=='all'&&activePhotoFolder!=='unassigned'&&!(photoAssignments[index]||[]).includes(activePhotoFolder))return;const item=document.createElement('div');item.className='photoThumb';item.tabIndex=0;item.setAttribute('role','button');item.setAttribute('aria-label',file.name+'をページに追加');const img=document.createElement('img');img.alt=file.name;img.loading='lazy';img.decoding='async';img.style.cursor='pointer';img.dataset.photoIndex=String(index);const remove=document.createElement('button');remove.type='button';remove.className='photoRemove';remove.textContent='×';remove.setAttribute('aria-label',file.name+'を写真一覧から削除');remove.addEventListener('click',event=>{event.stopPropagation();releasePhotoUrl(files[index]);files.splice(index,1);photoAssignments.splice(index,1);designElements=designElements.filter(el=>el.type!=='photo'||el.fileIndex!==index);designElements.forEach(el=>{if(el.type==='photo'&&el.fileIndex>index)el.fileIndex--;});selectedElementId=null;renderPhotoStrip();renderSpread(files);});const name=document.createElement('small');name.textContent=file.name;item.addEventListener('click',event=>{if(event.target.closest('button'))return;placePhotoOnPage(index);});item.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();placePhotoOnPage(index);}});const assign=document.createElement('button');assign.type='button';assign.textContent='振り分け';assign.className='photoAssignButton';
 assign.addEventListener('click',e=>{
  e.stopPropagation();const kids=getChildren(selected.id);
  if(!kids.length){$('#editorStatus').textContent='先に園児を登録してください';return}
@@ -1338,7 +1338,28 @@ assign.addEventListener('click',e=>{
  panel.append(select,chips);renderChips();
  const done=document.createElement('button');done.type='button';done.textContent='完了';done.addEventListener('click',()=>renderPhotoStrip());panel.append(done);strip.replaceChildren(panel);
 });
-item.append(img,remove,name,assign);fragment.appendChild(item);});strip.replaceChildren(fragment);strip.scrollLeft=previousScrollLeft;}
+item.append(img,remove,name,assign);fragment.appendChild(item);});strip.replaceChildren(fragment);strip.scrollLeft=previousScrollLeft;
+ // Only attach full-resolution image URLs close to the visible horizontal strip.
+ // Loading all 101+ original photos into image decoders at once can stall Safari.
+ const thumbs=[...strip.querySelectorAll('img[data-photo-index]')];
+ const refreshVisible=()=>{
+  const bounds=strip.getBoundingClientRect(),margin=Math.max(bounds.width,320);
+  for(const img of thumbs){
+   if(img.src)continue;
+   const box=img.getBoundingClientRect();
+   if(box.right>=bounds.left-margin&&box.left<=bounds.right+margin){
+    const file=files[Number(img.dataset.photoIndex)];
+    if(file)img.src=fileUrl(file);
+   }
+  }
+ };
+ let queued=false;
+ strip.onscroll=()=>{
+  if(queued)return;queued=true;
+  requestAnimationFrame(()=>{queued=false;refreshVisible()});
+ };
+ refreshVisible();
+}
 function elementId(){return 'el-'+Date.now().toString(36)+'-'+(++elementCounter).toString(36);}
 
 let multiSelectMode=false,showLockBadges=false;const selectedGroupIds=new Set();
