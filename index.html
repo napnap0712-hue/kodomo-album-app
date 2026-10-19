@@ -769,7 +769,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
-<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
+<div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="photoAssignGrid" class="assignGrid"></div>
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
@@ -1362,6 +1362,48 @@ function faceSelectionKey(childId){return 'omoide-face-selection-v1:'+activeYear
 function readFaceSelection(childId){try{return JSON.parse(localStorage.getItem(faceSelectionKey(childId))||'null')}catch{return null}}
 function saveFaceSelection(childId,box,source){localStorage.setItem(faceSelectionKey(childId),JSON.stringify({box,source}))}
 let faceReferenceRenderId=0;
+// Isolated face-description readiness check. Do not save embeddings or modify assignments.
+let localRecognitionHumanPromise=null;
+async function loadHumanRecognition(){
+ if(!localRecognitionHumanPromise)localRecognitionHumanPromise=(async()=>{
+  const base=new URL('./face-recognition/',document.baseURI);
+  const mod=await import(new URL('human.esm.js',base).href);
+  const Human=mod.Human||mod.default;
+  if(typeof Human!=='function')throw Error('Human AIの読み込み形式が一致しません');
+  const human=new Human({
+   backend:'webgl',
+   modelBasePath:new URL('models/',base).href,
+   cacheSensitivity:0,
+   face:{enabled:true,detector:{enabled:true,maxDetected:5},mesh:{enabled:true},description:{enabled:true},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},
+   body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}
+  });
+  await human.load();
+  return human;
+ })().catch(e=>{localRecognitionHumanPromise=null;throw e});
+ return localRecognitionHumanPromise;
+}
+$('#testFaceRecognitionEngine').addEventListener('click',async()=>{
+ const button=$('#testFaceRecognitionEngine'),status=$('#faceRecognitionEngineStatus');
+ const kids=getChildren(selected.id).filter(k=>k.facePhoto);
+ if(!kids.length){status.textContent='先に管理画面で園児の顔写真を登録してください。';return}
+ button.disabled=true;
+ try{
+  status.textContent='アプリ内の顔識別AIモデルを準備中…';
+  const human=await loadHumanRecognition();
+  const blob=await getFaceReferenceBlob(kids[0]);
+  if(!(blob instanceof Blob))throw Error('基準写真を読み込めません');
+  const bitmap=await createImageBitmap(blob);
+  try{
+   const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;canvas.getContext('2d').drawImage(bitmap,0,0);
+   status.textContent='端末内で顔の特徴を抽出中…';
+   const result=await human.detect(canvas);
+   const count=result.face?.length||0;
+   const descriptions=(result.face||[]).filter(face=>Array.isArray(face.embedding)&&face.embedding.length>0);
+   status.textContent=descriptions.length?'✅ 専用AI動作成功：'+count+'人検出・特徴データ'+descriptions[0].embedding.length+'要素（結果は保存しません）':'⚠️ 専用AIは動きましたが特徴データが生成されませんでした（検出'+count+'人）。';
+  }finally{bitmap.close()}
+ }catch(e){status.textContent='⚠️ 顔識別AIの確認に失敗：'+(e?.message||String(e)).slice(0,150);console.warn('Local Human recognition check',e)}
+ finally{button.disabled=false}
+});
 async function renderFaceReferencePanel(){
  const host=$('#faceReferenceList');if(!host)return;
  const token=++faceReferenceRenderId,kids=getChildren(selected.id);host.replaceChildren();
