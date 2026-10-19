@@ -1514,20 +1514,16 @@ async function renderFaceReferencePanel(){
      const cropCanvas=document.createElement('canvas');cropCanvas.width=96;cropCanvas.height=96;cropCanvas.style.cssText='width:72px;height:72px;border:1px solid #dce4ef;border-radius:10px;background:#f6f8fb';
      const cropLabel=document.createElement('span');cropLabel.textContent='基準の顔を選ぶとここに表示します';
      cropView.append(cropCanvas,cropLabel);
-     const faceSourceCanvas=document.createElement('canvas');faceSourceCanvas.width=bitmap.width;faceSourceCanvas.height=bitmap.height;faceSourceCanvas.getContext('2d').drawImage(bitmap,0,0);
+     // Reuse the visible source preview: its pixels are already rendered correctly in Safari.
+     // Draw synchronously from this canvas, even after the ImageBitmap is closed.
      const showCrop=(normalized)=>{
-      const x=Math.max(0,Math.floor(normalized.x*bitmap.width)),y=Math.max(0,Math.floor(normalized.y*bitmap.height));
-      const w=Math.min(bitmap.width-x,Math.max(1,Math.ceil(normalized.w*bitmap.width))),h=Math.min(bitmap.height-y,Math.max(1,Math.ceil(normalized.h*bitmap.height)));
-      const size=Math.max(1,Math.max(w,h)*1.25),cx=x+w/2,cy=y+h/2;
+      const px=Math.max(0,Math.min(1,normalized.x)),py=Math.max(0,Math.min(1,normalized.y));
+      const pw=Math.max(0.001,Math.min(1-px,normalized.w)),ph=Math.max(0.001,Math.min(1-py,normalized.h));
+      const cx=(px+pw/2)*canvas.width,cy=(py+ph/2)*canvas.height;
+      const size=Math.max(1,Math.max(pw*canvas.width,ph*canvas.height)*1.5);
       const ctx=cropCanvas.getContext('2d');
       ctx.clearRect(0,0,96,96);
-      // Draw the entire original into a translated destination: unlike a source crop,
-      // this also works when the face lies close to an image edge.
-      ctx.save();
-      ctx.beginPath();ctx.rect(0,0,96,96);ctx.clip();
-      const magnification=96/size;
-      ctx.drawImage(faceSourceCanvas,48-cx*magnification,48-cy*magnification,faceSourceCanvas.width*magnification,faceSourceCanvas.height*magnification);
-      ctx.restore();
+      ctx.drawImage(canvas,cx-size/2,cy-size/2,size,size,0,0,96,96);
       cropLabel.textContent='選択中の基準顔（確認用）';
      };
      if(saved?.source===source&&saved.box)showCrop(saved.box);
