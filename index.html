@@ -1518,9 +1518,16 @@ async function renderFaceReferencePanel(){
      const showCrop=(normalized)=>{
       const x=Math.max(0,Math.floor(normalized.x*bitmap.width)),y=Math.max(0,Math.floor(normalized.y*bitmap.height));
       const w=Math.min(bitmap.width-x,Math.max(1,Math.ceil(normalized.w*bitmap.width))),h=Math.min(bitmap.height-y,Math.max(1,Math.ceil(normalized.h*bitmap.height)));
-      const size=Math.max(w,h)*1.25,cx=x+w/2,cy=y+h/2;
-      const ctx=cropCanvas.getContext('2d');ctx.clearRect(0,0,96,96);
-      ctx.drawImage(faceSourceCanvas,cx-size/2,cy-size/2,size,size,0,0,96,96);
+      const size=Math.max(1,Math.max(w,h)*1.25),cx=x+w/2,cy=y+h/2;
+      const ctx=cropCanvas.getContext('2d');
+      ctx.clearRect(0,0,96,96);
+      // Draw the entire original into a translated destination: unlike a source crop,
+      // this also works when the face lies close to an image edge.
+      ctx.save();
+      ctx.beginPath();ctx.rect(0,0,96,96);ctx.clip();
+      const magnification=96/size;
+      ctx.drawImage(faceSourceCanvas,48-cx*magnification,48-cy*magnification,faceSourceCanvas.width*magnification,faceSourceCanvas.height*magnification);
+      ctx.restore();
       cropLabel.textContent='選択中の基準顔（確認用）';
      };
      if(saved?.source===source&&saved.box)showCrop(saved.box);
