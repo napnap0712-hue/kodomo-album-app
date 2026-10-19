@@ -45,7 +45,7 @@ if(btn&&status)btn.addEventListener('click',async()=>{
 /* Two-photo, in-memory face similarity diagnostic. No persistent changes. */
 const compareBtn=$('compareAuraFaceTwo'),compareStatus=$('auraFaceCompareStatus');
 if(compareBtn&&compareStatus)compareBtn.addEventListener('click',async()=>{
- const source=$('auraFaceCompareFiles'),chosen=[...(source?.files||[])];
+ const chosen=[$('auraFaceCompareFile1')?.files?.[0],$('auraFaceCompareFile2')?.files?.[0]].filter(Boolean);
  if(chosen.length!==2){compareStatus.textContent='比較したい写真を2枚選んでください。';return}
  compareBtn.disabled=true;
  let session;
