@@ -1018,8 +1018,8 @@ async function renderSplitProjectCards(){
     btn.addEventListener('click',()=>openSplitProjectFromList(a.id));
     const trashButton=document.createElement('button');trashButton.type='button';trashButton.className='secondary';trashButton.textContent='🗑';trashButton.title='ゴミ箱へ移動';trashButton.style.cssText='position:absolute;right:4px;bottom:4px;z-index:2;padding:5px;min-height:28px';
     trashButton.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('「'+(a.title||'無題のアルバム')+'」をゴミ箱へ移動しますか？写真や保存履歴は消えません。'))return;await setSplitTrashState(a.id,true);await renderProjects()});
-    btn.style.position='relative';btn.append(trashButton);
-    available.replaceWith(btn);
+    const wrapper=document.createElement('div');wrapper.style.cssText='position:relative;min-width:0';btn.style.width='100%';wrapper.append(btn,trashButton);
+    available.replaceWith(wrapper);
     return;
    }
    const btn=document.createElement('button');btn.type='button';btn.className='projectCard hasProject';
