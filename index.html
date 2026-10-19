@@ -1707,7 +1707,7 @@ function restoreEditRecovery(item){
  spreadIndex=Number.isInteger(d.spreadIndex)?Math.max(0,d.spreadIndex):spreadIndex;designElements=d.designElements;
  editorSaveRevision++;return true;
 }
-function setEditorSaveState(state){const el=$('#editorSaveState');if(el)el.textContent=state}function scheduleEditorAutoSave(){clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;}function markEditorUnsaved(){editorSaveRevision++;setEditorSaveState('● 未保存の変更あり');scheduleEditorAutoSave();clearTimeout(editRecoveryTimer);editRecoveryTimer=setTimeout(saveEditRecovery,700)}
+function setEditorSaveState(state){const el=$('#editorSaveState');if(el)el.textContent=state}function scheduleEditorAutoSave(){clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;if(!newAlbumSplitSelected||!newAlbumSplitSavedId||safeSplitEditorMode||!editorPhotoIntegrityOk)return;const albumId=newAlbumSplitSavedId;editorAutoSaveTimer=setTimeout(()=>{editorAutoSaveTimer=null;if(newAlbumSplitSelected&&newAlbumSplitSavedId===albumId&&!newAlbumSplitSaveBusy&&editorPhotoIntegrityOk&&document.querySelector('[data-screen="editor"]')?.classList.contains('active'))saveNewSplitAlbum();else if(newAlbumSplitSavedId===albumId&&newAlbumSplitSaveBusy)scheduleEditorAutoSave()},2000)}function markEditorUnsaved(){editorSaveRevision++;setEditorSaveState('● 未保存の変更あり');scheduleEditorAutoSave();clearTimeout(editRecoveryTimer);editRecoveryTimer=setTimeout(saveEditRecovery,700)}
 const editorRoot=document.querySelector('[data-screen="editor"]');editorRoot.addEventListener('input',e=>{if(e.target.closest('button'))return;markEditorUnsaved()});editorRoot.addEventListener('change',markEditorUnsaved);editorRoot.addEventListener('pointerup',e=>{if(e.target.closest('button')&&e.target.id!=='saveDraft'&&e.target.id!=='exportImage')markEditorUnsaved()});
 // Experimental editor save: isolated DB only; never writes actual drafts or triggers sync.
 $('#trialSaveDraft').addEventListener('click',async()=>{
@@ -2956,6 +2956,8 @@ async function saveNewSplitAlbum(){
  if(!newAlbumSplitSavedId)newAlbumSplitOrigin=null;
  if(newAlbumSplitSaveBusy)return;
  const button=$('#saveDraft'),status=$('#editorStatus');
+ const savingSplitRevision=editorSaveRevision;
+ clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;
  newAlbumSplitSaveBusy=true;button.disabled=true;button.textContent='分離保存中…';
  let db=null;
  try{
@@ -2997,8 +2999,10 @@ async function saveNewSplitAlbum(){
    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('分離保存に失敗'));tx.onabort=()=>reject(tx.error||Error('保存を中断しました'));
   });
   newAlbumSplitSavedId=id;
+  const changedDuringSave=editorSaveRevision!==savingSplitRevision;
+  if(changedDuringSave)scheduleEditorAutoSave();
   status.textContent='✅ '+(newAlbumSplitOrigin?.migrationSourceId?'既存アルバムの分離保存が完了しました':'新規アルバムを分離保存しました')+'：写真'+photos.length+'枚・配置'+els.length+'個。'+(newAlbumSplitOrigin?.migrationSourceId?'元のアルバムは保持されています。':'従来のアルバムとバックアップは未変更です。');
-  setEditorSaveState('✓ 分離保存済み');
+  setEditorSaveState(changedDuringSave?'● 続きの変更を保存待ち':'✓ 自動保存済み');
  }catch(e){status.textContent='⚠️ 分離保存できません：'+(e?.message||String(e));setEditorSaveState('⚠ 保存失敗')}
  finally{db?.close();newAlbumSplitSaveBusy=false;button.disabled=false;button.textContent='💾 保存'}
 }
