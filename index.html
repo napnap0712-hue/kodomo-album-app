@@ -3177,6 +3177,21 @@ async function saveNewSplitAlbum(){
    if(!bytes.byteLength)throw Error('写真の実データが空です');
    photos.push({blob:new Blob([bytes],{type:durable.type||durable.blob.type}),name:durable.name||f.name||'photo'});
   }
+  // Storage estimates are advisory only: Safari may report approximate quotas.
+  if(navigator.storage?.estimate){
+   try{
+    const estimate=await navigator.storage.estimate();
+    if(Number.isFinite(estimate.quota)&&Number.isFinite(estimate.usage)){
+     const free=Math.max(0,estimate.quota-estimate.usage);
+     const required=photos.reduce((sum,p)=>sum+p.blob.size,0);
+     if(free<required*2){
+      const mb=n=>Math.round(n/1024/1024);
+      status.textContent='⚠️ 端末の保存容量が少ない可能性があります（推定空き '+mb(free)+'MB）。保存に失敗した場合も元データは維持します。';
+      console.warn('Estimated storage capacity is low for split save',{free,required});
+     }
+    }
+   }catch(e){console.warn('保存容量を取得できません',e)}
+  }
   const els=structuredClone(designElements);
   for(const el of els)if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=photos.length))throw Error('写真の配置参照が不正です');
   const req=indexedDB.open('omoide-new-split-albums-v1',2);
@@ -3251,7 +3266,8 @@ async function saveNewSplitAlbum(){
    splitUnsavedRevision=splitUnsavedRevision||editorSaveRevision||1;
    saveSplitEditRecovery();
   }
-  status.textContent='⚠️ 分離保存できません：'+(e?.message||String(e))+'。編集内容は残しています。';
+  const quotaError=e?.name==='QuotaExceededError'||/quota|storage full|disk full/i.test(e?.message||'');
+  status.textContent=quotaError?'⚠️ 保存容量が不足している可能性があります。写真やサイトデータを勝手に削除せず、空き容量を確認してください。元の保存データは維持しています。':'⚠️ 分離保存できません：'+(e?.message||String(e))+'。編集内容は残しています。';
   setEditorSaveState('⚠ 保存失敗');
   if(newAlbumSplitSavedId&&pendingHistoryRestoreId!==newAlbumSplitSavedId&&splitAutoSaveFailures<3&&document.querySelector('[data-screen="editor"]')?.classList.contains('active')){
    splitAutoSaveFailures++;
