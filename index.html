@@ -1399,6 +1399,19 @@ async function renderFaceReferencePanel(){
      const choices=document.createElement('div');choices.style.cssText='display:flex;gap:5px;flex-wrap:wrap;padding:7px';
      const source=kid.facePhoto?'admin:'+kid.facePhoto.length+':'+kid.facePhoto.slice(-30):'custom:'+blob.size+':'+blob.type;
      const saved=readFaceSelection(kid.id);
+     const cropView=document.createElement('div');cropView.style.cssText='display:flex;align-items:center;gap:8px;padding:7px;font-size:12px;color:#526277';
+     const cropCanvas=document.createElement('canvas');cropCanvas.width=96;cropCanvas.height=96;cropCanvas.style.cssText='width:72px;height:72px;border:1px solid #dce4ef;border-radius:10px;background:#f6f8fb';
+     const cropLabel=document.createElement('span');cropLabel.textContent='基準の顔を選ぶとここに表示します';
+     cropView.append(cropCanvas,cropLabel);
+     const showCrop=(normalized)=>{
+      const x=Math.max(0,Math.floor(normalized.x*bitmap.width)),y=Math.max(0,Math.floor(normalized.y*bitmap.height));
+      const w=Math.min(bitmap.width-x,Math.max(1,Math.ceil(normalized.w*bitmap.width))),h=Math.min(bitmap.height-y,Math.max(1,Math.ceil(normalized.h*bitmap.height)));
+      const size=Math.max(w,h)*1.25,cx=x+w/2,cy=y+h/2;
+      const ctx=cropCanvas.getContext('2d');ctx.clearRect(0,0,96,96);
+      ctx.drawImage(bitmap,cx-size/2,cy-size/2,size,size,0,0,96,96);
+      cropLabel.textContent='選択中の基準顔（確認用）';
+     };
+     if(saved?.source===source&&saved.box)showCrop(saved.box);
      for(const [i,face] of faces.entries()){
       if(!face.boundingBox)continue;
       const box=face.boundingBox;
@@ -1406,10 +1419,10 @@ async function renderFaceReferencePanel(){
       const pick=document.createElement('button');pick.type='button';pick.className='secondary';pick.style.cssText='font-size:12px;padding:5px 8px';
       const active=saved?.source===source&&saved.box&&Math.abs(saved.box.x-normalized.x)<0.04&&Math.abs(saved.box.y-normalized.y)<0.04;
       pick.textContent=(active?'✅ ':'')+'顔'+(i+1)+'を基準にする';
-      pick.onclick=()=>{try{saveFaceSelection(kid.id,normalized,source);choices.querySelectorAll('button').forEach(b=>b.textContent=b.textContent.replace('✅ ',''));pick.textContent='✅ 顔'+(i+1)+'を基準にする';status.textContent='✅ 顔'+(i+1)+'を基準に選択しました（写真は変更なし）'}catch(e){status.textContent='⚠️ 顔の選択を保存できません'}};
+      pick.onclick=()=>{try{saveFaceSelection(kid.id,normalized,source);showCrop(normalized);choices.querySelectorAll('button').forEach(b=>b.textContent=b.textContent.replace('✅ ',''));pick.textContent='✅ 顔'+(i+1)+'を基準にする';status.textContent='✅ 顔'+(i+1)+'を基準に選択しました（写真は変更なし）'}catch(e){status.textContent='⚠️ 顔の選択を保存できません'}};
       choices.append(pick);
      }
-     preview.append(choices);
+     preview.append(choices,cropView);
     }
     row.append(preview);
     status.textContent=faces.length===1?'✅ 顔を1人検出':faces.length===0?'⚠️ 顔を検出できません':'⚠️ 顔を'+faces.length+'人検出（基準にする顔を選んでください）';
