@@ -1442,7 +1442,7 @@ $('#testRecognitionComparison').addEventListener('click',async()=>{
       return measure(face)>measure(best)?face:best;
      },chosen);
     }
-    if(chosen?.embedding?.length)references.push({name:kid.name,embedding:chosen.embedding});
+    if(chosen?.embedding?.length)references.push({id:kid.id,name:kid.name,embedding:chosen.embedding});
    }catch(e){console.warn('Face reference compare skipped',kid.name,e)}
   }
   if(!references.length){status.textContent='⚠️ 比較できる基準顔がありません。';return}
@@ -1467,7 +1467,23 @@ $('#testRecognitionComparison').addEventListener('click',async()=>{
    const rated=references.map(ref=>({name:ref.name,similarity:faceEmbeddingSimilarity(face.embedding,ref.embedding)})).filter(x=>x.similarity!==null).sort((a,b)=>b.similarity-a.similarity);
    const desc=document.createElement('span');
    desc.textContent='顔'+(i+1)+'の候補：'+(rated.length?rated.slice(0,3).map(v=>v.name+'（比較値 '+v.similarity.toFixed(3)+'）').join('、'):'特徴が取れませんでした');
-   line.append(thumb,desc);host.append(line);
+   line.append(thumb,desc);
+   const controls=document.createElement('div');controls.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:6px;width:100%;padding-left:90px';
+   const label=document.createElement('span');label.textContent='正しい園児を確認：';
+   const choose=document.createElement('select');choose.setAttribute('aria-label','顔'+(i+1)+'の正しい園児');
+   const empty=document.createElement('option');empty.value='';empty.textContent='園児を選択';choose.append(empty);
+   kids.forEach(k=>{const option=document.createElement('option');option.value=k.id;option.textContent=k.name;choose.append(option)});
+   if(rated.length)choose.value=references.find(ref=>ref.name===rated[0].name)?.id||'';
+   const confirm=document.createElement('button');confirm.type='button';confirm.className='secondary';confirm.style.cssText='font-size:12px;padding:6px 10px';confirm.textContent='✅ この園児で確定';
+   const feedback=document.createElement('span');feedback.style.fontSize='12px';
+   confirm.onclick=()=>{
+    const id=choose.value;if(!id){feedback.textContent='園児を選択してください';return}
+    const existing=new Set(photoAssignments[0]||[]);existing.add(id);photoAssignments[0]=[...existing];
+    renderPhotoAssignmentPage();
+    feedback.textContent='✅ '+(kids.find(k=>k.id===id)?.name||'園児')+'を写真1枚目に追加しました（ほかの登録は保持）';
+   };
+   controls.append(label,choose,confirm,feedback);line.append(controls);
+   host.append(line);
   });
   status.textContent='✅ 写真1枚で候補を表示（基準顔 '+references.length+'人・検出顔 '+detected.length+'人）。比較値は正解率ではありません。振り分け未変更。';
  }catch(e){status.textContent='⚠️ 照合できません：'+(e?.message||String(e)).slice(0,130);console.warn('Face comparison failed',e)}
