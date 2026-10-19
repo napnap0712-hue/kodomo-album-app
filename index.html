@@ -774,7 +774,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="viewSplitHistory" type="button" hidden>🕘 保存履歴</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button><button class="secondary" id="safeMigrationTrial" type="button">🛡️ 安全移行の試験（途中失敗も検証）</button><button class="secondary" id="safeSplitOpenCheck" type="button">📖 安全な分離コピーの読み込み確認</button><button class="secondary" id="fictionalNewSplitTest" type="button">🌼 架空の新規アルバムを分離保存テスト</button><button class="secondary" id="fictionalSplitPreviewButton" type="button">👀 架空アルバムを表示</button><button class="secondary" id="safeSplitEditorToggle" type="button">🧪 分離コピーを編集画面で試す</button><button class="secondary" id="safeSplitEditorSave" type="button" hidden>💾 試験コピーだけ保存</button><button class="secondary" id="recoveryGuideToggle" type="button" aria-expanded="false" aria-controls="recoveryGuidePanel">🛟 復旧リハーサルの手順</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="viewSplitHistory" type="button" hidden>🕘 保存履歴</button><button class="secondary" id="restoreSplitBackup" type="button" hidden>🛟 バックアップから復元</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button><button class="secondary" id="safeMigrationTrial" type="button">🛡️ 安全移行の試験（途中失敗も検証）</button><button class="secondary" id="safeSplitOpenCheck" type="button">📖 安全な分離コピーの読み込み確認</button><button class="secondary" id="fictionalNewSplitTest" type="button">🌼 架空の新規アルバムを分離保存テスト</button><button class="secondary" id="fictionalSplitPreviewButton" type="button">👀 架空アルバムを表示</button><button class="secondary" id="safeSplitEditorToggle" type="button">🧪 分離コピーを編集画面で試す</button><button class="secondary" id="safeSplitEditorSave" type="button" hidden>💾 試験コピーだけ保存</button><button class="secondary" id="recoveryGuideToggle" type="button" aria-expanded="false" aria-controls="recoveryGuidePanel">🛟 復旧リハーサルの手順</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="primary" id="exportImage">左右ページを書き出す</button></div></div>
 <section id="editorStorageChoice" style="margin:12px 0;padding:12px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fbff">
 <strong style="font-size:13px">💾 このアルバムの保存方式</strong>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
@@ -1120,7 +1120,7 @@ function show(id){
  }
  if(id!=='editor'){
   if(document.querySelector('[data-screen="editor"]')?.classList.contains('active'))flushPendingSplitRecovery();
-  pendingHistoryRestoreId=null;newAlbumSplitSelected=false;newAlbumSplitSavedId=null;$('#saveDraft').textContent='下書きを保存';$('#viewSplitHistory').hidden=true;$('#splitHistoryPanel').hidden=true;
+  pendingHistoryRestoreId=null;newAlbumSplitSelected=false;newAlbumSplitSavedId=null;$('#saveDraft').textContent='下書きを保存';$('#viewSplitHistory').hidden=true;$('#restoreSplitBackup').hidden=true;$('#splitHistoryPanel').hidden=true;
   document.querySelector('.screen[data-screen="editor"]').classList.remove('newSplitPreparation');
   $('#newSplitAlbumPrepPanel').classList.remove('newSplitChoiceActive');
  }
@@ -1762,7 +1762,7 @@ function restoreEditRecovery(item){
  editorSaveRevision++;return true;
 }
 function setEditorSaveState(state){const el=$('#editorSaveState');if(el)el.textContent=state}function scheduleEditorAutoSave(){clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;if(pendingHistoryRestoreId===newAlbumSplitSavedId)return;if(!newAlbumSplitSelected||!newAlbumSplitSavedId||safeSplitEditorMode||!editorPhotoIntegrityOk)return;const albumId=newAlbumSplitSavedId;editorAutoSaveTimer=setTimeout(()=>{editorAutoSaveTimer=null;if(newAlbumSplitSelected&&newAlbumSplitSavedId===albumId&&!newAlbumSplitSaveBusy&&editorPhotoIntegrityOk&&document.querySelector('[data-screen="editor"]')?.classList.contains('active'))saveNewSplitAlbum();else if(newAlbumSplitSavedId===albumId&&newAlbumSplitSaveBusy)scheduleEditorAutoSave()},2000)}function markEditorUnsaved(){editorSaveRevision++;if(newAlbumSplitSelected&&newAlbumSplitSavedId)splitUnsavedRevision=editorSaveRevision;setEditorSaveState('● 未保存の変更あり');scheduleEditorAutoSave();clearTimeout(editRecoveryTimer);editRecoveryTimer=setTimeout(()=>{saveEditRecovery();saveSplitEditRecovery()},700)}
-const editorRoot=document.querySelector('[data-screen="editor"]');editorRoot.addEventListener('input',e=>{if(e.target.closest('button'))return;markEditorUnsaved()});editorRoot.addEventListener('change',markEditorUnsaved);editorRoot.addEventListener('pointerup',e=>{const button=e.target.closest('button');if(!button||button.id==='saveDraft'||button.id==='exportImage'||button.id==='viewSplitHistory'||button.id==='closeSplitHistory'||button.closest('#splitHistoryPanel'))return;markEditorUnsaved()});
+const editorRoot=document.querySelector('[data-screen="editor"]');editorRoot.addEventListener('input',e=>{if(e.target.closest('button'))return;markEditorUnsaved()});editorRoot.addEventListener('change',markEditorUnsaved);editorRoot.addEventListener('pointerup',e=>{const button=e.target.closest('button');if(!button||button.id==='saveDraft'||button.id==='exportImage'||button.id==='viewSplitHistory'||button.id==='restoreSplitBackup'||button.id==='closeSplitHistory'||button.closest('#splitHistoryPanel'))return;markEditorUnsaved()});
 // Experimental editor save: isolated DB only; never writes actual drafts or triggers sync.
 $('#trialSaveDraft').addEventListener('click',async()=>{
  const button=$('#trialSaveDraft'),status=$('#editorStatus');
@@ -2189,7 +2189,7 @@ $('#resumeSavedNewSplitEdit').addEventListener('click',async()=>{
   for(const photo of photos)if(!(photo instanceof Blob)||!photo.size)throw Error('写真の読み込みに失敗しました');
   files=photos;designElements=edits.designElements;photoAssignments=Array.isArray(edits.photoAssignments)?edits.photoAssignments.map(a=>Array.isArray(a)?a:[]):photos.map(()=>[]);
   pendingHistoryRestoreId=null;
-  editingId=null;newAlbumSplitSelected=true;newAlbumSplitSavedId=meta.id;$('#viewSplitHistory').hidden=false;$('#splitHistoryPanel').hidden=true;splitUnsavedRevision=0;newAlbumSplitOrigin=meta.migrationSourceId?{migrationSourceId:meta.migrationSourceId,sourceUpdatedAt:meta.sourceUpdatedAt}:null;
+  editingId=null;newAlbumSplitSelected=true;newAlbumSplitSavedId=meta.id;$('#viewSplitHistory').hidden=false;$('#restoreSplitBackup').hidden=false;$('#splitHistoryPanel').hidden=true;splitUnsavedRevision=0;newAlbumSplitOrigin=meta.migrationSourceId?{migrationSourceId:meta.migrationSourceId,sourceUpdatedAt:meta.sourceUpdatedAt}:null;
   $('#albumTitle').value=meta.title||'';$('#pageCaption').value=edits.caption||'';
   $('#pageBackground').value=edits.background||'#ffffff';$('#layoutMode').value=edits.layout||'spread';
   spreadIndex=Number.isInteger(edits.spreadIndex)?edits.spreadIndex:0;
@@ -3069,6 +3069,44 @@ document.getElementById('viewSplitHistory').addEventListener('click',async()=>{
  }catch(e){entries.textContent='履歴を読み込めませんでした：'+(e?.message||String(e))}finally{db?.close()}
 });
 document.getElementById('closeSplitHistory').addEventListener('click',()=>{document.getElementById('splitHistoryPanel').hidden=true});
+// Backup restore is staged in the editor. No database writes occur until explicit Save.
+document.getElementById('restoreSplitBackup').addEventListener('click',async()=>{
+ const albumId=newAlbumSplitSavedId;
+ if(!albumId)return;
+ if(newAlbumSplitSaveBusy||splitUnsavedRevision){alert('未保存の編集があります。先に保存を完了してください。');return}
+ let db=null;
+ try{
+  const req=indexedDB.open('omoide-split-automatic-backups-v1');
+  db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('バックアップ領域を開けません'))});
+  if(!db.objectStoreNames.contains('backups'))throw Error('バックアップがありません');
+  const backup=await new Promise((resolve,reject)=>{const q=db.transaction('backups','readonly').objectStore('backups').get(albumId);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)});
+  if(!backup)throw Error('このアルバムのバックアップはまだありません');
+  const {meta,edits,photos}=backup;
+  if(backup.albumId!==albumId||meta?.id!==albumId||edits?.albumId!==albumId||!Number.isInteger(meta.photoCount)||meta.photoCount<1||!Array.isArray(photos)||photos.length!==meta.photoCount||edits.photoCount!==meta.photoCount||!Array.isArray(edits.designElements))throw Error('バックアップの構造が一致しません');
+  for(const photo of photos)if(!(photo?.blob instanceof Blob)||!photo.blob.size)throw Error('バックアップ写真が不完全です');
+  for(const el of edits.designElements)if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=photos.length))throw Error('写真と配置の参照が一致しません');
+  if(!confirm('バックアップ（'+new Date(backup.savedAt).toLocaleString('ja-JP')+'）の写真'+photos.length+'枚・配置'+edits.designElements.length+'個を編集画面へ読み込みますか？\\n現在の保存データはまだ変更しません。内容を確認して「💾 保存」で確定します。'))return;
+  // Preserve all existing saved data and history until user explicitly commits.
+  files=photos.map(p=>p.blob);
+  designElements=structuredClone(edits.designElements);
+  photoAssignments=Array.isArray(edits.photoAssignments)?structuredClone(edits.photoAssignments):files.map(()=>[]);
+  $('#albumTitle').value=meta.title||'';
+  $('#pageBackground').value=edits.background||'#ffffff';
+  $('#pageCaption').value=edits.caption||'';
+  $('#layoutMode').value=edits.layout||'spread';
+  spreadIndex=Number.isInteger(edits.spreadIndex)?edits.spreadIndex:0;
+  photoGapPercent=Number.isFinite(Number(edits.photoGap))?Number(edits.photoGap):2;
+  $('#photoGap').value=photoGapPercent;
+  $('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';
+  selectedElementId=null;selectedGroupIds.clear();editorPhotoIntegrityOk=true;
+  pendingHistoryRestoreId=albumId;
+  resetEditHistory();refreshEditor();markEditorUnsaved();
+  clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;
+  $('#editorStatus').textContent='🛟 バックアップを編集画面に読み込みました。確認後に「💾 保存」で確定してください。';
+  setEditorSaveState('● バックアップ復元・未確定');
+ }catch(e){alert('バックアップを読み込めません：'+(e?.message||String(e)))}
+ finally{db?.close()}
+});
 let newAlbumSplitOrigin=null;
 let splitUnsavedRevision=0;
 let splitAutoSaveFailures=0;
@@ -3181,7 +3219,7 @@ async function saveNewSplitAlbum(){
   });
   newAlbumSplitSavedId=id;
   if(pendingHistoryRestoreId===id)pendingHistoryRestoreId=null;
-  $('#viewSplitHistory').hidden=false;
+  $('#viewSplitHistory').hidden=false;$('#restoreSplitBackup').hidden=false;
   const changedDuringSave=editorSaveRevision!==savingSplitRevision;
   splitAutoSaveFailures=0;
   if(!changedDuringSave){splitUnsavedRevision=0;try{localStorage.removeItem(SPLIT_RECOVERY_PREFIX+id)}catch(e){console.warn('一時記録の削除を保留',e)}}
