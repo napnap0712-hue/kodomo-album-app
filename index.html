@@ -1385,7 +1385,13 @@ async function renderFaceReferencePanel(){
     const detector=await loadLocalFaceDetector();
     bitmap=await createImageBitmap(blob);
     const faces=detector.detect(bitmap).detections||[];
-    status.textContent=faces.length===1?'✅ 顔を1人検出':faces.length===0?'⚠️ 顔を検出できません':'⚠️ 顔を'+faces.length+'人検出（基準写真は1人がおすすめ）';
+    const previous=row.querySelector('.referenceFaceCheckPreview');if(previous)previous.remove();
+    const preview=document.createElement('div');preview.className='referenceFaceCheckPreview';preview.style.cssText='position:relative;width:min(240px,100%);max-width:240px;flex-basis:100%;margin:8px 0 4px;border-radius:10px;overflow:hidden;border:1px solid #dce4ef';
+    const canvas=document.createElement('canvas');const scale=Math.min(1,600/Math.max(bitmap.width,bitmap.height));canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.style.cssText='display:block;width:100%;height:auto';
+    const ctx=canvas.getContext('2d');ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);ctx.strokeStyle='#00c98d';ctx.fillStyle='#00c98d';ctx.lineWidth=Math.max(2,canvas.width/130);ctx.font='bold '+Math.max(12,canvas.width/18)+'px sans-serif';
+    for(const [i,face] of faces.entries()){const box=face.boundingBox;if(!box)continue;const x=box.originX*scale,y=box.originY*scale,w=box.width*scale,h=box.height*scale;ctx.strokeRect(x,y,w,h);ctx.fillText(String(i+1),Math.max(2,x+4),Math.max(16,y+20))}
+    preview.append(canvas);row.append(preview);
+    status.textContent=faces.length===1?'✅ 顔を1人検出':faces.length===0?'⚠️ 顔を検出できません':'⚠️ 顔を'+faces.length+'人検出（緑の枠を確認してください）';
    }catch(e){status.textContent='⚠️ 確認できません：'+(e?.message||String(e)).slice(0,75)}
    finally{bitmap?.close();check.disabled=false}
   };
