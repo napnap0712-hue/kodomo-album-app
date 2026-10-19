@@ -1498,6 +1498,28 @@ $('#clusterPhotoFaces').addEventListener('click',async()=>{
    if(left.some(i=>right.some(j=>similarities[i][j]<.72))){blocked++;continue}
    left.push(...right);for(const i of right)roots[i]=ai;sets[bi]=[];
   }
+  // Extend reciprocal seed pairs with unassigned faces when an entire group agrees.
+  // Reject ambiguous additions that fit multiple existing groups equally well.
+  let extended=true;
+  while(extended){
+   extended=false;
+   const singles=sets.map((g,k)=>({g,k})).filter(v=>v.g.length===1);
+   for(const {g,k} of singles){
+    if(sets[k].length!==1)continue;
+    const idx=g[0],candidates=[];
+    for(let p=0;p<sets.length;p++){
+     const target=sets[p];if(p===k||target.length<2)continue;
+     if(target.some(j=>samples[idx].index===samples[j].index))continue;
+     const values=target.map(j=>similarities[idx][j]);
+     const minimum=Math.min(...values);
+     if(minimum>=.72)candidates.push({p,minimum,average:values.reduce((a,v)=>a+v,0)/values.length});
+    }
+    candidates.sort((x,y)=>y.average-x.average);
+    if(!candidates.length)continue;
+    if(candidates[1]&&candidates[0].average-candidates[1].average<.035)continue;
+    sets[candidates[0].p].push(idx);sets[k]=[];extended=true;
+   }
+  }
   const groups=sets.filter(g=>g.length).map(g=>g.map(i=>samples[i]));
   const uncertain=groups.filter(g=>g.length===1).length;
   groups.sort((a,b)=>b.length-a.length);
