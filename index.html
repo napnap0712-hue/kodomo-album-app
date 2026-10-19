@@ -3019,7 +3019,24 @@ document.getElementById('viewSplitHistory').addEventListener('click',async()=>{
   const list=rows.filter(row=>row?.albumId===newAlbumSplitSavedId).sort((a,b)=>b.savedAt-a.savedAt);
   entries.replaceChildren();
   if(!list.length){entries.textContent='まだ以前の保存履歴はありません。';return}
-  list.forEach((row,i)=>{const item=document.createElement('div');item.style.cssText='border:1px solid #edf0f4;border-radius:10px;padding:10px;font-size:13px';const title=document.createElement('strong');title.textContent=new Date(row.savedAt).toLocaleString('ja-JP');const details=document.createElement('div');details.style.color='#64748b';details.textContent='写真 '+(row.photos?.length??0)+'枚 / 配置 '+(row.edits?.designElements?.length??0)+'個';item.append(title,details);entries.appendChild(item)});
+  list.forEach((row,i)=>{const item=document.createElement('div');item.style.cssText='border:1px solid #edf0f4;border-radius:10px;padding:10px;font-size:13px';const title=document.createElement('strong');title.textContent=new Date(row.savedAt).toLocaleString('ja-JP');const details=document.createElement('div');details.style.color='#64748b';details.textContent='写真 '+(row.photos?.length??0)+'枚 / 配置 '+(row.edits?.designElements?.length??0)+'個';item.append(title,details);
+   const previewButton=document.createElement('button');previewButton.type='button';previewButton.className='secondary';previewButton.textContent='👀 この履歴を確認';previewButton.style.marginTop='8px';
+   const preview=document.createElement('div');preview.hidden=true;preview.style.cssText='margin-top:10px;gap:7px';
+   // A history snapshot is never written back to the active album during preview.
+   previewButton.addEventListener('click',async()=>{
+    if(!preview.hidden){preview.hidden=true;return}
+    preview.hidden=false;preview.textContent='履歴の写真と配置を確認中…';
+    try{
+     if(row.albumId!==newAlbumSplitSavedId||!row.meta||!row.edits||!Array.isArray(row.photos)||row.photos.length!==row.meta.photoCount||row.edits.photoCount!==row.meta.photoCount||!Array.isArray(row.edits.designElements))throw Error('履歴の構造が一致しません');
+     for(const p of row.photos)if(!(p?.blob instanceof Blob)||!p.blob.size)throw Error('写真データが不完全です');
+     for(const e of row.edits.designElements)if(e.type==='photo'&&(!Number.isInteger(e.fileIndex)||e.fileIndex<0||e.fileIndex>=row.photos.length))throw Error('配置の写真参照が不正です');
+     const thumb=await makeProjectThumbnail({background:row.edits.background,designElements:row.edits.designElements,spreadIndex:row.edits.spreadIndex,photos:row.photos});
+     const img=document.createElement('img');img.src=thumb;img.alt='保存履歴の見開きプレビュー';img.style.cssText='width:100%;max-width:480px;border:1px solid #dce4ef;border-radius:8px';
+     const note=document.createElement('p');note.textContent='読み取り専用プレビューです。現在のアルバムは変更していません。';note.style.cssText='font-size:12px;color:#64748b;margin:0';
+     preview.replaceChildren(img,note);
+    }catch(err){preview.textContent='⚠️ 履歴を表示できません：'+(err?.message||String(err))}
+   });
+   item.append(previewButton,preview);entries.appendChild(item)});
  }catch(e){entries.textContent='履歴を読み込めませんでした：'+(e?.message||String(e))}finally{db?.close()}
 });
 document.getElementById('closeSplitHistory').addEventListener('click',()=>{document.getElementById('splitHistoryPanel').hidden=true});
