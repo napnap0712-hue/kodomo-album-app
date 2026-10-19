@@ -976,6 +976,64 @@ async function setSplitTrashState(id,trash){
   });
  }finally{db?.close()}
 }
+// Permanent removal is allowed only for a trashed, independent split album.
+// Main records are removed atomically; backups use exact album IDs in their separate DB.
+async function permanentlyDeleteSplitAlbum(albumId,expectedTitle){
+ const openExisting=(name)=>new Promise((resolve,reject)=>{
+  const req=indexedDB.open(name);
+  req.onsuccess=()=>resolve(req.result);
+  req.onerror=()=>reject(req.error||Error('保存領域を開けません'));
+  req.onblocked=()=>reject(Error('別のタブで保存領域が使用されています'));
+ });
+ let db=null,backupDb=null;
+ try{
+  db=await openExisting('omoide-new-split-albums-v1');
+  for(const name of ['albums','edits','photos','history'])if(!db.objectStoreNames.contains(name))throw Error('保存領域が不完全です');
+  const album=await new Promise((resolve,reject)=>{
+   const q=db.transaction('albums','readonly').objectStore('albums').get(albumId);
+   q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);
+  });
+  if(!album||album.id!==albumId||album.storage!=='split-v1'||album.migrationSourceId||!album.trashedAt||(album.title||'無題のアルバム')!==expectedTitle)throw Error('削除対象が変更されています。画面を更新してください');
+  // Read scoped keys before beginning the short write transaction.
+  const scopedKeys=async(store,prefix)=>new Promise((resolve,reject)=>{
+   const q=db.transaction(store,'readonly').objectStore(store).getAllKeys();
+   q.onsuccess=()=>resolve((q.result||[]).filter(k=>typeof k==='string'&&k.startsWith(prefix)));
+   q.onerror=()=>reject(q.error);
+  });
+  const [photoKeys,historyKeys]=await Promise.all([scopedKeys('photos',albumId+':photo-'),scopedKeys('history',albumId+':')]);
+  // Recheck trash status inside the write transaction so restoration wins over deletion.
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction(['albums','edits','photos','history'],'readwrite');
+   const albums=tx.objectStore('albums'),req=albums.get(albumId);
+   req.onsuccess=()=>{
+    const current=req.result;
+    if(!current||current.id!==albumId||!current.trashedAt||current.trashedAt!==album.trashedAt||current.storage!=='split-v1'||current.migrationSourceId||current.title!==album.title){tx.abort();return}
+    for(const key of photoKeys)tx.objectStore('photos').delete(key);
+    for(const key of historyKeys)tx.objectStore('history').delete(key);
+    tx.objectStore('edits').delete(albumId);
+    albums.delete(albumId);
+   };
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('完全削除に失敗'));
+   tx.onabort=()=>reject(tx.error||Error('削除対象が変更されたか処理を中止しました'));
+  });
+  db.close();db=null;
+  // Never delete the backup database itself or unrelated records.
+  try{
+   backupDb=await openExisting('omoide-split-automatic-backups-v1');
+   const stores=['backups','previousBackups'].filter(name=>backupDb.objectStoreNames.contains(name));
+   if(stores.length)await new Promise((resolve,reject)=>{
+    const tx=backupDb.transaction(stores,'readwrite');
+    for(const name of stores)tx.objectStore(name).delete(albumId);
+    tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('バックアップ削除に失敗'));
+    tx.onabort=()=>reject(tx.error||Error('バックアップ削除が中断されました'));
+   });
+  }catch(e){
+   throw Error('アルバム本体の完全削除は完了しましたが、バックアップ削除に失敗しました。再試行せず管理者に確認してください：'+(e?.message||String(e)));
+  }
+  try{localStorage.removeItem(SPLIT_RECOVERY_PREFIX+albumId)}catch(e){console.warn('一時復元情報の削除に失敗',e)}
+  try{const positions=readSplitPagePositions();if(Object.prototype.hasOwnProperty.call(positions,albumId)){delete positions[albumId];writeSplitPagePositions(positions)}}catch(e){console.warn('表示位置の整理に失敗',e)}
+ }finally{db?.close();backupDb?.close()}
+}
 async function renderSplitProjectCards(){
  const host=$('#splitProjectList'),grid=$('#splitProjectCards');host.hidden=true;grid.replaceChildren();
  let db=null;
@@ -992,7 +1050,18 @@ async function renderSplitProjectCards(){
    const name=document.createElement('span');name.textContent=a.title||'無題のアルバム';
    const restore=document.createElement('button');restore.type='button';restore.className='secondary';restore.textContent='↩ 元に戻す';
    restore.onclick=async()=>{if(!confirm('「'+(a.title||'無題のアルバム')+'」を元に戻しますか？'))return;await setSplitTrashState(a.id,false);await renderProjects()};
-   line.append(name,restore);trashGrid.append(line);
+   const erase=document.createElement('button');erase.type='button';erase.className='secondary';erase.textContent='完全削除';erase.style.color='#b91c1c';
+   erase.onclick=async()=>{
+    const albumName=a.title||'無題のアルバム';
+    if(!confirm('「'+albumName+'」を完全に削除しますか？\\n写真・編集情報・保存履歴・自動バックアップも削除され、元に戻せません。'))return;
+    const typed=prompt('最終確認：削除するアルバム名をそのまま入力してください。\\n'+albumName);
+    if(typed!==albumName){if(typed!==null)alert('アルバム名が一致しないため削除しませんでした。');return}
+    erase.disabled=true;restore.disabled=true;
+    try{await permanentlyDeleteSplitAlbum(a.id,albumName);await renderProjects();alert('「'+albumName+'」を完全削除しました。')}
+    catch(e){alert('⚠️ '+(e?.message||String(e)));erase.disabled=false;restore.disabled=false}
+   };
+   const actions=document.createElement('div');actions.style.cssText='display:flex;gap:6px;flex-wrap:wrap';actions.append(restore,erase);
+   line.append(name,actions);trashGrid.append(line);
   }
   if(!visible.length)return;
   // Use only truly unoccupied legacy slots, without writing split IDs into legacy mappings.
