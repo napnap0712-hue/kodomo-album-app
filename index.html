@@ -3029,9 +3029,9 @@ async function saveNewSplitAlbum(){
   }
   const els=structuredClone(designElements);
   for(const el of els)if(el.type==='photo'&&(!Number.isInteger(el.fileIndex)||el.fileIndex<0||el.fileIndex>=photos.length))throw Error('写真の配置参照が不正です');
-  const req=indexedDB.open('omoide-new-split-albums-v1',1);
+  const req=indexedDB.open('omoide-new-split-albums-v1',2);
   db=await new Promise((resolve,reject)=>{
-   req.onupgradeneeded=()=>{for(const name of ['albums','photos','edits'])if(!req.result.objectStoreNames.contains(name))req.result.createObjectStore(name)};
+   req.onupgradeneeded=()=>{for(const name of ['albums','photos','edits','history'])if(!req.result.objectStoreNames.contains(name))req.result.createObjectStore(name)};
    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('保存領域を開けません'));req.onblocked=()=>reject(Error('保存領域が使用中です'));
   });
   const id=newAlbumSplitSavedId||('split-'+crypto.randomUUID());
@@ -3048,7 +3048,35 @@ async function saveNewSplitAlbum(){
   const meta={id,title:$('#albumTitle').value.trim()||'無題のアルバム',photoCount:photos.length,storage:'split-v1',ready:true,updatedAt:Date.now(),classId:selected.id,year:activeYear(),...(newAlbumSplitOrigin?.migrationSourceId?newAlbumSplitOrigin:{})};
   const edits={albumId:id,photoCount:photos.length,designElements:els,background:$('#pageBackground').value,layout:$('#layoutMode').value,spreadIndex,caption:$('#pageCaption').value.trim(),photoGap:photoGapPercent,photoAssignments:structuredClone(photoAssignments)};
   await new Promise((resolve,reject)=>{
-   const tx=db.transaction(['albums','photos','edits'],'readwrite');
+   const tx=db.transaction(['albums','photos','edits','history'],'readwrite');
+   // Capture a bounded previous version in the SAME transaction as the new save.
+   // A failed transaction leaves the current version unchanged.
+   if(newAlbumSplitSavedId){
+    const albums=tx.objectStore('albums'),editStore=tx.objectStore('edits');
+    const oldReq=albums.get(id);
+    oldReq.onsuccess=()=>{
+     const previous=oldReq.result;
+     if(!previous?.ready)return;
+     const editReq=editStore.get(id);
+     editReq.onsuccess=()=>{
+      const oldEdits=editReq.result;
+      if(!oldEdits||oldEdits.photoCount!==previous.photoCount)return;
+      const oldPhotos=new Array(previous.photoCount),photoStore=tx.objectStore('photos');
+      let remaining=previous.photoCount;
+      const finish=()=>{
+       if(remaining!==0)return;
+       if(oldPhotos.some(p=>!(p?.blob instanceof Blob)||!p.blob.size))return;
+       const history=tx.objectStore('history'),key=id+':'+Date.now()+':'+crypto.randomUUID();
+       history.put({albumId:id,savedAt:Date.now(),meta:previous,edits:oldEdits,photos:oldPhotos},key);
+      };
+      if(!remaining)finish();
+      for(let i=0;i<previous.photoCount;i++){
+       const q=photoStore.get(id+':photo-'+i);
+       q.onsuccess=()=>{oldPhotos[i]=q.result;remaining--;finish()};
+      }
+     };
+    };
+   }
    // Commit photo objects and editing metadata atomically in the isolated namespace.
    const p=tx.objectStore('photos');
    photos.forEach((photo,i)=>p.put(photo,id+':photo-'+i));
