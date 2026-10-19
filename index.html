@@ -1449,11 +1449,25 @@ $('#testRecognitionComparison').addEventListener('click',async()=>{
   status.textContent='写真1枚の顔を照合中…';
   const detected=await humanFacesFromBlob(human,files[0]);
   const host=$('#recognitionComparisonResults');host.replaceChildren();
+  const previewBitmap=await createImageBitmap(files[0]);
+  const previewCanvas=document.createElement('canvas');
+  previewCanvas.width=previewBitmap.width;previewCanvas.height=previewBitmap.height;
+  previewCanvas.getContext('2d').drawImage(previewBitmap,0,0);
+  previewBitmap.close();
   detected.forEach((face,i)=>{
-   const line=document.createElement('div');line.style.cssText='padding:5px 0;font-size:13px';
+   const line=document.createElement('div');line.style.cssText='display:flex;align-items:center;gap:10px;padding:7px 0;font-size:13px;flex-wrap:wrap';
+   const thumb=document.createElement('canvas');thumb.width=96;thumb.height=96;thumb.style.cssText='width:80px;height:80px;border-radius:10px;border:1px solid #dce4ef;flex:none';
+   const box=face.box;
+   if(Array.isArray(box)&&box.length>=4){
+    const x=box[0]*previewCanvas.width/(face.imageWidth||previewCanvas.width),y=box[1]*previewCanvas.height/(face.imageHeight||previewCanvas.height);
+    const w=box[2]*previewCanvas.width/(face.imageWidth||previewCanvas.width),h=box[3]*previewCanvas.height/(face.imageHeight||previewCanvas.height);
+    const size=Math.max(w,h)*1.5,cx=x+w/2,cy=y+h/2;
+    thumb.getContext('2d').drawImage(previewCanvas,cx-size/2,cy-size/2,size,size,0,0,96,96);
+   }
    const rated=references.map(ref=>({name:ref.name,similarity:faceEmbeddingSimilarity(face.embedding,ref.embedding)})).filter(x=>x.similarity!==null).sort((a,b)=>b.similarity-a.similarity);
-   line.textContent='顔'+(i+1)+'の候補：'+(rated.length?rated.slice(0,3).map(v=>v.name+'（比較値 '+v.similarity.toFixed(3)+'）').join('、'):'特徴が取れませんでした');
-   host.append(line);
+   const desc=document.createElement('span');
+   desc.textContent='顔'+(i+1)+'の候補：'+(rated.length?rated.slice(0,3).map(v=>v.name+'（比較値 '+v.similarity.toFixed(3)+'）').join('、'):'特徴が取れませんでした');
+   line.append(thumb,desc);host.append(line);
   });
   status.textContent='✅ 写真1枚で候補を表示（基準顔 '+references.length+'人・検出顔 '+detected.length+'人）。比較値は正解率ではありません。振り分け未変更。';
  }catch(e){status.textContent='⚠️ 照合できません：'+(e?.message||String(e)).slice(0,130);console.warn('Face comparison failed',e)}
