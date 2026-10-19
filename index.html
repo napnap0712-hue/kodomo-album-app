@@ -1119,6 +1119,7 @@ function show(id){
   if(!confirm('保存が完了していない変更があります。このまま移動すると変更が失われる可能性があります。移動しますか？'))return;
  }
  if(id!=='editor'){
+  if(document.querySelector('[data-screen="editor"]')?.classList.contains('active'))flushPendingSplitRecovery();
   newAlbumSplitSelected=false;newAlbumSplitSavedId=null;$('#saveDraft').textContent='下書きを保存';
   document.querySelector('.screen[data-screen="editor"]').classList.remove('newSplitPreparation');
   $('#newSplitAlbumPrepPanel').classList.remove('newSplitChoiceActive');
@@ -1710,6 +1711,17 @@ function saveSplitEditRecovery(){
   }));
  }catch(e){console.warn('分離アルバムの編集一時記録に失敗',e)}
 }
+// Flush pending layout/text recovery when Safari backgrounds or closes the page.
+// This writes only a small local recovery snapshot, never photos or the original album.
+function flushPendingSplitRecovery(){
+ if(!splitUnsavedRevision||!newAlbumSplitSelected||!newAlbumSplitSavedId)return;
+ clearTimeout(editRecoveryTimer);
+ saveSplitEditRecovery();
+}
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='hidden')flushPendingSplitRecovery();
+});
+window.addEventListener('pagehide',flushPendingSplitRecovery);
 function restoreSplitEditRecovery(meta,edits,photos){
  let data;
  try{data=JSON.parse(localStorage.getItem(SPLIT_RECOVERY_PREFIX+meta.id)||'null')}catch{return false}
