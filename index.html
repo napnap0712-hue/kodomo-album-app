@@ -754,7 +754,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <header class="homeHeader"><p class="brand">OMOIDE BOOK</p><h1>おもいでブック</h1><p class="lead">クラスを選んで、思い出のアルバムを作ろう。</p></header>
 <div class="flowerGrid" id="flowerGrid"></div>
 </section>
-<section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><div id="projectGrid" class="projectGrid"></div><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
+<section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><div id="projectGrid" class="projectGrid"></div><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><div id="splitTrashList" hidden style="margin-top:16px"><strong>🗑 分離保存アルバムのゴミ箱</strong><div id="splitTrashCards" style="display:grid;gap:8px;margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
 <div class="top"><button class="back" data-back="home" aria-label="戻る">‹</button><div class="topText"><p class="brand">CLASS</p><h1 id="classTitle">クラス</h1><p class="lead">何をするか選んでね。</p></div></div>
 <div class="actionList">
 <button class="action" id="createNew"><span class="actionIcon">＋</span><span><b>新しく作る</b><small>写真を選んでアルバムを作成</small></span><span class="arrow">›</span></button>
@@ -959,6 +959,23 @@ async function renderProjects(){
 function splitPagePositionKey(){return 'omoide-split-page-positions-v1-'+selected.id+'-'+activeYear()}
 function readSplitPagePositions(){try{const value=JSON.parse(localStorage.getItem(splitPagePositionKey())||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{}}catch{return {}}}
 function writeSplitPagePositions(value){try{localStorage.setItem(splitPagePositionKey(),JSON.stringify(value))}catch(e){console.warn('Split page placement preference not stored',e)}}
+// Soft-delete only the album metadata flag. Photos, edits, history and backups are untouched.
+async function setSplitTrashState(id,trash){
+ let db=null;
+ try{
+  const req=indexedDB.open('omoide-new-split-albums-v1');
+  db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+  await new Promise((resolve,reject)=>{
+   const tx=db.transaction('albums','readwrite'),store=tx.objectStore('albums'),get=store.get(id);
+   get.onsuccess=()=>{
+    const album=get.result;
+    if(!album||album.storage!=='split-v1'||album.migrationSourceId){tx.abort();return}
+    store.put({...album,trashedAt:trash?Date.now():null},id);
+   };
+   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('ゴミ箱の更新に失敗'));tx.onabort=()=>reject(tx.error||Error('ゴミ箱の更新を中止'));
+  });
+ }finally{db?.close()}
+}
 async function renderSplitProjectCards(){
  const host=$('#splitProjectList'),grid=$('#splitProjectCards');host.hidden=true;grid.replaceChildren();
  let db=null;
@@ -967,7 +984,16 @@ async function renderSplitProjectCards(){
   db=await new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
   if(!db.objectStoreNames.contains('albums'))return;
   const rows=await new Promise((resolve,reject)=>{const q=db.transaction('albums','readonly').objectStore('albums').getAll();q.onsuccess=()=>resolve(q.result||[]);q.onerror=()=>reject(q.error)});
-  const visible=rows.filter(a=>a&&a.storage==='split-v1'&&a.ready&&!a.migrationSourceId&&a.classId===selected.id&&a.year===activeYear()&&a.photoCount>0).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const visible=rows.filter(a=>a&&a.storage==='split-v1'&&a.ready&&!a.trashedAt&&!a.migrationSourceId&&a.classId===selected.id&&a.year===activeYear()&&a.photoCount>0).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const trashed=rows.filter(a=>a&&a.storage==='split-v1'&&a.trashedAt&&!a.migrationSourceId&&a.classId===selected.id&&a.year===activeYear());
+  const trashHost=$('#splitTrashList'),trashGrid=$('#splitTrashCards');trashGrid.replaceChildren();trashHost.hidden=!trashed.length;
+  for(const a of trashed){
+   const line=document.createElement('div');line.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #e2e8f0;border-radius:12px;padding:10px';
+   const name=document.createElement('span');name.textContent=a.title||'無題のアルバム';
+   const restore=document.createElement('button');restore.type='button';restore.className='secondary';restore.textContent='↩ 元に戻す';
+   restore.onclick=async()=>{if(!confirm('「'+(a.title||'無題のアルバム')+'」を元に戻しますか？'))return;await setSplitTrashState(a.id,false);await renderProjects()};
+   line.append(name,restore);trashGrid.append(line);
+  }
   if(!visible.length)return;
   // Use only truly unoccupied legacy slots, without writing split IDs into legacy mappings.
   const legacySlots=readProjectSlots(),positions=readSplitPagePositions(),taken=new Set();
@@ -990,6 +1016,9 @@ async function renderSplitProjectCards(){
     const label=document.createElement('span');label.className='projectCardName';label.textContent=available.querySelector('.projectCardName')?.textContent||String(Number(btn.dataset.projectSlot)+1);
     btn.append(preview,label);btn.title=a.title||'分離保存ページ';
     btn.addEventListener('click',()=>openSplitProjectFromList(a.id));
+    const trashButton=document.createElement('button');trashButton.type='button';trashButton.className='secondary';trashButton.textContent='🗑';trashButton.title='ゴミ箱へ移動';trashButton.style.cssText='position:absolute;right:4px;bottom:4px;z-index:2;padding:5px;min-height:28px';
+    trashButton.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('「'+(a.title||'無題のアルバム')+'」をゴミ箱へ移動しますか？写真や保存履歴は消えません。'))return;await setSplitTrashState(a.id,true);await renderProjects()});
+    btn.style.position='relative';btn.append(trashButton);
     available.replaceWith(btn);
     return;
    }
@@ -997,7 +1026,9 @@ async function renderSplitProjectCards(){
    const preview=document.createElement('span');preview.className='projectCardPreview';preview.textContent='📖';
    photoPreviews.push({albumId:a.id,preview});
    const label=document.createElement('span');label.className='projectCardName';label.textContent=a.title||('分離ページ '+(i+1));
-   btn.append(preview,label);btn.addEventListener('click',()=>openSplitProjectFromList(a.id));grid.append(btn);
+   btn.append(preview,label);btn.addEventListener('click',()=>openSplitProjectFromList(a.id));
+   const trashButton=document.createElement('button');trashButton.type='button';trashButton.className='secondary';trashButton.textContent='🗑 ゴミ箱へ';trashButton.addEventListener('click',async e=>{e.stopPropagation();if(!confirm('「'+(a.title||'無題のアルバム')+'」をゴミ箱へ移動しますか？'))return;await setSplitTrashState(a.id,true);await renderProjects()});
+   const wrapper=document.createElement('div');wrapper.style.cssText='display:grid;gap:5px';wrapper.append(btn,trashButton);grid.append(wrapper);
   });
   // Build the same full-spread thumbnail as legacy drafts, reading split data only.
   if(db.objectStoreNames.contains('photos')&&db.objectStoreNames.contains('edits')){
