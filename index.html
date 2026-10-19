@@ -1689,6 +1689,37 @@ async function loadDraft(id){newAlbumSplitSelected=false;newAlbumSplitSavedId=nu
 let editorSaveRevision=0,editorAutoSaveTimer=null,editorSaveInProgress=false;
 let editRecoveryBaseline=null,editRecoveryTimer=null;
 const EDIT_RECOVERY_KEY='omoide-edit-recovery-v1';
+const SPLIT_RECOVERY_PREFIX='omoide-split-edit-recovery-v1:';
+function saveSplitEditRecovery(){
+ if(!newAlbumSplitSelected||!newAlbumSplitSavedId||!editorPhotoIntegrityOk||!splitUnsavedRevision)return;
+ try{
+  localStorage.setItem(SPLIT_RECOVERY_PREFIX+newAlbumSplitSavedId,JSON.stringify({
+   version:1,id:newAlbumSplitSavedId,revision:editorSaveRevision,
+   title:$('#albumTitle').value,background:$('#pageBackground').value,
+   caption:$('#pageCaption').value,layout:$('#layoutMode').value,
+   photoGap:photoGapPercent,spreadIndex,photoCount:files.length,
+   designElements:structuredClone(designElements),photoAssignments:structuredClone(photoAssignments)
+  }));
+ }catch(e){console.warn('分離アルバムの編集一時記録に失敗',e)}
+}
+function restoreSplitEditRecovery(meta,edits,photos){
+ let data;
+ try{data=JSON.parse(localStorage.getItem(SPLIT_RECOVERY_PREFIX+meta.id)||'null')}catch{return false}
+ if(!data||data.version!==1||data.id!==meta.id||data.photoCount!==photos.length||!Array.isArray(data.designElements))return false;
+ if(data.designElements.some(e=>e?.type==='photo'&&(!Number.isInteger(e.fileIndex)||e.fileIndex<0||e.fileIndex>=photos.length)))return false;
+ if(!confirm('保存前の編集内容が見つかりました。写真は変更せず、配置や文字を復元しますか？'))return false;
+ designElements=structuredClone(data.designElements);
+ photoAssignments=Array.isArray(data.photoAssignments)?structuredClone(data.photoAssignments):photoAssignments;
+ $('#albumTitle').value=data.title??meta.title??'';
+ $('#pageBackground').value=data.background??edits.background??'#ffffff';
+ $('#pageCaption').value=data.caption??edits.caption??'';
+ $('#layoutMode').value=data.layout??edits.layout??'spread';
+ photoGapPercent=Number.isFinite(Number(data.photoGap))?Number(data.photoGap):photoGapPercent;
+ spreadIndex=Number.isInteger(data.spreadIndex)?data.spreadIndex:spreadIndex;
+ $('#photoGap').value=photoGapPercent;$('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';
+ return true;
+}
+
 function saveEditRecovery(){
  clearTimeout(editRecoveryTimer);
  if(safeSplitEditorMode)return;
@@ -1710,7 +1741,7 @@ function restoreEditRecovery(item){
  spreadIndex=Number.isInteger(d.spreadIndex)?Math.max(0,d.spreadIndex):spreadIndex;designElements=d.designElements;
  editorSaveRevision++;return true;
 }
-function setEditorSaveState(state){const el=$('#editorSaveState');if(el)el.textContent=state}function scheduleEditorAutoSave(){clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;if(!newAlbumSplitSelected||!newAlbumSplitSavedId||safeSplitEditorMode||!editorPhotoIntegrityOk)return;const albumId=newAlbumSplitSavedId;editorAutoSaveTimer=setTimeout(()=>{editorAutoSaveTimer=null;if(newAlbumSplitSelected&&newAlbumSplitSavedId===albumId&&!newAlbumSplitSaveBusy&&editorPhotoIntegrityOk&&document.querySelector('[data-screen="editor"]')?.classList.contains('active'))saveNewSplitAlbum();else if(newAlbumSplitSavedId===albumId&&newAlbumSplitSaveBusy)scheduleEditorAutoSave()},2000)}function markEditorUnsaved(){editorSaveRevision++;if(newAlbumSplitSelected&&newAlbumSplitSavedId)splitUnsavedRevision=editorSaveRevision;setEditorSaveState('● 未保存の変更あり');scheduleEditorAutoSave();clearTimeout(editRecoveryTimer);editRecoveryTimer=setTimeout(saveEditRecovery,700)}
+function setEditorSaveState(state){const el=$('#editorSaveState');if(el)el.textContent=state}function scheduleEditorAutoSave(){clearTimeout(editorAutoSaveTimer);editorAutoSaveTimer=null;if(!newAlbumSplitSelected||!newAlbumSplitSavedId||safeSplitEditorMode||!editorPhotoIntegrityOk)return;const albumId=newAlbumSplitSavedId;editorAutoSaveTimer=setTimeout(()=>{editorAutoSaveTimer=null;if(newAlbumSplitSelected&&newAlbumSplitSavedId===albumId&&!newAlbumSplitSaveBusy&&editorPhotoIntegrityOk&&document.querySelector('[data-screen="editor"]')?.classList.contains('active'))saveNewSplitAlbum();else if(newAlbumSplitSavedId===albumId&&newAlbumSplitSaveBusy)scheduleEditorAutoSave()},2000)}function markEditorUnsaved(){editorSaveRevision++;if(newAlbumSplitSelected&&newAlbumSplitSavedId)splitUnsavedRevision=editorSaveRevision;setEditorSaveState('● 未保存の変更あり');scheduleEditorAutoSave();clearTimeout(editRecoveryTimer);editRecoveryTimer=setTimeout(()=>{saveEditRecovery();saveSplitEditRecovery()},700)}
 const editorRoot=document.querySelector('[data-screen="editor"]');editorRoot.addEventListener('input',e=>{if(e.target.closest('button'))return;markEditorUnsaved()});editorRoot.addEventListener('change',markEditorUnsaved);editorRoot.addEventListener('pointerup',e=>{if(e.target.closest('button')&&e.target.id!=='saveDraft'&&e.target.id!=='exportImage')markEditorUnsaved()});
 // Experimental editor save: isolated DB only; never writes actual drafts or triggers sync.
 $('#trialSaveDraft').addEventListener('click',async()=>{
@@ -2144,8 +2175,10 @@ $('#resumeSavedNewSplitEdit').addEventListener('click',async()=>{
   photoGapPercent=Number.isFinite(Number(edits.photoGap))?Number(edits.photoGap):2;
   $('#photoGap').value=photoGapPercent;$('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';
   selectedElementId=null;selectedGroupIds.clear();activePhotoFolder='all';resetEditHistory();
+  const recoveredSplit=restoreSplitEditRecovery(meta,edits,photos);
   syncPageSettingsChoices();refreshEditor();
   editorPhotoIntegrityOk=true;
+  if(recoveredSplit){splitUnsavedRevision=++editorSaveRevision;scheduleEditorAutoSave();}
   $('#saveDraft').disabled=false;$('#saveDraft').textContent='💾 分離保存';
   syncStorageChoiceUi();setEditorSaveState('✓ 分離保存から復元');
   $('#editorStatus').textContent='✅ 保存済みの新規分離アルバムを通常の編集画面で開きました。変更後は「💾 分離保存」で保存できます。';
@@ -3004,7 +3037,7 @@ async function saveNewSplitAlbum(){
   });
   newAlbumSplitSavedId=id;
   const changedDuringSave=editorSaveRevision!==savingSplitRevision;
-  if(!changedDuringSave)splitUnsavedRevision=0;
+  if(!changedDuringSave){splitUnsavedRevision=0;try{localStorage.removeItem(SPLIT_RECOVERY_PREFIX+id)}catch(e){console.warn('一時記録の削除を保留',e)}}
   if(changedDuringSave)scheduleEditorAutoSave();
   status.textContent='✅ '+(newAlbumSplitOrigin?.migrationSourceId?'既存アルバムの分離保存が完了しました':'新規アルバムを分離保存しました')+'：写真'+photos.length+'枚・配置'+els.length+'個。'+(newAlbumSplitOrigin?.migrationSourceId?'元のアルバムは保持されています。':'従来のアルバムとバックアップは未変更です。');
   setEditorSaveState(changedDuringSave?'● 続きの変更を保存待ち':'✓ 自動保存済み');
