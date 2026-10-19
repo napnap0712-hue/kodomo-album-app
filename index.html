@@ -769,7 +769,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
-<p id="photoAssignProgress" class="muted"></p><label style="display:inline-flex;align-items:center;gap:7px;margin:0 0 12px;font-size:14px"><input id="showUnassignedOnly" type="checkbox"> 未振り分けの写真だけ表示</label><div id="assignClassSummary" class="photoUsageSummary"></div>
+<p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
 <div id="photoAssignGrid" class="assignGrid"></div>
 <button type="button" class="primary wide" id="finishPhotoAssign">見開き編集へ進む ›</button>
 </section>
@@ -1344,7 +1344,6 @@ function startEditingWithSelectedPhotos(){if(!files.length)return;newAlbumSplitS
 function renderPhotoAssignmentPage(){
  const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);grid.innerHTML='';
  files.forEach((file,index)=>{
-  if($('#showUnassignedOnly').checked&&(photoAssignments[index]||[]).length)return;
   const card=document.createElement('article');card.className='assignCard';
   const image=document.createElement('img');image.src=fileUrl(file);image.alt=file.name;image.loading='lazy';image.decoding='async';
   const body=document.createElement('div');body.className='assignCardBody';
@@ -1354,13 +1353,12 @@ function renderPhotoAssignmentPage(){
   const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='園児を選択';select.append(placeholder);
   kids.forEach(k=>{const option=document.createElement('option');option.value=k.id;option.textContent=k.name;select.append(option)});
   const selectedList=document.createElement('div');selectedList.className='assignSelectedKids';
-  const renderSelected=()=>{selectedList.replaceChildren();(photoAssignments[index]||[]).forEach(id=>{const kid=kids.find(k=>k.id===id);if(!kid)return;const chip=document.createElement('button');chip.type='button';chip.className='assignKidChip';chip.textContent=kid.name+' ×';chip.setAttribute('aria-label',kid.name+'の振り分けを解除');chip.addEventListener('click',()=>{photoAssignments[index]=(photoAssignments[index]||[]).filter(v=>v!==id);renderSelected();updatePhotoAssignmentProgress();if($('#showUnassignedOnly').checked)renderPhotoAssignmentPage()});selectedList.append(chip)})};
-  select.addEventListener('change',()=>{if(!select.value)return;const ids=new Set(photoAssignments[index]||[]);ids.add(select.value);photoAssignments[index]=[...ids];select.value='';renderSelected();updatePhotoAssignmentProgress();if($('#showUnassignedOnly').checked)renderPhotoAssignmentPage()});
+  const renderSelected=()=>{selectedList.replaceChildren();(photoAssignments[index]||[]).forEach(id=>{const kid=kids.find(k=>k.id===id);if(!kid)return;const chip=document.createElement('button');chip.type='button';chip.className='assignKidChip';chip.textContent=kid.name+' ×';chip.setAttribute('aria-label',kid.name+'の振り分けを解除');chip.addEventListener('click',()=>{photoAssignments[index]=(photoAssignments[index]||[]).filter(v=>v!==id);renderSelected();updatePhotoAssignmentProgress();});selectedList.append(chip)})};
+  select.addEventListener('change',()=>{if(!select.value)return;const ids=new Set(photoAssignments[index]||[]);ids.add(select.value);photoAssignments[index]=[...ids];select.value='';renderSelected();updatePhotoAssignmentProgress();});
   select.disabled=!kids.length;picker.append(select,selectedList);renderSelected();
   body.append(picker);card.append(image,body);grid.append(card);
  });updatePhotoAssignmentProgress();
 }
-$('#showUnassignedOnly').addEventListener('change',renderPhotoAssignmentPage);
 function updatePhotoAssignmentProgress(){
  const done=files.filter((_,i)=>(photoAssignments[i]||[]).length).length;
  $('#photoAssignProgress').textContent='振り分け済み '+done+' / '+files.length+'枚（未振り分けも後から編集できます）';
@@ -1379,10 +1377,10 @@ function renderClassPhotoSummary(id,used){
   if(current){const line=document.createElement('div');line.className='photoCurrentChild';line.textContent=(current.count>=goal?'✅ ':'📷 ')+current.name+' '+current.count+'/'+goal+'枚'+(current.count>=goal?' 達成！':'');host.append(line)}
  }
  const details=document.createElement('details');details.className='photoUsageDetails';details.open=wasOpen;
- const summary=document.createElement('summary');summary.textContent='📊 '+(used?'写真達成状況':'振り分け状況')+'　'+complete+'/'+kids.length+'人達成';
+ const summary=document.createElement('summary');summary.textContent=used?'📊 写真達成状況　'+complete+'/'+kids.length+'人達成':'📂 園児別の振り分け状況（枚数制限なし）';
  details.append(summary);
  const list=document.createElement('div');list.className='photoUsageList';
- counts.forEach(x=>{const row=document.createElement('span');row.className='photoUsageItem'+(x.count>=goal?' achieved':'');row.textContent=(x.count>=goal?'✓ ':'')+x.name+' '+x.count+'/'+goal;list.append(row)});
+ counts.forEach(x=>{const row=document.createElement('span');row.className='photoUsageItem'+(used&&x.count>=goal?' achieved':'');row.textContent=(used&&x.count>=goal?'✓ ':'')+x.name+' '+x.count+(used?'/'+goal:'枚');list.append(row)});
  details.append(list);host.append(details);
 }
 $('#finishPhotoAssign').addEventListener('click',()=>startEditingWithSelectedPhotos());
