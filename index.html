@@ -1366,13 +1366,17 @@ async function renderFaceReferencePanel(){
   if(token!==faceReferenceRenderId)return;
   const row=document.createElement('div');row.style.cssText='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #eef1f6;padding:6px 0';
   const name=document.createElement('span');name.textContent=kid.name;
+  const identity=document.createElement('div');identity.style.cssText='display:flex;align-items:center;gap:10px;min-width:0';
+  const photoPreview=document.createElement('span');photoPreview.style.cssText='display:grid;place-items:center;width:48px;height:48px;flex:none;border:1px solid #dce4ef;border-radius:12px;background:#f6f8fb;overflow:hidden';photoPreview.textContent='📷';
+  identity.append(photoPreview,name);
   const status=document.createElement('span');status.style.fontSize='12px';status.textContent='確認中…';
   const label=document.createElement('label');label.className='secondary';label.style.cssText='padding:7px 10px;cursor:pointer;font-size:12px';label.textContent='写真を登録・変更';
   const input=document.createElement('input');input.type='file';input.accept='image/*';input.hidden=true;label.append(input);
   const key=faceReferenceKey(kid.id);
-  input.addEventListener('change',async()=>{const photo=input.files?.[0];if(!photo)return; if(!photo.type.startsWith('image/')){alert('画像ファイルを選んでください');return}label.style.pointerEvents='none';status.textContent='保存中…';try{await faceReferenceSave(key,photo);status.textContent='✅ 登録済み';$('#faceReferenceStatus').textContent=kid.name+'さんの基準写真を端末内に保存しました。'}catch(e){status.textContent='⚠️ 保存失敗';alert(e?.message||String(e))}finally{label.style.pointerEvents='';input.value=''}});
-  row.append(name,status,label);host.append(row);
-  try{const saved=await faceReferenceRead(key);if(token!==faceReferenceRenderId)return;status.textContent=kid.facePhoto?'✅ 管理画面の顔写真を使用':saved?.blob instanceof Blob?'✅ 個別登録済み':'未登録'}catch(e){status.textContent='⚠️ 読み取り不可'}
+  input.addEventListener('change',async()=>{const photo=input.files?.[0];if(!photo)return; if(!photo.type.startsWith('image/')){alert('画像ファイルを選んでください');return}label.style.pointerEvents='none';status.textContent='保存中…';try{await faceReferenceSave(key,photo);status.textContent='✅ 個別登録済み';if(!kid.facePhoto){const img=document.createElement('img');const url=URL.createObjectURL(photo);img.src=url;img.alt=kid.name+'さんの登録写真';img.style.cssText='width:100%;height:100%;object-fit:cover';img.onload=()=>URL.revokeObjectURL(url);img.onerror=()=>{URL.revokeObjectURL(url);photoPreview.textContent='⚠️'};photoPreview.replaceChildren(img)}$('#faceReferenceStatus').textContent=kid.name+'さんの基準写真を端末内に保存しました。'}catch(e){status.textContent='⚠️ 保存失敗';alert(e?.message||String(e))}finally{label.style.pointerEvents='';input.value=''}});
+  if(kid.facePhoto){label.hidden=true;const img=document.createElement('img');img.src=kid.facePhoto;img.alt=kid.name+'さんの登録写真';img.style.cssText='width:100%;height:100%;object-fit:cover';img.onerror=()=>photoPreview.replaceChildren(document.createTextNode('⚠️'));photoPreview.replaceChildren(img)}
+  row.append(identity,status,label);host.append(row);
+  try{const saved=await faceReferenceRead(key);if(token!==faceReferenceRenderId)return;status.textContent=kid.facePhoto?'✅ 管理画面の顔写真を使用':saved?.blob instanceof Blob?'✅ 個別登録済み':'未登録';if(!kid.facePhoto&&saved?.blob instanceof Blob){const img=document.createElement('img');const url=URL.createObjectURL(saved.blob);img.src=url;img.alt=kid.name+'さんの登録写真';img.style.cssText='width:100%;height:100%;object-fit:cover';img.onload=()=>URL.revokeObjectURL(url);img.onerror=()=>{URL.revokeObjectURL(url);photoPreview.textContent='⚠️'};photoPreview.replaceChildren(img)}}catch(e){status.textContent='⚠️ 読み取り不可'}
  }
 }
 function renderPhotoAssignmentPage(){
