@@ -87,6 +87,12 @@ start.addEventListener('click',async()=>{
   }
   if(stop){status.textContent='⏹ 中断しました。アルバムへの変更はありません。';return}
   const threshold=Number($('threshold').value);
+  const pairScores=[];
+  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+   const score=similarity(items[i].vector,items[j].vector);
+   if(Number.isFinite(score))pairScores.push({i,j,score});
+  }
+  pairScores.sort((a,b)=>b.score-a.score);
   groups=[{id:'unknown',members:[]}];let next=1;
   // Conservative complete-link clustering: every new face must match all members.
   for(let i=0;i<items.length;i++){
