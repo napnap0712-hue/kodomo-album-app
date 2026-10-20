@@ -616,6 +616,29 @@ start.addEventListener('click',async()=>{
   }
   };
   refreshGroupPairs();
+  const breakdown=document.createElement('details');
+  const summary=document.createElement('summary');summary.textContent='🧪 統合されない理由を確認（顔ごとの比較）';breakdown.append(summary);
+  const note=document.createElement('p');note.className='muted';note.textContent='別グループ間で最も似ている顔の組を表示します。比較値は正解率ではありません。';breakdown.append(note);
+  const candidates=[];
+  for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
+   if(!groups[a].members.length||!groups[b].members.length)continue;
+   let best=null;
+   for(const i of groups[a].members)for(const j of groups[b].members){
+    const score=pairScore(i,j);
+    if(Number.isFinite(score)&&(!best||score>best.score))best={i,j,score,a,b};
+   }
+   if(best)candidates.push(best);
+  }
+  candidates.sort((a,b)=>b.score-a.score);
+  for(const c of candidates.slice(0,12)){
+   const row=document.createElement('div');row.style.cssText='border-bottom:1px solid #e8edf3;padding:8px 0';
+   const title=document.createElement('div');title.textContent='グループ '+groups[c.a].id+' ↔ '+groups[c.b].id+'：最も似た顔 '+c.score.toFixed(3);row.append(title);
+   for(const id of [c.i,c.j]){
+    const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.style.cssText='width:72px;height:72px;object-fit:cover;border-radius:8px;margin:5px';row.append(img);
+   }
+   breakdown.append(row);
+  }
+  diagnostic.append(breakdown);
   groupsHost.closest('section').after(diagnostic);
   render();
  }catch(e){status.textContent='⚠️ 解析できません: '+String(e?.message||e).slice(0,220)}
