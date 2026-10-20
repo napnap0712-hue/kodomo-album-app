@@ -470,7 +470,7 @@ start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
- let session;
+ let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
   const modelStarted=performance.now();
@@ -478,6 +478,8 @@ start.addEventListener('click',async()=>{
   const base='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/';
   const requestedGPU=false;
   const ort=await import(base+(requestedGPU?'ort.webgpu.min.mjs':'ort.min.mjs'));
+  // Keep the WASM heap below iOS Safari's practical memory limits.
+  ort.env.wasm.proxy=false;
   ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;
   const selectedModel=lightweightModelFile?'lightweight':$('recognitionModel').value;
   let modelURL;
@@ -529,7 +531,7 @@ start.addEventListener('click',async()=>{
    status.textContent='軽量モデルの入力：'+JSON.stringify(shape||'不明')+' ／ 出力：'+JSON.stringify(outputShape||'不明')+'。解析を開始します…';
   }
   const mod=await import('./human.esm.js'),Human=mod.Human||mod.default;
-  const human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:20},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
+  human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:20},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
   await human.load();timings.model=performance.now()-modelStarted;const failed=[],diagnostics=[];
   for(let i=0;i<files.length;i++){
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
@@ -692,6 +694,6 @@ start.addEventListener('click',async()=>{
   groupsHost.closest('section').after(diagnostic);
   render();
  }catch(e){status.textContent='⚠️ 解析できません: '+String(e?.message||e).slice(0,220)}
- finally{try{await session?.release()}catch{}start.disabled=false;cancel.disabled=true}
+ finally{try{await session?.release()}catch{}try{await human?.dispose?.()}catch{}start.disabled=false;cancel.disabled=true}
 });
 window.addEventListener('pagehide',()=>urls.forEach(URL.revokeObjectURL));
