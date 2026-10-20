@@ -54,6 +54,12 @@ $('loadRoster').addEventListener('click',()=>{
 });
 classSelect.addEventListener('change',()=>{roster=[];$('rosterStatus').textContent='クラスを変更しました。「登録済み園児を読み込む」を押してください。';render()});
 
+const gpuControl=document.createElement('label');
+gpuControl.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0';
+const gpuCheckbox=document.createElement('input');gpuCheckbox.type='checkbox';gpuCheckbox.checked=localStorage.getItem('omoide-prototype-gpu-test')==='on';
+gpuCheckbox.addEventListener('change',()=>{localStorage.setItem('omoide-prototype-gpu-test',gpuCheckbox.checked?'on':'off');status.textContent=gpuCheckbox.checked?'次の解析でWebGPUを試します。非対応の場合は従来方式に戻します。':'次の解析は従来方式です。'});
+gpuControl.append(gpuCheckbox,document.createTextNode('🚀 GPU高速化を試す（実験・対応端末のみ）'));
+const startRow=start.parentElement;startRow?.parentElement?.insertBefore(gpuControl,startRow.nextSibling);
 const queued=[];
 const folderInput=$('folderInput');
 const count=$('photoCount');
@@ -253,7 +259,9 @@ start.addEventListener('click',async()=>{
   const modelStarted=performance.now();
   status.textContent='AIモデルを準備しています…';
   const base='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/';
-  const ort=await import(base+'ort.min.mjs');ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;
+  const requestedGPU=localStorage.getItem('omoide-prototype-gpu-test')==='on';
+  const ort=await import(base+(requestedGPU?'ort.webgpu.min.mjs':'ort.min.mjs'));
+  ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;
   const selectedModel=$('recognitionModel').value;
   let modelURL;
   if(selectedModel==='arcface'){
@@ -264,7 +272,20 @@ start.addEventListener('click',async()=>{
    modelURL=new URL('./models/auraface-glintr100.onnx',import.meta.url).href;
    try{const r=await fetch(modelURL,{method:'HEAD'});if(!r.ok)throw Error('not found')}catch{modelURL='https://huggingface.co/fal/AuraFace-v1/resolve/main/glintr100.onnx'}
   }
-  session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
+  let executionProvider='wasm';
+  if(requestedGPU){
+   try{
+    if(!navigator.gpu)throw Error('このブラウザはWebGPU非対応');
+    const adapter=await navigator.gpu.requestAdapter();
+    if(!adapter)throw Error('GPUアダプターが利用できません');
+    session=await ort.InferenceSession.create(modelURL,{executionProviders:['webgpu','wasm']});
+    executionProvider='webgpu（試験）';
+   }catch(e){
+    console.warn('WebGPUの初期化に失敗。WASMに切替',e);
+    session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
+    executionProvider='wasm（GPU利用不可）';
+   }
+  }else session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
   const mod=await import('./human.esm.js'),Human=mod.Human||mod.default;
   const human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:20},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
   await human.load();timings.model=performance.now()-modelStarted;const failed=[];
@@ -323,7 +344,7 @@ start.addEventListener('click',async()=>{
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
-  const perfReport='\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
+  const perfReport='\\n⚙️ 実行方式：'+executionProvider+'\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
   status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
   status.textContent+=perfReport;
   const old=$('pairDiagnostics');if(old)old.remove();
