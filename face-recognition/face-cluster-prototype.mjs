@@ -68,6 +68,10 @@ const lightInput=document.createElement('input');lightInput.type='file';lightInp
 const lightHint=document.createElement('small');lightHint.textContent='比較専用。112×112の顔認識ONNXを選択すると、そのモデルで解析します。ArcFaceの基準値0.65は引き継がず、初期値0.70を仮設定します。モデルごとに精度確認が必要です。';
 lightInput.addEventListener('change',()=>{lightweightModelFile=lightInput.files?.[0]||null;status.textContent=lightweightModelFile?'軽量モデルを選択：'+lightweightModelFile.name+'（次回解析で使用）':'従来のArcFaceを使用します';});
 lightLabel.append(lightInput);lightPanel.append(lightLabel,lightHint);
+const modelDownload=document.createElement('a');modelDownload.href='https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/mobile_facenet/releases/v0.64.0/mobile_facenet-onnx-float.zip';modelDownload.target='_blank';modelDownload.rel='noopener noreferrer';modelDownload.textContent='Qualcomm MobileFaceNet（公式ONNX ZIP）を取得';
+modelDownload.style.cssText='display:block;margin:8px 0';
+const instructions=document.createElement('small');instructions.style.display='block';instructions.textContent='ZIPを展開し、中の .onnx ファイルを上で選択してください。配布モデルの実行互換性は未検証です。';
+lightPanel.append(modelDownload,instructions);
 const mainStartRow=start.parentElement;mainStartRow?.parentElement?.insertBefore(lightPanel,mainStartRow.nextSibling);
 const queued=[];
 const folderInput=$('folderInput');
@@ -297,6 +301,15 @@ start.addEventListener('click',async()=>{
     executionProvider='wasm（GPU利用不可）';
    }
   }else session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
+  if(selectedModel==='lightweight'){
+   const inputName=session.inputNames[0],outputName=session.outputNames[0];
+   const shape=session.inputMetadata?.[inputName]?.dimensions||session.inputMetadata?.[inputName]?.dims;
+   const outputShape=session.outputMetadata?.[outputName]?.dimensions||session.outputMetadata?.[outputName]?.dims;
+   if(Array.isArray(shape)&&shape.length===4&&
+      ((Number.isInteger(shape[1])&&shape[1]!==3)||(Number.isInteger(shape[2])&&shape[2]!==112)||(Number.isInteger(shape[3])&&shape[3]!==112)))
+     throw Error('このモデルの入力形状 '+JSON.stringify(shape)+' は現在の顔切り出し形式 [1,3,112,112] と一致しません。既存のArcFaceには影響しません。');
+   status.textContent='軽量モデルの入力：'+JSON.stringify(shape||'不明')+' ／ 出力：'+JSON.stringify(outputShape||'不明')+'。解析を開始します…';
+  }
   const mod=await import('./human.esm.js'),Human=mod.Human||mod.default;
   const human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:20},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
   await human.load();timings.model=performance.now()-modelStarted;const failed=[];
