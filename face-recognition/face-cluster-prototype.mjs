@@ -7,6 +7,7 @@ let openedFolder=null;
 $('backToFolders').addEventListener('click',()=>{openedFolder=null;selected.clear();render()});
 const confirmedAssignments=new Map();
 function invalidateAssignmentPreview(){
+ if(typeof clearSuggestions==='function')clearSuggestions();
  confirmedAssignments.clear();
  const host=$('assignmentPreview');if(host)host.replaceChildren();
  const label=$('assignmentStatus');if(label)label.textContent='変更があったため、仮振り分け結果をクリアしました。もう一度確認してください。';
@@ -126,10 +127,16 @@ $('threshold').addEventListener('change',()=>{
  regroupFromExistingVectors(Number($('threshold').value));
  status.textContent+='\n🔄 保存済みの顔特徴からグループ分けだけ再計算しました（写真の再解析なし）。園児名の仮設定はリセットされました。';
 });
+let assignmentSuggestions=[];
+function clearSuggestions(){
+ assignmentSuggestions=[];
+ const panel=$('suggestionReview');if(panel)panel.replaceChildren();
+ const button=$('applySuggestions');if(button)button.disabled=true;
+}
 $('suggestAssignments').addEventListener('click',()=>{
- const out=$('suggestStatus');
+ const out=$('suggestStatus');clearSuggestions();
  if(!items.length){out.textContent='先に写真を解析してください。';return}
- if(!roster.length){out.textContent='先に登録済み園児を読み込んでください。';return}
+ if(!roster.length){out.textContent='登録済み園児を読み込んでください。';return}
  const references=new Map();
  for(const g of groups){
   const name=groupNames.get(g.id);
@@ -137,21 +144,45 @@ $('suggestAssignments').addEventListener('click',()=>{
   if(!references.has(name))references.set(name,[]);
   for(const id of g.members)references.get(name).push(items[id].vector);
  }
- if(!references.size){out.textContent='まず未選別の候補を1つ以上、正しい園児名に設定してください。';return}
- let suggested=0,uncertain=0;
+ if(!references.size){out.textContent='まず顔グループに正しい園児名を設定してください。';return}
+ let strong=0,review=0,unknown=0;
  for(const g of groups){
   if(!g.members.length||groupNames.has(g.id))continue;
   const ranked=[...references].map(([name,vectors])=>{
    const scores=g.members.map(id=>Math.max(...vectors.map(v=>similarity(items[id].vector,v))));
    return {name,score:Math.min(...scores)};
   }).sort((a,b)=>b.score-a.score);
-  const first=ranked[0],second=ranked[1];
-  if(first&&first.score>=0.68&&(!second||first.score-second.score>=0.12)){
-   groupNames.set(g.id,first.name);suggested++;
-  }else uncertain++;
+  const first=ranked[0],second=ranked[1];if(!first){unknown++;continue}
+  const gap=second?first.score-second.score:1;
+  const category=first.score>=0.68&&gap>=0.12?'高一致候補':first.score>=0.50&&gap>=0.04?'要確認':'未選別';
+  if(category==='高一致候補')strong++;else if(category==='要確認')review++;else unknown++;
+  if(category==='未選別')continue;
+  assignmentSuggestions.push({groupId:g.id,name:first.name,score:first.score,gap,category});
  }
- invalidateAssignmentPreview();render();
- out.textContent='仮振り分け：'+suggested+'グループ ／ 未選別：'+uncertain+'グループ。基準0.68・次点差0.12（精度保証なし）。先生の確認が必要です。アルバムには保存しません。';
+ const host=$('suggestionReview');host.replaceChildren();
+ for(const suggestion of assignmentSuggestions){
+  const g=groups.find(x=>x.id===suggestion.groupId);if(!g)continue;
+  const row=document.createElement('div');row.style.cssText='padding:12px 0;border-bottom:1px solid #e1e8f2';
+  const label=document.createElement('label');label.style.cssText='display:block;font-weight:600;margin-bottom:8px';
+  const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.checked=false;checkbox.dataset.suggestGroup=suggestion.groupId;
+  label.append(checkbox,document.createTextNode(' '+suggestion.category+'：候補 '+g.id+' → '+suggestion.name+'（比較値 '+suggestion.score.toFixed(3)+'／次点差 '+suggestion.gap.toFixed(3)+'）'));
+  row.append(label);
+  const faces=document.createElement('div');faces.className='faces';
+  for(const id of g.members){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.className='face';faces.append(img)}
+  row.append(faces);host.append(row);
+ }
+ $('applySuggestions').disabled=!assignmentSuggestions.length;
+ out.textContent='高一致候補 '+strong+'件／要確認 '+review+'件／未選別 '+unknown+'件。提案のみで変更なし。内容を確認してチェックした候補だけ反映してください。';
+});
+$('applySuggestions').addEventListener('click',()=>{
+ const checked=new Set([...document.querySelectorAll('[data-suggest-group]:checked')].map(el=>el.dataset.suggestGroup));
+ let applied=0;
+ for(const suggestion of assignmentSuggestions){
+  if(!checked.has(suggestion.groupId)||!groups.some(g=>g.id===suggestion.groupId))continue;
+  groupNames.set(suggestion.groupId,suggestion.name);applied++;
+ }
+ clearSuggestions();invalidateAssignmentPreview();render();
+ $('suggestStatus').textContent=applied+'件を仮反映しました。先生の確認が必要です。アルバムには保存していません。';
 });
 const similarity=(x,y)=>{let dot=0,a=0,b=0;for(let i=0;i<x.length;i++){dot+=x[i]*y[i];a+=x[i]*x[i];b+=y[i]*y[i]}return dot/Math.sqrt(a*b)};
 function groupLabel(id){return id==='unknown'?'未分類':(groupNames.get(id)?groupNames.get(id)+'（グループ'+id+'）':'グループ '+id)}
