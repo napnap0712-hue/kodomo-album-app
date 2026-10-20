@@ -666,6 +666,18 @@ start.addEventListener('click',async()=>{
   // merging two clusters. Prioritize broad agreement across both groups.
   groupPairs.sort((x,y)=>(y.average*0.65+y.minimum*0.35)-(x.average*0.65+x.minimum*0.35));
   const likely=groupPairs.filter(p=>p.minimum>=0.48&&p.average>=0.55&&p.maximum>=0.60);
+  const distribution=document.createElement('p');distribution.className='muted';
+  const sizes=groups.slice(1).map(g=>g.members.length);
+  const singleton=sizes.filter(n=>n===1).length;
+  const multi=sizes.filter(n=>n>1).length;
+  const smallFaces=items.filter(item=>item.faceQuality==='小さい顔・要確認').length;
+  distribution.textContent='📊 分割状況：単独顔グループ '+singleton+'件 ／ 複数顔グループ '+multi+'件 ／ 小さい顔 '+smallFaces+'件（除外なし）';
+  host.append(distribution);
+  const eligible=groupPairs.filter(p=>p.minimum>=0.48&&p.average>=0.55&&p.maximum>=0.60);
+  const ambiguous=eligible.filter(p=>eligible.some(q=>q!==p&&(q.a===p.a||q.b===p.a||q.a===p.b||q.b===p.b)&&Math.abs(q.average-p.average)<0.07)).length;
+  const caution=document.createElement('p');caution.className='muted';
+  caution.textContent='🔎 統合候補 '+eligible.length+'組 ／ 似た候補が競合する組 '+ambiguous+'組。競合は別の園児の可能性があるため自動統合しません。';
+  host.append(caution);
   const heading2=document.createElement('h3');heading2.textContent='🧩 分かれたグループの類似候補（上位15組）';host.append(heading2);
   const guide=document.createElement('p');guide.className='muted';guide.textContent='最大値だけで判断せず、グループ全体の平均・最小値も確認します。条件に合わない組は統合候補に表示しません。候補も正解保証ではありません。';host.append(guide);
   for(const pair of likely.slice(0,15)){
