@@ -54,23 +54,11 @@ $('loadRoster').addEventListener('click',()=>{
 });
 classSelect.addEventListener('change',()=>{roster=[];$('rosterStatus').textContent='クラスを変更しました。「登録済み園児を読み込む」を押してください。';render()});
 
-// Optional lightweight model comparison. No model weights or photos are uploaded.
+// The file inputs are declared in HTML to remain visible even if script loading fails.
+const lightInput=$('lightweightOnnxFile'),dataInput=$('lightweightDataFile');
 let lightweightModelFile=null,lightweightDataFile=null;
-const lightPanel=document.createElement('div');lightPanel.style.cssText='margin:10px 0;padding:12px;border:1px dashed #a5b7cf;border-radius:10px';
-const lightLabel=document.createElement('label');lightLabel.textContent='🧪 軽量モデル比較（ONNXファイルを端末から選択）';
-const lightInput=document.createElement('input');lightInput.type='file';lightInput.accept='.onnx';lightInput.style.cssText='display:block;margin:8px 0;max-width:100%';
-const lightHint=document.createElement('small');lightHint.textContent='比較専用。112×112の顔認識ONNXを選択すると、そのモデルで解析します。ArcFaceの基準値0.65は引き継がず、初期値0.70を仮設定します。モデルごとに精度確認が必要です。';
-lightInput.addEventListener('change',()=>{lightweightModelFile=lightInput.files?.[0]||null;status.textContent=lightweightModelFile?'軽量モデルを選択：'+lightweightModelFile.name+'（次回解析で使用）':'従来のArcFaceを使用します';});
-const dataLabel=document.createElement('label');dataLabel.textContent='追加データ（mobile_facenet.data）';
-const dataInput=document.createElement('input');dataInput.type='file';dataInput.accept='.data,application/octet-stream';dataInput.style.cssText='display:block;margin:8px 0;max-width:100%';
-dataInput.addEventListener('change',()=>{lightweightDataFile=dataInput.files?.[0]||null;status.textContent=lightweightDataFile?'追加データを選択：'+lightweightDataFile.name:'追加データ未選択';});
-dataLabel.append(dataInput);lightPanel.append(dataLabel);
-lightLabel.append(lightInput);lightPanel.append(lightLabel,lightHint);
-const modelDownload=document.createElement('a');modelDownload.href='https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/mobile_facenet/releases/v0.64.0/mobile_facenet-onnx-float.zip';modelDownload.target='_blank';modelDownload.rel='noopener noreferrer';modelDownload.textContent='Qualcomm MobileFaceNet（公式ONNX ZIP）を取得';
-modelDownload.style.cssText='display:block;margin:8px 0';
-const instructions=document.createElement('small');instructions.style.display='block';instructions.textContent='ZIPを展開し、中の .onnx ファイルを上で選択してください。配布モデルの実行互換性は未検証です。';
-lightPanel.append(modelDownload,instructions);
-const mainStartRow=start.parentElement;($('experimentalControlsMount')||start.parentElement).append(lightPanel);
+lightInput?.addEventListener('change',()=>{lightweightModelFile=lightInput.files?.[0]||null;status.textContent=lightweightModelFile?'軽量ONNXモデル：'+lightweightModelFile.name:'従来モデルを使用します';});
+dataInput?.addEventListener('change',()=>{lightweightDataFile=dataInput.files?.[0]||null;status.textContent=lightweightDataFile?'追加データ：'+lightweightDataFile.name:'追加データ未選択';});
 const queued=[];
 const folderInput=$('folderInput');
 const count=$('photoCount');
