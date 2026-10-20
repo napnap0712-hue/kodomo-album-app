@@ -545,6 +545,9 @@ start.addEventListener('click',async()=>{
    for(const id of [pair.i,pair.j]){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.style.cssText='width:58px;height:58px;object-fit:cover;border-radius:8px';row.append(img)}
    const score=document.createElement('strong');score.textContent='比較値 '+pair.score.toFixed(4)+(pair.score>=threshold?'（基準以上）':'（基準未満）');row.append(score);diagnostic.append(row);
   }
+  const refreshGroupPairs=()=>{
+  const old=diagnostic.querySelector('#clusterMergeCandidates');if(old)old.remove();
+  const host=document.createElement('div');host.id='clusterMergeCandidates';diagnostic.append(host);
   const groupPairs=[];
   for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
    const left=groups[a].members,right=groups[b].members;
@@ -555,8 +558,8 @@ start.addEventListener('click',async()=>{
    groupPairs.push({a,b,maximum,minimum,average});
   }
   groupPairs.sort((x,y)=>y.maximum-x.maximum);
-  const heading2=document.createElement('h3');heading2.textContent='🧩 分かれたグループの類似候補（上位15組）';diagnostic.append(heading2);
-  const guide=document.createElement('p');guide.className='muted';guide.textContent='最大値・平均値・最小値を比較。別の園児が混ざる可能性があるため、自動統合はしません。';diagnostic.append(guide);
+  const heading2=document.createElement('h3');heading2.textContent='🧩 分かれたグループの類似候補（上位15組）';host.append(heading2);
+  const guide=document.createElement('p');guide.className='muted';guide.textContent='最大値・平均値・最小値を比較。別の園児が混ざる可能性があるため、自動統合はしません。';host.append(guide);
   for(const pair of groupPairs.slice(0,15)){
    const row=document.createElement('div');row.style.cssText='padding:10px 0;border-bottom:1px solid #e8edf3';
    const title=document.createElement('strong');title.textContent='グループ '+groups[pair.a].id+' ↔ '+groups[pair.b].id+' ／ 最大 '+pair.maximum.toFixed(3)+'・平均 '+pair.average.toFixed(3)+'・最小 '+pair.minimum.toFixed(3);row.append(title);
@@ -569,17 +572,19 @@ start.addEventListener('click',async()=>{
    const firstId=groups[pair.a].id,secondId=groups[pair.b].id;
    merge.addEventListener('click',()=>{
     const first=groups.find(g=>g.id===firstId),second=groups.find(g=>g.id===secondId);
-    if(!first||!second||first===second)return;
+    if(!first||!second||first===second){refreshGroupPairs();return;}
     if(!window.confirm('顔写真を確認しましたか？ この2グループを1つにまとめます（アルバムデータは変更しません）。'))return;
     first.members.push(...second.members);
     groups=groups.filter(g=>g!==second);
     if(!groupNames.has(first.id)&&groupNames.has(second.id))groupNames.set(first.id,groupNames.get(second.id));
     groupNames.delete(second.id);selected.clear();invalidateAssignmentPreview();render();
-    merge.disabled=true;merge.textContent='統合済み';
+    refreshGroupPairs();
     status.textContent+='\n✅ グループ '+firstId+' と '+secondId+' を手動統合しました。';
    });
-   row.append(merge);diagnostic.append(row);
+   row.append(merge);host.append(row);
   }
+  };
+  refreshGroupPairs();
   groupsHost.closest('section').after(diagnostic);
   render();
  }catch(e){status.textContent='⚠️ 解析できません: '+String(e?.message||e).slice(0,220)}
