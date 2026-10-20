@@ -78,6 +78,54 @@ $('recognitionModel').addEventListener('change',()=>{
 });
 $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
+function regroupFromExistingVectors(threshold){
+ if(!items.length)return;
+ const pairScores=[];
+ for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+  const score=similarity(items[i].vector,items[j].vector);
+  if(Number.isFinite(score))pairScores.push({i,j,score});
+ }
+ pairScores.sort((a,b)=>b.score-a.score);
+  groups=[{id:'unknown',members:[]}];let next=1;
+  // DBSCAN: density-based face-embedding clustering, with singleton noise
+  // retained as separate provisional groups for teacher review.
+  const scoreMap=new Map(pairScores.map(p=>[p.i+':'+p.j,p.score]));
+  const pairScore=(i,j)=>i===j?1:scoreMap.get(Math.min(i,j)+':'+Math.max(i,j));
+  const neighbors=items.map((_,i)=>items.map((_,j)=>j).filter(j=>pairScore(i,j)>=threshold));
+  const labels=new Int32Array(items.length).fill(-2); // -2 unvisited, -1 noise
+  let clusterId=0;
+  const minPts=2;
+  for(let i=0;i<items.length;i++){
+   if(labels[i]!==-2)continue;
+   if(neighbors[i].length<minPts){labels[i]=-1;continue}
+   const id=clusterId++;labels[i]=id;
+   const queue=[...neighbors[i]],queuedNeighbors=new Set(queue);
+   for(let head=0;head<queue.length;head++){
+    const j=queue[head];
+    if(labels[j]===-1)labels[j]=id;
+    if(labels[j]!==-2)continue;
+    labels[j]=id;
+    if(neighbors[j].length>=minPts)for(const k of neighbors[j]){
+     if(!queuedNeighbors.has(k)){queuedNeighbors.add(k);queue.push(k)}
+    }
+   }
+  }
+  const clustered=new Map();
+  for(let i=0;i<items.length;i++){
+   if(labels[i]<0)continue;
+   if(!clustered.has(labels[i]))clustered.set(labels[i],[]);
+   clustered.get(labels[i]).push(i);
+  }
+  for(const members of clustered.values())groups.push({id:String(next++),members});
+  for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
+
+ groupNames.clear();selected.clear();openedFolder=null;invalidateAssignmentPreview();render();
+}
+$('threshold').addEventListener('change',()=>{
+ if(!items.length)return;
+ regroupFromExistingVectors(Number($('threshold').value));
+ status.textContent+='\n🔄 保存済みの顔特徴からグループ分けだけ再計算しました（写真の再解析なし）。園児名の仮設定はリセットされました。';
+});
 const similarity=(x,y)=>{let dot=0,a=0,b=0;for(let i=0;i<x.length;i++){dot+=x[i]*y[i];a+=x[i]*x[i];b+=y[i]*y[i]}return dot/Math.sqrt(a*b)};
 function groupLabel(id){return id==='unknown'?'未分類':(groupNames.get(id)?groupNames.get(id)+'（グループ'+id+'）':'グループ '+id)}
 let draggingFace=null,pressTimer=null,dragGhost=null,dragPointer=null,dragJustFinished=false,pressOrigin=null;
@@ -377,7 +425,7 @@ start.addEventListener('click',async()=>{
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
-  const perfReport='\\n⚙️ 実行方式：'+executionProvider+'\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
+  const perfReport='\n⚙️ 実行方式：'+executionProvider+'\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
   status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='lightweight'?'軽量ONNX比較（暫定閾値0.70）':selectedModel==='arcface'?'ArcFace':selectedModel==='buffalo_s'?'ArcFace buffalo_s（軽量・試験）':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
   if(diagnostics.length)status.textContent+='\n🔍 AIモデル詳細：'+[...new Set(diagnostics)].join(' ／ ');
   status.textContent+=perfReport;
