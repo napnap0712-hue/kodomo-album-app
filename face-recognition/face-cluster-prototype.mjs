@@ -3,11 +3,15 @@ const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
 let stop=false,items=[],groups=[],selected=new Set(),urls=[];
 const queued=[];
+const folderInput=$('folderInput');
 const count=$('photoCount');
 function updateCount(){count.textContent=queued.length+'枚選択済み（追加選択できます）'}
-function addFiles(files){for(const file of files){if(file.type.startsWith('image/')&&queued.length<100)queued.push(file)}updateCount();input.value=''}
+function addFiles(files){let skipped=0;for(const file of files){if(!file.type.startsWith('image/'))continue;if(queued.length>=100){skipped++;continue}queued.push(file)}updateCount();if(skipped)count.textContent+=' ※100枚を超えた'+skipped+'枚は未追加';input.value='';folderInput.value=''}
 input.addEventListener('change',()=>addFiles(Array.from(input.files||[])));
 $('addPhotos').addEventListener('click',()=>input.click());
+$('folderPhotos').addEventListener('click',()=>folderInput.click());
+folderInput.addEventListener('change',()=>addFiles(Array.from(folderInput.files||[])));
+$('clearPhotos').addEventListener('click',()=>{queued.length=0;input.value='';folderInput.value='';updateCount()});
 $('threshold').addEventListener('input',()=>{$('thresholdValue').value=Number($('threshold').value).toFixed(2)});
 $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
