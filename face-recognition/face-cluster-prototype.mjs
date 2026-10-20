@@ -106,6 +106,16 @@ start.addEventListener('click',async()=>{
    else{groups.push({id:String(next++),members:[i]})}
   }
   status.textContent='✅ '+items.length+'枚解析・仮グループ '+(groups.length-1)+'件。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
+  const old=$('pairDiagnostics');if(old)old.remove();
+  const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
+  const heading=document.createElement('h2');heading.textContent='🔎 顔の比較値（高い順・上位20組）';diagnostic.append(heading);
+  const info=document.createElement('p');info.className='muted';info.textContent='比較値は正解率ではありません。高いほど似ている傾向ですが、同一人物を保証しません。写真・比較値は保存しません。';diagnostic.append(info);
+  for(const pair of pairScores.slice(0,20)){
+   const row=document.createElement('p');row.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid #e8edf3;padding-bottom:8px';
+   for(const id of [pair.i,pair.j]){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.style.cssText='width:58px;height:58px;object-fit:cover;border-radius:8px';row.append(img)}
+   const score=document.createElement('strong');score.textContent='比較値 '+pair.score.toFixed(4)+(pair.score>=threshold?'（基準以上）':'（基準未満）');row.append(score);diagnostic.append(row);
+  }
+  groupsHost.closest('section').after(diagnostic);
   render();
  }catch(e){status.textContent='⚠️ 解析できません: '+String(e?.message||e).slice(0,220)}
  finally{try{await session?.release()}catch{}start.disabled=false;cancel.disabled=true}
