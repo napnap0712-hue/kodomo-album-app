@@ -59,7 +59,7 @@ gpuControl.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap
 const gpuCheckbox=document.createElement('input');gpuCheckbox.type='checkbox';gpuCheckbox.checked=localStorage.getItem('omoide-prototype-gpu-test')==='on';
 gpuCheckbox.addEventListener('change',()=>{localStorage.setItem('omoide-prototype-gpu-test',gpuCheckbox.checked?'on':'off');status.textContent=gpuCheckbox.checked?'次の解析でWebGPUを試します。非対応の場合は従来方式に戻します。':'次の解析は従来方式です。'});
 gpuControl.append(gpuCheckbox,document.createTextNode('🚀 GPU高速化を試す（実験・対応端末のみ）'));
-const startRow=start.parentElement;startRow?.parentElement?.insertBefore(gpuControl,startRow.nextSibling);
+const startRow=start.parentElement;start.insertAdjacentElement('afterend',gpuControl);
 // Optional lightweight model comparison. No model weights or photos are uploaded.
 let lightweightModelFile=null,lightweightDataFile=null;
 const lightPanel=document.createElement('div');lightPanel.style.cssText='margin:10px 0;padding:12px;border:1px dashed #a5b7cf;border-radius:10px';
@@ -76,7 +76,7 @@ const modelDownload=document.createElement('a');modelDownload.href='https://qaih
 modelDownload.style.cssText='display:block;margin:8px 0';
 const instructions=document.createElement('small');instructions.style.display='block';instructions.textContent='ZIPを展開し、中の .onnx ファイルを上で選択してください。配布モデルの実行互換性は未検証です。';
 lightPanel.append(modelDownload,instructions);
-const mainStartRow=start.parentElement;mainStartRow?.parentElement?.insertBefore(lightPanel,mainStartRow.nextSibling);
+const mainStartRow=start.parentElement;gpuControl.insertAdjacentElement('afterend',lightPanel);
 const queued=[];
 const folderInput=$('folderInput');
 const count=$('photoCount');
