@@ -119,6 +119,37 @@ function regroupFromExistingVectors(threshold){
   }
   for(const members of clustered.values())groups.push({id:String(next++),members});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
+  // Strong mutual-nearest-neighbor matches can reconnect a singleton to its
+  // closest cluster without relaxing DBSCAN for every face.
+  // Never combine two different faces detected in the same source photo.
+  const safePair=(ga,gb)=>{
+   const aPhotos=new Set(ga.members.map(i=>items[i].sourcePhoto));
+   return gb.members.every(j=>!aPhotos.has(items[j].sourcePhoto));
+  };
+  let linked=true;
+  while(linked){
+   linked=false;
+   const nearest=groups.map((g,a)=>{
+    if(a===0||!g.members.length)return null;
+    const options=[];
+    for(let b=1;b<groups.length;b++){
+     if(a===b||!safePair(g,groups[b]))continue;
+     const scores=g.members.flatMap(i=>groups[b].members.map(j=>pairScore(i,j)));
+     if(scores.some(v=>!Number.isFinite(v)))continue;
+     const score=Math.max(...scores);
+     options.push({b,score});
+    }
+    options.sort((x,y)=>y.score-x.score);
+    const best=options[0],runner=options[1];
+    return best&&best.score>=Math.max(0.67,threshold+0.02)&&(!runner||best.score-runner.score>=0.09)?best:null;
+   });
+   for(let a=1;a<groups.length&&!linked;a++){
+    const b=nearest[a]?.b;
+    if(b==null||b<=a||nearest[b]?.b!==a)continue;
+    groups[a].members.push(...groups[b].members);
+    groups.splice(b,1);linked=true;
+   }
+  }
   // Conservative second pass: merge fragmented clusters only when all cross-cluster
   // faces remain similar. Never merge simply to match the roster headcount.
   let merged=true;
