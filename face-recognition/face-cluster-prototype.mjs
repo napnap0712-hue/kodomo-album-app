@@ -107,17 +107,23 @@ start.addEventListener('click',async()=>{
   }
   pairScores.sort((a,b)=>b.score-a.score);
   groups=[{id:'unknown',members:[]}];let next=1;
-  // Conservative complete-link clustering: every new face must match all members.
-  for(let i=0;i<items.length;i++){
-   let best=null,bestScore=-Infinity;
-   for(const g of groups){if(g.id==='unknown')continue;
-    const scores=g.members.map(j=>similarity(items[i].vector,items[j].vector));
-    const score=Math.min(...scores);
-    if(score>=threshold&&score>bestScore){best=g;bestScore=score}
+  // Order-independent agglomerative complete-link clustering.
+  // Only merge clusters when every cross-cluster pair clears the threshold.
+  const clusters=items.map((_,i)=>[i]);
+  const scoreMap=new Map(pairScores.map(p=>[p.i+':'+p.j,p.score]));
+  const pairScore=(i,j)=>scoreMap.get(Math.min(i,j)+':'+Math.max(i,j));
+  while(clusters.length>1){
+   let bestA=-1,bestB=-1,bestScore=-Infinity;
+   for(let a=0;a<clusters.length;a++)for(let b=a+1;b<clusters.length;b++){
+    let minimum=Infinity;
+    for(const i of clusters[a])for(const j of clusters[b])minimum=Math.min(minimum,pairScore(i,j));
+    if(minimum>=threshold&&minimum>bestScore){bestA=a;bestB=b;bestScore=minimum}
    }
-   if(best){best.members.push(i)}
-   else{groups.push({id:String(next++),members:[i]})}
+   if(bestA<0)break;
+   clusters[bestA].push(...clusters[bestB]);clusters.splice(bestB,1);
   }
+  clusters.sort((a,b)=>Math.min(...a)-Math.min(...b));
+  for(const members of clusters)groups.push({id:String(next++),members});
   status.textContent='✅ '+items.length+'枚解析・仮グループ '+(groups.length-1)+'件。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
