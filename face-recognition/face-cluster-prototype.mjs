@@ -3,6 +3,8 @@ const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
 let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[],photoUrls=[];
 const groupNames=new Map();
+let openedFolder=null;
+$('backToFolders').addEventListener('click',()=>{openedFolder=null;selected.clear();render()});
 const confirmedAssignments=new Map();
 function invalidateAssignmentPreview(){
  confirmedAssignments.clear();
@@ -76,6 +78,18 @@ function groupLabel(id){return id==='unknown'?'未分類':(groupNames.get(id)?gr
 function render(){
  selection.textContent='選択中：'+selected.size+'件';move.disabled=!selected.size;
  const existing=groups.filter(g=>g.members.length);
+ const overview=$('folderOverview'),detail=$('folderDetail'),actions=$('folderActions');
+ if(openedFolder!==null&&!existing.some(g=>g.id===openedFolder))openedFolder=null;
+ overview.hidden=openedFolder!==null;detail.hidden=openedFolder===null;actions.hidden=openedFolder===null;
+ overview.replaceChildren();
+ for(const g of existing){
+  const folder=document.createElement('button');folder.type='button';folder.className='group';folder.style.cssText='text-align:left;background:white;color:#263344;min-height:110px';
+  const title=document.createElement('strong');title.textContent='📁 '+groupLabel(g.id)+'（顔'+g.members.length+'件）';folder.append(title);
+  const sample=document.createElement('div');sample.className='faces';sample.style.marginTop='8px';
+  for(const id of g.members.slice(0,4)){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.className='face';img.style.pointerEvents='none';sample.append(img)}
+  folder.append(sample);folder.addEventListener('click',()=>{openedFolder=g.id;selected.clear();render()});overview.append(folder);
+ }
+ $('openFolderTitle').textContent=openedFolder===null?'':groupLabel(openedFolder);
  destination.replaceChildren();
  for(const g of existing){const opt=document.createElement('option');opt.value=g.id;opt.textContent=groupLabel(g.id);destination.append(opt)}
  const add=document.createElement('option');add.value='new';add.textContent='新しいグループ';destination.append(add);
@@ -103,7 +117,7 @@ function render(){
   update();row.append(photos);folders.append(row);
  }}
  groupsHost.replaceChildren();
- for(const g of existing){
+ for(const g of existing.filter(g=>g.id===openedFolder)){
   const card=document.createElement('article');card.className='group';
   const title=document.createElement('strong');title.textContent=groupLabel(g.id)+'（顔 '+g.members.length+'件）';card.append(title);
   if(g.id!=='unknown'){
@@ -180,7 +194,7 @@ async function embed(bitmap,human,session,ort){
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- stop=false;start.disabled=true;cancel.disabled=false;selected.clear();items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session;
  try{
   status.textContent='AIモデルを準備しています…';
