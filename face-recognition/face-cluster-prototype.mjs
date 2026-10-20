@@ -192,6 +192,22 @@ function regroupFromExistingVectors(threshold){
     groups.splice(b,1);prototypeMerged=true;
    }
   }
+  // A face pair from the same photo must never be in one identity group.
+  // Unlike a nearest-neighbor edge, this cannot-link rule survives transitive merges.
+  const splitSamePhotoConflicts=()=>{
+   const repaired=[groups[0]];
+   for(const group of groups.slice(1)){
+    const buckets=[];
+    for(const id of group.members){
+     let bucket=buckets.find(bucket=>bucket.every(other=>items[other].sourcePhoto!==items[id].sourcePhoto));
+     if(!bucket){bucket=[];buckets.push(bucket)}
+     bucket.push(id);
+    }
+    for(const bucket of buckets)repaired.push({id:String(repaired.length),members:bucket});
+   }
+   groups=repaired;
+  };
+  splitSamePhotoConflicts();
   // Conservative second pass: merge fragmented clusters only when all cross-cluster
   // faces remain similar. Never merge simply to match the roster headcount.
   let merged=true;
@@ -590,6 +606,22 @@ start.addEventListener('click',async()=>{
   }
   for(const members of clustered.values())groups.push({id:String(next++),members});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
+  // A face pair from the same photo must never be in one identity group.
+  // Unlike a nearest-neighbor edge, this cannot-link rule survives transitive merges.
+  const splitSamePhotoConflicts=()=>{
+   const repaired=[groups[0]];
+   for(const group of groups.slice(1)){
+    const buckets=[];
+    for(const id of group.members){
+     let bucket=buckets.find(bucket=>bucket.every(other=>items[other].sourcePhoto!==items[id].sourcePhoto));
+     if(!bucket){bucket=[];buckets.push(bucket)}
+     bucket.push(id);
+    }
+    for(const bucket of buckets)repaired.push({id:String(repaired.length),members:bucket});
+   }
+   groups=repaired;
+  };
+  splitSamePhotoConflicts();
   // Conservative second pass: merge fragmented clusters only when all cross-cluster
   // faces remain similar. Never merge simply to match the roster headcount.
   let merged=true;
