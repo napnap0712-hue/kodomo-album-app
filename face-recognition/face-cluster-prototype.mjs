@@ -3,6 +3,28 @@ const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
 let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[],photoUrls=[];
 const groupNames=new Map();
+const rosterClasses=[['tanpopo','たんぽぽ組'],['tulip','ちゅうりっぷ組'],['cosmos','コスモス組'],['canna','カンナ組'],['deigo','でいご組'],['sakura','さくら組']];
+let roster=[];
+const classSelect=$('rosterClass');
+for(const [id,name] of rosterClasses){const option=document.createElement('option');option.value=id;option.textContent=name;classSelect.append(option)}
+classSelect.value='tulip';
+function readRegisteredChildren(){
+ const meta=JSON.parse(localStorage.getItem('omoide-year-meta-v1')||'null');
+ const schoolYear=()=>{const d=new Date();return d.getFullYear()-(d.getMonth()<3?1:0)};
+ const base=Number.isInteger(meta?.base)?meta.base:schoolYear();
+ const active=Number.isInteger(meta?.active)?meta.active:schoolYear();
+ const suffix=active===base?'':'-year-'+active;
+ const key='omoide-class-children-v1-'+classSelect.value+suffix;
+ const value=JSON.parse(localStorage.getItem(key)||'[]');
+ if(!Array.isArray(value))throw Error('園児名簿の形式が不正です');
+ return value.filter(k=>k&&typeof k.name==='string'&&k.name.trim()).map(k=>({id:String(k.id),name:k.name}));
+}
+$('loadRoster').addEventListener('click',()=>{
+ try{roster=readRegisteredChildren();$('rosterStatus').textContent=roster.length+'名を参照読み込みしました（端末内の登録データは未変更）。';render()}
+ catch(e){roster=[];$('rosterStatus').textContent='読み込めませんでした：'+String(e.message||e);render()}
+});
+classSelect.addEventListener('change',()=>{roster=[];$('rosterStatus').textContent='クラスを変更しました。「登録済み園児を読み込む」を押してください。';render()});
+
 const queued=[];
 const folderInput=$('folderInput');
 const count=$('photoCount');
@@ -49,7 +71,9 @@ function render(){
    if(!ids.length){photos.textContent='該当写真なし';return}
    for(const i of ids){const figure=document.createElement('figure');figure.style.cssText='margin:0;width:96px';const img=document.createElement('img');img.src=photoUrls[i];img.alt=photoNames[i];img.title=photoNames[i];img.style.cssText='width:96px;height:96px;object-fit:cover;border-radius:10px';const caption=document.createElement('figcaption');caption.className='muted';caption.style.cssText='overflow-wrap:anywhere;font-size:11px';caption.textContent=(i+1)+'枚目';figure.append(img,caption);photos.append(figure)}
   };
-  field.addEventListener('input',update);field.addEventListener('change',()=>render());update();row.append(photos);folders.append(row);
+  field.addEventListener('input',update);field.addEventListener('change',()=>render());
+  if(roster.length){const picker=document.createElement('select');picker.setAttribute('aria-label','登録済み園児を選択');const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='登録済み園児から選択';picker.append(placeholder);for(const kid of roster){const option=document.createElement('option');option.value=kid.id;option.textContent=kid.name;picker.append(option)}picker.addEventListener('change',()=>{const kid=roster.find(k=>k.id===picker.value);if(!kid)return;groupNames.set(g.id,kid.name);render()});row.append(picker)}
+  update();row.append(photos);folders.append(row);
  }}
  groupsHost.replaceChildren();
  for(const g of existing){
