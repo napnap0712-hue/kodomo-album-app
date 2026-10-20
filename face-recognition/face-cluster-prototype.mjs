@@ -119,6 +119,25 @@ function regroupFromExistingVectors(threshold){
   }
   for(const members of clustered.values())groups.push({id:String(next++),members});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
+  // Conservative second pass: merge fragmented clusters only when all cross-cluster
+  // faces remain similar. Never merge simply to match the roster headcount.
+  let merged=true;
+  while(merged){
+   merged=false;let best=null;
+   for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
+    const ga=groups[a],gb=groups[b];if(!ga.members.length||!gb.members.length)continue;
+    const cross=ga.members.flatMap(i=>gb.members.map(j=>pairScore(i,j)));
+    if(cross.some(v=>!Number.isFinite(v)))continue;
+    const minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
+    if(minimum<Math.max(0.48,threshold-0.12)||average<Math.max(0.62,threshold-0.02))continue;
+    if(!best||average>best.average)best={a,b,average};
+   }
+   if(best){
+    groups[best.a].members.push(...groups[best.b].members);
+    groups.splice(best.b,1);merged=true;
+   }
+  }
+
 
  groupNames.clear();selected.clear();openedFolder=null;invalidateAssignmentPreview();render();
 }
@@ -492,6 +511,25 @@ start.addEventListener('click',async()=>{
   }
   for(const members of clustered.values())groups.push({id:String(next++),members});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
+  // Conservative second pass: merge fragmented clusters only when all cross-cluster
+  // faces remain similar. Never merge simply to match the roster headcount.
+  let merged=true;
+  while(merged){
+   merged=false;let best=null;
+   for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
+    const ga=groups[a],gb=groups[b];if(!ga.members.length||!gb.members.length)continue;
+    const cross=ga.members.flatMap(i=>gb.members.map(j=>pairScore(i,j)));
+    if(cross.some(v=>!Number.isFinite(v)))continue;
+    const minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
+    if(minimum<Math.max(0.48,threshold-0.12)||average<Math.max(0.62,threshold-0.02))continue;
+    if(!best||average>best.average)best={a,b,average};
+   }
+   if(best){
+    groups[best.a].members.push(...groups[best.b].members);
+    groups.splice(best.b,1);merged=true;
+   }
+  }
+
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
   const perfReport='\n⚙️ 実行方式：'+executionProvider+'\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
