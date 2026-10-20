@@ -305,6 +305,9 @@ start.addEventListener('click',async()=>{
   }
   if(selectedModel==='lightweight'){
    if(!lightweightDataFile)status.textContent='⚠️ このモデルは mobile_facenet.data が必要です。ZIP内の追加データも選択してください。';
+   if(session.inputNames.length!==1){
+    throw Error('選択モデルは入力が'+session.inputNames.length+'個（'+session.inputNames.join('・')+'）です。顔2枚の比較用モデルの可能性があり、1枚ずつ特徴抽出する自動グループ化には未対応です。ArcFaceを選択してください。');
+   }
    const inputName=session.inputNames[0],outputName=session.outputNames[0];
    const shape=session.inputMetadata?.[inputName]?.dimensions||session.inputMetadata?.[inputName]?.dims;
    const outputShape=session.outputMetadata?.[outputName]?.dimensions||session.outputMetadata?.[outputName]?.dims;
