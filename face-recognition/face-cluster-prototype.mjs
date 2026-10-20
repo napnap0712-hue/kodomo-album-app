@@ -75,7 +75,7 @@ $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
 const similarity=(x,y)=>{let dot=0,a=0,b=0;for(let i=0;i<x.length;i++){dot+=x[i]*y[i];a+=x[i]*x[i];b+=y[i]*y[i]}return dot/Math.sqrt(a*b)};
 function groupLabel(id){return id==='unknown'?'未分類':(groupNames.get(id)?groupNames.get(id)+'（グループ'+id+'）':'グループ '+id)}
-let draggingFace=null,pressTimer=null,dragGhost=null,dragPointer=null,dragJustFinished=false;
+let draggingFace=null,pressTimer=null,dragGhost=null,dragPointer=null,dragJustFinished=false,pressOrigin=null;
 function relocateFace(id,target){
  if(!Number.isInteger(id)||!groups.some(g=>g.id===target))return;
  if(groups.find(g=>g.id===target).members.includes(id))return;
@@ -85,20 +85,20 @@ function relocateFace(id,target){
 }
 function cleanupDrag(){
  if(draggingFace!==null){dragJustFinished=true;setTimeout(()=>{dragJustFinished=false},350)}
- clearTimeout(pressTimer);pressTimer=null;draggingFace=null;dragPointer=null;
+ clearTimeout(pressTimer);pressTimer=null;draggingFace=null;dragPointer=null;pressOrigin=null;
  if(dragGhost){dragGhost.remove();dragGhost=null}
  document.querySelectorAll('[data-drop-folder]').forEach(el=>el.style.outline='');
 }
 function installDrag(img,id){
  img.draggable=true;
- img.style.cursor='grab';img.style.touchAction='pan-y';
+ img.style.cursor='grab';img.style.touchAction='pan-y';img.addEventListener('contextmenu',e=>e.preventDefault());
  img.addEventListener('click',e=>{e.preventDefault();e.stopPropagation()});
  img.addEventListener('dragstart',e=>{draggingFace=id;e.dataTransfer.setData('text/plain',String(id));e.dataTransfer.effectAllowed='move'});
  img.addEventListener('dragend',cleanupDrag);
  img.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse')return;
   const x=e.clientX,y=e.clientY;
-  dragPointer=e.pointerId;
+  dragPointer=e.pointerId;pressOrigin={x,y};
   pressTimer=setTimeout(()=>{
    draggingFace=id;dragGhost=img.cloneNode();dragGhost.style.cssText='position:fixed;z-index:9999;width:72px;height:72px;object-fit:cover;opacity:.8;pointer-events:none;border:3px solid #3385f2;border-radius:10px';
    document.body.append(dragGhost);dragGhost.style.left=(x-36)+'px';dragGhost.style.top=(y-36)+'px';
@@ -106,7 +106,7 @@ function installDrag(img,id){
  });
  img.addEventListener('pointermove',e=>{
   if(e.pointerId!==dragPointer)return;
-  if(!draggingFace){if(Math.abs(e.movementX)>9||Math.abs(e.movementY)>9)clearTimeout(pressTimer);return}
+  if(!draggingFace){if(pressOrigin&&(Math.abs(e.clientX-pressOrigin.x)>12||Math.abs(e.clientY-pressOrigin.y)>12))clearTimeout(pressTimer);return}
   e.preventDefault();if(dragGhost){dragGhost.style.left=(e.clientX-36)+'px';dragGhost.style.top=(e.clientY-36)+'px'}
   const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-drop-folder]');
   document.querySelectorAll('[data-drop-folder]').forEach(el=>el.style.outline=el===target?'3px solid #3385f2':'');
