@@ -153,6 +153,45 @@ function regroupFromExistingVectors(threshold){
     groups.splice(b,1);linked=true;
    }
   }
+  // Use a cluster prototype (normalized mean vector) to recover faces whose
+  // individual poses differ. Require a clear mutual best match, no conflicting
+  // photo, and multiple independent similarities before merging.
+  const centroid=members=>{
+   const dim=items[members[0]].vector.length,out=new Float32Array(dim);
+   for(const id of members)for(let d=0;d<dim;d++)out[d]+=items[id].vector[d];
+   let norm=0;for(const v of out)norm+=v*v;
+   norm=Math.sqrt(norm)||1;for(let d=0;d<dim;d++)out[d]/=norm;
+   return out;
+  };
+  let prototypeMerged=true;
+  while(prototypeMerged){
+   prototypeMerged=false;
+   const prototypes=groups.map(g=>g.members.length?centroid(g.members):null);
+   const choices=groups.map((g,a)=>{
+    if(a===0||!g.members.length)return null;
+    const candidates=[];
+    for(let b=1;b<groups.length;b++){
+     if(a===b||!groups[b].members.length)continue;
+     if(!safePair(g,groups[b]))continue;
+     const score=similarity(prototypes[a],prototypes[b]);
+     const cross=g.members.flatMap(i=>groups[b].members.map(j=>pairScore(i,j)));
+     const best=Math.max(...cross),mean=cross.reduce((t,v)=>t+v,0)/cross.length;
+     if(!Number.isFinite(score)||!Number.isFinite(mean))continue;
+     candidates.push({b,score,best,mean});
+    }
+    candidates.sort((x,y)=>y.score-x.score);
+    const first=candidates[0],second=candidates[1];
+    if(!first||first.score<0.76||first.best<0.56||first.mean<0.48)return null;
+    if(second&&first.score-second.score<0.09)return null;
+    return first;
+   });
+   for(let a=1;a<groups.length&&!prototypeMerged;a++){
+    const b=choices[a]?.b;
+    if(b==null||b<=a||choices[b]?.b!==a)continue;
+    groups[a].members.push(...groups[b].members);
+    groups.splice(b,1);prototypeMerged=true;
+   }
+  }
   // Conservative second pass: merge fragmented clusters only when all cross-cluster
   // faces remain similar. Never merge simply to match the roster headcount.
   let merged=true;
