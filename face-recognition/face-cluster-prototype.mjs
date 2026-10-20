@@ -225,7 +225,16 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics){
  const pixels=ctx.getImageData(0,0,112,112).data,plane=112*112,tensor=new Float32Array(plane*3);
  for(let p=0;p<plane;p++)for(let c=0;c<3;c++)tensor[c*plane+p]=(pixels[p*4+c]-127.5)/127.5;
  const recognitionStart=performance.now();
- const output=await session.run({[session.inputNames[0]]:new ort.Tensor('float32',tensor,[1,3,112,112])});
+ const feeds={};
+ for(const name of session.inputNames){
+  const meta=session.inputMetadata?.[name];
+  const dims=meta?.dimensions||meta?.dims||[];
+  const valid=Array.isArray(dims)&&dims.length===4&&
+    (dims[1]===3||dims[1]==='3')&&(dims[2]===112||dims[2]==='112')&&(dims[3]===112||dims[3]==='112');
+  if(!valid&&session.inputNames.length>1)throw Error('追加入力 '+name+' の形状 '+JSON.stringify(dims)+' を確認する必要があります');
+  feeds[name]=new ort.Tensor('float32',tensor,[1,3,112,112]);
+ }
+ const output=await session.run(feeds);
  phaseTimings.recognition+=performance.now()-recognitionStart;phaseTimings.faces++;
  const vec=Array.from(output[session.outputNames[0]].data);
  if(vec.length<64||vec.length>1024||vec.some(v=>!Number.isFinite(v)))throw Error('特徴データ取得失敗（対応外の出力形状）');
