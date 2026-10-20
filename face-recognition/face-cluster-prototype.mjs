@@ -3,6 +3,33 @@ const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
 let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[],photoUrls=[];
 const groupNames=new Map();
+const confirmedAssignments=new Map();
+function invalidateAssignmentPreview(){
+ confirmedAssignments.clear();
+ const host=$('assignmentPreview');if(host)host.replaceChildren();
+ const label=$('assignmentStatus');if(label)label.textContent='変更があったため、仮振り分け結果をクリアしました。もう一度確認してください。';
+}
+$('previewAssignments').addEventListener('click',()=>{
+ confirmedAssignments.clear();
+ const byName=new Map();
+ for(const g of groups){
+  const name=groupNames.get(g.id)?.trim();
+  if(!name||!g.members.length)continue;
+  if(!byName.has(name))byName.set(name,new Set());
+  for(const id of g.members){const index=items[id]?.sourcePhoto;if(Number.isInteger(index))byName.get(name).add(index)}
+ }
+ const host=$('assignmentPreview');host.replaceChildren();
+ for(const [name,indices] of byName){
+  const ids=[...indices].sort((a,b)=>a-b);confirmedAssignments.set(name,ids);
+  const section=document.createElement('div');section.style.cssText='padding:12px 0;border-bottom:1px solid #e8edf3';
+  const heading=document.createElement('strong');heading.textContent='📁 '+name+'（写真'+ids.length+'枚）';section.append(heading);
+  const grid=document.createElement('div');grid.className='faces';grid.style.marginTop='8px';
+  for(const i of ids){const img=document.createElement('img');img.src=photoUrls[i];img.alt=photoNames[i];img.title=photoNames[i];img.style.cssText='width:90px;height:90px;object-fit:cover;border-radius:9px';grid.append(img)}
+  section.append(grid);host.append(section);
+ }
+ $('assignmentStatus').textContent=byName.size?'✅ '+byName.size+'名分の仮振り分け結果を作成しました。画面内のプレビューのみ。アルバム・写真・園児名簿には保存していません。':'園児名が設定されたグループがありません。④で園児名を選んでください。';
+});
+
 const rosterClasses=[['tanpopo','たんぽぽ組'],['tulip','ちゅうりっぷ組'],['cosmos','コスモス組'],['canna','カンナ組'],['deigo','でいご組'],['sakura','さくら組']];
 let roster=[];
 const classSelect=$('rosterClass');
@@ -71,8 +98,8 @@ function render(){
    if(!ids.length){photos.textContent='該当写真なし';return}
    for(const i of ids){const figure=document.createElement('figure');figure.style.cssText='margin:0;width:96px';const img=document.createElement('img');img.src=photoUrls[i];img.alt=photoNames[i];img.title=photoNames[i];img.style.cssText='width:96px;height:96px;object-fit:cover;border-radius:10px';const caption=document.createElement('figcaption');caption.className='muted';caption.style.cssText='overflow-wrap:anywhere;font-size:11px';caption.textContent=(i+1)+'枚目';figure.append(img,caption);photos.append(figure)}
   };
-  field.addEventListener('input',update);field.addEventListener('change',()=>render());
-  if(roster.length){const picker=document.createElement('select');picker.setAttribute('aria-label','登録済み園児を選択');const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='登録済み園児から選択';picker.append(placeholder);for(const kid of roster){const option=document.createElement('option');option.value=kid.id;option.textContent=kid.name;picker.append(option)}picker.addEventListener('change',()=>{const kid=roster.find(k=>k.id===picker.value);if(!kid)return;groupNames.set(g.id,kid.name);render()});row.append(picker)}
+  field.addEventListener('input',update);field.addEventListener('change',()=>{invalidateAssignmentPreview();render()});
+  if(roster.length){const picker=document.createElement('select');picker.setAttribute('aria-label','登録済み園児を選択');const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='登録済み園児から選択';picker.append(placeholder);for(const kid of roster){const option=document.createElement('option');option.value=kid.id;option.textContent=kid.name;picker.append(option)}picker.addEventListener('change',()=>{const kid=roster.find(k=>k.id===picker.value);if(!kid)return;groupNames.set(g.id,kid.name);invalidateAssignmentPreview();render()});row.append(picker)}
   update();row.append(photos);folders.append(row);
  }}
  groupsHost.replaceChildren();
@@ -92,7 +119,7 @@ move.addEventListener('click',()=>{
  const dest=groups.find(g=>g.id===target);if(!dest)return;
  for(const g of groups)g.members=g.members.filter(id=>!selected.has(id));
  for(const id of selected)dest.members.push(id);
- selected.clear();render();
+ selected.clear();invalidateAssignmentPreview();render();
 });
 async function embed(bitmap,human,session,ort){
  const canvas=document.createElement('canvas'),scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
@@ -142,7 +169,7 @@ async function embed(bitmap,human,session,ort){
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- stop=false;start.disabled=true;cancel.disabled=false;selected.clear();items=[];groups=[];groupNames.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ stop=false;start.disabled=true;cancel.disabled=false;selected.clear();items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session;
  try{
   status.textContent='AIモデルを準備しています…';
