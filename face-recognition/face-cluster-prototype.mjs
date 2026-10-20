@@ -142,76 +142,6 @@ function regroupFromExistingVectors(threshold){
   };
   for(const members of clustered.values())for(const part of completeLinkSplit(members))groups.push({id:String(next++),members:part});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
-  // Strong mutual-nearest-neighbor matches can reconnect a singleton to its
-  // closest cluster without relaxing DBSCAN for every face.
-  // Never combine two different faces detected in the same source photo.
-  const safePair=(ga,gb)=>{
-   const aPhotos=new Set(ga.members.map(i=>items[i].sourcePhoto));
-   return gb.members.every(j=>!aPhotos.has(items[j].sourcePhoto));
-  };
-  let linked=true;
-  while(linked){
-   linked=false;
-   const nearest=groups.map((g,a)=>{
-    if(a===0||!g.members.length)return null;
-    const options=[];
-    for(let b=1;b<groups.length;b++){
-     if(a===b||!safePair(g,groups[b]))continue;
-     const scores=g.members.flatMap(i=>groups[b].members.map(j=>pairScore(i,j)));
-     if(scores.some(v=>!Number.isFinite(v)))continue;
-     const score=Math.max(...scores);
-     options.push({b,score});
-    }
-    options.sort((x,y)=>y.score-x.score);
-    const best=options[0],runner=options[1];
-    return best&&best.score>=Math.max(0.67,threshold+0.02)&&(!runner||best.score-runner.score>=0.09)?best:null;
-   });
-   for(let a=1;a<groups.length&&!linked;a++){
-    const b=nearest[a]?.b;
-    if(b==null||b<=a||nearest[b]?.b!==a)continue;
-    groups[a].members.push(...groups[b].members);
-    groups.splice(b,1);linked=true;
-   }
-  }
-  // Use a cluster prototype (normalized mean vector) to recover faces whose
-  // individual poses differ. Require a clear mutual best match, no conflicting
-  // photo, and multiple independent similarities before merging.
-  const centroid=members=>{
-   const dim=items[members[0]].vector.length,out=new Float32Array(dim);
-   for(const id of members)for(let d=0;d<dim;d++)out[d]+=items[id].vector[d];
-   let norm=0;for(const v of out)norm+=v*v;
-   norm=Math.sqrt(norm)||1;for(let d=0;d<dim;d++)out[d]/=norm;
-   return out;
-  };
-  let prototypeMerged=true;
-  while(prototypeMerged){
-   prototypeMerged=false;
-   const prototypes=groups.map(g=>g.members.length?centroid(g.members):null);
-   const choices=groups.map((g,a)=>{
-    if(a===0||!g.members.length)return null;
-    const candidates=[];
-    for(let b=1;b<groups.length;b++){
-     if(a===b||!groups[b].members.length)continue;
-     if(!safePair(g,groups[b]))continue;
-     const score=similarity(prototypes[a],prototypes[b]);
-     const cross=g.members.flatMap(i=>groups[b].members.map(j=>pairScore(i,j)));
-     const best=Math.max(...cross),mean=cross.reduce((t,v)=>t+v,0)/cross.length;
-     if(!Number.isFinite(score)||!Number.isFinite(mean))continue;
-     candidates.push({b,score,best,mean});
-    }
-    candidates.sort((x,y)=>y.score-x.score);
-    const first=candidates[0],second=candidates[1];
-    if(!first||first.score<0.76||first.best<0.56||first.mean<0.48)return null;
-    if(second&&first.score-second.score<0.09)return null;
-    return first;
-   });
-   for(let a=1;a<groups.length&&!prototypeMerged;a++){
-    const b=choices[a]?.b;
-    if(b==null||b<=a||choices[b]?.b!==a)continue;
-    groups[a].members.push(...groups[b].members);
-    groups.splice(b,1);prototypeMerged=true;
-   }
-  }
   // A face pair from the same photo must never be in one identity group.
   // Unlike a nearest-neighbor edge, this cannot-link rule survives transitive merges.
   const splitSamePhotoConflicts=()=>{
@@ -235,6 +165,9 @@ function regroupFromExistingVectors(threshold){
    merged=false;let best=null;
    for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
     const ga=groups[a],gb=groups[b];if(!ga.members.length||!gb.members.length)continue;
+    // Never combine two faces from one source photo, even during later passes.
+    const photos=new Set(ga.members.map(i=>items[i].sourcePhoto));
+    if(gb.members.some(i=>photos.has(items[i].sourcePhoto)))continue;
     const cross=ga.members.flatMap(i=>gb.members.map(j=>pairScore(i,j)));
     if(cross.some(v=>!Number.isFinite(v)))continue;
     const minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
@@ -669,6 +602,9 @@ start.addEventListener('click',async()=>{
    merged=false;let best=null;
    for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
     const ga=groups[a],gb=groups[b];if(!ga.members.length||!gb.members.length)continue;
+    // Never combine two faces from one source photo, even during later passes.
+    const photos=new Set(ga.members.map(i=>items[i].sourcePhoto));
+    if(gb.members.some(i=>photos.has(items[i].sourcePhoto)))continue;
     const cross=ga.members.flatMap(i=>gb.members.map(j=>pairScore(i,j)));
     if(cross.some(v=>!Number.isFinite(v)))continue;
     const minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
