@@ -481,6 +481,7 @@ start.addEventListener('click',async()=>{
   // Keep the WASM heap below iOS Safari's practical memory limits.
   ort.env.wasm.proxy=false;
   ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;
+  ort.env.wasm.simd=false;
   const selectedModel=lightweightModelFile?'lightweight':$('recognitionModel').value;
   let modelURL;
   if(selectedModel==='buffalo_s'){
@@ -510,7 +511,7 @@ start.addEventListener('click',async()=>{
     executionProvider='wasm（GPU利用不可）';
    }
   }else {
-   const sessionOptions={executionProviders:['wasm']};
+   const sessionOptions={executionProviders:['wasm'],graphOptimizationLevel:'basic',enableCpuMemArena:false,enableMemPattern:false};
    if(selectedModel==='lightweight'&&lightweightDataFile){
     const externalDataBytes=new Uint8Array(await lightweightDataFile.arrayBuffer());
     sessionOptions.externalData=[{path:'mobile_facenet.data',data:externalDataBytes}];
