@@ -61,12 +61,16 @@ gpuCheckbox.addEventListener('change',()=>{localStorage.setItem('omoide-prototyp
 gpuControl.append(gpuCheckbox,document.createTextNode('🚀 GPU高速化を試す（実験・対応端末のみ）'));
 const startRow=start.parentElement;startRow?.parentElement?.insertBefore(gpuControl,startRow.nextSibling);
 // Optional lightweight model comparison. No model weights or photos are uploaded.
-let lightweightModelFile=null;
+let lightweightModelFile=null,lightweightDataFile=null;
 const lightPanel=document.createElement('div');lightPanel.style.cssText='margin:10px 0;padding:12px;border:1px dashed #a5b7cf;border-radius:10px';
 const lightLabel=document.createElement('label');lightLabel.textContent='🧪 軽量モデル比較（ONNXファイルを端末から選択）';
 const lightInput=document.createElement('input');lightInput.type='file';lightInput.accept='.onnx';lightInput.style.cssText='display:block;margin:8px 0;max-width:100%';
 const lightHint=document.createElement('small');lightHint.textContent='比較専用。112×112の顔認識ONNXを選択すると、そのモデルで解析します。ArcFaceの基準値0.65は引き継がず、初期値0.70を仮設定します。モデルごとに精度確認が必要です。';
 lightInput.addEventListener('change',()=>{lightweightModelFile=lightInput.files?.[0]||null;status.textContent=lightweightModelFile?'軽量モデルを選択：'+lightweightModelFile.name+'（次回解析で使用）':'従来のArcFaceを使用します';});
+const dataLabel=document.createElement('label');dataLabel.textContent='追加データ（mobile_facenet.data）';
+const dataInput=document.createElement('input');dataInput.type='file';dataInput.accept='.data,application/octet-stream';dataInput.style.cssText='display:block;margin:8px 0;max-width:100%';
+dataInput.addEventListener('change',()=>{lightweightDataFile=dataInput.files?.[0]||null;status.textContent=lightweightDataFile?'追加データを選択：'+lightweightDataFile.name:'追加データ未選択';});
+dataLabel.append(dataInput);lightPanel.append(dataLabel);
 lightLabel.append(lightInput);lightPanel.append(lightLabel,lightHint);
 const modelDownload=document.createElement('a');modelDownload.href='https://qaihub-public-assets.s3.us-west-2.amazonaws.com/qai-hub-models/models/mobile_facenet/releases/v0.64.0/mobile_facenet-onnx-float.zip';modelDownload.target='_blank';modelDownload.rel='noopener noreferrer';modelDownload.textContent='Qualcomm MobileFaceNet（公式ONNX ZIP）を取得';
 modelDownload.style.cssText='display:block;margin:8px 0';
@@ -300,8 +304,16 @@ start.addEventListener('click',async()=>{
     session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
     executionProvider='wasm（GPU利用不可）';
    }
-  }else session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
+  }else {
+   const sessionOptions={executionProviders:['wasm']};
+   if(selectedModel==='lightweight'&&lightweightDataFile){
+    const externalDataBytes=new Uint8Array(await lightweightDataFile.arrayBuffer());
+    sessionOptions.externalData=[{path:'mobile_facenet.data',data:externalDataBytes}];
+   }
+   session=await ort.InferenceSession.create(modelURL,sessionOptions);
+  }
   if(selectedModel==='lightweight'){
+   if(!lightweightDataFile)status.textContent='⚠️ このモデルは mobile_facenet.data が必要です。ZIP内の追加データも選択してください。';
    const inputName=session.inputNames[0],outputName=session.outputNames[0];
    const shape=session.inputMetadata?.[inputName]?.dimensions||session.inputMetadata?.[inputName]?.dims;
    const outputShape=session.outputMetadata?.[outputName]?.dimensions||session.outputMetadata?.[outputName]?.dims;
