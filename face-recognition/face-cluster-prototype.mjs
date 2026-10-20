@@ -1,7 +1,7 @@
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
-let stop=false,items=[],groups=[],selected=new Set(),urls=[];
+let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[];
 const queued=[];
 const folderInput=$('folderInput');
 const count=$('photoCount');
@@ -28,6 +28,14 @@ function render(){
  destination.replaceChildren();
  for(const g of existing){const opt=document.createElement('option');opt.value=g.id;opt.textContent=g.id==='unknown'?'未分類':'グループ '+g.id;destination.append(opt)}
  const add=document.createElement('option');add.value='new';add.textContent='新しいグループ';destination.append(add);
+ const photoLinks=$('photoLinks');
+ if(photoLinks){photoLinks.replaceChildren();for(let i=0;i<photoNames.length;i++){
+  const row=document.createElement('div');row.style.cssText='padding:8px 0;border-bottom:1px solid #e8edf3;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+  const label=document.createElement('strong');label.textContent=(i+1)+'枚目：'+photoNames[i];row.append(label);
+  const faceIds=items.map((item,id)=>item.sourcePhoto===i?id:-1).filter(id=>id>=0);
+  const assigned=[...new Set(faceIds.flatMap(id=>groups.filter(g=>g.members.includes(id)).map(g=>g.id)))];
+  const info=document.createElement('span');info.textContent=faceIds.length?('検出顔 '+faceIds.length+'件 ／ '+(assigned.length?assigned.map(id=>id==='unknown'?'未分類':'グループ '+id).join('・'):'未分類')):'顔未検出（手動対応予定）';row.append(info);photoLinks.append(row);
+ }}
  groupsHost.replaceChildren();
  for(const g of existing){
   const card=document.createElement('article');card.className='group';
@@ -95,7 +103,7 @@ async function embed(bitmap,human,session,ort){
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- stop=false;start.disabled=true;cancel.disabled=false;selected.clear();items=[];groups=[];urls.forEach(URL.revokeObjectURL);urls=[];render();
+ stop=false;start.disabled=true;cancel.disabled=false;selected.clear();items=[];groups=[];photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=[];render();
  let session;
  try{
   status.textContent='AIモデルを準備しています…';
