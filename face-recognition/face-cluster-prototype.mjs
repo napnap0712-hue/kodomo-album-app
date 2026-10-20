@@ -194,11 +194,13 @@ move.addEventListener('click',()=>{
  for(const id of selected)dest.members.push(id);
  selected.clear();invalidateAssignmentPreview();render();
 });
-async function embed(bitmap,human,session,ort){
+async function embed(bitmap,human,session,ort,phaseTimings){
  const canvas=document.createElement('canvas'),scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
  canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+ const detectionStart=performance.now();
  const faces=(await human.detect(canvas)).face||[];
+ phaseTimings.detection+=performance.now()-detectionStart;
  if(!faces.length)throw Error('顔を検出できません');
  const results=[];
  for(const face of faces){
@@ -217,7 +219,9 @@ async function embed(bitmap,human,session,ort){
  const ctx=aligned.getContext('2d');ctx.setTransform(a,b,-b,a,tx,ty);ctx.drawImage(canvas,0,0);
  const pixels=ctx.getImageData(0,0,112,112).data,plane=112*112,tensor=new Float32Array(plane*3);
  for(let p=0;p<plane;p++)for(let c=0;c<3;c++)tensor[c*plane+p]=(pixels[p*4+c]-127.5)/127.5;
+ const recognitionStart=performance.now();
  const output=await session.run({[session.inputNames[0]]:new ort.Tensor('float32',tensor,[1,3,112,112])});
+ phaseTimings.recognition+=performance.now()-recognitionStart;phaseTimings.faces++;
  const vec=Array.from(output[session.outputNames[0]].data);
  if(vec.length!==512||vec.some(v=>!Number.isFinite(v)))throw Error('特徴データ取得失敗');
  const box=face.box||[];
@@ -244,7 +248,7 @@ start.addEventListener('click',async()=>{
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session;
- const timings={model:0,decode:0,detectAndEmbed:0,group:0};const startedAt=performance.now();
+ const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
   const modelStarted=performance.now();
   status.textContent='AIモデルを準備しています…';
@@ -268,7 +272,7 @@ start.addEventListener('click',async()=>{
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
    let bitmap;try{
     const decodeStart=performance.now();bitmap=await createImageBitmap(files[i]);timings.decode+=performance.now()-decodeStart;
-    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort);timings.detectAndEmbed+=performance.now()-embedStart;
+    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings);timings.detectAndEmbed+=performance.now()-embedStart;
     for(let faceIndex=0;faceIndex<detected.length;faceIndex++){
      const {vector,thumbnail}=detected[faceIndex];
      items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,vector});
@@ -319,7 +323,7 @@ start.addEventListener('click',async()=>{
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
-  const perfReport='\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+' ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
+  const perfReport='\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
   status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
   status.textContent+=perfReport;
   const old=$('pairDiagnostics');if(old)old.remove();
