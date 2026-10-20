@@ -126,6 +126,33 @@ $('threshold').addEventListener('change',()=>{
  regroupFromExistingVectors(Number($('threshold').value));
  status.textContent+='\n🔄 保存済みの顔特徴からグループ分けだけ再計算しました（写真の再解析なし）。園児名の仮設定はリセットされました。';
 });
+$('suggestAssignments').addEventListener('click',()=>{
+ const out=$('suggestStatus');
+ if(!items.length){out.textContent='先に写真を解析してください。';return}
+ if(!roster.length){out.textContent='先に登録済み園児を読み込んでください。';return}
+ const references=new Map();
+ for(const g of groups){
+  const name=groupNames.get(g.id);
+  if(!name||!roster.some(k=>k.name===name))continue;
+  if(!references.has(name))references.set(name,[]);
+  for(const id of g.members)references.get(name).push(items[id].vector);
+ }
+ if(!references.size){out.textContent='まず未選別の候補を1つ以上、正しい園児名に設定してください。';return}
+ let suggested=0,uncertain=0;
+ for(const g of groups){
+  if(!g.members.length||groupNames.has(g.id))continue;
+  const ranked=[...references].map(([name,vectors])=>{
+   const scores=g.members.map(id=>Math.max(...vectors.map(v=>similarity(items[id].vector,v))));
+   return {name,score:Math.min(...scores)};
+  }).sort((a,b)=>b.score-a.score);
+  const first=ranked[0],second=ranked[1];
+  if(first&&first.score>=0.68&&(!second||first.score-second.score>=0.12)){
+   groupNames.set(g.id,first.name);suggested++;
+  }else uncertain++;
+ }
+ invalidateAssignmentPreview();render();
+ out.textContent='仮振り分け：'+suggested+'グループ ／ 未選別：'+uncertain+'グループ。基準0.68・次点差0.12（精度保証なし）。先生の確認が必要です。アルバムには保存しません。';
+});
 const similarity=(x,y)=>{let dot=0,a=0,b=0;for(let i=0;i<x.length;i++){dot+=x[i]*y[i];a+=x[i]*x[i];b+=y[i]*y[i]}return dot/Math.sqrt(a*b)};
 function groupLabel(id){return id==='unknown'?'未分類':(groupNames.get(id)?groupNames.get(id)+'（グループ'+id+'）':'グループ '+id)}
 let draggingFace=null,pressTimer=null,dragGhost=null,dragPointer=null,dragJustFinished=false,pressOrigin=null;
