@@ -88,8 +88,16 @@ start.addEventListener('click',async()=>{
   status.textContent='AIモデルを準備しています…';
   const base='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/';
   const ort=await import(base+'ort.min.mjs');ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;
-  let modelURL=new URL('./models/auraface-glintr100.onnx',import.meta.url).href;
-  try{const r=await fetch(modelURL,{method:'HEAD'});if(!r.ok)throw Error('not found')}catch{modelURL='https://huggingface.co/fal/AuraFace-v1/resolve/main/glintr100.onnx'}
+  const selectedModel=$('recognitionModel').value;
+  let modelURL;
+  if(selectedModel==='arcface'){
+   // Recognition weights are downloaded only; images remain in the browser.
+   modelURL='https://huggingface.co/globalnebula/insightface-buffalo-l-onnx/resolve/main/arcface_w600k_r50.onnx';
+   status.textContent='研究用ArcFaceモデルを準備中（約174MB・初回は時間がかかります）…';
+  }else{
+   modelURL=new URL('./models/auraface-glintr100.onnx',import.meta.url).href;
+   try{const r=await fetch(modelURL,{method:'HEAD'});if(!r.ok)throw Error('not found')}catch{modelURL='https://huggingface.co/fal/AuraFace-v1/resolve/main/glintr100.onnx'}
+  }
   session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
   const mod=await import('./human.esm.js'),Human=mod.Human||mod.default;
   const human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:5},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
@@ -142,7 +150,7 @@ start.addEventListener('click',async()=>{
   }
   for(const members of clustered.values())groups.push({id:String(next++),members});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
-  status.textContent='✅ '+items.length+'枚解析・仮グループ '+(groups.length-1)+'件（DBSCAN方式）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
+  status.textContent='✅ '+items.length+'枚解析・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
   const heading=document.createElement('h2');heading.textContent='🔎 顔の比較値（高い順・上位20組）';diagnostic.append(heading);
