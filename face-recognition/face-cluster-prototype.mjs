@@ -60,6 +60,15 @@ const gpuCheckbox=document.createElement('input');gpuCheckbox.type='checkbox';gp
 gpuCheckbox.addEventListener('change',()=>{localStorage.setItem('omoide-prototype-gpu-test',gpuCheckbox.checked?'on':'off');status.textContent=gpuCheckbox.checked?'次の解析でWebGPUを試します。非対応の場合は従来方式に戻します。':'次の解析は従来方式です。'});
 gpuControl.append(gpuCheckbox,document.createTextNode('🚀 GPU高速化を試す（実験・対応端末のみ）'));
 const startRow=start.parentElement;startRow?.parentElement?.insertBefore(gpuControl,startRow.nextSibling);
+// Optional lightweight model comparison. No model weights or photos are uploaded.
+let lightweightModelFile=null;
+const lightPanel=document.createElement('div');lightPanel.style.cssText='margin:10px 0;padding:12px;border:1px dashed #a5b7cf;border-radius:10px';
+const lightLabel=document.createElement('label');lightLabel.textContent='🧪 軽量モデル比較（ONNXファイルを端末から選択）';
+const lightInput=document.createElement('input');lightInput.type='file';lightInput.accept='.onnx';lightInput.style.cssText='display:block;margin:8px 0;max-width:100%';
+const lightHint=document.createElement('small');lightHint.textContent='比較専用。112×112の顔認識ONNXを選択すると、そのモデルで解析します。ArcFaceの基準値0.65は引き継がず、初期値0.70を仮設定します。モデルごとに精度確認が必要です。';
+lightInput.addEventListener('change',()=>{lightweightModelFile=lightInput.files?.[0]||null;status.textContent=lightweightModelFile?'軽量モデルを選択：'+lightweightModelFile.name+'（次回解析で使用）':'従来のArcFaceを使用します';});
+lightLabel.append(lightInput);lightPanel.append(lightLabel,lightHint);
+const mainStartRow=start.parentElement;mainStartRow?.parentElement?.insertBefore(lightPanel,mainStartRow.nextSibling);
 const queued=[];
 const folderInput=$('folderInput');
 const count=$('photoCount');
@@ -229,7 +238,7 @@ async function embed(bitmap,human,session,ort,phaseTimings){
  const output=await session.run({[session.inputNames[0]]:new ort.Tensor('float32',tensor,[1,3,112,112])});
  phaseTimings.recognition+=performance.now()-recognitionStart;phaseTimings.faces++;
  const vec=Array.from(output[session.outputNames[0]].data);
- if(vec.length!==512||vec.some(v=>!Number.isFinite(v)))throw Error('特徴データ取得失敗');
+ if(vec.length<64||vec.length>1024||vec.some(v=>!Number.isFinite(v)))throw Error('特徴データ取得失敗（対応外の出力形状）');
  const box=face.box||[];
  const bx=Array.isArray(box)?box[0]:box.x,by=Array.isArray(box)?box[1]:box.y,bw=Array.isArray(box)?box[2]:box.width,bh=Array.isArray(box)?box[3]:box.height;
  const crop=document.createElement('canvas');crop.width=160;crop.height=160;
@@ -262,9 +271,11 @@ start.addEventListener('click',async()=>{
   const requestedGPU=localStorage.getItem('omoide-prototype-gpu-test')==='on';
   const ort=await import(base+(requestedGPU?'ort.webgpu.min.mjs':'ort.min.mjs'));
   ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;
-  const selectedModel=$('recognitionModel').value;
+  const selectedModel=lightweightModelFile?'lightweight':$('recognitionModel').value;
   let modelURL;
-  if(selectedModel==='arcface'){
+  if(selectedModel==='lightweight'){
+   modelURL=await lightweightModelFile.arrayBuffer();status.textContent='選択した軽量ONNXモデルを準備中…';
+  }else if(selectedModel==='arcface'){
    // Recognition weights are downloaded only; images remain in the browser.
    modelURL='https://huggingface.co/globalnebula/insightface-buffalo-l-onnx/resolve/main/arcface_w600k_r50.onnx';
    status.textContent='研究用ArcFaceモデルを準備中（約174MB・初回は時間がかかります）…';
@@ -303,7 +314,7 @@ start.addEventListener('click',async()=>{
   }
   if(stop){status.textContent='⏹ 中断しました。アルバムへの変更はありません。';return}
   const groupingStart=performance.now();
-  const threshold=Number($('threshold').value);
+  const threshold=selectedModel==='lightweight'?0.70:Number($('threshold').value);
   const pairScores=[];
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
    const score=similarity(items[i].vector,items[j].vector);
@@ -345,7 +356,7 @@ start.addEventListener('click',async()=>{
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
   const perfReport='\\n⚙️ 実行方式：'+executionProvider+'\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
-  status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
+  status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='lightweight'?'軽量ONNX比較（暫定閾値0.70）':selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
   status.textContent+=perfReport;
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
