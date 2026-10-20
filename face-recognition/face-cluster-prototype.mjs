@@ -4,6 +4,9 @@ const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),g
 let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[],photoUrls=[];
 const groupNames=new Map();
 let openedFolder=null;
+const excludedFacePairs=new Set();
+const facePairKey=(a,b)=>Math.min(a,b)+':'+Math.max(a,b);
+const hasExcludedPair=(a,b)=>a.members.some(i=>b.members.some(j=>excludedFacePairs.has(facePairKey(i,j))));
 $('backToFolders').addEventListener('click',()=>{openedFolder=null;selected.clear();render()});
 const confirmedAssignments=new Map();
 function invalidateAssignmentPreview(){
@@ -582,7 +585,7 @@ start.addEventListener('click',async()=>{
   const groupPairs=[];
   for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
    const left=groups[a].members,right=groups[b].members;
-   if(!left.length||!right.length)continue;
+   if(!left.length||!right.length||hasExcludedPair(groups[a],groups[b]))continue;
    const cross=left.flatMap(i=>right.map(j=>pairScore(i,j))).filter(Number.isFinite);
    if(!cross.length)continue;
    const maximum=Math.max(...cross),minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
@@ -603,7 +606,7 @@ start.addEventListener('click',async()=>{
    const firstId=groups[pair.a].id,secondId=groups[pair.b].id;
    merge.addEventListener('click',()=>{
     const first=groups.find(g=>g.id===firstId),second=groups.find(g=>g.id===secondId);
-    if(!first||!second||first===second){refreshGroupPairs();return;}
+    if(!first||!second||first===second||hasExcludedPair(first,second)){refreshGroupPairs();return;}
     if(!window.confirm('顔写真を確認しましたか？ この2グループを1つにまとめます（アルバムデータは変更しません）。'))return;
     first.members.push(...second.members);
     groups=groups.filter(g=>g!==second);
@@ -612,7 +615,15 @@ start.addEventListener('click',async()=>{
     refreshGroupPairs();
     status.textContent+='\n✅ グループ '+firstId+' と '+secondId+' を手動統合しました。';
    });
-   row.append(merge);host.append(row);
+   row.append(merge);
+   const reject=document.createElement('button');reject.type='button';reject.className='secondary';reject.textContent='違う園児（候補から除外）';
+   reject.addEventListener('click',()=>{
+    const first=groups.find(g=>g.id===firstId),second=groups.find(g=>g.id===secondId);
+    if(!first||!second)return;
+    for(const i of first.members)for(const j of second.members)excludedFacePairs.add(facePairKey(i,j));
+    refreshGroupPairs();
+   });
+   row.append(reject);host.append(row);
   }
   };
   refreshGroupPairs();
