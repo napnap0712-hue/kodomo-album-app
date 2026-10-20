@@ -244,7 +244,9 @@ start.addEventListener('click',async()=>{
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session;
+ const timings={model:0,decode:0,detectAndEmbed:0,group:0};const startedAt=performance.now();
  try{
+  const modelStarted=performance.now();
   status.textContent='AIモデルを準備しています…';
   const base='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/';
   const ort=await import(base+'ort.min.mjs');ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;
@@ -261,11 +263,12 @@ start.addEventListener('click',async()=>{
   session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
   const mod=await import('./human.esm.js'),Human=mod.Human||mod.default;
   const human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:20},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
-  await human.load();const failed=[];
+  await human.load();timings.model=performance.now()-modelStarted;const failed=[];
   for(let i=0;i<files.length;i++){
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
    let bitmap;try{
-    bitmap=await createImageBitmap(files[i]);const detected=await embed(bitmap,human,session,ort);
+    const decodeStart=performance.now();bitmap=await createImageBitmap(files[i]);timings.decode+=performance.now()-decodeStart;
+    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort);timings.detectAndEmbed+=performance.now()-embedStart;
     for(let faceIndex=0;faceIndex<detected.length;faceIndex++){
      const {vector,thumbnail}=detected[faceIndex];
      items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,vector});
@@ -274,6 +277,7 @@ start.addEventListener('click',async()=>{
    await new Promise(r=>setTimeout(r,0));
   }
   if(stop){status.textContent='⏹ 中断しました。アルバムへの変更はありません。';return}
+  const groupingStart=performance.now();
   const threshold=Number($('threshold').value);
   const pairScores=[];
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
@@ -313,7 +317,11 @@ start.addEventListener('click',async()=>{
   }
   for(const members of clustered.values())groups.push({id:String(next++),members});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
+  timings.group=performance.now()-groupingStart;
+  const seconds=ms=>(ms/1000).toFixed(1)+'秒';
+  const perfReport='\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+' ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
   status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
+  status.textContent+=perfReport;
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
   const heading=document.createElement('h2');heading.textContent='🔎 顔の比較値（高い順・上位20組）';diagnostic.append(heading);
