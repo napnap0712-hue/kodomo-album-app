@@ -564,7 +564,21 @@ start.addEventListener('click',async()=>{
    for(const id of [...groups[pair.a].members.slice(0,3),...groups[pair.b].members.slice(0,3)]){
     const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';faces.append(img);
    }
-   row.append(faces);diagnostic.append(row);
+   row.append(faces);
+   const merge=document.createElement('button');merge.type='button';merge.className='secondary';merge.textContent='この2グループを統合';
+   const firstId=groups[pair.a].id,secondId=groups[pair.b].id;
+   merge.addEventListener('click',()=>{
+    const first=groups.find(g=>g.id===firstId),second=groups.find(g=>g.id===secondId);
+    if(!first||!second||first===second)return;
+    if(!window.confirm('顔写真を確認しましたか？ この2グループを1つにまとめます（アルバムデータは変更しません）。'))return;
+    first.members.push(...second.members);
+    groups=groups.filter(g=>g!==second);
+    if(!groupNames.has(first.id)&&groupNames.has(second.id))groupNames.set(first.id,groupNames.get(second.id));
+    groupNames.delete(second.id);selected.clear();invalidateAssignmentPreview();render();
+    merge.disabled=true;merge.textContent='統合済み';
+    status.textContent+='\n✅ グループ '+firstId+' と '+secondId+' を手動統合しました。';
+   });
+   row.append(merge);diagnostic.append(row);
   }
   groupsHost.closest('section').after(diagnostic);
   render();
