@@ -1,7 +1,7 @@
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
-let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[];
+let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[],photoUrls=[];
 const groupNames=new Map();
 const queued=[];
 const folderInput=$('folderInput');
@@ -42,10 +42,13 @@ function render(){
  if(folders){folders.replaceChildren();for(const g of existing){if(g.id==='unknown')continue;
   const row=document.createElement('div');row.style.cssText='padding:10px 0;border-bottom:1px solid #e8edf3';
   const label=document.createElement('label');label.textContent='グループ '+g.id+' → 園児名 ';const field=document.createElement('input');field.type='text';field.placeholder='園児名（仮入力）';field.value=groupNames.get(g.id)||'';field.style.cssText='padding:8px;border:1px solid #ccd5e0;border-radius:8px';label.append(field);row.append(label);
-  const photos=document.createElement('p');photos.className='muted';
+  const photos=document.createElement('div');photos.className='faces';photos.style.cssText='margin-top:8px';
   const update=()=>{const name=field.value.trim();if(name)groupNames.set(g.id,name);else groupNames.delete(g.id);
    const ids=[...new Set(g.members.map(id=>items[id]?.sourcePhoto).filter(Number.isInteger))].sort((a,b)=>a-b);
-   photos.textContent=(name||'未設定')+'：'+(ids.length?ids.map(i=>(i+1)+'枚目 '+photoNames[i]).join(' ／ '):'該当写真なし')+'（元写真を複製せず参照）';};
+   photos.replaceChildren();
+   if(!ids.length){photos.textContent='該当写真なし';return}
+   for(const i of ids){const figure=document.createElement('figure');figure.style.cssText='margin:0;width:96px';const img=document.createElement('img');img.src=photoUrls[i];img.alt=photoNames[i];img.title=photoNames[i];img.style.cssText='width:96px;height:96px;object-fit:cover;border-radius:10px';const caption=document.createElement('figcaption');caption.className='muted';caption.style.cssText='overflow-wrap:anywhere;font-size:11px';caption.textContent=(i+1)+'枚目';figure.append(img,caption);photos.append(figure)}
+  };
   field.addEventListener('input',update);field.addEventListener('change',()=>render());update();row.append(photos);folders.append(row);
  }}
  groupsHost.replaceChildren();
@@ -115,7 +118,7 @@ async function embed(bitmap,human,session,ort){
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- stop=false;start.disabled=true;cancel.disabled=false;selected.clear();items=[];groups=[];groupNames.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=[];render();
+ stop=false;start.disabled=true;cancel.disabled=false;selected.clear();items=[];groups=[];groupNames.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session;
  try{
   status.textContent='AIモデルを準備しています…';
