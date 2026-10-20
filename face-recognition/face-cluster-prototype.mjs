@@ -75,6 +75,48 @@ $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
 const similarity=(x,y)=>{let dot=0,a=0,b=0;for(let i=0;i<x.length;i++){dot+=x[i]*y[i];a+=x[i]*x[i];b+=y[i]*y[i]}return dot/Math.sqrt(a*b)};
 function groupLabel(id){return id==='unknown'?'未分類':(groupNames.get(id)?groupNames.get(id)+'（グループ'+id+'）':'グループ '+id)}
+let draggingFace=null,pressTimer=null,dragGhost=null,dragPointer=null;
+function relocateFace(id,target){
+ if(!Number.isInteger(id)||!groups.some(g=>g.id===target))return;
+ if(groups.find(g=>g.id===target).members.includes(id))return;
+ for(const g of groups)g.members=g.members.filter(x=>x!==id);
+ groups.find(g=>g.id===target).members.push(id);
+ selected.clear();invalidateAssignmentPreview();render();
+}
+function cleanupDrag(){
+ clearTimeout(pressTimer);pressTimer=null;draggingFace=null;dragPointer=null;
+ if(dragGhost){dragGhost.remove();dragGhost=null}
+ document.querySelectorAll('[data-drop-folder]').forEach(el=>el.style.outline='');
+}
+function installDrag(img,id){
+ img.draggable=true;
+ img.addEventListener('dragstart',e=>{draggingFace=id;e.dataTransfer.setData('text/plain',String(id));e.dataTransfer.effectAllowed='move'});
+ img.addEventListener('dragend',cleanupDrag);
+ img.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse')return;
+  const x=e.clientX,y=e.clientY;
+  dragPointer=e.pointerId;
+  pressTimer=setTimeout(()=>{
+   draggingFace=id;dragGhost=img.cloneNode();dragGhost.style.cssText='position:fixed;z-index:9999;width:72px;height:72px;object-fit:cover;opacity:.8;pointer-events:none;border:3px solid #3385f2;border-radius:10px';
+   document.body.append(dragGhost);dragGhost.style.left=(x-36)+'px';dragGhost.style.top=(y-36)+'px';
+  },380);
+ });
+ img.addEventListener('pointermove',e=>{
+  if(e.pointerId!==dragPointer)return;
+  if(!draggingFace){if(Math.abs(e.movementX)>9||Math.abs(e.movementY)>9)clearTimeout(pressTimer);return}
+  e.preventDefault();if(dragGhost){dragGhost.style.left=(e.clientX-36)+'px';dragGhost.style.top=(e.clientY-36)+'px'}
+  const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-drop-folder]');
+  document.querySelectorAll('[data-drop-folder]').forEach(el=>el.style.outline=el===target?'3px solid #3385f2':'');
+ });
+ img.addEventListener('pointerup',e=>{
+  if(e.pointerId!==dragPointer)return;
+  const idToMove=draggingFace;
+  const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-drop-folder]')?.dataset.dropFolder;
+  cleanupDrag();
+  if(idToMove!==null&&target)relocateFace(idToMove,target);
+ });
+ img.addEventListener('pointercancel',cleanupDrag);
+}
 function render(){
  selection.textContent='選択中：'+selected.size+'件';move.disabled=!selected.size;
  const existing=groups.filter(g=>g.members.length);
@@ -90,6 +132,17 @@ function render(){
   folder.append(sample);folder.addEventListener('click',()=>{openedFolder=g.id;selected.clear();render()});overview.append(folder);
  }
  $('openFolderTitle').textContent=openedFolder===null?'':groupLabel(openedFolder);
+ const targets=$('folderDropTargets');targets.replaceChildren();
+ if(openedFolder!==null)for(const g of existing.filter(g=>g.id!==openedFolder)){
+  const target=document.createElement('div');target.className='group';target.dataset.dropFolder=g.id;
+  target.style.cssText='padding:12px;border:2px dashed #a5b7cf;border-radius:12px;min-height:52px';
+  target.textContent='📁 '+groupLabel(g.id)+' へ移動';
+  target.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';target.style.outline='3px solid #3385f2'});
+  target.addEventListener('dragleave',()=>target.style.outline='');
+  target.addEventListener('drop',e=>{e.preventDefault();const id=Number(e.dataTransfer.getData('text/plain'));cleanupDrag();relocateFace(id,g.id)});
+  targets.append(target);
+ }
+
  destination.replaceChildren();
  for(const g of existing){const opt=document.createElement('option');opt.value=g.id;opt.textContent=groupLabel(g.id);destination.append(opt)}
  const add=document.createElement('option');add.value='new';add.textContent='新しいグループ';destination.append(add);
@@ -133,7 +186,7 @@ function render(){
   }
   const faces=document.createElement('div');faces.className='faces';
   for(const id of g.members){
-   const item=items[id],img=document.createElement('img');img.className='face'+(selected.has(id)?' selected':'');img.src=item.url;img.alt=item.name;img.title=item.name;img.addEventListener('click',()=>{selected.has(id)?selected.delete(id):selected.add(id);render()});faces.append(img);
+   const item=items[id],img=document.createElement('img');img.className='face'+(selected.has(id)?' selected':'');img.src=item.url;img.alt=item.name;img.title=item.name;img.addEventListener('click',()=>{if(draggingFace!==null)return;selected.has(id)?selected.delete(id):selected.add(id);render()});installDrag(img,id);faces.append(img);
   }card.append(faces);groupsHost.append(card);
  }
 }
