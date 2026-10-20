@@ -419,9 +419,12 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics){
  const results=[];
  for(const face of faces){
  try{
- const mesh=face.mesh,indices=[33,263,1,61,291];
- if(!Array.isArray(mesh)||mesh.length<292)throw Error('顔の位置情報不足');
- const src=indices.map(k=>[mesh[k]?.[0],mesh[k]?.[1]]);
+ const mesh=face.mesh;
+ if(!Array.isArray(mesh)||mesh.length<363)throw Error('顔の位置情報不足');
+ // ArcFace's five-point alignment expects eye centers, not the outer eye
+ // corners (33 and 263). Average the inner and outer corners of each eye.
+ const midpoint=(i,j)=>[(mesh[i]?.[0]+mesh[j]?.[0])/2,(mesh[i]?.[1]+mesh[j]?.[1])/2];
+ const src=[midpoint(33,133),midpoint(362,263),[mesh[1]?.[0],mesh[1]?.[1]],[mesh[61]?.[0],mesh[61]?.[1]],[mesh[291]?.[0],mesh[291]?.[1]]];
  if(src.some(p=>p.some(v=>!Number.isFinite(v))))throw Error('顔の座標が不正');
  const dst=[[38.2946,51.6963],[73.5318,51.5014],[56.0252,71.7366],[41.5493,92.3655],[70.7299,92.2041]];
  const mean=p=>p.reduce((a,v)=>[a[0]+v[0]/p.length,a[1]+v[1]/p.length],[0,0]);
