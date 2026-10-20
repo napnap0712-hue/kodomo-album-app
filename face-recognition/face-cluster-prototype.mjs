@@ -106,6 +106,17 @@ function render(){
  for(const g of existing){
   const card=document.createElement('article');card.className='group';
   const title=document.createElement('strong');title.textContent=groupLabel(g.id)+'（顔 '+g.members.length+'件）';card.append(title);
+  if(g.id!=='unknown'){
+   const controls=document.createElement('div');controls.style.cssText='margin:8px 0;display:flex;flex-wrap:wrap;gap:6px';
+   const picker=document.createElement('select');picker.setAttribute('aria-label','グループ'+g.id+'の園児名');
+   const blank=document.createElement('option');blank.value='';blank.textContent='園児名を選択';picker.append(blank);
+   const current=groupNames.get(g.id)||'';
+   if(current&&!roster.some(k=>k.name===current)){const option=document.createElement('option');option.value=current;option.textContent=current;picker.append(option)}
+   for(const kid of roster){const option=document.createElement('option');option.value=kid.name;option.textContent=kid.name;picker.append(option)}
+   picker.value=current;
+   picker.addEventListener('change',()=>{if(picker.value)groupNames.set(g.id,picker.value);else groupNames.delete(g.id);invalidateAssignmentPreview();render()});
+   controls.append(picker);card.append(controls);
+  }
   const faces=document.createElement('div');faces.className='faces';
   for(const id of g.members){
    const item=items[id],img=document.createElement('img');img.className='face'+(selected.has(id)?' selected':'');img.src=item.url;img.alt=item.name;img.title=item.name;img.addEventListener('click',()=>{selected.has(id)?selected.delete(id):selected.add(id);render()});faces.append(img);
