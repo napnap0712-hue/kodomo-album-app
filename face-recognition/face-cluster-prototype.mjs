@@ -75,7 +75,7 @@ $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
 const similarity=(x,y)=>{let dot=0,a=0,b=0;for(let i=0;i<x.length;i++){dot+=x[i]*y[i];a+=x[i]*x[i];b+=y[i]*y[i]}return dot/Math.sqrt(a*b)};
 function groupLabel(id){return id==='unknown'?'未分類':(groupNames.get(id)?groupNames.get(id)+'（グループ'+id+'）':'グループ '+id)}
-let draggingFace=null,pressTimer=null,dragGhost=null,dragPointer=null;
+let draggingFace=null,pressTimer=null,dragGhost=null,dragPointer=null,dragJustFinished=false;
 function relocateFace(id,target){
  if(!Number.isInteger(id)||!groups.some(g=>g.id===target))return;
  if(groups.find(g=>g.id===target).members.includes(id))return;
@@ -84,12 +84,15 @@ function relocateFace(id,target){
  selected.clear();invalidateAssignmentPreview();render();
 }
 function cleanupDrag(){
+ if(draggingFace!==null){dragJustFinished=true;setTimeout(()=>{dragJustFinished=false},350)}
  clearTimeout(pressTimer);pressTimer=null;draggingFace=null;dragPointer=null;
  if(dragGhost){dragGhost.remove();dragGhost=null}
  document.querySelectorAll('[data-drop-folder]').forEach(el=>el.style.outline='');
 }
 function installDrag(img,id){
  img.draggable=true;
+ img.style.cursor='grab';img.style.touchAction='pan-y';
+ img.addEventListener('click',e=>{e.preventDefault();e.stopPropagation()});
  img.addEventListener('dragstart',e=>{draggingFace=id;e.dataTransfer.setData('text/plain',String(id));e.dataTransfer.effectAllowed='move'});
  img.addEventListener('dragend',cleanupDrag);
  img.addEventListener('pointerdown',e=>{
@@ -186,7 +189,7 @@ function render(){
   }
   const faces=document.createElement('div');faces.className='faces';
   for(const id of g.members){
-   const item=items[id],img=document.createElement('img');img.className='face'+(selected.has(id)?' selected':'');img.src=item.url;img.alt=item.name;img.title=item.name;img.addEventListener('click',()=>{if(draggingFace!==null)return;selected.has(id)?selected.delete(id):selected.add(id);render()});installDrag(img,id);faces.append(img);
+   const item=items[id],img=document.createElement('img');img.className='face'+(selected.has(id)?' selected':'');img.src=item.url;img.alt=item.name;img.title=item.name;installDrag(img,id);faces.append(img);
   }card.append(faces);groupsHost.append(card);
  }
 }
