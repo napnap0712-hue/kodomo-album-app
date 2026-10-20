@@ -23,11 +23,12 @@ $('recognitionModel').addEventListener('change',()=>{
 $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
 const similarity=(x,y)=>{let dot=0,a=0,b=0;for(let i=0;i<x.length;i++){dot+=x[i]*y[i];a+=x[i]*x[i];b+=y[i]*y[i]}return dot/Math.sqrt(a*b)};
+function groupLabel(id){return id==='unknown'?'未分類':(groupNames.get(id)?groupNames.get(id)+'（グループ'+id+'）':'グループ '+id)}
 function render(){
  selection.textContent='選択中：'+selected.size+'件';move.disabled=!selected.size;
  const existing=groups.filter(g=>g.members.length);
  destination.replaceChildren();
- for(const g of existing){const opt=document.createElement('option');opt.value=g.id;opt.textContent=g.id==='unknown'?'未分類':'グループ '+g.id;destination.append(opt)}
+ for(const g of existing){const opt=document.createElement('option');opt.value=g.id;opt.textContent=groupLabel(g.id);destination.append(opt)}
  const add=document.createElement('option');add.value='new';add.textContent='新しいグループ';destination.append(add);
  const photoLinks=$('photoLinks');
  if(photoLinks){photoLinks.replaceChildren();for(let i=0;i<photoNames.length;i++){
@@ -35,7 +36,7 @@ function render(){
   const label=document.createElement('strong');label.textContent=(i+1)+'枚目：'+photoNames[i];row.append(label);
   const faceIds=items.map((item,id)=>item.sourcePhoto===i?id:-1).filter(id=>id>=0);
   const assigned=[...new Set(faceIds.flatMap(id=>groups.filter(g=>g.members.includes(id)).map(g=>g.id)))];
-  const info=document.createElement('span');info.textContent=faceIds.length?('検出顔 '+faceIds.length+'件 ／ '+(assigned.length?assigned.map(id=>id==='unknown'?'未分類':'グループ '+id).join('・'):'未分類')):'顔未検出（手動対応予定）';row.append(info);photoLinks.append(row);
+  const info=document.createElement('span');info.textContent=faceIds.length?('検出顔 '+faceIds.length+'件 ／ '+(assigned.length?assigned.map(id=>groupLabel(id)).join('・'):'未分類')):'顔未検出（手動対応予定）';row.append(info);photoLinks.append(row);
  }}
  const folders=$('childFolders');
  if(folders){folders.replaceChildren();for(const g of existing){if(g.id==='unknown')continue;
@@ -45,12 +46,12 @@ function render(){
   const update=()=>{const name=field.value.trim();if(name)groupNames.set(g.id,name);else groupNames.delete(g.id);
    const ids=[...new Set(g.members.map(id=>items[id]?.sourcePhoto).filter(Number.isInteger))].sort((a,b)=>a-b);
    photos.textContent=(name||'未設定')+'：'+(ids.length?ids.map(i=>(i+1)+'枚目 '+photoNames[i]).join(' ／ '):'該当写真なし')+'（元写真を複製せず参照）';};
-  field.addEventListener('input',update);update();row.append(photos);folders.append(row);
+  field.addEventListener('input',()=>{update();render();});update();row.append(photos);folders.append(row);
  }}
  groupsHost.replaceChildren();
  for(const g of existing){
   const card=document.createElement('article');card.className='group';
-  const title=document.createElement('strong');title.textContent=(g.id==='unknown'?'未分類':'グループ '+g.id)+'（顔 '+g.members.length+'件）';card.append(title);
+  const title=document.createElement('strong');title.textContent=groupLabel(g.id)+'（顔 '+g.members.length+'件）';card.append(title);
   const faces=document.createElement('div');faces.className='faces';
   for(const id of g.members){
    const item=items[id],img=document.createElement('img');img.className='face'+(selected.has(id)?' selected':'');img.src=item.url;img.alt=item.name;img.title=item.name;img.addEventListener('click',()=>{selected.has(id)?selected.delete(id):selected.add(id);render()});faces.append(img);
