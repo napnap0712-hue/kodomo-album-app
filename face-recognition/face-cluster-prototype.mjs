@@ -364,7 +364,8 @@ start.addEventListener('click',async()=>{
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
   const perfReport='\\n⚙️ 実行方式：'+executionProvider+'\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
   status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='lightweight'?'軽量ONNX比較（暫定閾値0.70）':selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
-  if(diagnostics.length)status.textContent+='\n🔍 AIモデル詳細：'+[...new Set(diagnostics)].join(' ／ ');\n  status.textContent+=perfReport;
+  if(diagnostics.length)status.textContent+='\n🔍 AIモデル詳細：'+[...new Set(diagnostics)].join(' ／ ');
+  status.textContent+=perfReport;
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
   const heading=document.createElement('h2');heading.textContent='🔎 顔の比較値（高い順・上位20組）';diagnostic.append(heading);
