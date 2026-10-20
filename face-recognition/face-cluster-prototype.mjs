@@ -377,7 +377,7 @@ move.addEventListener('click',()=>{
  for(const id of selected)dest.members.push(id);
  selected.clear();invalidateAssignmentPreview();render();
 });
-async function embed(bitmap,human,session,ort,phaseTimings,diagnostics){
+async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugment=false){
  const canvas=document.createElement('canvas'),scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
  canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
@@ -417,8 +417,24 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics){
  }
  const output=await session.run(feeds);
  phaseTimings.recognition+=performance.now()-recognitionStart;phaseTimings.faces++;
- const vec=Array.from(output[session.outputNames[0]].data);
+ let vec=Array.from(output[session.outputNames[0]].data);
  if(vec.length<64||vec.length>1024||vec.some(v=>!Number.isFinite(v)))throw Error('特徴データ取得失敗（対応外の出力形状）');
+ if(flipAugment){
+  // Test-time horizontal flip: run sequentially to avoid a second model session
+  // and average L2-normalized embeddings to reduce left/right pose variation.
+  const flipped=new Float32Array(tensor.length);
+  for(let c=0;c<3;c++)for(let y=0;y<112;y++)for(let x=0;x<112;x++)
+   flipped[c*plane+y*112+x]=tensor[c*plane+y*112+(111-x)];
+  const flipFeeds={};
+  for(const name of session.inputNames)flipFeeds[name]=new ort.Tensor('float32',flipped,[1,3,112,112]);
+  const flipOutput=await session.run(flipFeeds);
+  const other=Array.from(flipOutput[session.outputNames[0]].data);
+  if(other.length===vec.length&&other.every(Number.isFinite)){
+   const normalize=v=>{const n=Math.hypot(...v)||1;return v.map(x=>x/n)};
+   const first=normalize(vec),second=normalize(other);
+   vec=first.map((v,i)=>(v+second[i])*0.5);
+  }
+ }
  const box=face.box||[];
  const bx=Array.isArray(box)?box[0]:box.x,by=Array.isArray(box)?box[1]:box.y,bw=Array.isArray(box)?box[2]:box.width,bh=Array.isArray(box)?box[3]:box.height;
  const crop=document.createElement('canvas');crop.width=160;crop.height=160;
@@ -510,7 +526,7 @@ start.addEventListener('click',async()=>{
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
    let bitmap;try{
     const decodeStart=performance.now();bitmap=await createImageBitmap(files[i]);timings.decode+=performance.now()-decodeStart;
-    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings,diagnostics);timings.detectAndEmbed+=performance.now()-embedStart;
+    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings,diagnostics,$('flipAugment')?.checked===true);timings.detectAndEmbed+=performance.now()-embedStart;
     for(let faceIndex=0;faceIndex<detected.length;faceIndex++){
      const {vector,thumbnail,alignedThumbnail}=detected[faceIndex];
      items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,alignedThumbnail,vector});
