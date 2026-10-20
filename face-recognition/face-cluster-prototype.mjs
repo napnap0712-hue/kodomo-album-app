@@ -95,6 +95,8 @@ function regroupFromExistingVectors(threshold){
   // retained as separate provisional groups for teacher review.
   const scoreMap=new Map(pairScores.map(p=>[p.i+':'+p.j,p.score]));
   const pairScore=(i,j)=>i===j?1:scoreMap.get(Math.min(i,j)+':'+Math.max(i,j));
+  // Complete-link grouping: an incoming face must match EVERY existing member.
+  // This avoids DBSCAN chaining across lookalike children through one pose-matched pair.
   const neighbors=items.map((_,i)=>items.map((_,j)=>j).filter(j=>pairScore(i,j)>=threshold));
   const labels=new Int32Array(items.length).fill(-2); // -2 unvisited, -1 noise
   let clusterId=0;
@@ -120,7 +122,25 @@ function regroupFromExistingVectors(threshold){
    if(!clustered.has(labels[i]))clustered.set(labels[i],[]);
    clustered.get(labels[i]).push(i);
   }
-  for(const members of clustered.values())groups.push({id:String(next++),members});
+  // Split transitive DBSCAN chains before any secondary merge.
+  // Within each provisional identity, require pairwise agreement rather than
+  // allowing a single similar-looking bridge to connect two different children.
+  const completeLinkSplit=members=>{
+   const ordered=[...members].sort((a,b)=>{
+    const quality=id=>members.reduce((total,other)=>total+(pairScore(id,other)||0),0);
+    return quality(b)-quality(a);
+   });
+   const parts=[];
+   for(const id of ordered){
+    const candidates=parts.map((part,k)=>({k,min:Math.min(...part.map(other=>pairScore(id,other)))}))
+      .filter(candidate=>candidate.min>=threshold)
+      .sort((a,b)=>b.min-a.min);
+    if(candidates.length)parts[candidates[0].k].push(id);
+    else parts.push([id]);
+   }
+   return parts;
+  };
+  for(const members of clustered.values())for(const part of completeLinkSplit(members))groups.push({id:String(next++),members:part});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
   // Strong mutual-nearest-neighbor matches can reconnect a singleton to its
   // closest cluster without relaxing DBSCAN for every face.
@@ -579,6 +599,8 @@ start.addEventListener('click',async()=>{
   // retained as separate provisional groups for teacher review.
   const scoreMap=new Map(pairScores.map(p=>[p.i+':'+p.j,p.score]));
   const pairScore=(i,j)=>i===j?1:scoreMap.get(Math.min(i,j)+':'+Math.max(i,j));
+  // Complete-link grouping: an incoming face must match EVERY existing member.
+  // This avoids DBSCAN chaining across lookalike children through one pose-matched pair.
   const neighbors=items.map((_,i)=>items.map((_,j)=>j).filter(j=>pairScore(i,j)>=threshold));
   const labels=new Int32Array(items.length).fill(-2); // -2 unvisited, -1 noise
   let clusterId=0;
@@ -604,7 +626,25 @@ start.addEventListener('click',async()=>{
    if(!clustered.has(labels[i]))clustered.set(labels[i],[]);
    clustered.get(labels[i]).push(i);
   }
-  for(const members of clustered.values())groups.push({id:String(next++),members});
+  // Split transitive DBSCAN chains before any secondary merge.
+  // Within each provisional identity, require pairwise agreement rather than
+  // allowing a single similar-looking bridge to connect two different children.
+  const completeLinkSplit=members=>{
+   const ordered=[...members].sort((a,b)=>{
+    const quality=id=>members.reduce((total,other)=>total+(pairScore(id,other)||0),0);
+    return quality(b)-quality(a);
+   });
+   const parts=[];
+   for(const id of ordered){
+    const candidates=parts.map((part,k)=>({k,min:Math.min(...part.map(other=>pairScore(id,other)))}))
+      .filter(candidate=>candidate.min>=threshold)
+      .sort((a,b)=>b.min-a.min);
+    if(candidates.length)parts[candidates[0].k].push(id);
+    else parts.push([id]);
+   }
+   return parts;
+  };
+  for(const members of clustered.values())for(const part of completeLinkSplit(members))groups.push({id:String(next++),members:part});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
   // A face pair from the same photo must never be in one identity group.
   // Unlike a nearest-neighbor edge, this cannot-link rule survives transitive merges.
