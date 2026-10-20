@@ -124,26 +124,37 @@ function render(){
  selection.textContent='選択中：'+selected.size+'件';move.disabled=!selected.size;
  const existing=groups.filter(g=>g.members.length);
  const overview=$('folderOverview'),detail=$('folderDetail'),actions=$('folderActions');
- if(openedFolder!==null&&!existing.some(g=>g.id===openedFolder))openedFolder=null;
- overview.hidden=openedFolder!==null;detail.hidden=openedFolder===null;actions.hidden=openedFolder===null;
+ overview.hidden=false;detail.hidden=true;actions.hidden=true;
  overview.replaceChildren();
+ // Multiple AI clusters assigned to the same registered child share one visual folder.
+ const displayFolders=new Map();
  for(const g of existing){
-  const folder=document.createElement('button');folder.type='button';folder.className='group';folder.style.cssText='text-align:left;background:white;color:#263344;min-height:110px';
-  const title=document.createElement('strong');title.textContent='📁 '+groupLabel(g.id)+'（顔'+g.members.length+'件）';folder.append(title);
-  const sample=document.createElement('div');sample.className='faces';sample.style.marginTop='8px';
-  for(const id of g.members.slice(0,4)){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.className='face';img.style.pointerEvents='none';sample.append(img)}
-  folder.append(sample);folder.addEventListener('click',()=>{openedFolder=g.id;selected.clear();render()});overview.append(folder);
+  const key=groupNames.get(g.id)?.trim()||'__cluster_'+g.id;
+  if(!displayFolders.has(key))displayFolders.set(key,{key,name:groupNames.get(g.id)?.trim()||'',groups:[],members:[]});
+  const folder=displayFolders.get(key);folder.groups.push(g);folder.members.push(...g.members);
  }
- $('openFolderTitle').textContent=openedFolder===null?'':groupLabel(openedFolder);
- const targets=$('folderDropTargets');targets.replaceChildren();
- if(openedFolder!==null)for(const g of existing.filter(g=>g.id!==openedFolder)){
-  const target=document.createElement('div');target.className='group';target.dataset.dropFolder=g.id;
-  target.style.cssText='padding:12px;border:2px dashed #a5b7cf;border-radius:12px;min-height:52px';
-  target.textContent='📁 '+groupLabel(g.id)+' へ移動';
-  target.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';target.style.outline='3px solid #3385f2'});
-  target.addEventListener('dragleave',()=>target.style.outline='');
-  target.addEventListener('drop',e=>{e.preventDefault();const id=Number(e.dataTransfer.getData('text/plain'));cleanupDrag();relocateFace(id,g.id)});
-  targets.append(target);
+ for(const folder of displayFolders.values()){
+  const card=document.createElement('article');card.className='group';card.dataset.dropFolder=folder.groups[0].id;
+  card.style.cssText='min-height:120px;min-width:0;padding:12px';
+  const title=document.createElement('strong');title.textContent='📁 '+(folder.name||'未設定（グループ'+folder.groups[0].id+'）')+'（顔'+folder.members.length+'件）';card.append(title);
+  const picker=document.createElement('select');picker.setAttribute('aria-label','園児名を設定');picker.style.cssText='display:block;max-width:100%;margin:8px 0';
+  const blank=document.createElement('option');blank.value='';blank.textContent='園児名を選択';picker.append(blank);
+  if(folder.name&&!roster.some(k=>k.name===folder.name)){const option=document.createElement('option');option.value=folder.name;option.textContent=folder.name;picker.append(option)}
+  for(const kid of roster){const option=document.createElement('option');option.value=kid.name;option.textContent=kid.name;picker.append(option)}
+  picker.value=folder.name;
+  picker.addEventListener('change',()=>{
+   for(const g of folder.groups){if(picker.value)groupNames.set(g.id,picker.value);else groupNames.delete(g.id)}
+   invalidateAssignmentPreview();render();
+  });card.append(picker);
+  const faces=document.createElement('div');faces.className='faces';
+  for(const id of folder.members){
+   const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';installDrag(img,id);faces.append(img);
+  }
+  card.append(faces);
+  card.addEventListener('dragover',e=>{if(draggingFace===null)return;e.preventDefault();e.dataTransfer.dropEffect='move';card.style.outline='3px solid #3385f2'});
+  card.addEventListener('dragleave',()=>card.style.outline='');
+  card.addEventListener('drop',e=>{e.preventDefault();const id=Number(e.dataTransfer.getData('text/plain'));const target=card.dataset.dropFolder;cleanupDrag();relocateFace(id,target)});
+  overview.append(card);
  }
 
  destination.replaceChildren();
@@ -173,25 +184,6 @@ function render(){
   update();row.append(photos);folders.append(row);
  }}
  groupsHost.replaceChildren();
- for(const g of existing.filter(g=>g.id===openedFolder)){
-  const card=document.createElement('article');card.className='group';
-  const title=document.createElement('strong');title.textContent=groupLabel(g.id)+'（顔 '+g.members.length+'件）';card.append(title);
-  if(g.id!=='unknown'){
-   const controls=document.createElement('div');controls.style.cssText='margin:8px 0;display:flex;flex-wrap:wrap;gap:6px';
-   const picker=document.createElement('select');picker.setAttribute('aria-label','グループ'+g.id+'の園児名');
-   const blank=document.createElement('option');blank.value='';blank.textContent='園児名を選択';picker.append(blank);
-   const current=groupNames.get(g.id)||'';
-   if(current&&!roster.some(k=>k.name===current)){const option=document.createElement('option');option.value=current;option.textContent=current;picker.append(option)}
-   for(const kid of roster){const option=document.createElement('option');option.value=kid.name;option.textContent=kid.name;picker.append(option)}
-   picker.value=current;
-   picker.addEventListener('change',()=>{if(picker.value)groupNames.set(g.id,picker.value);else groupNames.delete(g.id);invalidateAssignmentPreview();render()});
-   controls.append(picker);card.append(controls);
-  }
-  const faces=document.createElement('div');faces.className='faces';
-  for(const id of g.members){
-   const item=items[id],img=document.createElement('img');img.className='face'+(selected.has(id)?' selected':'');img.src=item.url;img.alt=item.name;img.title=item.name;installDrag(img,id);faces.append(img);
-  }card.append(faces);groupsHost.append(card);
- }
 }
 move.addEventListener('click',()=>{
  if(!selected.size)return;
