@@ -46,7 +46,7 @@ function render(){
   const update=()=>{const name=field.value.trim();if(name)groupNames.set(g.id,name);else groupNames.delete(g.id);
    const ids=[...new Set(g.members.map(id=>items[id]?.sourcePhoto).filter(Number.isInteger))].sort((a,b)=>a-b);
    photos.textContent=(name||'未設定')+'：'+(ids.length?ids.map(i=>(i+1)+'枚目 '+photoNames[i]).join(' ／ '):'該当写真なし')+'（元写真を複製せず参照）';};
-  field.addEventListener('input',()=>{update();render();});update();row.append(photos);folders.append(row);
+  field.addEventListener('input',update);field.addEventListener('change',()=>render());update();row.append(photos);folders.append(row);
  }}
  groupsHost.replaceChildren();
  for(const g of existing){
