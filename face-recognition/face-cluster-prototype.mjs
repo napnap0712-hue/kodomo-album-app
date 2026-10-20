@@ -306,7 +306,7 @@ start.addEventListener('click',async()=>{
   }
   const mod=await import('./human.esm.js'),Human=mod.Human||mod.default;
   const human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:20},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
-  await human.load();timings.model=performance.now()-modelStarted;const failed=[];
+  await human.load();timings.model=performance.now()-modelStarted;const failed=[],diagnostics=[];
   for(let i=0;i<files.length;i++){
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
    let bitmap;try{
