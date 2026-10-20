@@ -545,6 +545,27 @@ start.addEventListener('click',async()=>{
    for(const id of [pair.i,pair.j]){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.style.cssText='width:58px;height:58px;object-fit:cover;border-radius:8px';row.append(img)}
    const score=document.createElement('strong');score.textContent='比較値 '+pair.score.toFixed(4)+(pair.score>=threshold?'（基準以上）':'（基準未満）');row.append(score);diagnostic.append(row);
   }
+  const groupPairs=[];
+  for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
+   const left=groups[a].members,right=groups[b].members;
+   if(!left.length||!right.length)continue;
+   const cross=left.flatMap(i=>right.map(j=>pairScore(i,j))).filter(Number.isFinite);
+   if(!cross.length)continue;
+   const maximum=Math.max(...cross),minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
+   groupPairs.push({a,b,maximum,minimum,average});
+  }
+  groupPairs.sort((x,y)=>y.maximum-x.maximum);
+  const heading2=document.createElement('h3');heading2.textContent='🧩 分かれたグループの類似候補（上位15組）';diagnostic.append(heading2);
+  const guide=document.createElement('p');guide.className='muted';guide.textContent='最大値・平均値・最小値を比較。別の園児が混ざる可能性があるため、自動統合はしません。';diagnostic.append(guide);
+  for(const pair of groupPairs.slice(0,15)){
+   const row=document.createElement('div');row.style.cssText='padding:10px 0;border-bottom:1px solid #e8edf3';
+   const title=document.createElement('strong');title.textContent='グループ '+groups[pair.a].id+' ↔ '+groups[pair.b].id+' ／ 最大 '+pair.maximum.toFixed(3)+'・平均 '+pair.average.toFixed(3)+'・最小 '+pair.minimum.toFixed(3);row.append(title);
+   const faces=document.createElement('div');faces.className='faces';
+   for(const id of [...groups[pair.a].members.slice(0,3),...groups[pair.b].members.slice(0,3)]){
+    const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';faces.append(img);
+   }
+   row.append(faces);diagnostic.append(row);
+  }
   groupsHost.closest('section').after(diagnostic);
   render();
  }catch(e){status.textContent='⚠️ 解析できません: '+String(e?.message||e).slice(0,220)}
