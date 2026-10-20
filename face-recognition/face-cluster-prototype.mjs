@@ -52,8 +52,11 @@ async function embed(bitmap,human,session,ort){
  canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
  const faces=(await human.detect(canvas)).face||[];
- if(faces.length!==1)throw Error('検出顔数 '+faces.length+'（この試作では1人写真のみ対応）');
- const face=faces[0],mesh=face.mesh,indices=[33,263,1,61,291];
+ if(!faces.length)throw Error('顔を検出できません');
+ const results=[];
+ for(const face of faces){
+ try{
+ const mesh=face.mesh,indices=[33,263,1,61,291];
  if(!Array.isArray(mesh)||mesh.length<292)throw Error('顔の位置情報不足');
  const src=indices.map(k=>[mesh[k]?.[0],mesh[k]?.[1]]);
  if(src.some(p=>p.some(v=>!Number.isFinite(v))))throw Error('顔の座標が不正');
@@ -83,7 +86,11 @@ async function embed(bitmap,human,session,ort){
   const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),side=Math.max(x1-x0,y1-y0)*1.35;
   crop.getContext('2d').drawImage(canvas,(x0+x1-side)/2,(y0+y1-side)/2,side,side,0,0,160,160);
  }
- return {vector:vec,thumbnail:crop.toDataURL('image/jpeg',0.82)};
+ results.push({vector:vec,thumbnail:crop.toDataURL('image/jpeg',0.82)});
+ }catch(error){console.warn('顔ごとの解析失敗',error)}
+ }
+ if(!results.length)throw Error('検出した顔の特徴を取得できません');
+ return results;
 }
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
@@ -106,13 +113,16 @@ start.addEventListener('click',async()=>{
   }
   session=await ort.InferenceSession.create(modelURL,{executionProviders:['wasm']});
   const mod=await import('./human.esm.js'),Human=mod.Human||mod.default;
-  const human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:5},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
+  const human=new Human({backend:'webgl',modelBasePath:new URL('./models/',import.meta.url).href,face:{enabled:true,detector:{enabled:true,maxDetected:20},mesh:{enabled:true},description:{enabled:false},iris:{enabled:false},emotion:{enabled:false},antispoof:{enabled:false},liveness:{enabled:false}},body:{enabled:false},hand:{enabled:false},object:{enabled:false},gesture:{enabled:false},segmentation:{enabled:false}});
   await human.load();const failed=[];
   for(let i=0;i<files.length;i++){
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
    let bitmap;try{
-    bitmap=await createImageBitmap(files[i]);const {vector,thumbnail}=await embed(bitmap,human,session,ort);
-    items.push({name:files[i].name,url:thumbnail,vector});
+    bitmap=await createImageBitmap(files[i]);const detected=await embed(bitmap,human,session,ort);
+    for(let faceIndex=0;faceIndex<detected.length;faceIndex++){
+     const {vector,thumbnail}=detected[faceIndex];
+     items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,vector});
+    }
    }catch(e){failed.push((i+1)+'枚目: '+String(e?.message||e).slice(0,65))}finally{bitmap?.close()}
    await new Promise(r=>setTimeout(r,0));
   }
@@ -156,7 +166,7 @@ start.addEventListener('click',async()=>{
   }
   for(const members of clustered.values())groups.push({id:String(next++),members});
   for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
-  status.textContent='✅ '+items.length+'枚解析・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
+  status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
   const heading=document.createElement('h2');heading.textContent='🔎 顔の比較値（高い順・上位20組）';diagnostic.append(heading);
