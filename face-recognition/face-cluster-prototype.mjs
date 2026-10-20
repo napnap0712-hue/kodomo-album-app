@@ -179,34 +179,45 @@ function render(){
  const overview=$('folderOverview'),detail=$('folderDetail'),actions=$('folderActions');
  overview.hidden=false;detail.hidden=true;actions.hidden=true;
  overview.replaceChildren();
- // Multiple AI clusters assigned to the same registered child share one visual folder.
+ // Display only registered child folders plus one unassigned folder.
+ // AI clusters remain internal until a teacher explicitly associates them.
  const displayFolders=new Map();
+ for(const kid of roster)if(!displayFolders.has(kid.name))displayFolders.set(kid.name,{name:kid.name,groups:[],members:[]});
+ const pending={name:'未選別',groups:[],members:[]};
  for(const g of existing){
-  const key=groupNames.get(g.id)?.trim()||'__cluster_'+g.id;
-  if(!displayFolders.has(key))displayFolders.set(key,{key,name:groupNames.get(g.id)?.trim()||'',groups:[],members:[]});
-  const folder=displayFolders.get(key);folder.groups.push(g);folder.members.push(...g.members);
+  const name=groupNames.get(g.id)?.trim();
+  const folder=name&&displayFolders.has(name)?displayFolders.get(name):pending;
+  folder.groups.push(g);folder.members.push(...g.members);
  }
- for(const folder of displayFolders.values()){
-  const card=document.createElement('article');card.className='group';card.dataset.dropFolder=folder.groups[0].id;
-  card.style.cssText='min-height:120px;min-width:0;padding:12px';
-  const title=document.createElement('strong');title.textContent='📁 '+(folder.name||'未設定（グループ'+folder.groups[0].id+'）')+'（顔'+folder.members.length+'件）';card.append(title);
-  const picker=document.createElement('select');picker.setAttribute('aria-label','園児名を設定');picker.style.cssText='display:block;max-width:100%;margin:8px 0';
-  const blank=document.createElement('option');blank.value='';blank.textContent='園児名を選択';picker.append(blank);
-  if(folder.name&&!roster.some(k=>k.name===folder.name)){const option=document.createElement('option');option.value=folder.name;option.textContent=folder.name;picker.append(option)}
-  for(const kid of roster){const option=document.createElement('option');option.value=kid.name;option.textContent=kid.name;picker.append(option)}
-  picker.value=folder.name;
-  picker.addEventListener('change',()=>{
-   for(const g of folder.groups){if(picker.value)groupNames.set(g.id,picker.value);else groupNames.delete(g.id)}
-   invalidateAssignmentPreview();render();
-  });card.append(picker);
-  const faces=document.createElement('div');faces.className='faces';
-  for(const id of folder.members){
-   const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';installDrag(img,id);faces.append(img);
+ const makePicker=(g)=>{
+  const picker=document.createElement('select');picker.setAttribute('aria-label','この顔グループの園児を選択');picker.style.cssText='display:block;max-width:100%;margin:6px 0';
+  const blank=document.createElement('option');blank.value='';blank.textContent='未選別のまま';picker.append(blank);
+  for(const kid of roster){const opt=document.createElement('option');opt.value=kid.name;opt.textContent=kid.name;picker.append(opt)}
+  picker.value=groupNames.get(g.id)||'';
+  picker.addEventListener('change',()=>{if(picker.value)groupNames.set(g.id,picker.value);else groupNames.delete(g.id);invalidateAssignmentPreview();render()});
+  return picker;
+ };
+ for(const folder of [...displayFolders.values(),pending]){
+  const card=document.createElement('article');card.className='group';card.style.cssText='min-height:120px;min-width:0;padding:12px';
+  if(folder.groups.length)card.dataset.dropFolder=folder.groups[0].id;
+  const title=document.createElement('strong');title.textContent='📁 '+folder.name+'（顔'+folder.members.length+'件）';card.append(title);
+  if(folder===pending){
+   const hint=document.createElement('p');hint.className='muted';hint.textContent='AIの仮グループはここにまとめて表示。園児を選ぶと登録園児フォルダへ移動します。';card.append(hint);
+   for(const g of folder.groups){
+    const section=document.createElement('div');section.style.cssText='padding:8px 0;border-top:1px solid #e8edf3';
+    const label=document.createElement('span');label.textContent='候補 '+g.id+'（顔'+g.members.length+'件）';section.append(label,makePicker(g));
+    const faces=document.createElement('div');faces.className='faces';
+    for(const id of g.members){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';installDrag(img,id);faces.append(img)}
+    section.append(faces);card.append(section);
+   }
+  }else{
+   const faces=document.createElement('div');faces.className='faces';
+   for(const id of folder.members){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';installDrag(img,id);faces.append(img)}
+   card.append(faces);
   }
-  card.append(faces);
-  card.addEventListener('dragover',e=>{if(draggingFace===null)return;e.preventDefault();e.dataTransfer.dropEffect='move';card.style.outline='3px solid #3385f2'});
+  card.addEventListener('dragover',e=>{if(draggingFace===null||!card.dataset.dropFolder)return;e.preventDefault();e.dataTransfer.dropEffect='move';card.style.outline='3px solid #3385f2'});
   card.addEventListener('dragleave',()=>card.style.outline='');
-  card.addEventListener('drop',e=>{e.preventDefault();const id=Number(e.dataTransfer.getData('text/plain'));const target=card.dataset.dropFolder;cleanupDrag();relocateFace(id,target)});
+  card.addEventListener('drop',e=>{if(!card.dataset.dropFolder)return;e.preventDefault();const id=Number(e.dataTransfer.getData('text/plain'));const target=card.dataset.dropFolder;cleanupDrag();relocateFace(id,target)});
   overview.append(card);
  }
 
