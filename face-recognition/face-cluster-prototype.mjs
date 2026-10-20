@@ -13,6 +13,12 @@ $('folderPhotos').addEventListener('click',()=>folderInput.click());
 folderInput.addEventListener('change',()=>addFiles(Array.from(folderInput.files||[])));
 $('clearPhotos').addEventListener('click',()=>{queued.length=0;input.value='';folderInput.value='';updateCount()});
 $('threshold').addEventListener('input',()=>{$('thresholdValue').value=Number($('threshold').value).toFixed(2)});
+$('recognitionModel').addEventListener('change',()=>{
+ const threshold=$('threshold');
+ threshold.value=$('recognitionModel').value==='arcface'?'0.65':'0.70';
+ $('thresholdValue').value=Number(threshold.value).toFixed(2);
+ status.textContent='モデル別の試験用初期基準を設定しました。精度保証ではありません。';
+});
 $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
 const similarity=(x,y)=>{let dot=0,a=0,b=0;for(let i=0;i<x.length;i++){dot+=x[i]*y[i];a+=x[i]*x[i];b+=y[i]*y[i]}return dot/Math.sqrt(a*b)};
