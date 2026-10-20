@@ -460,7 +460,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics){
   const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),side=Math.max(x1-x0,y1-y0)*1.35;
   crop.getContext('2d').drawImage(canvas,(x0+x1-side)/2,(y0+y1-side)/2,side,side,0,0,160,160);
  }
- results.push({vector:vec,thumbnail:crop.toDataURL('image/jpeg',0.82)});
+ results.push({vector:vec,thumbnail:crop.toDataURL('image/jpeg',0.82),alignedThumbnail:aligned.toDataURL('image/jpeg',0.72)});
  }catch(error){console.warn('顔ごとの解析失敗',error);if(diagnostics.length<5)diagnostics.push(String(error?.message||error).slice(0,260))}
  }
  if(!results.length)throw Error('検出した顔の特徴を取得できません'+(diagnostics.length?'：'+diagnostics[0]:''));
@@ -540,8 +540,8 @@ start.addEventListener('click',async()=>{
     const decodeStart=performance.now();bitmap=await createImageBitmap(files[i]);timings.decode+=performance.now()-decodeStart;
     const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings,diagnostics);timings.detectAndEmbed+=performance.now()-embedStart;
     for(let faceIndex=0;faceIndex<detected.length;faceIndex++){
-     const {vector,thumbnail}=detected[faceIndex];
-     items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,vector});
+     const {vector,thumbnail,alignedThumbnail}=detected[faceIndex];
+     items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,alignedThumbnail,vector});
     }
    }catch(e){failed.push((i+1)+'枚目: '+String(e?.message||e).slice(0,65))}finally{bitmap?.close()}
    await new Promise(r=>setTimeout(r,0));
@@ -695,6 +695,20 @@ start.addEventListener('click',async()=>{
    breakdown.append(row);
   }
   diagnostic.append(breakdown);
+  const alignment=document.createElement('details');
+  const alignmentTitle=document.createElement('summary');alignmentTitle.textContent='📐 AIが実際に比較した顔画像（位置合わせ確認）';alignment.append(alignmentTitle);
+  const alignmentNote=document.createElement('p');alignmentNote.className='muted';alignmentNote.textContent='左が元写真の顔、右がAIに入力した112×112の補正画像。顔の上下・傾き・左右の目の位置にズレがないか確認します。画像は端末内の一時データで、保存・送信しません。';alignment.append(alignmentNote);
+  for(const [index,item] of items.entries()){
+   if(!item.alignedThumbnail)continue;
+   const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #e8edf3';
+   const label=document.createElement('span');label.textContent='顔'+(index+1);row.append(label);
+   for(const src of [item.url,item.alignedThumbnail]){
+    const img=document.createElement('img');img.src=src;img.alt='顔の切り抜き比較';img.style.cssText='width:84px;height:84px;object-fit:cover;border-radius:8px';row.append(img);
+   }
+   alignment.append(row);
+  }
+  diagnostic.append(alignment);
+
   groupsHost.closest('section').after(diagnostic);
   render();
  }catch(e){status.textContent='⚠️ 解析できません: '+String(e?.message||e).slice(0,220)}
