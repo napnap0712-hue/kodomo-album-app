@@ -2,6 +2,12 @@
 const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
 let stop=false,items=[],groups=[],selected=new Set(),urls=[];
+const queued=[];
+const count=$('photoCount');
+function updateCount(){count.textContent=queued.length+'枚選択済み（追加選択できます）'}
+function addFiles(files){for(const file of files){if(file.type.startsWith('image/')&&queued.length<100)queued.push(file)}updateCount();input.value=''}
+input.addEventListener('change',()=>addFiles(Array.from(input.files||[])));
+$('addPhotos').addEventListener('click',()=>input.click());
 $('threshold').addEventListener('input',()=>{$('thresholdValue').value=Number($('threshold').value).toFixed(2)});
 $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
@@ -57,7 +63,7 @@ async function embed(bitmap,human,session,ort){
  return vec;
 }
 start.addEventListener('click',async()=>{
- const files=Array.from(input.files||[]);if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
+ const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  stop=false;start.disabled=true;cancel.disabled=false;selected.clear();items=[];groups=[];urls.forEach(URL.revokeObjectURL);urls=[];render();
  let session;
