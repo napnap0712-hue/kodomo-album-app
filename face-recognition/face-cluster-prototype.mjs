@@ -217,7 +217,7 @@ move.addEventListener('click',()=>{
  for(const id of selected)dest.members.push(id);
  selected.clear();invalidateAssignmentPreview();render();
 });
-async function embed(bitmap,human,session,ort,phaseTimings){
+async function embed(bitmap,human,session,ort,phaseTimings,diagnostics){
  const canvas=document.createElement('canvas'),scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
  canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
@@ -261,9 +261,9 @@ async function embed(bitmap,human,session,ort,phaseTimings){
   crop.getContext('2d').drawImage(canvas,(x0+x1-side)/2,(y0+y1-side)/2,side,side,0,0,160,160);
  }
  results.push({vector:vec,thumbnail:crop.toDataURL('image/jpeg',0.82)});
- }catch(error){console.warn('顔ごとの解析失敗',error)}
+ }catch(error){console.warn('顔ごとの解析失敗',error);if(diagnostics.length<5)diagnostics.push(String(error?.message||error).slice(0,260))}
  }
- if(!results.length)throw Error('検出した顔の特徴を取得できません');
+ if(!results.length)throw Error('検出した顔の特徴を取得できません'+(diagnostics.length?'：'+diagnostics[0]:''));
  return results;
 }
 start.addEventListener('click',async()=>{
@@ -329,7 +329,7 @@ start.addEventListener('click',async()=>{
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
    let bitmap;try{
     const decodeStart=performance.now();bitmap=await createImageBitmap(files[i]);timings.decode+=performance.now()-decodeStart;
-    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings);timings.detectAndEmbed+=performance.now()-embedStart;
+    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings,diagnostics);timings.detectAndEmbed+=performance.now()-embedStart;
     for(let faceIndex=0;faceIndex<detected.length;faceIndex++){
      const {vector,thumbnail}=detected[faceIndex];
      items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,vector});
@@ -382,7 +382,7 @@ start.addEventListener('click',async()=>{
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
   const perfReport='\\n⚙️ 実行方式：'+executionProvider+'\\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
   status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='lightweight'?'軽量ONNX比較（暫定閾値0.70）':selectedModel==='arcface'?'ArcFace':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
-  status.textContent+=perfReport;
+  if(diagnostics.length)status.textContent+='\n🔍 AIモデル詳細：'+[...new Set(diagnostics)].join(' ／ ');\n  status.textContent+=perfReport;
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
   const heading=document.createElement('h2');heading.textContent='🔎 顔の比較値（高い順・上位20組）';diagnostic.append(heading);
