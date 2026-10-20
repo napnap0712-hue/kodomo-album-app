@@ -43,7 +43,7 @@ async function embed(bitmap,human,session,ort){
  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
  const faces=(await human.detect(canvas)).face||[];
  if(faces.length!==1)throw Error('検出顔数 '+faces.length+'（この試作では1人写真のみ対応）');
- const mesh=faces[0].mesh,indices=[33,263,1,61,291];
+ const face=faces[0],mesh=face.mesh,indices=[33,263,1,61,291];
  if(!Array.isArray(mesh)||mesh.length<292)throw Error('顔の位置情報不足');
  const src=indices.map(k=>[mesh[k]?.[0],mesh[k]?.[1]]);
  if(src.some(p=>p.some(v=>!Number.isFinite(v))))throw Error('顔の座標が不正');
@@ -60,7 +60,20 @@ async function embed(bitmap,human,session,ort){
  const output=await session.run({[session.inputNames[0]]:new ort.Tensor('float32',tensor,[1,3,112,112])});
  const vec=Array.from(output[session.outputNames[0]].data);
  if(vec.length!==512||vec.some(v=>!Number.isFinite(v)))throw Error('特徴データ取得失敗');
- return vec;
+ const box=face.box||[];
+ const bx=Array.isArray(box)?box[0]:box.x,by=Array.isArray(box)?box[1]:box.y,bw=Array.isArray(box)?box[2]:box.width,bh=Array.isArray(box)?box[3]:box.height;
+ const crop=document.createElement('canvas');crop.width=160;crop.height=160;
+ if([bx,by,bw,bh].every(Number.isFinite)&&bw>0&&bh>0){
+  const side=Math.max(bw,bh)*1.5,cx=bx+bw/2,cy=by+bh/2;
+  crop.getContext('2d').drawImage(canvas,cx-side/2,cy-side/2,side,side,0,0,160,160);
+ }else{
+  // Landmark-based fallback when the detector does not supply a bounding box.
+  const xs=mesh.map(p=>p?.[0]).filter(Number.isFinite),ys=mesh.map(p=>p?.[1]).filter(Number.isFinite);
+  if(!xs.length||!ys.length)throw Error('顔の切り抜き位置を取得できません');
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),side=Math.max(x1-x0,y1-y0)*1.35;
+  crop.getContext('2d').drawImage(canvas,(x0+x1-side)/2,(y0+y1-side)/2,side,side,0,0,160,160);
+ }
+ return {vector:vec,thumbnail:crop.toDataURL('image/jpeg',0.82)};
 }
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
@@ -80,8 +93,8 @@ start.addEventListener('click',async()=>{
   for(let i=0;i<files.length;i++){
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
    let bitmap;try{
-    bitmap=await createImageBitmap(files[i]);const vector=await embed(bitmap,human,session,ort);
-    const url=URL.createObjectURL(files[i]);urls.push(url);items.push({name:files[i].name,url,vector});
+    bitmap=await createImageBitmap(files[i]);const {vector,thumbnail}=await embed(bitmap,human,session,ort);
+    items.push({name:files[i].name,url:thumbnail,vector});
    }catch(e){failed.push((i+1)+'枚目: '+String(e?.message||e).slice(0,65))}finally{bitmap?.close()}
    await new Promise(r=>setTimeout(r,0));
   }
