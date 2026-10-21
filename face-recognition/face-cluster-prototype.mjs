@@ -5,6 +5,7 @@ import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.
 import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-folder-visibility.mjs?v=20261021x1';
 import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261021save-ai';
 import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
+import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs?v=20261022-ak';
 // Standalone research prototype. Writes ONLY to its isolated IndexedDB when the user explicitly chooses Save; never alters production album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -1188,11 +1189,118 @@ function appendFolderDeletionControl(card,bucket,key){
  confirm.append(explanation,row);card.append(actions,confirm);
 }
 
+
+let provisionalFinalCandidate=null,lastFinalReviewSignature='',lastFinalReviewAudit=null;
+let provisionalFinalMessage='仮確定はまだ行っていません。';
+function clearProvisionalFinalization(message='仮確定はまだ行っていません。'){
+ provisionalFinalCandidate=null;
+ lastFinalReviewAudit=null;
+ lastFinalReviewSignature='';
+ provisionalFinalMessage=message;
+ const eye=$('provisionalFinalVisualCheck'),unassigned=$('provisionalFinalUnassignedCheck');
+ if(eye)eye.checked=false;
+ if(unassigned)unassigned.checked=false;
+ const result=$('provisionalFinalDetails');if(result)result.replaceChildren();
+}
+function finalAuditSourceSignature(audit){
+ // Include source identity, reviewed face pairs, exclusions, manual links and names.
+ // A later source or classification change MUST invalidate the teacher's approval.
+ return JSON.stringify({
+  sources:analyzedSourceFiles.map(file=>[file.name,file.size,file.lastModified]),
+  photoNames,faces:items.map(item=>item.sourcePhoto),
+  groups:groups.map(group=>[group.id,...group.members]),
+  verifiedPairs:faceReviewSignature(),
+  excluded:[...excludedVerifiedFolders].sort(),
+  newFolders:[...newManualPhotoFolders].sort((a,b)=>a[0].localeCompare(b[0])),
+  named:[...verifiedFolderNames].sort((a,b)=>a[0].localeCompare(b[0])),
+  manual:[...manualPhotoFolderChoices].map(([photo,keys])=>[photo,[...keys].sort()]).sort((a,b)=>a[0]-b[0]),
+  olderManual:[...manualPhotoAssignments].map(([photo,names])=>[photo,[...names].sort()]).sort((a,b)=>a[0]-b[0]),
+  rosterClass:classSelect.value,roster,audit
+ });
+}
+function updateProvisionalFinalControls(){
+ const button=$('createProvisionalFinal'),cancel=$('cancelProvisionalFinal');
+ const visual=$('provisionalFinalVisualCheck'),unassigned=$('provisionalFinalUnassignedCheck');
+ const status=$('provisionalFinalStatus'),preview=$('provisionalFinalDetails');
+ const check=checkFinalizationReadiness(lastFinalReviewAudit);
+ if(button)button.disabled=Boolean(provisionalFinalCandidate)||!check.ready||
+  !visual?.checked||(check.needsUnassignedAcknowledgement&&!unassigned?.checked);
+ if(cancel)cancel.hidden=!provisionalFinalCandidate;
+ if(status)status.textContent=provisionalFinalMessage;
+ if(!preview)return;
+ preview.replaceChildren();
+ if(provisionalFinalCandidate){
+  const p=document.createElement('p');p.className='final-audit-notice';
+  p.textContent='🔐 仮確定済み（この画面内のみ）：園児'+provisionalFinalCandidate.children.length+
+   '名 ／ 園児に紐づいた元写真'+provisionalFinalCandidate.linkedPhotoCount+
+   '枚 ／ 集合写真'+provisionalFinalCandidate.sharedPhotos.length+
+   '枚 ／ 未紐づけで含めない写真'+provisionalFinalCandidate.unassignedPhotoIndexes.length+'枚。';
+  preview.append(p);
+ }
+}
+function renderProvisionalFinalControls(audit){
+ const readiness=$('provisionalFinalReadiness'),unassignedRow=$('provisionalFinalUnassignedLabel');
+ const unassignedText=$('provisionalFinalUnassignedText'),unassigned=$('provisionalFinalUnassignedCheck');
+ const currentSignature=finalAuditSourceSignature(audit);
+ if(lastFinalReviewSignature&&lastFinalReviewSignature!==currentSignature){
+  clearProvisionalFinalization('⚠️ 写真または振り分け内容が変わったため、仮確定と目視確認を解除しました。改めて点検してください。');
+ }
+ lastFinalReviewAudit=audit;
+ lastFinalReviewSignature=currentSignature;
+ const check=checkFinalizationReadiness(audit);
+ if(readiness){
+  readiness.replaceChildren();
+  const title=document.createElement('p');
+  title.textContent=check.ready?'✅ 仮確定の事前条件を満たしています。写真を目視確認してね。':
+   '⚠️ 仮確定の前に確認が必要な項目：'+check.blockers.length+'件';
+  readiness.append(title);
+  for(const message of check.blockers){
+   const p=document.createElement('p');p.textContent='・'+message;readiness.append(p);
+  }
+ }
+ if(unassignedRow)unassignedRow.hidden=!check.needsUnassignedAcknowledgement;
+ if(unassignedText)unassignedText.textContent=
+  '未紐づけの写真'+audit.unassignedPhotos.length+
+  '枚を確認し、これらを仮確定する園児別写真に含めないことを理解しました。';
+ if(unassigned&&!check.needsUnassignedAcknowledgement)unassigned.checked=false;
+ updateProvisionalFinalControls();
+}
+$('provisionalFinalVisualCheck')?.addEventListener('change',updateProvisionalFinalControls);
+$('provisionalFinalUnassignedCheck')?.addEventListener('change',updateProvisionalFinalControls);
+$('createProvisionalFinal')?.addEventListener('click',()=>{
+ const audit=lastFinalReviewAudit;
+ if(!audit)return;
+ // Recalculate before approving in case a change bypassed a repaint.
+ const latest=finalAuditSourceSignature(audit);
+ if(latest!==lastFinalReviewSignature){renderFinalPhotoAudit();return;}
+ const visual=$('provisionalFinalVisualCheck')?.checked===true;
+ const acknowledge=$('provisionalFinalUnassignedCheck')?.checked===true;
+ try{
+  const candidate=createProvisionalFinalization(audit,{
+   rosterClass:classSelect.value,sourceSignature:latest,
+   visuallyReviewed:visual,acknowledgedUnassigned:acknowledge
+  });
+  if(!window.confirm('園児'+candidate.children.length+'名・元写真'+candidate.linkedPhotoCount+
+   '枚を、この検証画面内で仮確定しますか？ 本番アルバムへの反映・保存・写真の複製はしません。'))return;
+  provisionalFinalCandidate=candidate;
+  provisionalFinalMessage='✅ 先生の確認済みとして仮確定しました（この画面だけ）。本番アルバム・保存済み作業は変更していません。';
+ }catch(error){
+  provisionalFinalMessage='⚠️ '+String(error?.message||error);
+ }
+ updateProvisionalFinalControls();
+});
+$('cancelProvisionalFinal')?.addEventListener('click',()=>{
+ clearProvisionalFinalization('↩ 仮確定を取り消しました。元の写真・園児名・保存済みデータはそのままです。');
+ // Current input state was not changed; only the temporary candidate was cleared.
+ lastFinalReviewAudit=null;
+ renderFinalPhotoAudit();
+});
+
 function renderFinalPhotoAudit(){
  const panel=$('finalPhotoAuditPanel');
  if(!panel)return;
  panel.hidden=!photoNames.length;
- if(!photoNames.length)return;
+ if(!photoNames.length){clearProvisionalFinalization();return;}
  const {visible,model}=currentPhotoFolderView();
  const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
  const audit=auditPhotoAssignments({
@@ -1296,6 +1404,7 @@ function renderFinalPhotoAudit(){
    audit.excludedWithChildren,
    '職員や保護者が一緒に写った写真の可能性があります。除外した顔フォルダは園児として分類していません。元写真は消えません。');
  }
+ renderProvisionalFinalControls(audit);
 }
 
 function renderVerifiedPhotoFolders(){
@@ -2454,6 +2563,7 @@ function prepareFaceDraftRestore(record){
 }
 function applyFaceDraftRestore(staged){
  const data=staged.data;
+ clearProvisionalFinalization('📂 保存済み作業を復元しました。仮確定は改めて先生が確認してね。');
  // All restoration checks and source photo URLs have been prepared above.
  // Mutate the currently open prototype only after those succeed.
  urls.forEach(URL.revokeObjectURL);
@@ -2574,6 +2684,7 @@ start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  analyzedSourceFiles=[];analysisFinished=false;
+ clearProvisionalFinalization('📷 新しい写真を解析します。以前の仮確定は取り消しました。');
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();verifiedFolderNames.clear();excludedVerifiedFolders.clear();newManualPhotoFolders.clear();manualFolderSequence=0;folderManagementNotice='';folderNameStatus='';const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
