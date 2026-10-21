@@ -22,6 +22,25 @@ function updateGroupProgress(){
 // Teacher-verified comparisons only; cleared every time a new photo batch starts.
 // Never send or persist identifiable photos, vectors, or verification labels.
 const verifiedFacePairs=new Map();
+// At most one reversible correction; never changes saved albums or AI clusters.
+let lastFolderCorrection=null,folderCorrectionNoticeText='';
+const faceReviewSignature=()=>JSON.stringify(
+ [...verifiedFacePairs.entries()].map(([key,p])=>key+':'+String(p.same)).sort()
+);
+$('undoFolderCorrection')?.addEventListener('click',()=>{
+ const notice=$('folderCorrectionNotice');
+ if(!lastFolderCorrection||lastFolderCorrection.afterSignature!==faceReviewSignature()){
+  if(notice){notice.hidden=false;notice.textContent='ほかの確認が変更されたため、この訂正を一括で戻せません。各顔の確認履歴から修正してください。';}
+  lastFolderCorrection=null;
+  return;
+ }
+ const original=lastFolderCorrection.before;
+ verifiedFacePairs.clear();
+ for(const [key,pair] of original)verifiedFacePairs.set(key,{...pair});
+ lastFolderCorrection=null;
+ folderCorrectionNoticeText='↩ 直前の「違う園児」への訂正を戻しました。写真とアルバムは変更していません。';
+ renderFaceEvaluation();
+});
 let selectedReviewFaces=[];
 let initialFaceGroups=[];
 let refreshGroupPairsUI=()=>{};
@@ -538,6 +557,7 @@ function validateFaceReportAndImport(){
   }
  }
  // Do not modify the current AI groups. Only recover teacher labels in memory.
+ lastFolderCorrection=null;folderCorrectionNoticeText='';
  verifiedFacePairs.clear();
  for(const [key,pair] of imported)verifiedFacePairs.set(key,pair);
  pendingFaceImport=manual;
@@ -778,13 +798,73 @@ $('copyQuickReport')?.addEventListener('click',async()=>{
 // A read-only picture-to-child preview driven by explicit teacher labels.
 // Every detected face is displayed in exactly one temporary folder.
 // One original source photo can be listed in several folders (group photo).
+// A teacher must explicitly confirm which formerly positive pair was wrong.
+// Never infer which old label to discard merely from a mixed folder.
+function renderSamePairCorrection(host,pair){
+ const row=document.createElement('div');row.className='folder-review-row';
+ const photos=document.createElement('div');photos.className='folder-review-faces';
+ for(const id of [pair.i,pair.j]){
+  const figure=document.createElement('figure'),image=document.createElement('img');
+  image.src=items[id].url;image.alt='顔'+(id+1);
+  const caption=document.createElement('figcaption');
+  caption.textContent='顔'+(id+1)+'・写真'+(items[id].sourcePhoto+1);
+  figure.append(image,caption);photos.append(figure);
+ }
+ row.append(photos);
+ const button=document.createElement('button');
+ button.type='button';button.className='secondary';
+ button.textContent='この2つは違う園児';
+ row.append(button);
+ const confirmation=document.createElement('div');
+ confirmation.className='folder-review-confirm';
+ confirmation.hidden=true;
+ const explain=document.createElement('p');explain.className='muted';
+ explain.textContent='この2つの顔が違う園児なら、前回の「同じ園児」判定をこの1組だけ訂正します。ほかの先生の確認は残します。';
+ const actions=document.createElement('div');actions.className='actions';
+ const confirm=document.createElement('button');confirm.type='button';
+ confirm.textContent='✅ 違う園児に訂正する';
+ const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='やめる';
+ cancel.addEventListener('click',()=>{confirmation.hidden=true;button.hidden=false;});
+ button.addEventListener('click',()=>{confirmation.hidden=false;button.hidden=true;});
+ confirm.addEventListener('click',()=>{
+  const key=facePairKey(pair.i,pair.j),current=verifiedFacePairs.get(key);
+  if(!current?.same){
+   confirmation.hidden=true;button.hidden=false;
+   folderCorrectionNoticeText='この組はすでに「違う園児」として記録されています。';
+   renderFaceEvaluation();return;
+  }
+  const before=[...verifiedFacePairs.entries()].map(([k,v])=>[k,{...v}]);
+  verifiedFacePairs.set(key,{i:pair.i,j:pair.j,same:false});
+  const after=buildVerifiedPhotoFolders(items.map(item=>item.sourcePhoto),[...verifiedFacePairs.values()]);
+  lastFolderCorrection={before,afterSignature:faceReviewSignature()};
+  folderCorrectionNoticeText='✅ 顔'+(pair.i+1)+'と顔'+(pair.j+1)+
+   'を「違う園児」に訂正しました。'+
+   (after.contradictions.length?' ⚠️ ほかの「同じ園児」の確認が'+after.contradictions.length+
+    '組矛盾しています。該当する顔の組を再確認してください。':' 仮フォルダを再計算しました。')+
+   ' 必要なら「最後の訂正を戻す」で元に戻せます。訂正結果は検証テキストをコピーして残してください。';
+  renderFaceEvaluation();
+ });
+ actions.append(confirm,cancel);
+ confirmation.append(explain,actions);
+ row.append(confirmation);host.append(row);
+}
+
 function renderVerifiedPhotoFolders(){
  const panel=$('verifiedPhotoFoldersPanel');
  const title=$('verifiedPhotoFoldersHeading');
  const summary=$('verifiedPhotoFoldersStatus');
  const container=$('verifiedPhotoFoldersGrid');
  const warnings=$('verifiedPhotoFoldersWarnings');
+ const correctionNotice=$('folderCorrectionNotice'),undoCorrection=$('undoFolderCorrection');
  if(!panel||!title||!summary||!container||!warnings)return;
+ if(lastFolderCorrection&&lastFolderCorrection.afterSignature!==faceReviewSignature()){
+  lastFolderCorrection=null;
+ }
+ if(undoCorrection)undoCorrection.hidden=!lastFolderCorrection;
+ if(correctionNotice){
+  correctionNotice.hidden=!folderCorrectionNoticeText;
+  correctionNotice.textContent=folderCorrectionNoticeText;
+ }
  container.replaceChildren();warnings.textContent='';
  if(!items.length||!verifiedFacePairs.size){
   panel.hidden=true;
@@ -832,6 +912,22 @@ function renderVerifiedPhotoFolders(){
    countPerOriginalPhoto.set(photoIndex,(countPerOriginalPhoto.get(photoIndex)||0)+1);
   }
   card.append(photoList);
+  if(bucket.kind==='confirmed'){
+   const positive=[...verifiedFacePairs.values()].filter(pair=>
+    pair.same&&bucket.members.includes(pair.i)&&bucket.members.includes(pair.j));
+   if(positive.length){
+    const review=document.createElement('details');
+    review.className='folder-review-links';
+    const summary=document.createElement('summary');
+    summary.textContent='🔎 違う園児が混ざっている？ 以前の「同じ園児」'+positive.length+'組を見直す';
+    review.append(summary);
+    const note=document.createElement('p');note.className='muted';
+    note.textContent='下の2枚ずつの顔を見て、実際には違う園児だった組だけ訂正してください。ほかの判定は変更しません。';
+    review.append(note);
+    positive.forEach(pair=>renderSamePairCorrection(review,pair));
+    card.append(review);
+   }
+  }
   container.append(card);
  });
  const sharedPhotos=[...countPerOriginalPhoto].filter(([,count])=>count>1).map(([index])=>index+1);
@@ -839,6 +935,19 @@ function renderVerifiedPhotoFolders(){
  if(!model.allFacesCovered)issues.push('顔の件数が一致しません。全写真を確認してください。');
  if(model.hasSourcePhotoConflicts)issues.push('同じ写真の別の顔が同じフォルダに入りました。仮プレビューは利用しないでください。');
  if(model.contradictions.length)issues.push('先生の確認に矛盾が'+model.contradictions.length+'組あります。必ず確認してください。');
+ if(model.contradictions.length){
+  const review=document.createElement('details');review.className='folder-review-links';
+  const heading=document.createElement('summary');
+  heading.textContent='⚠️ 矛盾している顔の確認 '+model.contradictions.length+'組を見直す';
+  review.append(heading);
+  const explain=document.createElement('p');explain.className='muted';
+  explain.textContent='訂正によって、別フォルダになった顔に以前の「同じ園児」判定が残っています。これらの顔を見て、誤りがあった組だけ変更してください。';
+  review.append(explain);
+  for(const pair of model.contradictions){
+   if(pair.same)renderSamePairCorrection(review,pair);
+  }
+  container.append(review);
+ }
  if(unresolved)issues.push('単独の顔'+unresolved+'件は、ほかの園児との違いが未確認です。');
  if(withoutFaces.length)issues.push('顔未検出の写真：'+withoutFaces.map(index=>'写真'+(index+1)).join('・')+'（手動確認が必要）');
  warnings.textContent=
@@ -1700,7 +1809,7 @@ start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- r50Compared=false;r50CompareRunning=false;evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,alternateRecognition:0,alternateFaces:0,faces:0,group:0};const startedAt=performance.now();
  try{
