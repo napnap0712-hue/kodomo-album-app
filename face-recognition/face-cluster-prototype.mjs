@@ -160,6 +160,8 @@ function calculateFaceGroups(threshold){
   // Strong reciprocal singleton matches: only combine a pair when both faces
   // prefer each other by a wide margin over every other face. This avoids
   // reducing the threshold globally (known to mix lookalike children).
+  // Safety: a reciprocal match can still be a different child. Require
+  // cross-photo evidence and never infer identity from a single weak score.
   const singletonMatches=[];
   const singletonGroups=groups.slice(1).filter(g=>g.members.length===1);
   for(let a=0;a<singletonGroups.length;a++)for(let b=a+1;b<singletonGroups.length;b++){
@@ -171,6 +173,14 @@ function calculateFaceGroups(threshold){
      .filter(k=>k!==id&&k!==other&&items[k].sourcePhoto!==items[id].sourcePhoto)
      .map(k=>pairScore(id,k)).filter(Number.isFinite);
    const rivals=[...competitors(left,right),...competitors(right,left)];
+   // When two faces are each other's only plausible candidate, one pair is
+   // still insufficient to prove identity. Keep them separate for review.
+   const corroboration=items.some((_,k)=>k!==left&&k!==right&&
+     items[k].sourcePhoto!==items[left].sourcePhoto&&
+     items[k].sourcePhoto!==items[right].sourcePhoto&&
+     pairScore(left,k)>=Math.max(0.60,threshold-0.05)&&
+     pairScore(right,k)>=Math.max(0.60,threshold-0.05));
+   if(!corroboration)continue;
    if(rivals.length&&score-Math.max(...rivals)<0.12)continue;
    singletonMatches.push({left,right,score});
   }
