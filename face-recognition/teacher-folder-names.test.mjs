@@ -49,3 +49,29 @@ test('invalid IDs and duplicate roster IDs never produce extra available childre
  assert.equal(result.unusedRoster.length,1);
  assert.equal(result.namedCount,0);
 });
+
+test('photo-only new folder accepts a temporary child name and shared image references',()=>{
+ const made={key:'manual-3',kind:'manual',members:[],photos:[],customName:'卒園児候補'};
+ const roster=[{id:'child-x',name:'仮の園児'}];
+ const selections=new Map([['manual-3','child-x']]);
+ const photos=new Map([[0,new Set(['manual-3'])],[4,new Set(['manual-3'])]]);
+ const result=buildNamedFolderPreview([made],roster,selections,photos);
+ assert.equal(result.namedCount,1);
+ assert.equal(result.allAssignmentsValid,true);
+ assert.deepEqual(result.named[0].faceIndexes,[]);
+ assert.deepEqual(result.named[0].photoIndexes,[0,4]);
+ assert.deepEqual(result.named[0].manuallyAdded,[0,4]);
+ assert.equal(result.named[0].key,'manual-3');
+});
+test('excluding a worker face folder removes only its nursery-class assignment',()=>{
+ const staff={kind:'confirmed',members:[0,1],photos:[0,1]};
+ const child={kind:'confirmed',members:[2,3],photos:[1,2]};
+ const roster=[{id:'kid',name:'架空園児'}];
+ const selected=new Map([['0:1','kid'],['2:3','kid']]);
+ const before=buildNamedFolderPreview([staff,child],roster,selected);
+ assert.equal(before.allAssignmentsValid,false);
+ const after=buildNamedFolderPreview([child],roster,selected);
+ assert.equal(after.allAssignmentsValid,true);
+ assert.equal(after.namedCount,1);
+ assert.deepEqual(after.named[0].photoIndexes,[1,2]);
+});
