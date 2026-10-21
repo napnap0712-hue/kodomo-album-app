@@ -6,6 +6,7 @@ import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-fol
 import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261021save-ai';
 import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
 import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs?v=20261022-ak';
+import {bindProvisionalApprovalUi} from './provisional-approval-ui.mjs?v=20261022-al';
 // Standalone research prototype. Writes ONLY to its isolated IndexedDB when the user explicitly chooses Save; never alters production album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -1191,6 +1192,20 @@ function appendFolderDeletionControl(card,bucket,key){
 
 
 let provisionalFinalCandidate=null,lastFinalReviewSignature='',lastFinalReviewAudit=null;
+
+let persistedPhotoDraftSignature='',approvalUi={refresh:()=>{}};
+function currentFinalReviewAudit(){
+ const {visible,model}=currentPhotoFolderView();
+ const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
+ return auditPhotoAssignments({
+  photoCount:photoNames.length,namedFolders:preview.named,roster,
+  excludedFolders:visible.excluded,
+  invalidAssignments:[...preview.invalid,...preview.duplicates],
+  contradictions:model.contradictions,
+  hasSourcePhotoConflicts:model.hasSourcePhotoConflicts
+ });
+}
+
 let provisionalFinalMessage='仮確定はまだ行っていません。';
 function clearProvisionalFinalization(message='仮確定はまだ行っていません。'){
  provisionalFinalCandidate=null;
@@ -1226,6 +1241,7 @@ function updateProvisionalFinalControls(){
  if(button)button.disabled=Boolean(provisionalFinalCandidate)||!check.ready||
   !visual?.checked||(check.needsUnassignedAcknowledgement&&!unassigned?.checked);
  if(cancel)cancel.hidden=!provisionalFinalCandidate;
+ approvalUi.refresh();
  if(status)status.textContent=provisionalFinalMessage;
  if(!preview)return;
  preview.replaceChildren();
@@ -2477,6 +2493,7 @@ function faceDraftBusyState(busy){
   start.disabled=true;
  }else start.disabled=faceDraftPreviousStartDisabled;
  faceDraftBusy=busy;
+ approvalUi.refresh();
  for(const id of ['saveFaceDraft','restoreFaceDraft','removeFaceDraft']){
   const button=$(id);if(button)button.disabled=busy;
  }
@@ -2619,6 +2636,8 @@ function applyFaceDraftRestore(staged){
  const rosterLabel=$('rosterStatus');if(rosterLabel)rosterLabel.textContent='保存した名簿 '+roster.length+'名を画面内に復元しました。登録済みの名簿は変更していません。';
  folderManagementNotice='💾 保存済みの除外・新規フォルダ・手動振り分けを復元しました。';
  render();
+ persistedPhotoDraftSignature=lastFinalReviewSignature;
+ approvalUi.refresh();
  status.textContent='✅ 保存した続きから再開：写真'+photoNames.length+'枚・顔'+items.length+
   '件・先生の確認'+verifiedFacePairs.size+'組。写真の再解析なし。'+
   ' この画面で変更したら「今の作業を保存」をもう一度押してね。';
@@ -2631,9 +2650,12 @@ $('saveFaceDraft')?.addEventListener('click',async()=>{
  if(!window.confirm('元写真・顔の特徴情報・先生の確認記録・園児名を、この端末のSafari内に保存します。共有パソコンではほかの利用者もアクセスできる可能性があります。保存しますか？'))return;
  faceDraftBusyState(true);
  try{
+  const signatureAtSave=finalAuditSourceSignature(currentFinalReviewAudit());
   const record=assembleFaceDraftRecord();
   faceDraftStatusText('💾 このブラウザに保存しています。写真の枚数・データ量によっては容量が必要です。');
   const saved=await saveFaceDraft(record);
+  persistedPhotoDraftSignature=signatureAtSave===finalAuditSourceSignature(currentFinalReviewAudit())?signatureAtSave:'';
+  approvalUi.refresh();
   faceDraftStatusText('✅ 保存完了：写真'+saved.photoCount+'枚・顔'+saved.faceCount+
    '件・確認'+saved.reviewCount+'組 ／ '+faceDraftTimestamp(saved.savedAt)+
    '。次回は「保存した続きから開く」を押してね。変更後はもう一度保存してください。');
@@ -2672,11 +2694,33 @@ $('removeFaceDraft')?.addEventListener('click',async()=>{
  faceDraftBusyState(true);
  try{
   await deleteFaceDraft();
+  persistedPhotoDraftSignature='';
+  approvalUi.refresh();
   faceDraftStatusText('✅ このSafariの検証用保存データを削除しました。現在画面の作業と本番アルバムは変更していません。');
  }catch(error){
   faceDraftStatusText('⚠️ 保存データを削除できませんでした：'+String(error?.message||error).slice(0,200));
  }finally{faceDraftBusyState(false);}
 });
+
+approvalUi=bindProvisionalApprovalUi({
+ getState:()=>{
+  const audit=currentFinalReviewAudit();
+  return {
+   audit,signature:finalAuditSourceSignature(audit),
+   candidate:provisionalFinalCandidate,persistedSignature:persistedPhotoDraftSignature,
+   faceDraftBusy,rosterClass:classSelect.value
+  };
+ },
+ onRestored:({candidate,audit,signature})=>{
+  provisionalFinalCandidate=candidate;lastFinalReviewSignature=signature;lastFinalReviewAudit=audit;
+  const eye=$('provisionalFinalVisualCheck'),unassigned=$('provisionalFinalUnassignedCheck');
+  if(eye)eye.checked=true;if(unassigned)unassigned.checked=true;
+  provisionalFinalMessage='✅ 保存した仮確定を復元しました。確認済みの写真と園児名の対応が一致しています。本番アルバムは未変更です。';
+  updateProvisionalFinalControls();
+ },
+ formatDate:faceDraftTimestamp
+});
+
 void updateSavedFaceDraftInfo();
 
 start.addEventListener('click',async()=>{
@@ -2684,6 +2728,7 @@ start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  analyzedSourceFiles=[];analysisFinished=false;
+ persistedPhotoDraftSignature='';
  clearProvisionalFinalization('📷 新しい写真を解析します。以前の仮確定は取り消しました。');
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();verifiedFolderNames.clear();excludedVerifiedFolders.clear();newManualPhotoFolders.clear();manualFolderSequence=0;folderManagementNotice='';folderNameStatus='';const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
