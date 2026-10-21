@@ -833,14 +833,14 @@ function renderEyelidComparison(){
  const worse=labeled.filter(p=>!p.improved&&Math.abs(p.delta)>0.001).length;
  if(quick){
   quick.hidden=false;
-  quick.textContent='🔬 目の位置合わせを比較：先生の確認'+labeled.length+'組中、比較値が改善方向 '+better+'組・悪化方向 '+worse+'組（自動統合には使っていません）';
+  quick.textContent='🔬 顔補正2方式を比較：先生の確認'+labeled.length+'組中、比較値が改善方向 '+better+'組・悪化方向 '+worse+'組（自動統合には使っていません）';
  }
  const summary=document.createElement('p');
  summary.textContent='確認した'+labeled.length+'組中：改善方向 '+better+'組 ／ 悪化方向 '+worse+'組（比較値だけの参考。本人確認の精度保証ではありません）';
  host.append(summary);
  const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
  const header=document.createElement('tr');
- for(const value of ['顔の組','従来補正','まぶた補正','変化']){
+ for(const value of ['顔の組','従来補正','高画質補正','変化']){
   const th=document.createElement('th');th.textContent=value;th.style.cssText='text-align:left;padding:7px 4px;border-bottom:1px solid #dbe2ed';header.append(th);
  }
  table.append(header);
@@ -863,9 +863,9 @@ function renderEyelidComparison(){
  host.append(note);
  const report=$('faceEvaluationReport');
  if(report&&report.value){
-  report.value+='\n【顔位置合わせの比較】'+labeled.length+'組 ／ 改善方向 '+better+'組 ／ 悪化方向 '+worse+'組';
+  report.value+='\n【顔補正比較：元画質＋まぶた】'+labeled.length+'組 ／ 改善方向 '+better+'組 ／ 悪化方向 '+worse+'組';
   for(const pair of labeled){
-   report.value+='\n顔'+(pair.i+1)+' ↔ 顔'+(pair.j+1)+' '+(pair.same?'同じ園児':'違う園児')+'：従来 '+pair.oldScore.toFixed(4)+' / まぶた補正 '+pair.newScore.toFixed(4);
+   report.value+='\n顔'+(pair.i+1)+' ↔ 顔'+(pair.j+1)+' '+(pair.same?'同じ園児':'違う園児')+'：従来 '+pair.oldScore.toFixed(4)+' / 高画質補正 '+pair.newScore.toFixed(4);
   }
  }
 }
@@ -1092,7 +1092,7 @@ move.addEventListener('click',()=>{
 // Experimental four-point eyelid-centred alignment, compared against the
 // existing eye-corner alignment without changing the production embeddings.
 // Both recognitions run in-browser, and the alternate embedding stays in RAM.
-async function recognizeEyelidAlignment(canvas,mesh,session,ort,phaseTimings){
+async function recognizeEyelidAlignment(canvas,bitmap,mesh,session,ort,phaseTimings){
  const eye=indices=>{
   const points=indices.map(i=>mesh[i]);
   if(points.some(p=>!p||!Number.isFinite(p[0])||!Number.isFinite(p[1])))throw Error('まぶたの座標が不正');
@@ -1118,7 +1118,13 @@ async function recognizeEyelidAlignment(canvas,mesh,session,ort,phaseTimings){
  const a=numeratorA/denominator,b=numeratorB/denominator;
  const tx=dm[0]-a*sm[0]+b*sm[1],ty=dm[1]-b*sm[0]-a*sm[1];
  const aligned=document.createElement('canvas');aligned.width=112;aligned.height=112;
- const ctx=aligned.getContext('2d');ctx.setTransform(a,b,-b,a,tx,ty);ctx.drawImage(canvas,0,0);
+ // Face landmarks are in detector-canvas pixels. Convert original-image
+ // coordinates into detector coordinates before applying ArcFace alignment.
+ // This preserves small faces that lost detail when detection was downscaled.
+ const scaleX=canvas.width/bitmap.width,scaleY=canvas.height/bitmap.height;
+ const ctx=aligned.getContext('2d');
+ ctx.setTransform(a*scaleX,b*scaleX,-b*scaleY,a*scaleY,tx,ty);
+ ctx.drawImage(bitmap,0,0);
  const pixels=ctx.getImageData(0,0,112,112).data,plane=112*112;
  const tensor=new Float32Array(plane*3);
  for(let i=0;i<plane;i++)for(let c=0;c<3;c++)
@@ -1215,7 +1221,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
  let alternateVector=null,alternateAlignedThumbnail=null;
  if(compareEyelidAlignment){
   try{
-   const alternate=await recognizeEyelidAlignment(canvas,mesh,session,ort,phaseTimings);
+   const alternate=await recognizeEyelidAlignment(canvas,bitmap,mesh,session,ort,phaseTimings);
    alternateVector=alternate.vector;
    alternateAlignedThumbnail=alternate.thumbnail;
   }catch(error){
