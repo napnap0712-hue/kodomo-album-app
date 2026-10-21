@@ -1,6 +1,6 @@
 // Local, read-only helper for mapping *teacher-verified provisional* face folders
 // to IDs in a class roster. No storage writes and no external networking.
-export const verifiedFolderKey=bucket=>[...bucket.members].sort((a,b)=>a-b).join(':');
+export const verifiedFolderKey=bucket=>typeof bucket?.key==='string'&&bucket.key.startsWith('manual-')?bucket.key:[...bucket.members].sort((a,b)=>a-b).join(':');
 export function buildNamedFolderPreview(buckets,roster,selections,manualPhotoChoices=new Map()){
  const children=new Map();
  for(const child of roster){
