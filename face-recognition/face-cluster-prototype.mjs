@@ -888,7 +888,7 @@ function renderVerifiedPhotoFolders(){
   card.className='teacher-card verified-folder-card';
   const heading=document.createElement('strong');
   heading.textContent='仮フォルダ '+String(index+1).padStart(2,'0')+' ／ '+
-   (bucket.kind==='confirmed'?'同じ園児と確認（顔'+bucket.members.length+'件）':
+   (bucket.kind==='confirmed'?'「同じ園児」記録で構成（顔'+bucket.members.length+'件・要目視確認）':
     bucket.independentlyDistinct?'ほかの顔とは別の園児（顔1件）':'単独の顔・園児未確定');
   card.append(heading);
   const faces=document.createElement('div');faces.className='faces';
@@ -937,6 +937,8 @@ function renderVerifiedPhotoFolders(){
  if(model.contradictions.length)issues.push('先生の確認に矛盾が'+model.contradictions.length+'組あります。必ず確認してください。');
  if(model.contradictions.length){
   const review=document.createElement('details');review.className='folder-review-links';
+  review.open=true;
+  review.style.gridColumn='1 / -1';
   const heading=document.createElement('summary');
   heading.textContent='⚠️ 矛盾している顔の確認 '+model.contradictions.length+'組を見直す';
   review.append(heading);
@@ -951,7 +953,7 @@ function renderVerifiedPhotoFolders(){
  if(unresolved)issues.push('単独の顔'+unresolved+'件は、ほかの園児との違いが未確認です。');
  if(withoutFaces.length)issues.push('顔未検出の写真：'+withoutFaces.map(index=>'写真'+(index+1)).join('・')+'（手動確認が必要）');
  warnings.textContent=
-  (issues.length?'⚠️ '+issues.join(' ／ '):'✅ 今回の確認結果に矛盾は見つかりませんでした。')+
+  (issues.length?'⚠️ '+issues.join(' ／ '):'✅ 確認記録どうしの矛盾はありません（正しい園児の組かどうかは顔写真で確認してください）。')+
   (sharedPhotos.length?' ／ 📷 集合写真として複数のフォルダに表示：'+sharedPhotos.map(index=>'写真'+index).join('・'):'')+
   ' ／ この分類は画面上の仮プレビューです。元写真を複製・保存したり、アルバムを変更したりしません。';
  const report=$('faceEvaluationReport');
