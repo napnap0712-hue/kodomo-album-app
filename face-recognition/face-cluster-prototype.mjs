@@ -424,6 +424,14 @@ function renderFaceEvaluation(){
  },0);
  summary.textContent='先生の確認 '+feedback.length+'組 ／ 初回AIの不一致 '+errorCounts(baselineSame)+'組 → 現在の不一致 '+errorCounts(currentSame)+'組 ／ 同じ写真の別顔の混在 '+conflicts+'組';
  results.append(summary);
+ const sameScores=feedback.filter(p=>p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
+ const differentScores=feedback.filter(p=>!p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
+ if(sameScores.length||differentScores.length){
+  const evidence=document.createElement('p');evidence.className='muted';
+  evidence.textContent='📏 確認済みの比較値：同じ園児 '+(sameScores.length?Math.min(...sameScores).toFixed(3)+'以上':'未記録')+' ／ 違う園児 '+(differentScores.length?Math.max(...differentScores).toFixed(3)+'以下':'未記録')+
+   (sameScores.length&&differentScores.length&&Math.max(...differentScores)>=Math.min(...sameScores)?'。⚠️ 比較値が重なっているため、単一の基準ではこの組み合わせを分けられません。':'');
+  results.append(evidence);
+ }
  const help=document.createElement('p');help.className='muted';
  help.textContent='下の顔から2件をタップして「同じ園児」「違う園児」を記録。AIの判定と比較します。記録してもグループは移動せず、端末にも保存しません。';
  results.append(help);
