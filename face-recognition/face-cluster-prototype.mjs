@@ -681,6 +681,11 @@ start.addEventListener('click',async()=>{
   // face comparisons. This is a read-only preview, never an automatic merge.
   const safeCandidates=eligible.filter(p=>{
    if(p.total<2||p.support<2||p.support/p.total<0.5)return false;
+   // Multiple comparisons of faces from one photo are not independent evidence.
+   const leftPhotos=new Set(groups[p.a].members.map(i=>items[i].sourcePhoto));
+   const rightPhotos=new Set(groups[p.b].members.map(i=>items[i].sourcePhoto));
+   if(leftPhotos.size<2&&rightPhotos.size<2)return false;
+   if(p.smallFaces>0&&p.minimum<0.58)return false;
    const rivals=eligible.filter(q=>q!==p&&(q.a===p.a||q.b===p.a||q.a===p.b||q.b===p.b));
    return rivals.every(q=>p.average-q.average>=0.09);
   });
@@ -696,6 +701,9 @@ start.addEventListener('click',async()=>{
   for(const pair of [...safeCandidates,...likely.filter(p=>!safeCandidates.includes(p))].slice(0,15)){
    const row=document.createElement('div');row.style.cssText='padding:10px 0;border-bottom:1px solid #e8edf3';
    const title=document.createElement('strong');title.textContent='グループ '+groups[pair.a].id+' ↔ '+groups[pair.b].id+' ／ 最大 '+pair.maximum.toFixed(3)+'・平均 '+pair.average.toFixed(3)+'・最小 '+pair.minimum.toFixed(3);row.append(title);
+   const evidenceLine=document.createElement('p');evidenceLine.className='muted';
+   evidenceLine.textContent='基準以上の一致 '+pair.support+'/'+pair.total+'組 ／ 小さい顔 '+pair.smallFaces+'件'+(safeCandidates.includes(pair)?' ／ 🛡️ 複数写真で裏付け':'');
+   row.append(evidenceLine);
    const faces=document.createElement('div');faces.className='faces';
    for(const id of [...groups[pair.a].members.slice(0,3),...groups[pair.b].members.slice(0,3)]){
     const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';faces.append(img);
