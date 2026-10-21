@@ -909,6 +909,132 @@ function renderEyelidComparison(){
  }
 }
 
+// Model comparison is read-only. Vectors and aligned tensors stay in RAM.
+// Similarities from different networks have different scales: only their
+// ranking against held-out negative examples is comparable.
+function scoreSeparation(positives,negatives){
+ if(!positives.length||!negatives.length)return null;
+ let wins=0,total=0;
+ for(const p of positives)for(const n of negatives){
+  if(!Number.isFinite(p)||!Number.isFinite(n))continue;
+  total++;
+  if(p>n)wins++;
+  else if(p===n)wins+=.5;
+ }
+ return total?wins/total:null;
+}
+function renderR50Comparison(){
+ const button=$('compareRecognitionModels'),host=$('r50CompareResult');
+ if(button)button.disabled=r50CompareRunning||r50Compared||!items.length||!items.every(item=>item.recognitionInput?.length===3*112*112);
+ if(!host)return;
+ host.replaceChildren();
+ if(!r50Compared)return;
+ const verified=[...verifiedFacePairs.values()];
+ const same=verified.filter(p=>p.same);
+ const confirmedDifferent=verified.filter(p=>!p.same);
+ const withinPhoto=[];
+ for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+  if(items[i].sourcePhoto===items[j].sourcePhoto&&
+     !verifiedFacePairs.has(facePairKey(i,j))){
+   withinPhoto.push({i,j});
+  }
+ }
+ const different=confirmedDifferent.length?confirmedDifferent:withinPhoto;
+ const useInferred=confirmedDifferent.length===0;
+ const oldScores=pairs=>pairs.map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
+ const r50Scores=pairs=>pairs.map(p=>similarity(items[p.i].r50Vector,items[p.j].r50Vector)).filter(Number.isFinite);
+ const smallRate=scoreSeparation(oldScores(same),oldScores(different));
+ const largeRate=scoreSeparation(r50Scores(same),r50Scores(different));
+ const summary=document.createElement('p');
+ summary.textContent='🧠 別モデル比較：確認済みの同じ園児 '+same.length+'組、'+
+  (useInferred?'同じ写真内の別顔（参考）':'確認済みの違う園児')+' '+different.length+'組。';
+ host.append(summary);
+ if(smallRate!==null&&largeRate!==null){
+  const metric=document.createElement('p');metric.style.fontWeight='700';
+  metric.textContent='一致組が別人組より高い比較値になった割合：軽量 '+(smallRate*100).toFixed(1)+'% ／ R50 '+(largeRate*100).toFixed(1)+'%';
+  host.append(metric);
+ }else{
+  const needed=document.createElement('p');needed.className='muted';
+  needed.textContent='同じ園児の確認または比較する別人組が足りません。先生の確認が追加されたら再計算します。';
+  host.append(needed);
+ }
+ if(same.length){
+  const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+  const head=document.createElement('tr');
+  for(const label of ['確認した同じ園児','軽量モデル','R50モデル']){
+   const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:8px 5px;text-align:left;border-bottom:1px solid #dbe2ed';head.append(th);
+  }
+  table.append(head);
+  for(const pair of same){
+   const row=document.createElement('tr');
+   for(const value of ['顔'+(pair.i+1)+' ↔ 顔'+(pair.j+1),pairScore(pair.i,pair.j).toFixed(4),similarity(items[pair.i].r50Vector,items[pair.j].r50Vector).toFixed(4)]){
+    const cell=document.createElement('td');cell.textContent=value;cell.style.cssText='padding:8px 5px;border-bottom:1px solid #edf1f6';row.append(cell);
+   }
+   table.append(row);
+  }
+  const wrap=document.createElement('div');wrap.style.overflowX='auto';wrap.append(table);host.append(wrap);
+ }
+ const caution=document.createElement('p');caution.className='muted';
+ caution.textContent='⚠️ 2つのモデルで比較値の尺度が違うため、個々の数値を直接比べて精度を判断できません。'+
+  (useInferred?'同じ写真の別顔は「別人」と仮定した参考例で、先生の確認ではありません。':'結果は先生が確認した組の範囲内です。')+
+  ' 実際の自動グループ分けは変更していません。';
+ host.append(caution);
+ const report=$('faceEvaluationReport');
+ if(report?.value){
+  report.value+='\n【別AIモデル比較：軽量とArcFace R50】';
+  report.value+='\n同じ園児の確認 '+same.length+'組 / '+(useInferred?'同じ写真の別顔（参考）':'違う園児の確認')+' '+different.length+'組';
+  report.value+='\n比較値の順位による分離率：軽量 '+(smallRate===null?'未評価':(smallRate*100).toFixed(1)+'%')+' / R50 '+(largeRate===null?'未評価':(largeRate*100).toFixed(1)+'%');
+  for(const pair of same){
+   report.value+='\n顔'+(pair.i+1)+' ↔ 顔'+(pair.j+1)+' 同じ園児：軽量 '+pairScore(pair.i,pair.j).toFixed(4)+' / R50 '+similarity(items[pair.i].r50Vector,items[pair.j].r50Vector).toFixed(4);
+  }
+ }
+}
+$('compareRecognitionModels')?.addEventListener('click',async()=>{
+ const button=$('compareRecognitionModels'),message=$('r50CompareStatus');
+ if(r50CompareRunning||r50Compared)return;
+ if(!items.length||!items.every(item=>item.recognitionInput?.length===3*112*112)){
+  if(message)message.textContent='先に写真を解析してください。顔を再検出する必要はありません。';
+  return;
+ }
+ r50CompareRunning=true;
+ if(button)button.disabled=true;
+ const wasStartDisabled=start.disabled;
+ start.disabled=true;
+ let session;
+ try{
+  const base='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/';
+  if(message)message.textContent='高精度モデルをダウンロード・準備しています（約174MB）。写真は送信しません。';
+  const ort=await import(base+'ort.min.mjs');
+  ort.env.wasm.proxy=false;ort.env.wasm.wasmPaths=base;ort.env.wasm.numThreads=1;ort.env.wasm.simd=false;
+  const url='https://huggingface.co/globalnebula/insightface-buffalo-l-onnx/resolve/main/arcface_w600k_r50.onnx';
+  session=await ort.InferenceSession.create(url,{
+   executionProviders:['wasm'],graphOptimizationLevel:'basic',enableCpuMemArena:false,enableMemPattern:false
+  });
+  if(session.inputNames.length!==1||session.outputNames.length<1)throw Error('モデル入出力が未対応');
+  const inputName=session.inputNames[0],outputName=session.outputNames[0];
+  const vectors=[];
+  for(let i=0;i<items.length;i++){
+   if(message)message.textContent='R50で顔の特徴を比較中 '+(i+1)+' / '+items.length+'（写真は再解析していません）';
+   const inputs={[inputName]:new ort.Tensor('float32',items[i].recognitionInput,[1,3,112,112])};
+   const output=await session.run(inputs);
+   const vector=Array.from(output[outputName]?.data||[]);
+   if(vector.length!==512||vector.some(value=>!Number.isFinite(value)))throw Error('顔'+(i+1)+'のR50特徴出力が不正');
+   vectors.push(vector);
+   await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  for(let i=0;i<items.length;i++)items[i].r50Vector=vectors[i];
+  r50Compared=true;
+  if(message)message.textContent='✅ R50で'+vectors.length+'件の顔を比較しました。写真・園児名は送信せず、元のグループは変更していません。';
+ }catch(error){
+  if(message)message.textContent='⚠️ R50の比較を完了できませんでした：'+String(error?.message||error).slice(0,160)+'。従来の認識結果はそのままです。';
+  console.warn('Optional R50 model comparison failed',error);
+ }finally{
+  try{await session?.release()}catch{}
+  r50CompareRunning=false;start.disabled=wasStartDisabled;
+  renderFaceEvaluation();
+ }
+});
+
 function renderFaceEvaluation(){
  const gallery=$('faceEvaluationGallery'),choice=$('faceEvaluationChoice'),results=$('faceEvaluationResults');
  if(!gallery||!choice||!results)return;
@@ -919,6 +1045,7 @@ function renderFaceEvaluation(){
   results.textContent='写真を解析すると顔の一覧が表示されます。';
   renderQuickReview();
   renderEyelidComparison();
+  renderR50Comparison();
   return;
  }
  const summary=document.createElement('p');
@@ -1037,6 +1164,7 @@ function renderFaceEvaluation(){
  }
  renderQuickReview();
  renderEyelidComparison();
+ renderR50Comparison();
 }
 
 function render(){
