@@ -730,6 +730,7 @@ function simulateGreedyFaceGrouping(){
  const trial=items.map((_,i)=>({members:[i]}));
  const pairs=[];
  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+  if(hiddenFaces.has(i)||hiddenFaces.has(j))continue;
   if(items[i].sourcePhoto===items[j].sourcePhoto)continue;
   const score=pairScore(i,j);
   if(Number.isFinite(score)&&score>=threshold)pairs.push({i,j,score});
@@ -982,9 +983,7 @@ function updateMissingPhotoReport(){
  const detected=new Set(items.map(item=>item.sourcePhoto));
  const missing=photoNames.map((_,i)=>i).filter(index=>!detected.has(index));
  if(!missing.length)return;
- const model=buildVerifiedPhotoFolders(
-  items.map(item=>item.sourcePhoto),[...verifiedFacePairs.values()]
- );
+ const {model}=currentPhotoFolderView();
  const names=new Map(model.buckets.map((bucket,index)=>[
   provisionalPhotoFolderKey(bucket),'仮フォルダ'+String(index+1).padStart(2,'0')
  ]));
@@ -1400,9 +1399,12 @@ function renderTeacherConfirmedOverview(){
  panel.hidden=false;host.replaceChildren();pendingHost.replaceChildren();
  const photos=items.map(item=>item.sourcePhoto);
  const feedback=[...verifiedFacePairs.values()];
- const groups=buildTeacherSeedGroups(photos,feedback);
+ // Staff/non-child face folders are excluded from the nursery-child overview,
+ // while the original reviewed pairs remain available for diagnostic export.
+ const nurseryView=currentPhotoFolderView().model.buckets;
+ const groups=nurseryView.filter(bucket=>bucket.kind==='confirmed').map(bucket=>bucket.members);
+ const remaining=nurseryView.filter(bucket=>bucket.kind==='individual').flatMap(bucket=>bucket.members);
  const assigned=new Set(groups.flat());
- const remaining=items.map((_,i)=>i).filter(i=>!assigned.has(i));
  heading.textContent='📚 先生が確認した '+groups.length+'グループ（顔'+assigned.size+'件） ／ 単独 '+remaining.length+'件';
  const imageTile=id=>{
   const tile=document.createElement('div');tile.className='teacher-photo';
@@ -1462,13 +1464,16 @@ function renderQuickReview(){
  const falseSplits=feedback.filter(p=>p.same&&lookup.get(p.i)!==lookup.get(p.j)).length;
  const falseMerges=feedback.filter(p=>!p.same&&lookup.get(p.i)===lookup.get(p.j)).length;
  const activeCount=groups.filter(g=>g.id!=='unknown'&&g.members.length).length;
+ const hiddenFaces=getExcludedFaceIndexes();
  if(r50Compared&&items.every(item=>Array.isArray(item.r50Vector))){
   const photos=items.map(item=>item.sourcePhoto);
-  const teacherSeeds=buildTeacherSeedGroups(photos,feedback);
+  const teacherSeeds=buildTeacherSeedGroups(photos,feedback).filter(
+   members=>members.every(i=>!hiddenFaces.has(i))
+  );
   if(teacherSeeds.length){
    const suggestions=suggestTeacherSeedPairs(
-    photos,feedback,(i,j)=>similarity(items[i].r50Vector,items[j].r50Vector),6
-   );
+    photos,feedback,(i,j)=>similarity(items[i].r50Vector,items[j].r50Vector),items.length
+   ).filter(pair=>!hiddenFaces.has(pair.face)&&pair.members.every(i=>!hiddenFaces.has(i))).slice(0,6);
    const quickReport=$('faceEvaluationReport');
    if(quickReport?.value){
     quickReport.value+='\n【R50の確認候補】確認済みの園児グループ '+teacherSeeds.length+'組 / 未確認の候補 '+suggestions.length+'件';
@@ -1536,14 +1541,14 @@ function renderQuickReview(){
      photos,feedback,
      (i,j)=>pairScore(i,j),
      (i,j)=>similarity(items[i].r50Vector,items[j].r50Vector),
-     3
-    );
-    const currentReview=buildVerifiedPhotoFolders(photos,feedback);
-    const allSinglesDifferent=currentReview.singletonCount>0&&
-     currentReview.separatedSingletonCount===currentReview.singletonCount;
+     items.length*items.length
+    ).filter(pair=>!hiddenFaces.has(pair.i)&&!hiddenFaces.has(pair.j)).slice(0,3);
+    const currentReview=currentPhotoFolderView().model;
+    const currentSingles=currentReview.buckets.filter(bucket=>bucket.kind==='individual');
+    const allSinglesDifferent=currentSingles.length>0&&currentSingles.every(bucket=>bucket.independentlyDistinct);
     summary.textContent=unassignedPairs.length?
      '🧠 確認済み'+teacherSeeds.length+'グループへの追加候補なし ／ 未確認の顔同士 '+unassignedPairs.length+'組を確認できます。':
-     '✅ 先生の確認から'+currentReview.buckets.length+'つの仮フォルダに整理できます。追加確認が必要な顔の組はありません。';
+     '✅ 園児候補は'+currentReview.buckets.length+'つの仮フォルダに整理できます。追加確認候補はありません。';
     note.textContent=unassignedPairs.length?
      '未分類の顔同士を軽量AIとR50の順位で比較しました。正しい園児かは先生の判断が必要です。':
      (allSinglesDifferent?
