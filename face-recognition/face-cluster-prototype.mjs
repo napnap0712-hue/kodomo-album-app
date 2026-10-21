@@ -517,7 +517,7 @@ function validateFaceReportAndImport(){
  if(!count)return fail('写真数と検出顔数を含む検証結果を貼り付けてください。');
  if(+count[1]!==photoNames.length)return fail('写真枚数が異なります。前回と同じ枚数・順番の写真を選んでください。');
  const lines=raw.split(/\r?\n/).filter(line=>/^顔\d+\(写真\d+\)/.test(line.trim()));
- if(!lines.length)return fail('このテキストは「先生が確認した顔の組 0」の結果だよ。前回の7組が記載されたテキストを貼り付けてね。今の確認記録は変更していません。');
+ if(!lines.length)return fail('このテキストは「先生が確認した顔の組 0」の結果だよ。前回確認した顔の組が記載されたテキストを貼り付けてね。今の確認記録は変更していません。');
  const imported=new Map(),manual=[];
  for(const line of lines){
   const match=line.trim().match(/^顔(\d+)\(写真(\d+)\)\s*↔\s*顔(\d+)\(写真(\d+)\)：(同じ園児|違う園児)\s*\/\s*値\s+(-?\d+(?:\.\d+)?)/);
@@ -755,7 +755,7 @@ $('copyQuickReport')?.addEventListener('click',async()=>{
  if(!report?.value){if(message)message.textContent='先に顔を解析してください。';return}
  if(items.length&&verifiedFacePairs.size===0){
   openPreviousReviewImport();
-  if(message)message.textContent='⚠️ 先生の確認が0組です。以前の7組の結果を読み込んでからコピーしてね。';
+  if(message)message.textContent='⚠️ 先生の確認が0組です。以前の確認結果を読み込んでからコピーしてね。';
   return;
  }
  try{
