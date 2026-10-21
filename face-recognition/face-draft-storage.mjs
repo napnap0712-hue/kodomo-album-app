@@ -120,6 +120,28 @@ export function validateFaceDraft(record){
    keys.some(key=>typeof key!=='string'||key.length>256))
    return fail('写真の手動振り分けが不正です。');
  }
+ // Older snapshots do not contain photo-level corrections; they remain compatible.
+ if(data.photoFolderCorrections!=null){
+  if(!Array.isArray(data.photoFolderCorrections)||data.photoFolderCorrections.length>MAX_PHOTOS)
+   return fail('写真ごとのフォルダ修正記録が不正です。');
+  const seenPhotos=new Set();
+  for(const row of data.photoFolderCorrections){
+   if(!Array.isArray(row)||row.length!==2) return fail('写真ごとの修正形式が不正です。');
+   const [photoIndex,entries]=row;
+   if(!Number.isInteger(photoIndex)||photoIndex<0||photoIndex>=photos.length||
+      seenPhotos.has(photoIndex)||!Array.isArray(entries)||entries.length>MAX_FACES+100)
+    return fail('写真ごとの修正先が不正です。');
+   seenPhotos.add(photoIndex);
+   const keys=new Set();
+   for(const entry of entries){
+    if(!Array.isArray(entry)||entry.length!==2||
+       typeof entry[0]!=='string'||entry[0].length>256||!entry[0]||
+       typeof entry[1]!=='boolean'||keys.has(entry[0]))
+     return fail('写真ごとの修正内容が不正です。');
+    keys.add(entry[0]);
+   }
+  }
+ }
  for(const row of data.manualPhotoAssignments){
   if(!Array.isArray(row)||row.length!==2)return fail('旧式の写真紐づけが不正です。');
   const [photoIndex,names]=row;
