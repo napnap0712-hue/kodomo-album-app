@@ -1381,6 +1381,12 @@ $('undoPhotoCorrection')?.addEventListener('click',()=>{
  renderVerifiedPhotoFolders();
 });
 
+$('goToFinalReview')?.addEventListener('click',()=>{
+ const summary=$('provisionalFinalBox'),panel=$('finalPhotoAuditPanel');
+ if(!summary||panel?.hidden)return;
+ summary.scrollIntoView({behavior:'smooth',block:'start'});
+});
+
 function renderFinalPhotoAudit(){
  const panel=$('finalPhotoAuditPanel');
  if(!panel)return;
@@ -1520,6 +1526,9 @@ function renderVerifiedPhotoFolders(){
   return;
  }
  panel.hidden=false;
+ // Make the complete-original photo sorting area visible on first use only.
+ // Do not force it open again after a teacher has intentionally collapsed it.
+ if(!panel.dataset.photoSortingOpened){panel.open=true;panel.dataset.photoSortingOpened='1';}
  let {base,visible,model}=currentPhotoFolderView();
  if(visible.staleExclusions.length){
   for(const key of visible.staleExclusions)excludedVerifiedFolders.delete(key);
