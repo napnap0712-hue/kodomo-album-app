@@ -4,6 +4,15 @@ const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),g
 let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[],photoUrls=[];
 const groupNames=new Map();
 let openedFolder=null;
+let initialGroupCount=null,initialCandidateCount=null,currentCandidateCount=null,manualMergeCount=0;
+function updateGroupProgress(){
+ const host=$('groupProgress');if(!host)return;
+ if(initialGroupCount===null){host.textContent='';return}
+ const current=groups.filter(g=>g.id!=='unknown'&&g.members.length).length;
+ const candidates=initialCandidateCount===null?'計算中':initialCandidateCount+'組 → '+(currentCandidateCount??0)+'組';
+ host.textContent='📊 グループ：解析直後 '+initialGroupCount+'件 → 現在 '+current+'件（手動統合 '+manualMergeCount+'回） ／ 統合候補：'+candidates;
+}
+
 const excludedFacePairs=new Set();
 const facePairKey=(a,b)=>Math.min(a,b)+':'+Math.max(a,b);
 const hasExcludedPair=(a,b)=>a.members.some(i=>b.members.some(j=>excludedFacePairs.has(facePairKey(i,j))));
@@ -377,6 +386,7 @@ function renderManualPhotos(){
  }
 }
 function render(){
+ updateGroupProgress();
  selection.textContent='選択中：'+selected.size+'件';move.disabled=!selected.size;
  const existing=groups.filter(g=>g.members.length);
  const overview=$('folderOverview'),detail=$('folderDetail'),actions=$('folderActions');
@@ -559,7 +569,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
@@ -640,6 +650,7 @@ start.addEventListener('click',async()=>{
   const groupingStart=performance.now();
   const threshold=Number($('threshold').value);
   groups=calculateFaceGroups(threshold);
+  initialGroupCount=groups.length-1;updateGroupProgress();
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
   const perfReport='\n⚙️ 実行方式：'+executionProvider+'\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
@@ -688,6 +699,9 @@ start.addEventListener('click',async()=>{
   distribution.textContent='📊 分割状況：単独顔グループ '+singleton+'件 ／ 複数顔グループ '+multi+'件 ／ 小さい顔 '+smallFaces+'件（除外なし）';
   host.append(distribution);
   const eligible=groupPairs.filter(p=>!p.samePhoto&&p.minimum>=0.48&&p.average>=0.55&&p.maximum>=0.60);
+  currentCandidateCount=eligible.length;
+  if(initialCandidateCount===null)initialCandidateCount=eligible.length;
+  updateGroupProgress();
   // Suggest only mutually unique matches with multiple independent supporting
   // face comparisons. This is a read-only preview, never an automatic merge.
   const safeCandidates=eligible.filter(p=>{
@@ -737,7 +751,7 @@ start.addEventListener('click',async()=>{
     first.members.push(...second.members);
     groups=groups.filter(g=>g!==second);
     if(!groupNames.has(first.id)&&groupNames.has(second.id))groupNames.set(first.id,groupNames.get(second.id));
-    groupNames.delete(second.id);selected.clear();invalidateAssignmentPreview();render();
+    groupNames.delete(second.id);manualMergeCount++;selected.clear();invalidateAssignmentPreview();render();updateGroupProgress();
     refreshGroupPairs();
     status.textContent+='\n✅ グループ '+firstId+' と '+secondId+' を手動統合しました。';
    });
