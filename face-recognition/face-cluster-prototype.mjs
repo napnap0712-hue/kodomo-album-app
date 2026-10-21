@@ -438,7 +438,7 @@ function renderFaceEvaluation(){
     const score=pairScore(pair.i,pair.j);
     return '顔'+(pair.i+1)+'(写真'+(items[pair.i].sourcePhoto+1)+') ↔ 顔'+(pair.j+1)+'(写真'+(items[pair.j].sourcePhoto+1)+')：'+(pair.same?'同じ園児':'違う園児')+' / 値 '+(Number.isFinite(score)?score.toFixed(4):'不明')+' / AI初回 '+(baselineSame(pair.i,pair.j)?'同':'別')+' / 現在 '+(currentSame(pair.i,pair.j)?'同':'別');
    })
-  ].join('\\n');
+  ].join('\n');
  }
  const sameScores=feedback.filter(p=>p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
  const differentScores=feedback.filter(p=>!p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
