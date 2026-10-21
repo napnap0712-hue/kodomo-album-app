@@ -287,6 +287,17 @@ label{display:inline-block;margin:5px 0}
  </div>
 </div>
 </section>
+<section class="panel" id="albumPhotoHandoffPanel" hidden>
+ <div class="section-top"><span class="step">STEP 5</span><h2>📖 おもいでブックの編集用写真をプレビュー</h2></div>
+ <p class="muted"><strong>先生が保存した仮確定</strong>を確認し、編集画面で使う園児別写真の候補を表示します。集合写真は元写真1枚を複数園児から参照します。<strong>これは連携の読み取り試験です。編集画面への取り込み・アルバムの保存や変更はまだ行いません。</strong></p>
+ <div class="actions"><button type="button" id="albumPhotoHandoffOpen" disabled>📂 確認済みの編集用写真を見る</button></div>
+ <p id="albumPhotoHandoffStatus" class="muted" role="status" aria-live="polite">保存した仮確定を開くと使えます。</p>
+ <label for="albumPhotoHandoffChild"><strong>表示する園児・写真一覧</strong></label>
+ <select id="albumPhotoHandoffChild" hidden style="width:100%;max-width:430px;padding:10px;border:1px solid #dbe5f1;border-radius:10px;background:white"></select>
+ <p id="albumPhotoHandoffInfo" class="muted"></p>
+ <div id="albumPhotoHandoffPhotos" class="final-audit-photo-grid"></div>
+ <p class="muted">💡 この画面では園児名・写真の紐づけは変更できません。変更するときは上のフォルダ分けに戻って修正し、保存と仮確定をやり直してください。</p>
+</section>
 <section class="panel" id="folderEditorSection">
 <details id="folderEditor">
 <summary style="font-weight:750;cursor:pointer">📁 園児フォルダ・写真の手動振り分け（必要なときだけ）</summary>
@@ -315,7 +326,7 @@ label{display:inline-block;margin:5px 0}
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-provisional-save"></script>
-<div id="build-marker">かんたん検証 2026-10-22 AL</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-album-preview"></script>
+<div id="build-marker">かんたん検証 2026-10-22 AM</div>
 </body>
 </html>
