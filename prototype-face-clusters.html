@@ -9,5 +9,5 @@
 window.addEventListener('error',event=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面の読み込みエラー：'+String(event.message||'不明').slice(0,250);});
 window.addEventListener('unhandledrejection',event=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面の処理エラー：'+String(event.reason?.message||event.reason).slice(0,250);});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021diagnostic-v2"></script><div id="build-marker" style="position:fixed;bottom:6px;right:6px;z-index:99999;background:#152a44;color:white;padding:5px 9px;border-radius:7px;font:12px system-ui;opacity:.9">診断版 2026-10-21 B</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021diagnostic-v3"></script><div id="build-marker" style="position:fixed;bottom:6px;right:6px;z-index:99999;background:#152a44;color:white;padding:5px 9px;border-radius:7px;font:12px system-ui;opacity:.9">診断版 2026-10-21 C</div>
 </body></html>
