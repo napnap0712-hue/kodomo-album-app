@@ -89,3 +89,23 @@ test('invalid manual photo folder references cannot be restored',()=>{
  const data=sample();data.data.manualPhotoFolderChoices=[[123,['manual-1']]];
  assert.equal(validateFaceDraft(data).ok,false);
 });
+
+test('a photo-folder correction survives validation while legacy snapshots remain supported',()=>{
+ const older=sample();
+ assert.equal(validateFaceDraft(older).ok,true);
+ const edited=sample();
+ edited.data.photoFolderCorrections=[[0,[['0',false]]],[1,[['1',true]]]];
+ assert.equal(validateFaceDraft(edited).ok,true);
+ assert.deepEqual(edited.data.photoFolderCorrections[0],[0,[['0',false]]]);
+});
+test('unsafe photo-level corrections cannot overwrite a valid saved draft',()=>{
+ const invalidIndex=sample();
+ invalidIndex.data.photoFolderCorrections=[[99,[['0',false]]]];
+ assert.equal(validateFaceDraft(invalidIndex).ok,false);
+ const duplicate=sample();
+ duplicate.data.photoFolderCorrections=[[0,[['0',false],['0',true]]]];
+ assert.equal(validateFaceDraft(duplicate).ok,false);
+ const typeError=sample();
+ typeError.data.photoFolderCorrections=[[1,[['1','delete']]]];
+ assert.equal(validateFaceDraft(typeError).ok,false);
+});
