@@ -445,7 +445,27 @@ function applyVerifiedFaceMerges(){
  const preservedNames=new Map(groupNames);
  const nameChanges=new Map(groupNames);
  let joined=0,skipped=0;
+ const confirmedConnections=new Map();
+ for(const pair of candidates){
+  if(!confirmedConnections.has(pair.i))confirmedConnections.set(pair.i,new Set());
+  if(!confirmedConnections.has(pair.j))confirmedConnections.set(pair.j,new Set());
+  confirmedConnections.get(pair.i).add(pair.j);
+  confirmedConnections.get(pair.j).add(pair.i);
+ }
+ const confirmedComponent=start=>{
+  const visited=new Set([start]),queue=[start];
+  for(let head=0;head<queue.length;head++){
+   for(const other of confirmedConnections.get(queue[head])||[]){
+    if(!visited.has(other)){visited.add(other);queue.push(other)}
+   }
+  }
+  return visited;
+ };
  const canJoin=(left,right)=>{
+  // Never silently include unverified extra faces from either AI cluster.
+  // Transitive teacher-confirmed matches (A=B and A=C) remain allowed.
+  const approved=confirmedComponent(left.members[0]);
+  if(![...left.members,...right.members].every(id=>approved.has(id)))return false;
   const photos=new Set(left.members.map(i=>items[i].sourcePhoto));
   if(right.members.some(i=>photos.has(items[i].sourcePhoto)))return false;
   const leftName=nameChanges.get(left.id),rightName=nameChanges.get(right.id);
