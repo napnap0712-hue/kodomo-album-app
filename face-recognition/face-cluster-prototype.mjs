@@ -379,6 +379,8 @@ const manualPhotoAssignments=new Map();
 function renderManualPhotos(){
  const host=$('manualPhotoAssignments');if(!host)return;
  host.replaceChildren();
+ const hasUndetected=photoNames.some((_,i)=>!items.some(item=>item.sourcePhoto===i));
+ const area=$('manualPhotoArea');if(area)area.hidden=!hasUndetected;
  for(let i=0;i<photoNames.length;i++){
   if(items.some(item=>item.sourcePhoto===i))continue;
   const row=document.createElement('div');row.style.cssText='padding:12px 0;border-bottom:1px solid #e5ebf2';
@@ -1099,7 +1101,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
@@ -1186,9 +1188,10 @@ start.addEventListener('click',async()=>{
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
   const perfReport='\n⚙️ 実行方式：'+executionProvider+'\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
-  status.textContent='✅ '+files.length+'枚中'+(files.length-failed.length)+'枚解析・顔'+items.length+'件・仮グループ '+(groups.length-1)+'件（'+(selectedModel==='lightweight'?'軽量ONNX比較':selectedModel==='arcface'?'ArcFace':selectedModel==='buffalo_s'?'ArcFace buffalo_s（軽量・試験）':'AuraFace')+'・DBSCAN）。失敗 '+failed.length+'枚。\n※自動判定は誤り得ます。先生が確認してください。\n'+failed.slice(0,12).join(' ／ ');
-  if(diagnostics.length)status.textContent+='\n🔍 AIモデル詳細：'+[...new Set(diagnostics)].join(' ／ ');
-  status.textContent+=perfReport;
+  status.textContent='✅ '+(files.length-failed.length)+' / '+files.length+'枚解析 ／ 顔'+items.length+'件 ／ AI仮グループ'+(groups.length-1)+'件。'+(failed.length?'\n⚠️ 顔を見つけられなかった写真：'+failed.map(v=>v.split(':')[0]).join('、')+'（手動で振り分けできます）':'');
+  const timing=$('technicalStatus'),timingPanel=$('timingPanel');
+  if(timing)timing.textContent='実行モデル：'+selectedModel+'\n'+perfReport+'\n'+(diagnostics.length?'モデル詳細：'+[...new Set(diagnostics)].join(' ／ '):'')+'\n'+(failed.length?'顔未検出：'+failed.join(' ／ '):'');
+  if(timingPanel)timingPanel.hidden=false;
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
   const heading=document.createElement('h2');heading.textContent='🔎 顔の比較値（高い順・上位20組）';diagnostic.append(heading);
@@ -1351,7 +1354,9 @@ start.addEventListener('click',async()=>{
   }
   diagnostic.append(alignment);
 
-  groupsHost.closest('section').after(diagnostic);
+  const diagnosticMount=$('diagnosticsMount');
+  if(diagnosticMount)diagnosticMount.replaceChildren(diagnostic);
+  else groupsHost.closest('section').after(diagnostic);
   render();
  }catch(e){status.textContent='⚠️ 解析できません【検証版L】: '+String(e?.message||e).slice(0,220)+'\n詳細: '+String(e?.stack||'スタック情報なし').slice(0,700);console.error('Face analysis diagnostic C',e)}
  finally{try{await session?.release()}catch{}try{await human?.dispose?.()}catch{}start.disabled=false;cancel.disabled=true}
