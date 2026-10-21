@@ -1,7 +1,8 @@
 import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v2';
 import {buildTeacherSeedGroups,suggestTeacherSeedPairs,suggestUnassignedFacePairs} from './teacher-seed-matches.mjs?v=20261021s2';
 import {buildVerifiedPhotoFolders} from './teacher-verified-folders.mjs?v=20261021f1';
-import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.mjs?v=20261021n1';
+import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.mjs?v=20261022-photo-edit';
+import {transferPhotoFolderCorrection,trimPhotoFolderCorrections,photoFolderCorrectionsAsRows,correctedPhotoIndexes} from './photo-folder-corrections.mjs?v=20261022-photo-edit';
 import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-folder-visibility.mjs?v=20261021x1';
 import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261021save-ai';
 import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
@@ -487,6 +488,7 @@ const manualPhotoAssignments=new Map();
 // Preview-only: missing-face photo index -> stable, face-based folder keys.
 // This never writes to the album and intentionally does not use folder numbers.
 const manualPhotoFolderChoices=new Map();
+const photoFolderCorrections=new Map();
 function renderManualPhotos(){
  const host=$('manualPhotoAssignments');if(!host)return;
  host.replaceChildren();
@@ -647,7 +649,7 @@ function validateFaceReportAndImport(){
  // staff exclusions or photo-only links from an older verification batch.
  lastFolderCorrection=null;folderCorrectionNoticeText='';
  excludedVerifiedFolders.clear();newManualPhotoFolders.clear();manualFolderSequence=0;
- manualPhotoFolderChoices.clear();verifiedFolderNames.clear();folderManagementNotice='';
+ manualPhotoFolderChoices.clear();photoFolderCorrections.clear();verifiedFolderNames.clear();folderManagementNotice='';
  verifiedFacePairs.clear();
  for(const [key,pair] of imported)verifiedFacePairs.set(key,pair);
  pendingFaceImport=manual;
@@ -1035,7 +1037,7 @@ function refreshMissingPhotoPreview(model,missing){
     list.append(chip);
    }
   }
-  const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
+  const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices,photoFolderCorrections);
   for(const target of grid.querySelectorAll('[data-folder-photo-gallery]')){
    const row=preview.named.find(entry=>entry.key===target.dataset.folderPhotoGallery);
    target.replaceChildren();
@@ -1197,7 +1199,7 @@ let provisionalFinalCandidate=null,lastFinalReviewSignature='',lastFinalReviewAu
 let persistedPhotoDraftSignature='',approvalUi={refresh:()=>{}},albumHandoffUi={refresh:()=>{}};
 function currentFinalReviewAudit(){
  const {visible,model}=currentPhotoFolderView();
- const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
+ const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices,photoFolderCorrections);
  return auditPhotoAssignments({
   photoCount:photoNames.length,namedFolders:preview.named,roster,
   excludedFolders:visible.excluded,
@@ -1230,6 +1232,7 @@ function finalAuditSourceSignature(audit){
   newFolders:[...newManualPhotoFolders].sort((a,b)=>a[0].localeCompare(b[0])),
   named:[...verifiedFolderNames].sort((a,b)=>a[0].localeCompare(b[0])),
   manual:[...manualPhotoFolderChoices].map(([photo,keys])=>[photo,[...keys].sort()]).sort((a,b)=>a[0]-b[0]),
+  photoCorrections:photoFolderCorrectionsAsRows(photoFolderCorrections),
   olderManual:[...manualPhotoAssignments].map(([photo,names])=>[photo,[...names].sort()]).sort((a,b)=>a[0]-b[0]),
   rosterClass:classSelect.value,roster,audit
  });
@@ -1320,7 +1323,7 @@ function renderFinalPhotoAudit(){
  panel.hidden=!photoNames.length;
  if(!photoNames.length){clearProvisionalFinalization();return;}
  const {visible,model}=currentPhotoFolderView();
- const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
+ const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices,photoFolderCorrections);
  const audit=auditPhotoAssignments({
   photoCount:photoNames.length,namedFolders:preview.named,roster,
   excludedFolders:visible.excluded,
@@ -1457,11 +1460,13 @@ function renderVerifiedPhotoFolders(){
  }
  renderExcludedPhotoFolderRestores(visible);
  const validFolderKeys=new Set(model.buckets.map(provisionalPhotoFolderKey));
+ const clean=trimPhotoFolderCorrections(photoFolderCorrections,validFolderKeys,photoNames.length);
+ photoFolderCorrections.clear();for(const [photoIndex,entries] of clean)photoFolderCorrections.set(photoIndex,entries);
  let cancelledOldNames=0;
  for(const key of [...verifiedFolderNames.keys()]){
   if(!validFolderKeys.has(key)){verifiedFolderNames.delete(key);cancelledOldNames++;}
  }
- const namedModel=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
+ const namedModel=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices,photoFolderCorrections);
  const validChildren=new Map(
   roster.filter(k=>k&&k.id!=null&&String(k.id).trim()&&String(k.name||'').trim())
    .map(k=>[String(k.id),String(k.name).trim()])
@@ -1544,15 +1549,16 @@ function renderVerifiedPhotoFolders(){
   card.append(faces);
   const subtitle=document.createElement('div');
   subtitle.className='muted';
-  const galleryCount=new Set([
-   ...bucket.photos,
-   ...[...manualPhotoFolderChoices].filter(([,keys])=>keys.has(key)).map(([index])=>index)
-  ]).size;
+  const galleryCount=correctedPhotoIndexes(bucket.photos,
+   [...manualPhotoFolderChoices].filter(([,keys])=>keys.has(key)).map(([index])=>index),
+   photoFolderCorrections,key).photoIndexes.length;
   subtitle.dataset.folderPhotoCount=key;
   subtitle.textContent='この園児が写る写真（'+galleryCount+'枚・仮）';
   card.append(subtitle);
   const photoList=document.createElement('div');
-  for(const photoIndex of bucket.photos){
+  for(const photoIndex of correctedPhotoIndexes(bucket.photos,
+   [...manualPhotoFolderChoices].filter(([,keys])=>keys.has(key)).map(([index])=>index),
+   photoFolderCorrections,key).photoIndexes){
    const chip=document.createElement('span');chip.className='folder-photo-chip';
    chip.textContent='写真'+(photoIndex+1);
    photoList.append(chip);
@@ -2549,6 +2555,7 @@ function assembleFaceDraftRecord(){
    newManualPhotoFolders:[...newManualPhotoFolders].map(([key,entry])=>[key,{name:entry.name}]),
    manualFolderSequence,
    manualPhotoFolderChoices:[...manualPhotoFolderChoices].map(([index,keys])=>[index,[...keys]]),
+   photoFolderCorrections:photoFolderCorrectionsAsRows(photoFolderCorrections),
    manualPhotoAssignments:[...manualPhotoAssignments].map(([index,names])=>[index,[...names]]),
    excludedFacePairs:[...excludedFacePairs],
    r50Compared,
@@ -2618,6 +2625,7 @@ function applyFaceDraftRestore(staged){
  replaceMap(newManualPhotoFolders,data.newManualPhotoFolders.map(([key,entry])=>[key,{...entry}]));
  manualFolderSequence=Number.isInteger(data.manualFolderSequence)?data.manualFolderSequence:0;
  replaceMap(manualPhotoFolderChoices,data.manualPhotoFolderChoices.map(([index,keys])=>[index,new Set(keys)]));
+ replaceMap(photoFolderCorrections,(data.photoFolderCorrections||[]).map(([index,entries])=>[index,new Map(entries)]));
  replaceMap(manualPhotoAssignments,data.manualPhotoAssignments.map(([index,names])=>[index,new Set(names)]));
  excludedFacePairs.clear();
  for(const key of data.excludedFacePairs)excludedFacePairs.add(key);
@@ -2749,7 +2757,7 @@ start.addEventListener('click',async()=>{
  persistedPhotoDraftSignature='';
  clearProvisionalFinalization('📷 新しい写真を解析します。以前の仮確定は取り消しました。');
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();verifiedFolderNames.clear();excludedVerifiedFolders.clear();newManualPhotoFolders.clear();manualFolderSequence=0;folderManagementNotice='';folderNameStatus='';const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();photoFolderCorrections.clear();verifiedFolderNames.clear();excludedVerifiedFolders.clear();newManualPhotoFolders.clear();manualFolderSequence=0;folderManagementNotice='';folderNameStatus='';const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,alternateRecognition:0,alternateFaces:0,faces:0,group:0};const startedAt=performance.now();
  try{
