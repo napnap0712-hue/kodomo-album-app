@@ -431,9 +431,24 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
  canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
  const detectionStart=performance.now();
- const faces=(await human.detect(canvas)).face||[];
+ let faces=(await human.detect(canvas)).face||[];
+ // Retry once at original resolution when downscaling hides small faces.
+ // Only runs for a photo where the first pass found no faces.
+ if(!faces.length&&scale<1){
+  const retryCanvas=document.createElement('canvas');
+  retryCanvas.width=bitmap.width;retryCanvas.height=bitmap.height;
+  retryCanvas.getContext('2d').drawImage(bitmap,0,0);
+  const retryFaces=(await human.detect(retryCanvas)).face||[];
+  if(retryFaces.length){
+   canvas.width=retryCanvas.width;canvas.height=retryCanvas.height;
+   canvas.getContext('2d').drawImage(retryCanvas,0,0);
+   faces=retryFaces;
+   if(diagnostics.length<5)diagnostics.push('縮小画像で顔が見つからず、元画質で再検出しました');
+  }
+  retryCanvas.width=0;retryCanvas.height=0;
+ }
  phaseTimings.detection+=performance.now()-detectionStart;
- if(!faces.length)throw Error('顔を検出できません');
+ if(!faces.length)throw Error('顔を検出できません（元画質でも再確認済み）');
  const results=[];
  for(const face of faces){
  try{
