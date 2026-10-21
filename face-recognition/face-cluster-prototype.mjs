@@ -407,6 +407,7 @@ function renderFaceEvaluation(){
  const gallery=$('faceEvaluationGallery'),choice=$('faceEvaluationChoice'),results=$('faceEvaluationResults');
  if(!gallery||!choice||!results)return;
  gallery.replaceChildren();choice.replaceChildren();results.replaceChildren();
+ const report=$('faceEvaluationReport');if(report)report.value='';
  const current=currentFaceGroupIndex();
  if(!items.length){
   results.textContent='写真を解析すると顔の一覧が表示されます。';
@@ -424,6 +425,21 @@ function renderFaceEvaluation(){
  },0);
  summary.textContent='先生の確認 '+feedback.length+'組 ／ 初回AIの不一致 '+errorCounts(baselineSame)+'組 → 現在の不一致 '+errorCounts(currentSame)+'組 ／ 同じ写真の別顔の混在 '+conflicts+'組';
  results.append(summary);
+ if(report){
+  const currentCount=groups.filter(g=>g.id!=='unknown'&&g.members.length).length;
+  report.value=[
+   '【顔グループ検証】写真や園児名は含みません',
+   '写真数 '+photoNames.length+' / 検出顔 '+items.length,
+   'AI初回グループ '+(initialGroupCount??'未取得')+' / 現在 '+currentCount,
+   '先生が確認した顔の組 '+feedback.length,
+   '初回の誤判定 '+errorCounts(baselineSame)+' / 現在の誤判定 '+errorCounts(currentSame),
+   '同じ写真の別顔の混在 '+conflicts,
+   ...feedback.map(pair=>{
+    const score=pairScore(pair.i,pair.j);
+    return '顔'+(pair.i+1)+'(写真'+(items[pair.i].sourcePhoto+1)+') ↔ 顔'+(pair.j+1)+'(写真'+(items[pair.j].sourcePhoto+1)+')：'+(pair.same?'同じ園児':'違う園児')+' / 値 '+(Number.isFinite(score)?score.toFixed(4):'不明')+' / AI初回 '+(baselineSame(pair.i,pair.j)?'同':'別')+' / 現在 '+(currentSame(pair.i,pair.j)?'同':'別');
+   })
+  ].join('\\n');
+ }
  const sameScores=feedback.filter(p=>p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
  const differentScores=feedback.filter(p=>!p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
  if(sameScores.length||differentScores.length){
