@@ -148,6 +148,7 @@ $('useVerifiedFolderManualNames')?.addEventListener('click',()=>{
  roster=unique.map((name,index)=>({id:'preview-'+classSelect.value+'-'+index,name}));
  reconcileVerifiedRoster();
  if(status)status.textContent='✅ 一時名簿 '+unique.length+'名を使用中。保存・送信はしません。';
+ const editorStatus=$('rosterStatus');if(editorStatus)editorStatus.textContent='画面内の一時名簿 '+unique.length+'名を使用中（登録済み名簿は未変更）';
  renderFaceEvaluation();
 });
 
