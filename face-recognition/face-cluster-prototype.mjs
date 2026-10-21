@@ -585,6 +585,12 @@ function renderFaceEvaluation(){
     return '顔'+(pair.i+1)+'(写真'+(items[pair.i].sourcePhoto+1)+') ↔ 顔'+(pair.j+1)+'(写真'+(items[pair.j].sourcePhoto+1)+')：'+(pair.same?'同じ園児':'違う園児')+' / 値 '+(Number.isFinite(score)?score.toFixed(4):'不明')+' / AI初回 '+(baselineSame(pair.i,pair.j)?'同':'別')+' / 現在 '+(currentSame(pair.i,pair.j)?'同':'別');
    })
   ].join('\n');
+  if(alternativeGrouping){
+   const simulated=new Map();
+   for(const g of alternativeGrouping)for(const id of g.members)simulated.set(id,g.id);
+   const wrong=feedback.filter(p=>(simulated.get(p.i)===simulated.get(p.j))!==p.same).length;
+   report.value+='\n別方式の試算 '+alternativeGrouping.length+'グループ / 確認済みとの不一致 '+wrong+'組';
+  }
  }
  const sameScores=feedback.filter(p=>p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
  const differentScores=feedback.filter(p=>!p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
