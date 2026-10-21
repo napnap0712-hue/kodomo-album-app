@@ -52,6 +52,13 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .folder-photo-preview{display:inline-flex;flex-direction:column;align-items:center;gap:3px;margin:2px 0;width:78px}
 .folder-photo-preview img{width:74px;height:62px;border-radius:8px;object-fit:cover;display:block;border:1px solid #d9e5ef}
 .folder-photo-preview span{font-size:.73rem;color:#64758a;text-align:center}
+/* In the sorting step, inspect the WHOLE original photo without opening a second review. */
+.verified-folder-card .folder-photo-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,130px),1fr));gap:10px;margin:10px 0 4px}
+.verified-folder-card .folder-photo-preview{width:100%;min-width:0;margin:0;display:flex;flex-direction:column;align-items:stretch}
+.verified-folder-card .folder-photo-preview .photo-review-button{display:block;width:100%;border-radius:10px}
+.verified-folder-card .folder-photo-preview img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:contain;background:#edf2f7;border:1px solid #d9e5ef;border-radius:9px}
+.verified-folder-card .folder-photo-preview span{display:block;overflow-wrap:anywhere}
+.verified-folder-card .folder-photo-gallery-note{font-size:.79rem;line-height:1.5;color:#586b80;margin:6px 0 2px}
 
 .photo-missing-review{padding:12px 0;border-top:1px solid #e4eaf2}
 .photo-missing-review:first-child{border-top:0}
@@ -108,7 +115,7 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .photo-review-button img{width:100%}
 .final-audit-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:9px;margin:10px 0}
 .final-audit-photo{margin:0;min-width:0}
-.final-audit-photo img{display:block;width:100%;aspect-ratio:1.15;object-fit:cover;border:1px solid #dae4ee;border-radius:9px}
+.final-audit-photo img{display:block;width:100%;aspect-ratio:1.15;object-fit:contain;background:#edf2f7;border:1px solid #dae4ee;border-radius:9px}
 .final-audit-photo figcaption{font-size:.76rem;color:#52637a;overflow-wrap:anywhere;margin-top:4px}
 
 .provisional-final-box{border:1px solid #cfdfef;background:#f7fbff;border-radius:14px;padding:16px;margin-top:18px}
@@ -178,7 +185,7 @@ label{display:inline-block;margin:5px 0}
 <p id="quickReviewSummary" aria-live="polite">先に写真を解析してください。</p>
 <details class="advanced" id="verifiedPhotoFoldersPanel" hidden>
  <summary id="verifiedPhotoFoldersHeading">🗂 先生の確認から写真を整理（間違いも訂正できる）</summary>
- <p class="muted">これは先生の確認記録から作った仮フォルダです。<strong>職員・保護者など園児以外の顔があれば、各フォルダの「🗑 園児以外の顔フォルダを除外」を押してね。</strong> 除外したフォルダは園児の候補から消え、「除外済み」から元に戻せます。元写真やアルバムは削除しません。</p>
+ <p class="muted">顔のアップは<strong>園児本人の確認用</strong>です。その下に<strong>元写真全体を最初から表示</strong>します。写真をタップすると拡大して、1枚だけ別の園児へ移動・解除できます。<strong>職員・保護者など園児以外の顔があれば、「🗑 園児以外の顔フォルダを除外」を使ってね。</strong> 元写真やアルバムは削除しません。</p>
  <p class="muted"><strong>違う園児が混ざっていたら：</strong>「🔎 違う園児が混ざっている？」を開き、誤って「同じ園児」と判断した組を訂正できます。<strong>園児以外の顔だけがまとまったフォルダなら、上の除外機能を使ってね。</strong></p>
  <p id="verifiedPhotoFoldersStatus" class="muted"></p>
  <p id="folderManagementNotice" class="muted" role="status" aria-live="polite" hidden></p>
@@ -361,7 +368,7 @@ label{display:inline-block;margin:5px 0}
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-photo-edit"></script>
-<div id="build-marker">かんたん検証 2026-10-22 AN</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-fullphoto-folder"></script>
+<div id="build-marker">かんたん検証 2026-10-22 AO</div>
 </body>
 </html>
