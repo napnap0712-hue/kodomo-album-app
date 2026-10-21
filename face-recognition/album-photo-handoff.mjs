@@ -40,7 +40,8 @@ export function buildAlbumPhotoHandoff(candidate,{roster=[],rosterClass='',photo
   const manuallyAdded=ints(child.manuallyAdded,photoCount,'手動の振り分け');
   if(manuallyAdded.some(n=>!indexes.includes(n)))throw Error('手動振り分けの写真が園児別写真にありません。');
   if(!indexes.length)throw Error('写真がない園児フォルダが含まれています。');
-  const entry={id,name,photoIndexes:indexes,manuallyAdded};
+  const entry={id,name,photoIndexes:indexes,manuallyAdded,
+   folderKeys:Array.isArray(child.folderKeys)?[...child.folderKeys]:[]};
   children.push(entry);
   for(const index of indexes){
    if(!linked.has(index))linked.set(index,new Set());
