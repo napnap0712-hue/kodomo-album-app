@@ -635,6 +635,15 @@ start.addEventListener('click',async()=>{
    }
   }
 
+  // The same-photo cannot-link constraint must also survive secondary merges.
+  // Keep the current result intact; the audit only reports any violations.
+  const photoConflicts=groups.slice(1).reduce((count,g)=>{
+   const photos=g.members.map(id=>items[id].sourcePhoto);
+   return count+photos.length-new Set(photos).size;
+  },0);
+  if(photoConflicts){
+   console.warn('Face grouping same-photo conflict audit:',photoConflicts);
+  }
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
   const perfReport='\n⚙️ 実行方式：'+executionProvider+'\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
