@@ -1372,7 +1372,7 @@ start.addEventListener('click',async()=>{
   if(diagnosticMount)diagnosticMount.replaceChildren(diagnostic);
   else groupsHost.closest('section').after(diagnostic);
   render();
- }catch(e){status.textContent='⚠️ 解析できません【検証版L】: '+String(e?.message||e).slice(0,220)+'\n詳細: '+String(e?.stack||'スタック情報なし').slice(0,700);console.error('Face analysis diagnostic C',e)}
+ }catch(e){status.textContent='⚠️ 解析できません【かんたん検証T】: '+String(e?.message||e).slice(0,220)+'\n詳細: '+String(e?.stack||'スタック情報なし').slice(0,700);console.error('Face analysis diagnostic C',e)}
  finally{try{await session?.release()}catch{}try{await human?.dispose?.()}catch{}start.disabled=false;cancel.disabled=true}
 });
 window.addEventListener('pagehide',()=>urls.forEach(URL.revokeObjectURL));
