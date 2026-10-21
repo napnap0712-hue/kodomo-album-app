@@ -488,7 +488,7 @@ function validateFaceReportAndImport(){
  if(!lines.length)return fail('確認済みの顔の組が見つかりません。');
  const imported=new Map(),manual=[];
  for(const line of lines){
-  const match=line.match(/^顔(\d+)\(写真(\d+)\)\s*↔\s*顔(\d+)\(写真(\d+)\)：(同じ園児|違う園児)\s*\/\s*値\s+(-?\d+(?:\.\d+)?)/);
+  const match=line.trim().match(/^顔(\d+)\(写真(\d+)\)\s*↔\s*顔(\d+)\(写真(\d+)\)：(同じ園児|違う園児)\s*\/\s*値\s+(-?\d+(?:\.\d+)?)/);
   if(!match)return fail('読めない行があります。検証テキストを省略せずに貼り付けてください。');
   const photoA=+match[2]-1,photoB=+match[4]-1,oldLeft=+match[1],oldRight=+match[3],same=match[5]==='同じ園児',oldScore=+match[6];
   if(photoA<0||photoB<0||photoA>=photoNames.length||photoB>=photoNames.length||!Number.isFinite(oldScore))
@@ -627,12 +627,13 @@ function renderSimulationResult(){
  const labels=[...verifiedFacePairs.values()];
  const wrong=labels.filter(p=>(lookup.get(p.i)===lookup.get(p.j))!==p.same);
  const positives=labels.filter(p=>p.same).length,negatives=labels.length-positives;
+ const validation=labels.length?'不一致 '+wrong.length+'組':'不一致 未評価（確認済み0組）';
  const samePhoto=alternativeGrouping.some(g=>{
   const photos=g.members.map(i=>items[i].sourcePhoto);
   return new Set(photos).size!==photos.length;
  });
- result.textContent='📊 別方式の試算：'+alternativeGrouping.length+'グループ ／ 先生の確認'+labels.length+'組中、不一致 '+wrong.length+'組（同じ園児 '+positives+'組・違う園児 '+negatives+'組） ／ 同じ写真の別顔混在 '+(samePhoto?'あり':'なし')+
-  (negatives===0?'。⚠️ 「違う園児」の確認がないため、誤統合の安全性は判定できません。':'。まだ検証済みの組み合わせだけの参考値です。')+
+ result.textContent='📊 別方式の試算：'+alternativeGrouping.length+'グループ ／ 先生の確認'+labels.length+'組・'+validation+'（同じ園児 '+positives+'組・違う園児 '+negatives+'組） ／ 同じ写真の別顔混在 '+(samePhoto?'あり':'なし')+
+  (labels.length===0?'。⚠️ 先生の確認が復元できていないため、精度は未評価です。':negatives===0?'。⚠️ 「違う園児」の確認がないため、誤統合の安全性は判定できません。':'。まだ検証済みの組み合わせだけの参考値です。')+
   ' 現在のグループには反映していません。';
 }
 $('importFaceEvaluation')?.addEventListener('click',validateFaceReportAndImport);
