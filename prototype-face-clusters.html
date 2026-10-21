@@ -61,6 +61,7 @@ label{display:inline-block;margin:5px 0}
 <select id="recognitionModel" hidden aria-label="顔認識モデル"><option value="buffalo_s" selected>ArcFace buffalo_s（軽量）</option></select>
 <label>判定の厳しさ <input id="threshold" type="range" min="0.45" max="0.90" value="0.65" step="0.01"> <output id="thresholdValue">0.65</output></label>
 <label><input type="checkbox" id="flipAugment"> 左右反転も比較（実験）</label>
+<label style="display:block"><input type="checkbox" id="compareEyelidAlignment" checked> 目の位置の補正を2方式で比較（Mac検証・認識時間が約2倍）</label>
 </details>
 <input type="file" id="lightweightOnnxFile" accept=".onnx" hidden>
 <input type="file" id="lightweightDataFile" accept=".data" hidden>
@@ -90,6 +91,7 @@ label{display:inline-block;margin:5px 0}
 <p class="muted">AIの検証用です。園児の名前や実際のアルバムには反映しません。</p>
 <div class="actions"><button type="button" id="applyVerifiedGroups">確認した顔だけ仮統合</button><button type="button" id="undoVerifiedGroups" class="secondary" disabled>仮統合を戻す</button></div>
 </details>
+<details class="advanced"><summary>顔の位置合わせを比較（実験）</summary><p class="muted">同じ写真を2通りに整えてAIに入力し、先生が確認した顔について比較値の変化を調べます。実際のグループ分けには反映しません。</p><div id="eyelidComparison"></div></details>
 <details class="advanced"><summary>5方式の比較（詳しく調べるとき）</summary>
 <button type="button" id="simulateFaceGrouping" class="secondary">5方式を比較</button>
 <div id="faceSimulationResult" class="muted" role="status"></div>
