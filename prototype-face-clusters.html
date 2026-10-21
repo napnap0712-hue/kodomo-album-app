@@ -37,6 +37,17 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .verified-folder-card{background:#fff}
 .verified-folder-card .faces{margin:8px 0}
 .verified-folder-card .muted{font-size:.8rem}
+.folder-review-links{margin:9px 0 1px;padding:9px;border:1px solid #dce6f0;background:#f7fafd;border-radius:10px}
+.folder-review-links summary{cursor:pointer;font-size:.82rem;font-weight:750;color:#315e98}
+.folder-review-row{border-top:1px solid #dce5f0;padding:9px 0}
+.folder-review-row:first-of-type{border-top:0}
+.folder-review-faces{display:flex;gap:12px;flex-wrap:wrap;margin:7px 0}
+.folder-review-faces img{width:66px;height:66px;object-fit:cover;border-radius:9px}
+.folder-review-faces figure{margin:0;text-align:center}
+.folder-review-faces figcaption{font-size:.73rem;color:#607086}
+.folder-review-confirm{border:1px solid #d7dfea;border-radius:10px;padding:10px;background:white;margin:8px 0}
+#folderCorrectionNotice{padding:10px 12px;border:1px solid #dbe3f2;border-radius:10px;background:#f8fafe;margin:10px 0}
+
 .teacher-photo{display:inline-flex;flex-direction:column;align-items:center;gap:2px;vertical-align:top;margin:3px}
 .teacher-photo img{width:58px;height:58px;object-fit:cover;border-radius:9px;border:1px solid #dde5ef}
 .teacher-photo span{font-size:.72rem;color:#67758a}
@@ -88,6 +99,8 @@ label{display:inline-block;margin:5px 0}
  <summary id="verifiedPhotoFoldersHeading">🗂 先生の確認から写真を整理（仮プレビュー）</summary>
  <p class="muted">写真は園児ごとに表示します。集合写真は写っている複数の園児に表示されますが、写真を複製・保存するわけではありません。従来のAI仮グループや実際のアルバムは変更しません。</p>
  <p id="verifiedPhotoFoldersStatus" class="muted"></p>
+ <div id="folderCorrectionNotice" class="muted" role="status" aria-live="polite" hidden></div>
+ <div class="actions"><button type="button" id="undoFolderCorrection" class="secondary" hidden>↩ 最後の訂正を戻す</button></div>
  <div id="verifiedPhotoFoldersGrid" class="teacher-groups"></div>
  <p id="verifiedPhotoFoldersWarnings" class="muted" role="status"></p>
 </details>
