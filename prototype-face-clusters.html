@@ -30,6 +30,13 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .compact-input{width:100%;padding:11px;border:1px solid #d8e2ef;border-radius:10px;line-height:1.5}
 .pair-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
 .pair-card{border:1px solid #e0e6f0;border-radius:13px;padding:12px;background:#fff}
+.teacher-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:12px 0}
+.teacher-card{border:1px solid #dee6f1;background:#fafcff;border-radius:12px;padding:12px}
+.teacher-card strong{display:block;font-size:.94rem;margin-bottom:8px}
+.teacher-photo{display:inline-flex;flex-direction:column;align-items:center;gap:2px;vertical-align:top;margin:3px}
+.teacher-photo img{width:58px;height:58px;object-fit:cover;border-radius:9px;border:1px solid #dde5ef}
+.teacher-photo span{font-size:.72rem;color:#67758a}
+.teacher-unassigned{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .pair-card p{margin:5px 0}.pair-faces{display:flex;gap:10px;margin:9px 0}.pair-faces figure{margin:0;text-align:center;min-width:80px}
 .pair-faces img{width:72px;height:72px;object-fit:cover;border-radius:10px;display:block;margin:auto}
 .pair-faces figcaption{font-size:.75rem;color:#67758a}.pair-card .actions button{flex:1;font-size:.85rem;padding:9px 10px}
@@ -73,6 +80,13 @@ label{display:inline-block;margin:5px 0}
 <div class="section-top"><span class="step">STEP 2</span><h2>迷った顔だけ確認</h2></div>
 <p class="muted">候補が正しいとは限りません。「同じ園児」「違う園児」を押すだけで判定を記録します。<strong>園児の名前をAIが推測することはありません。</strong></p>
 <p id="quickReviewSummary" aria-live="polite">先に写真を解析してください。</p>
+<details class="advanced" id="teacherConfirmedDetails" hidden>
+ <summary id="teacherConfirmedHeading">📚 先生が確認した顔のグループ</summary>
+ <p class="muted">同じ園児と確認できた顔だけをまとめて表示します。未分類の顔は勝手にほかの園児と統合しません。</p>
+ <div id="teacherConfirmedGroups" class="teacher-groups"></div>
+ <div id="teacherUnclassifiedFaces"></div>
+ <p id="teacherGroupNote" class="muted"></p>
+</details>
 <div id="restoreHint" class="advanced" hidden>
  <strong>📋 前回の先生の確認を引き継ぐ</strong>
  <p class="muted">今は先生の確認が0組なので、誤判定0組でも精度が良くなったとは判断できません。前回7組を確認したテキストを貼り付けると、その記録を再利用できます。</p>
