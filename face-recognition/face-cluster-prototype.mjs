@@ -1062,6 +1062,25 @@ function renderVerifiedPhotoFolders(){
  const model=buildVerifiedPhotoFolders(
   items.map(item=>item.sourcePhoto),[...verifiedFacePairs.values()]
  );
+ const validFolderKeys=new Set(model.buckets.map(provisionalPhotoFolderKey));
+ let cancelledOldNames=0;
+ for(const key of [...verifiedFolderNames.keys()]){
+  if(!validFolderKeys.has(key)){verifiedFolderNames.delete(key);cancelledOldNames++;}
+ }
+ const namedModel=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
+ const validChildren=new Map(
+  roster.filter(k=>k&&k.id!=null&&String(k.id).trim()&&String(k.name||'').trim())
+   .map(k=>[String(k.id),String(k.name).trim()])
+ );
+ for(const error of [...namedModel.invalid,...namedModel.duplicates]){
+  verifiedFolderNames.delete(error.key);
+ }
+ const namedCount=[...verifiedFolderNames.values()].filter(id=>validChildren.has(String(id))).length;
+ const rosterStatus=$('verifiedFolderRosterStatus');
+ if(rosterStatus&&roster.length){
+  rosterStatus.textContent='✅ '+roster.length+'名の名簿を参照中 ／ 園児名の仮指定 '+namedCount+'/'+model.buckets.length+'フォルダ。'+
+   (cancelledOldNames?' ⚠️ グループ変更のため、以前の名前の仮指定を'+cancelledOldNames+'件解除しました。もう一度選んでね。':'');
+ }
  const confirmed=model.buckets.filter(b=>b.kind==='confirmed').length;
  const independent=model.buckets.filter(b=>b.kind==='individual'&&b.independentlyDistinct).length;
  const unresolved=model.singletonCount-independent;
@@ -1074,6 +1093,43 @@ function renderVerifiedPhotoFolders(){
  model.buckets.forEach((bucket,index)=>{
   const card=document.createElement('article');
   card.className='teacher-card verified-folder-card';
+  const key=provisionalPhotoFolderKey(bucket);
+  const chosenChildId=verifiedFolderNames.get(key)||'';
+  const child=validChildren.has(String(chosenChildId))?validChildren.get(String(chosenChildId)):null;
+  if(child){
+   const banner=document.createElement('div');banner.className='named-folder-header';
+   banner.textContent='🌷 '+child+'さんの仮フォルダ';
+   card.append(banner);
+  }
+  const naming=document.createElement('div');naming.className='folder-child-picker';
+  const caption=document.createElement('span');caption.textContent='この顔の園児：';
+  const picker=document.createElement('select');picker.setAttribute('aria-label','仮フォルダ'+(index+1)+'の園児名');
+  const blank=document.createElement('option');blank.value='';blank.textContent='園児名を選ぶ（未設定）';picker.append(blank);
+  for(const [id,name] of validChildren){
+   const option=document.createElement('option');option.value=id;option.textContent=name;
+   picker.append(option);
+  }
+  picker.value=String(chosenChildId);
+  if(!roster.length){
+   picker.disabled=true;
+   const option=document.createElement('option');
+   option.value='';option.textContent='先に園児名簿を読み込んでね';
+   picker.replaceChildren(option);
+  }
+  picker.addEventListener('change',()=>{
+   const newId=picker.value;
+   const otherKey=[...verifiedFolderNames].find(([k,id])=>k!==key&&id===newId);
+   if(newId&&otherKey){
+    picker.value=String(chosenChildId);
+    const notice=$('verifiedFolderRosterStatus');
+    if(notice)notice.textContent='⚠️ この園児は別の仮フォルダに設定されています。先にそちらの名前を「未設定」に戻してね。';
+    return;
+   }
+   if(newId)verifiedFolderNames.set(key,newId);
+   else verifiedFolderNames.delete(key);
+   renderFaceEvaluation();
+  });
+  naming.append(caption,picker);card.append(naming);
   const heading=document.createElement('strong');
   heading.textContent='仮フォルダ '+String(index+1).padStart(2,'0')+' ／ '+
    (bucket.kind==='confirmed'?'「同じ園児」記録で構成（顔'+bucket.members.length+'件・要目視確認）':
@@ -1090,7 +1146,11 @@ function renderVerifiedPhotoFolders(){
   card.append(faces);
   const subtitle=document.createElement('div');
   subtitle.className='muted';
-  subtitle.textContent='この園児が写る写真（'+bucket.photos.length+'枚）';
+  const galleryCount=new Set([
+   ...bucket.photos,
+   ...[...manualPhotoFolderChoices].filter(([,keys])=>keys.has(key)).map(([index])=>index)
+  ]).size;
+  subtitle.textContent='この園児が写る写真（'+galleryCount+'枚・仮）';
   card.append(subtitle);
   const photoList=document.createElement('div');
   for(const photoIndex of bucket.photos){
@@ -1099,8 +1159,17 @@ function renderVerifiedPhotoFolders(){
    photoList.append(chip);
    countPerOriginalPhoto.set(photoIndex,(countPerOriginalPhoto.get(photoIndex)||0)+1);
   }
-  photoList.dataset.verifiedPhotoFolder=provisionalPhotoFolderKey(bucket);
+  photoList.dataset.verifiedPhotoFolder=key;
   card.append(photoList);
+  const photoGallery=document.createElement('details');
+  photoGallery.className='advanced';
+  photoGallery.style.margin='8px 0';
+  const galleryHeading=document.createElement('summary');
+  galleryHeading.textContent='📷 写真をサムネイルで見る（'+galleryCount+'枚）';
+  const photoGrid=document.createElement('div');
+  photoGrid.className='folder-photo-gallery';
+  photoGrid.dataset.folderPhotoGallery=key;
+  photoGallery.append(galleryHeading,photoGrid);card.append(photoGallery);
   if(bucket.kind==='confirmed'){
    const positive=[...verifiedFacePairs.values()].filter(pair=>
     pair.same&&bucket.members.includes(pair.i)&&bucket.members.includes(pair.j));
@@ -1158,6 +1227,8 @@ function renderVerifiedPhotoFolders(){
     ' / 写真'+bucket.photos.map(index=>index+1).join('・');
   }
   if(withoutFaces.length)report.value+='\n顔未検出：写真'+withoutFaces.map(i=>i+1).join('・');
+  report.value+='\n【園児名との仮紐づけ】'+namedCount+'/'+model.buckets.length+
+   'フォルダ（園児名・園児IDは検証結果に含めません）';
  }
 }
 
