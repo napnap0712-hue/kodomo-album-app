@@ -401,6 +401,9 @@ function installDrag(img,id){
 }
 // In-memory manual photo links; never writes to albums or photo storage.
 const manualPhotoAssignments=new Map();
+// Preview-only: missing-face photo index -> stable, face-based folder keys.
+// This never writes to the album and intentionally does not use folder numbers.
+const manualPhotoFolderChoices=new Map();
 function renderManualPhotos(){
  const host=$('manualPhotoAssignments');if(!host)return;
  host.replaceChildren();
@@ -849,6 +852,120 @@ function renderSamePairCorrection(host,pair){
  row.append(confirmation);host.append(row);
 }
 
+// Folder IDs (01,02...) can change when a teacher fixes a mistaken pair.
+// Use confirmed face composition as the temporary identifier instead.
+function provisionalPhotoFolderKey(bucket){
+ return [...bucket.members].sort((a,b)=>a-b).join(':');
+}
+const missingPhotoReportHeader='\n【顔未検出写真の手動仮指定】';
+function updateMissingPhotoReport(){
+ const report=$('faceEvaluationReport');
+ if(!report?.value)return;
+ const pos=report.value.indexOf(missingPhotoReportHeader);
+ if(pos!==-1)report.value=report.value.slice(0,pos);
+ const detected=new Set(items.map(item=>item.sourcePhoto));
+ const missing=photoNames.map((_,i)=>i).filter(index=>!detected.has(index));
+ if(!missing.length)return;
+ const model=buildVerifiedPhotoFolders(
+  items.map(item=>item.sourcePhoto),[...verifiedFacePairs.values()]
+ );
+ const names=new Map(model.buckets.map((bucket,index)=>[
+  provisionalPhotoFolderKey(bucket),'仮フォルダ'+String(index+1).padStart(2,'0')
+ ]));
+ report.value+=missingPhotoReportHeader;
+ for(const photoIndex of missing){
+  const chosen=[...(manualPhotoFolderChoices.get(photoIndex)||[])].map(key=>names.get(key)).filter(Boolean);
+  report.value+='\n写真'+(photoIndex+1)+'：'+(chosen.length?chosen.join('・'):'未指定（保留）');
+ }
+}
+function refreshMissingPhotoPreview(model,missing){
+ const section=$('missingFacePhotoPicker');
+ const status=$('missingFacePhotoPickerStatus');
+ const grid=$('verifiedPhotoFoldersGrid');
+ const validKeys=new Set(model.buckets.map(provisionalPhotoFolderKey));
+ // If a verified folder was split, do not silently assign a previously
+ // unchecked source photo to a changed or different child's folder.
+ let invalidated=0;
+ for(const [photoIndex,keys] of manualPhotoFolderChoices){
+  if(!missing.includes(photoIndex)){manualPhotoFolderChoices.delete(photoIndex);continue;}
+  for(const key of [...keys]){
+   if(!validKeys.has(key)){keys.delete(key);invalidated++;}
+  }
+  if(!keys.size)manualPhotoFolderChoices.delete(photoIndex);
+ }
+ if(status){
+  const assigned=missing.filter(i=>manualPhotoFolderChoices.get(i)?.size).length;
+  status.textContent='手動仮指定：'+assigned+'/'+missing.length+'枚。'+
+   (invalidated?'⚠️ フォルダ構成が変わったため、以前の指定を'+invalidated+'件解除しました。もう一度確認してください。':'')+
+   ' 端末内の仮プレビューだけに反映されます。';
+ }
+ if(grid){
+  for(const list of grid.querySelectorAll('[data-verified-photo-folder]')){
+   list.querySelectorAll('.manual-photo-chip').forEach(node=>node.remove());
+   const key=list.dataset.verifiedPhotoFolder;
+   for(const photoIndex of missing){
+    if(!manualPhotoFolderChoices.get(photoIndex)?.has(key))continue;
+    const chip=document.createElement('span');
+    chip.className='folder-photo-chip manual-photo-chip';
+    chip.textContent='写真'+(photoIndex+1)+'（手動・仮）';
+    list.append(chip);
+   }
+  }
+ }
+ updateMissingPhotoReport();
+}
+function renderMissingPhotoPicker(model,missing){
+ const section=$('missingFacePhotoPicker'),title=$('missingFacePhotoPickerTitle');
+ const body=$('missingFacePhotoPickerBody');
+ if(!section||!title||!body)return;
+ body.replaceChildren();
+ section.hidden=!missing.length;
+ if(!missing.length){
+  manualPhotoFolderChoices.clear();
+  return;
+ }
+ title.textContent='📷 顔が見つからない写真 '+missing.length+'枚を手動で仮振り分け';
+ for(const photoIndex of missing){
+  const card=document.createElement('div');card.className='photo-missing-review';
+  const heading=document.createElement('strong');
+  heading.textContent='写真'+(photoIndex+1)+'（顔が見つかりませんでした）';
+  card.append(heading);
+  const photo=photoUrls[photoIndex]||urls[photoIndex];
+  if(photo){
+   const image=document.createElement('img');
+   image.src=photo;image.alt='写真'+(photoIndex+1)+'の確認用プレビュー';
+   card.append(image);
+  }
+  const hint=document.createElement('p');hint.className='muted';
+  hint.textContent='写っている園児の仮フォルダにチェックしてね。分からない場合は空欄でOK。';
+  card.append(hint);
+  const options=document.createElement('div');options.className='photo-missing-options';
+  for(let i=0;i<model.buckets.length;i++){
+   const bucket=model.buckets[i],key=provisionalPhotoFolderKey(bucket);
+   const label=document.createElement('label');label.className='photo-missing-option';
+   const checkbox=document.createElement('input');
+   checkbox.type='checkbox';
+   checkbox.checked=manualPhotoFolderChoices.get(photoIndex)?.has(key)||false;
+   checkbox.setAttribute('aria-label','写真'+(photoIndex+1)+'を仮フォルダ'+(i+1)+'に仮指定');
+   const face=document.createElement('img');
+   const first=bucket.members[0];
+   face.src=items[first].url;face.alt='仮フォルダ'+(i+1)+'の顔の見本';
+   const name=document.createElement('span');
+   name.textContent='仮フォルダ'+String(i+1).padStart(2,'0')+'（顔'+bucket.members.length+'件）';
+   checkbox.addEventListener('change',()=>{
+    const selected=new Set(manualPhotoFolderChoices.get(photoIndex)||[]);
+    if(checkbox.checked)selected.add(key);else selected.delete(key);
+    if(selected.size)manualPhotoFolderChoices.set(photoIndex,selected);
+    else manualPhotoFolderChoices.delete(photoIndex);
+    refreshMissingPhotoPreview(model,missing);
+   });
+   label.append(checkbox,face,name);options.append(label);
+  }
+  card.append(options);body.append(card);
+ }
+ refreshMissingPhotoPreview(model,missing);
+}
+
 function renderVerifiedPhotoFolders(){
  const panel=$('verifiedPhotoFoldersPanel');
  const title=$('verifiedPhotoFoldersHeading');
@@ -911,6 +1028,7 @@ function renderVerifiedPhotoFolders(){
    photoList.append(chip);
    countPerOriginalPhoto.set(photoIndex,(countPerOriginalPhoto.get(photoIndex)||0)+1);
   }
+  photoList.dataset.verifiedPhotoFolder=provisionalPhotoFolderKey(bucket);
   card.append(photoList);
   if(bucket.kind==='confirmed'){
    const positive=[...verifiedFacePairs.values()].filter(pair=>
@@ -930,6 +1048,7 @@ function renderVerifiedPhotoFolders(){
   }
   container.append(card);
  });
+ renderMissingPhotoPicker(model,withoutFaces);
  const sharedPhotos=[...countPerOriginalPhoto].filter(([,count])=>count>1).map(([index])=>index+1);
  const issues=[];
  if(!model.allFacesCovered)issues.push('顔の件数が一致しません。全写真を確認してください。');
@@ -1435,6 +1554,7 @@ function renderFaceEvaluation(){
   renderQuickReview();
   renderEyelidComparison();
   renderR50Comparison();
+  updateMissingPhotoReport();
   return;
  }
  const summary=document.createElement('p');
@@ -1554,6 +1674,7 @@ function renderFaceEvaluation(){
  renderQuickReview();
  renderEyelidComparison();
  renderR50Comparison();
+ updateMissingPhotoReport();
 }
 
 function render(){
@@ -1811,7 +1932,7 @@ start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,alternateRecognition:0,alternateFaces:0,faces:0,group:0};const startedAt=performance.now();
  try{
