@@ -1121,7 +1121,7 @@ function renderMissingPhotoPicker(model,missing){
   const creator=document.createElement('div');creator.className='photo-folder-creator';
   const label=document.createElement('strong');label.textContent='② 新規フォルダに分ける';
   const note=document.createElement('p');note.className='muted';
-  note.textContent='既存にない園児なら新しい仮フォルダを作り、この写真を追加します。あとで園児名を選べます。';
+  note.textContent='既存にない園児なら新しい仮フォルダを作って、この写真を追加します。あとから園児名を付けられます。既存のチェックは自動で外さないので、不要な指定は手動で外してね。';
   const input=document.createElement('input');input.type='text';
   input.maxLength=40;input.placeholder='仮のフォルダ名（任意）';
   input.setAttribute('aria-label','写真'+(photoIndex+1)+'の新しいフォルダ名');
@@ -1462,7 +1462,7 @@ function renderQuickReview(){
  if(!summary||!host)return;
  host.replaceChildren();
  if(!items.length){
-  summary.textContent='先に写真を解析してください。';
+  summary.textContent=photoNames.length?'顔を検出できませんでした。下の「写真を整理」から手動で新規フォルダを作れます。':'先に写真を解析してください。';
   const restoreHint=$('restoreHint');if(restoreHint)restoreHint.hidden=true;
   return;
  }
