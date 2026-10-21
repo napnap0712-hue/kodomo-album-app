@@ -4,11 +4,11 @@ import {buildVerifiedPhotoFolders} from './teacher-verified-folders.mjs?v=202610
 import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.mjs?v=20261022-photo-edit';
 import {transferPhotoFolderCorrection,trimPhotoFolderCorrections,photoFolderCorrectionsAsRows,correctedPhotoIndexes} from './photo-folder-corrections.mjs?v=20261022-photo-edit';
 import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-folder-visibility.mjs?v=20261021x1';
-import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261021save-ai';
+import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261022-an';
 import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
 import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs?v=20261022-ak';
 import {bindProvisionalApprovalUi} from './provisional-approval-ui.mjs?v=20261022-al';
-import {bindAlbumPhotoHandoffUi} from './album-photo-handoff-ui.mjs?v=20261022-am';
+import {bindAlbumPhotoHandoffUi} from './album-photo-handoff-ui.mjs?v=20261022-an';
 import {bindPhotoOriginalReviewUi} from './photo-original-review-ui.mjs?v=20261022-an';
 // Standalone research prototype. Writes ONLY to its isolated IndexedDB when the user explicitly chooses Save; never alters production album storage.
 const $=id=>document.getElementById(id);
@@ -1022,7 +1022,9 @@ function refreshMissingPhotoPreview(model,missing){
   if(!keys.size)manualPhotoFolderChoices.delete(photoIndex);
  }
  if(status){
-  const assigned=missing.filter(i=>manualPhotoFolderChoices.get(i)?.size).length;
+  const currentLinks=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,
+  manualPhotoFolderChoices,photoFolderCorrections).named;
+ const assigned=missing.filter(i=>currentLinks.some(row=>row.photoIndexes.includes(i))).length;
   status.textContent='手動仮指定：'+assigned+'/'+missing.length+'枚。'+
    (invalidated?'⚠️ フォルダ構成が変わったため、以前の指定を'+invalidated+'件解除しました。もう一度確認してください。':'')+
    ' 端末内の仮プレビューだけに反映されます。';
@@ -1032,7 +1034,8 @@ function refreshMissingPhotoPreview(model,missing){
    list.querySelectorAll('.manual-photo-chip').forEach(node=>node.remove());
    const key=list.dataset.verifiedPhotoFolder;
    for(const photoIndex of missing){
-    if(!manualPhotoFolderChoices.get(photoIndex)?.has(key))continue;
+    if(!manualPhotoFolderChoices.get(photoIndex)?.has(key)||
+       photoFolderCorrections.get(photoIndex)?.get(key)===false)continue;
     const chip=document.createElement('span');
     chip.className='folder-photo-chip manual-photo-chip';
     chip.textContent='写真'+(photoIndex+1)+'（手動・仮）';
@@ -1100,7 +1103,9 @@ function renderMissingPhotoPicker(model,missing){
    const label=document.createElement('label');label.className='photo-missing-option';
    const checkbox=document.createElement('input');
    checkbox.type='checkbox';
-   checkbox.checked=manualPhotoFolderChoices.get(photoIndex)?.has(key)||false;
+   const overridden=photoFolderCorrections.get(photoIndex)?.get(key);
+   checkbox.checked=overridden===undefined?
+    (manualPhotoFolderChoices.get(photoIndex)?.has(key)||false):overridden;
    checkbox.setAttribute('aria-label','写真'+(photoIndex+1)+'を仮フォルダ'+(i+1)+'に仮指定');
    const first=bucket.members[0];
    let face;
@@ -1121,6 +1126,9 @@ function renderMissingPhotoPicker(model,missing){
     if(checkbox.checked)selected.add(key);else selected.delete(key);
     if(selected.size)manualPhotoFolderChoices.set(photoIndex,selected);
     else manualPhotoFolderChoices.delete(photoIndex);
+    // Direct teacher toggle in the older picker now overrides the modal correction.
+    const edits=photoFolderCorrections.get(photoIndex);
+    if(edits){edits.delete(key);if(!edits.size)photoFolderCorrections.delete(photoIndex);}
     refreshMissingPhotoPreview(model,missing);
    });
    label.append(checkbox,face,name);options.append(label);
@@ -2649,6 +2657,7 @@ function prepareFaceDraftRestore(record){
 }
 function applyFaceDraftRestore(staged){
  const data=staged.data;
+ lastPhotoCorrectionUndo=null;
  clearProvisionalFinalization('📂 保存済み作業を復元しました。仮確定は改めて先生が確認してね。');
  // All restoration checks and source photo URLs have been prepared above.
  // Mutate the currently open prototype only after those succeed.
@@ -2828,6 +2837,7 @@ start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  analyzedSourceFiles=[];analysisFinished=false;
+ lastPhotoCorrectionUndo=null;
  persistedPhotoDraftSignature='';
  clearProvisionalFinalization('📷 新しい写真を解析します。以前の仮確定は取り消しました。');
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
