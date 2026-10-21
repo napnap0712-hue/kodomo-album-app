@@ -1104,6 +1104,41 @@ function renderMissingPhotoPicker(model,missing){
  refreshMissingPhotoPreview(model,missing);
 }
 
+// Non-child folders are only excluded from the current preview.
+// Deleting a photo-only folder removes its temporary references and nothing else.
+function appendFolderDeletionControl(card,bucket,key){
+ const actions=document.createElement('div');actions.className='photo-folder-card-actions';
+ const button=document.createElement('button');button.type='button';button.className='secondary';
+ button.textContent=bucket.kind==='manual'?'🗑 新規フォルダを削除':'🗑 園児以外の顔フォルダを除外';
+ actions.append(button);
+ const confirm=document.createElement('div');confirm.hidden=true;confirm.className='photo-folder-delete-confirm';
+ const explanation=document.createElement('p');explanation.className='muted';
+ explanation.textContent=bucket.kind==='manual'?
+  'この新規フォルダの仮指定を取り消します。元の写真は削除しません。':
+  '職員・保護者など園児以外の場合、園児の候補からこの顔のフォルダを外します。元写真や先生の確認記録は削除されず、除外済みから戻せます。';
+ const approve=document.createElement('button');approve.type='button';
+ approve.textContent=bucket.kind==='manual'?'削除する（写真は残す）':'園児以外として除外する';
+ const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='やめる';
+ button.addEventListener('click',()=>{button.hidden=true;confirm.hidden=false;});
+ cancel.addEventListener('click',()=>{button.hidden=false;confirm.hidden=true;});
+ approve.addEventListener('click',()=>{
+  verifiedFolderNames.delete(key);
+  if(bucket.kind==='manual')newManualPhotoFolders.delete(key);
+  else excludedVerifiedFolders.add(key);
+  for(const [photo,selected] of manualPhotoFolderChoices){
+   if(!selected.has(key))continue;
+   selected.delete(key);
+   if(!selected.size)manualPhotoFolderChoices.delete(photo);
+  }
+  folderManagementNotice=bucket.kind==='manual'?
+   '✅ 写真だけの新規フォルダを削除しました。元写真は変更していません。':
+   '✅ 園児以外の顔フォルダを候補から除外しました。「除外済み」から戻せます。集合写真の元画像は残ります。';
+  renderFaceEvaluation();
+ });
+ const row=document.createElement('div');row.className='actions';row.append(approve,cancel);
+ confirm.append(explanation,row);card.append(actions,confirm);
+}
+
 function renderVerifiedPhotoFolders(){
  const panel=$('verifiedPhotoFoldersPanel');
  const title=$('verifiedPhotoFoldersHeading');
@@ -1247,6 +1282,7 @@ function renderVerifiedPhotoFolders(){
   photoGrid.className='folder-photo-gallery';
   photoGrid.dataset.folderPhotoGallery=key;
   photoGallery.append(galleryHeading,photoGrid);card.append(photoGallery);
+  appendFolderDeletionControl(card,bucket,key);
   if(bucket.kind==='confirmed'){
    const positive=[...verifiedFacePairs.values()].filter(pair=>
     pair.same&&bucket.members.includes(pair.i)&&bucket.members.includes(pair.j));
