@@ -79,3 +79,35 @@ test('承認を保存していない・保存元写真が欠けた場合は取�
   savedDraft:draft,savedApproval:approval,selectedClassId:'tulip',registeredRoster:roster
  }),/安全に読み込めません/);
 });
+
+test('顔振り分け画面と同じ材料順・文字列で照合情報を再構成する',()=>{
+ const {draft}=fixture();
+ const restored=restoreApprovedPhotoAudit(draft),d=draft.data;
+ // Independent reconstruction of the established finalAuditSourceSignature format.
+ const expected=JSON.stringify({
+  sources:d.photos.map(photo=>[photo.name,photo.size,photo.lastModified]),
+  photoNames:d.photoNames,faces:d.faces.map(face=>face.sourcePhoto),
+  groups:d.groups.map(group=>[group.id,...group.members]),
+  verifiedPairs:JSON.stringify(['0:1:false']),
+  excluded:[],newFolders:[],named:[['0','a'],['1','b']],manual:[],
+  photoCorrections:[],olderManual:[],
+  rosterClass:'tulip',roster:d.roster,audit:restored.audit
+ });
+ assert.equal(restored.signature,expected);
+});
+test('先生による写真1枚だけの移動結果が編集用の園児IDに変換される',async()=>{
+ const {draft,roster}=fixture();
+ // Teacher removes the group photo from A and includes an otherwise unassigned full photo.
+ draft.data.photoFolderCorrections=[[0,[['0',false]]],[1,[['0',true]]]];
+ const {audit,signature}=restoreApprovedPhotoAudit(draft);
+ const candidate=createProvisionalFinalization(audit,{
+  rosterClass:'tulip',sourceSignature:signature,visuallyReviewed:true,acknowledgedUnassigned:true
+ });
+ const approval=buildProvisionalApproval(candidate,await fingerprintProvisionalReview(signature));
+ const result=await prepareVerifiedAlbumEditorImport({
+  savedDraft:draft,savedApproval:approval,selectedClassId:'tulip',registeredRoster:roster
+ });
+ assert.deepEqual(result.assignments,[['b'],['a']]);
+ assert.equal(result.linkedPhotoCount,2);
+ assert.equal(result.unassignedCount,0);
+});
