@@ -37,6 +37,16 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .verified-folder-card{background:#fff}
 .verified-folder-card .faces{margin:8px 0}
 .verified-folder-card .muted{font-size:.8rem}
+.photo-missing-review{padding:12px 0;border-top:1px solid #e4eaf2}
+.photo-missing-review:first-child{border-top:0}
+.photo-missing-review img{max-width:300px;max-height:230px;width:auto;height:auto;display:block;object-fit:contain;border-radius:11px;margin:8px 0}
+.photo-missing-options{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr));gap:7px;margin:10px 0}
+.photo-missing-option{display:flex;align-items:center;gap:8px;margin:0;padding:8px;border:1px solid #dde6f2;border-radius:10px;background:white}
+.photo-missing-option input{width:18px;height:18px;flex-shrink:0;accent-color:#176ad6}
+.photo-missing-option img{width:36px;height:36px;object-fit:cover;margin:0;border-radius:7px;flex-shrink:0}
+.photo-missing-option span{font-size:.84rem}
+.manual-photo-chip{border-color:#adcde9;background:#eff7ff}
+
 .folder-review-links{margin:9px 0 1px;padding:9px;border:1px solid #dce6f0;background:#f7fafd;border-radius:10px}
 .folder-review-links summary{cursor:pointer;font-size:.82rem;font-weight:750;color:#315e98}
 .folder-review-row{border-top:1px solid #dce5f0;padding:9px 0}
@@ -103,6 +113,12 @@ label{display:inline-block;margin:5px 0}
  <div id="folderCorrectionNotice" class="muted" role="status" aria-live="polite" hidden></div>
  <div class="actions"><button type="button" id="undoFolderCorrection" class="secondary" hidden>↩ 最後の訂正を戻す</button></div>
  <div id="verifiedPhotoFoldersGrid" class="teacher-groups"></div>
+ <details id="missingFacePhotoPicker" class="advanced" hidden>
+  <summary id="missingFacePhotoPickerTitle">📷 顔が見つからない写真を手動で仮振り分け</summary>
+  <p class="muted">顔が検出されなかった写真を見て、写っている園児の仮フォルダにチェックしてください。複数人なら複数選べます。どの園児か分からない写真は未選択のままで大丈夫です。</p>
+  <div id="missingFacePhotoPickerBody"></div>
+  <p id="missingFacePhotoPickerStatus" class="muted" role="status" aria-live="polite"></p>
+ </details>
  <p id="verifiedPhotoFoldersWarnings" class="muted" role="status"></p>
 </details>
 <details class="advanced" id="teacherConfirmedDetails" hidden>
