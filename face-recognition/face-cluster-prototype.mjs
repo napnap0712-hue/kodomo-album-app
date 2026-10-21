@@ -638,7 +638,11 @@ function validateFaceReportAndImport(){
   }
  }
  // Do not modify the current AI groups. Only recover teacher labels in memory.
+ // Imported face labels can describe a different grouping: never reuse
+ // staff exclusions or photo-only links from an older verification batch.
  lastFolderCorrection=null;folderCorrectionNoticeText='';
+ excludedVerifiedFolders.clear();newManualPhotoFolders.clear();manualFolderSequence=0;
+ manualPhotoFolderChoices.clear();verifiedFolderNames.clear();folderManagementNotice='';
  verifiedFacePairs.clear();
  for(const [key,pair] of imported)verifiedFacePairs.set(key,pair);
  pendingFaceImport=manual;
