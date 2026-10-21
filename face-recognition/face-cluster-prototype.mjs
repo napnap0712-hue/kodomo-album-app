@@ -1060,7 +1060,7 @@ function refreshMissingPhotoPreview(model,missing){
     open.append(image);tile.append(open,label);target.append(tile);
    }
    const title=grid.querySelector('[data-folder-photo-heading="'+row.key+'"]');
-   if(title)title.textContent='📷 写真をサムネイルで見る（'+row.photoIndexes.length+'枚）';
+   if(title)title.textContent='🖼 元写真を全体表示（'+row.photoIndexes.length+'枚・タップで移動／解除）';
    const count=grid.querySelector('[data-folder-photo-count="'+row.key+'"]');
    if(count)count.textContent='この園児が写る写真（'+row.photoIndexes.length+'枚・仮）';
   }
@@ -1614,7 +1614,9 @@ function renderVerifiedPhotoFolders(){
    description.textContent='顔'+(id+1);
    tile.append(image,description);faces.append(tile);
   }
-  card.append(faces);
+  const faceHint=document.createElement('p');faceHint.className='muted';
+  faceHint.textContent='👤 上の顔は本人を確認するための見本。下の写真は元画像全体です。';
+  card.append(faces,faceHint);
   const subtitle=document.createElement('div');
   subtitle.className='muted';
   const galleryCount=correctedPhotoIndexes(bucket.photos,
@@ -1636,14 +1638,18 @@ function renderVerifiedPhotoFolders(){
   card.append(photoList);
   const photoGallery=document.createElement('details');
   photoGallery.className='advanced';
+  // Folder sorting should show the original photos immediately. Collapsing is optional.
+  photoGallery.open=true;
   photoGallery.style.margin='8px 0';
   const galleryHeading=document.createElement('summary');
   galleryHeading.dataset.folderPhotoHeading=key;
-  galleryHeading.textContent='📷 写真をサムネイルで見る（'+galleryCount+'枚）';
+  galleryHeading.textContent='🖼 元写真を全体表示（'+galleryCount+'枚・タップで移動／解除）';
   const photoGrid=document.createElement('div');
   photoGrid.className='folder-photo-gallery';
   photoGrid.dataset.folderPhotoGallery=key;
-  photoGallery.append(galleryHeading,photoGrid);card.append(photoGallery);
+  const photoHint=document.createElement('p');photoHint.className='folder-photo-gallery-note';
+  photoHint.textContent='写真の端まで見える縮小表示です。必要な写真をタップして拡大・修正してね。';
+  photoGallery.append(galleryHeading,photoHint,photoGrid);card.append(photoGallery);
   appendFolderDeletionControl(card,bucket,key);
   if(bucket.kind==='confirmed'){
    const positive=[...verifiedFacePairs.values()].filter(pair=>
