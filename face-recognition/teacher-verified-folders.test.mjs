@@ -61,3 +61,30 @@ test('empty face list produces empty folder preview',()=>{
  assert.equal(result.coveredFaces,0);
  assert.equal(result.allFacesCovered,true);
 });
+
+test('correcting one mistaken same-child bridge separates only the affected folder',()=>{
+ const photos=[0,1,2,3,4,5,6];
+ const original=[
+  pair(0,1,true),pair(1,2,true),
+  pair(2,3,true), // mistakenly connected two children
+  pair(3,4,true),pair(5,6,true)
+ ];
+ const before=buildVerifiedPhotoFolders(photos,original);
+ assert.deepEqual(before.buckets.map(b=>b.members.length).sort(),[2,5]);
+ const corrected=original.map(p=>p.i===2&&p.j===3?pair(2,3,false):p);
+ const after=buildVerifiedPhotoFolders(photos,corrected);
+ assert.deepEqual(after.buckets.map(b=>b.members.length).sort(),[2,2,3]);
+ assert.deepEqual(after.contradictions,[]);
+ assert.equal(after.allFacesCovered,true);
+ assert.equal(after.hasSourcePhotoConflicts,false);
+ assert.ok(after.buckets.some(b=>b.members.includes(5)&&b.members.includes(6)));
+});
+test('a remaining contradictory same-child link is reported, never silently treated as correct',()=>{
+ const photos=[0,1,2,3];
+ const reviewed=[pair(0,1,true),pair(1,2,true),pair(2,3,true),pair(1,3,true)];
+ const corrected=reviewed.map(p=>p.i===2&&p.j===3?pair(2,3,false):p);
+ const result=buildVerifiedPhotoFolders(photos,corrected);
+ assert.ok(result.contradictions.length>0);
+ assert.equal(result.allFacesCovered,true);
+ assert.equal(result.hasSourcePhotoConflicts,false);
+});
