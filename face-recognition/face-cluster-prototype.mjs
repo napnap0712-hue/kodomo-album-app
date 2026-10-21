@@ -689,6 +689,14 @@ start.addEventListener('click',async()=>{
    const rivals=eligible.filter(q=>q!==p&&(q.a===p.a||q.b===p.a||q.a===p.b||q.b===p.b));
    return rivals.every(q=>p.average-q.average>=0.09);
   });
+  // Experimental grouping estimate only: assess whether a one-step lower
+  // threshold would create obvious same-photo conflicts before changing anything.
+  const alternativeThreshold=Math.max(0.3,Number($('threshold').value)-0.04);
+  const relaxed=groupPairs.filter(p=>!p.samePhoto&&p.minimum>=alternativeThreshold&&p.average>=alternativeThreshold);
+  const conflictCount=groupPairs.filter(p=>p.samePhoto&&p.maximum>=alternativeThreshold).length;
+  const simulation=document.createElement('p');simulation.className='muted';
+  simulation.textContent='🧪 閾値を0.04緩めた場合の参考：追加の統合候補 '+relaxed.length+'組 ／ 同じ写真の別顔が似ている危険候補 '+conflictCount+'組（試算のみ・現在のグループは変更しません）';
+  host.append(simulation);
   const safeNote=document.createElement('p');safeNote.className='muted';
   safeNote.textContent='🛡️ 複数の顔で一致し、競合が少ない統合候補：'+safeCandidates.length+'組（提案のみ・自動統合なし）';
   host.append(safeNote);
