@@ -195,6 +195,15 @@ function calculateFaceGroups(threshold){
    groups=groups.filter(g=>g!==gb);
    matched.add(pair.left);matched.add(pair.right);
   }
+  // The extra merge stage must not produce a pair below the minimum
+  // consistency floor, even if its top match is strong.
+  const minimumPairConsistency=Math.max(0.48,threshold-0.12);
+  const inconsistent=groups.slice(1).filter(g=>g.members.some((i,a)=>g.members.slice(a+1).some(j=>
+   items[i].sourcePhoto===items[j].sourcePhoto||
+   !Number.isFinite(pairScore(i,j))||
+   pairScore(i,j)<minimumPairConsistency
+  )));
+  if(inconsistent.length)console.warn('Provisional face groups with low pairwise consistency:',inconsistent.length);
   // Conservative second pass: merge fragmented clusters only when all cross-cluster
   // faces remain similar. Never merge simply to match the roster headcount.
   let merged=true;
