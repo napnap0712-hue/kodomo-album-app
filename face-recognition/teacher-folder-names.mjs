@@ -1,7 +1,8 @@
+import {correctedPhotoIndexes} from './photo-folder-corrections.mjs';
 // Local, read-only helper for mapping *teacher-verified provisional* face folders
 // to IDs in a class roster. No storage writes and no external networking.
 export const verifiedFolderKey=bucket=>typeof bucket?.key==='string'&&bucket.key.startsWith('manual-')?bucket.key:[...bucket.members].sort((a,b)=>a-b).join(':');
-export function buildNamedFolderPreview(buckets,roster,selections,manualPhotoChoices=new Map()){
+export function buildNamedFolderPreview(buckets,roster,selections,manualPhotoChoices=new Map(),photoCorrections=new Map()){
  const children=new Map();
  for(const child of roster){
   const id=String(child?.id??'').trim(),name=String(child?.name??'').trim();
@@ -26,10 +27,11 @@ export function buildNamedFolderPreview(buckets,roster,selections,manualPhotoCho
     images.add(photoIndex);manual.push(photoIndex);
    }
   }
+  const corrected=correctedPhotoIndexes([...images],[...new Set(manual)],photoCorrections,key);
   named.push({
    key,childId:child?.id||null,childName:child?.name||null,
-   photoIndexes:[...images].sort((a,b)=>a-b),
-   manuallyAdded:[...new Set(manual)].sort((a,b)=>a-b),
+   photoIndexes:corrected.photoIndexes,
+   manuallyAdded:corrected.manuallyAdded,
    faceIndexes:[...bucket.members],
    confirmedByTeacher:bucket.kind==='confirmed'
   });
