@@ -80,14 +80,55 @@ export function validateFaceDraft(record){
  }
  if(!['tanpopo','tulip','cosmos','canna','deigo','sakura'].includes(data.rosterClass))
   return fail('保存されたクラス情報が不正です。');
- for(const [photoIndex,keys] of data.manualPhotoFolderChoices){
-  if(!Number.isInteger(photoIndex)||photoIndex<0||photoIndex>=photos.length||!Array.isArray(keys))
+ const stringPair=(pair,maxKeyLength=256,maxValueLength=256)=>Array.isArray(pair)&&pair.length===2&&
+  typeof pair[0]==='string'&&pair[0].length<=maxKeyLength&&
+  typeof pair[1]==='string'&&pair[1].length<=maxValueLength;
+ if(data.groupNames.length>MAX_FACES||data.groupNames.some(pair=>!stringPair(pair)))
+  return fail('AIグループと園児名の紐づけが不正です。');
+ if(!Array.isArray(data.roster)||data.roster.length>500||data.roster.some(child=>
+  !child||typeof child.id!=='string'||typeof child.name!=='string'||
+  child.id.length>256||child.name.length>256))
+  return fail('園児名簿の保存情報が不正です。');
+ if(data.verifiedFolderNames.length>MAX_FACES+100||
+  data.verifiedFolderNames.some(pair=>!stringPair(pair)))
+  return fail('園児フォルダの名前の保存情報が不正です。');
+ if(data.excludedVerifiedFolders.length>MAX_FACES||
+  data.excludedVerifiedFolders.some(key=>typeof key!=='string'||key.length>256))
+  return fail('除外した顔フォルダの情報が不正です。');
+ if(data.excludedFacePairs.length>MAX_REVIEW_PAIRS||
+  data.excludedFacePairs.some(key=>typeof key!=='string'||!/^\d+:\d+$/.test(key)))
+  return fail('除外した顔の比較情報が不正です。');
+ if(data.newManualPhotoFolders.length>100)
+  return fail('新規フォルダの保存件数が多すぎます。');
+ for(const row of data.manualPhotoFolderChoices){
+  if(!Array.isArray(row)||row.length!==2)return fail('写真の手動振り分けが不正です。');
+  const [photoIndex,keys]=row;
+  if(!Number.isInteger(photoIndex)||photoIndex<0||photoIndex>=photos.length||
+   !Array.isArray(keys)||keys.length>MAX_FACES+100||
+   keys.some(key=>typeof key!=='string'||key.length>256))
    return fail('写真の手動振り分けが不正です。');
  }
- for(const [key,entry] of data.newManualPhotoFolders){
-  if(typeof key!=='string'||!/^manual-\d+$/.test(key)||typeof entry?.name!=='string'||entry.name.length>40)
+ for(const row of data.manualPhotoAssignments){
+  if(!Array.isArray(row)||row.length!==2)return fail('旧式の写真紐づけが不正です。');
+  const [photoIndex,names]=row;
+  if(!Number.isInteger(photoIndex)||photoIndex<0||photoIndex>=photos.length||
+   !Array.isArray(names)||names.length>500||
+   names.some(name=>typeof name!=='string'||name.length>256))
+   return fail('旧式の写真紐づけが不正です。');
+ }
+ for(const row of data.newManualPhotoFolders){
+  if(!Array.isArray(row)||row.length!==2)return fail('新規フォルダの保存情報が不正です。');
+  const [key,entry]=row;
+  if(typeof key!=='string'||!/^manual-\d+$/.test(key)||
+   typeof entry?.name!=='string'||entry.name.length>40)
    return fail('新規フォルダの保存情報が不正です。');
  }
+ if(!data.initialFaceGroups.every(value=>value==null||typeof value==='string'))
+  return fail('AI初回の顔のグループIDが不正です。');
+ if(data.manualFolderSequence!=null&&
+  (!Number.isInteger(data.manualFolderSequence)||data.manualFolderSequence<0))
+  return fail('新規フォルダの連番が不正です。');
+
  const observed=Number(record.savedAt);
  if(!Number.isFinite(observed)||observed<=0)
   return fail('保存日時が不正です。');
