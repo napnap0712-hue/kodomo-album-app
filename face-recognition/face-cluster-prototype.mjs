@@ -82,8 +82,7 @@ $('recognitionModel').addEventListener('change',()=>{
 });
 $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
-function regroupFromExistingVectors(threshold){
- if(!items.length)return;
+function calculateFaceGroups(threshold){
  const pairScores=[];
  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
   const score=similarity(items[i].vector,items[j].vector);
@@ -181,6 +180,12 @@ function regroupFromExistingVectors(threshold){
   }
 
 
+
+ return groups;
+}
+function regroupFromExistingVectors(threshold){
+ if(!items.length)return;
+ groups=calculateFaceGroups(threshold);
  groupNames.clear();selected.clear();openedFolder=null;invalidateAssignmentPreview();render();
 }
 $('threshold').addEventListener('change',()=>{
@@ -539,111 +544,7 @@ start.addEventListener('click',async()=>{
   if(stop){status.textContent='⏹ 中断しました。アルバムへの変更はありません。';return}
   const groupingStart=performance.now();
   const threshold=Number($('threshold').value);
-  const pairScores=[];
-  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
-   const score=similarity(items[i].vector,items[j].vector);
-   if(Number.isFinite(score))pairScores.push({i,j,score});
-  }
-  pairScores.sort((a,b)=>b.score-a.score);
-  groups=[{id:'unknown',members:[]}];let next=1;
-  // DBSCAN: density-based face-embedding clustering, with singleton noise
-  // retained as separate provisional groups for teacher review.
-  const scoreMap=new Map(pairScores.map(p=>[p.i+':'+p.j,p.score]));
-  const pairScore=(i,j)=>i===j?1:scoreMap.get(Math.min(i,j)+':'+Math.max(i,j));
-  // Complete-link grouping: an incoming face must match EVERY existing member.
-  // This avoids DBSCAN chaining across lookalike children through one pose-matched pair.
-  const neighbors=items.map((_,i)=>items.map((_,j)=>j).filter(j=>pairScore(i,j)>=threshold));
-  const labels=new Int32Array(items.length).fill(-2); // -2 unvisited, -1 noise
-  let clusterId=0;
-  const minPts=2;
-  for(let i=0;i<items.length;i++){
-   if(labels[i]!==-2)continue;
-   if(neighbors[i].length<minPts){labels[i]=-1;continue}
-   const id=clusterId++;labels[i]=id;
-   const queue=[...neighbors[i]],queuedNeighbors=new Set(queue);
-   for(let head=0;head<queue.length;head++){
-    const j=queue[head];
-    if(labels[j]===-1)labels[j]=id;
-    if(labels[j]!==-2)continue;
-    labels[j]=id;
-    if(neighbors[j].length>=minPts)for(const k of neighbors[j]){
-     if(!queuedNeighbors.has(k)){queuedNeighbors.add(k);queue.push(k)}
-    }
-   }
-  }
-  const clustered=new Map();
-  for(let i=0;i<items.length;i++){
-   if(labels[i]<0)continue;
-   if(!clustered.has(labels[i]))clustered.set(labels[i],[]);
-   clustered.get(labels[i]).push(i);
-  }
-  // Split transitive DBSCAN chains before any secondary merge.
-  // Within each provisional identity, require pairwise agreement rather than
-  // allowing a single similar-looking bridge to connect two different children.
-  const completeLinkSplit=members=>{
-   const ordered=[...members].sort((a,b)=>{
-    const quality=id=>members.reduce((total,other)=>total+(pairScore(id,other)||0),0);
-    return quality(b)-quality(a);
-   });
-   const parts=[];
-   for(const id of ordered){
-    const candidates=parts.map((part,k)=>({k,min:Math.min(...part.map(other=>pairScore(id,other)))}))
-      .filter(candidate=>candidate.min>=threshold)
-      .sort((a,b)=>b.min-a.min);
-    if(candidates.length)parts[candidates[0].k].push(id);
-    else parts.push([id]);
-   }
-   return parts;
-  };
-  for(const members of clustered.values())for(const part of completeLinkSplit(members))groups.push({id:String(next++),members:part});
-  for(let i=0;i<items.length;i++)if(labels[i]<0)groups.push({id:String(next++),members:[i]});
-  // A face pair from the same photo must never be in one identity group.
-  // Unlike a nearest-neighbor edge, this cannot-link rule survives transitive merges.
-  const splitSamePhotoConflicts=()=>{
-   const repaired=[groups[0]];
-   for(const group of groups.slice(1)){
-    const buckets=[];
-    for(const id of group.members){
-     let bucket=buckets.find(bucket=>bucket.every(other=>items[other].sourcePhoto!==items[id].sourcePhoto));
-     if(!bucket){bucket=[];buckets.push(bucket)}
-     bucket.push(id);
-    }
-    for(const bucket of buckets)repaired.push({id:String(repaired.length),members:bucket});
-   }
-   groups=repaired;
-  };
-  splitSamePhotoConflicts();
-  // Conservative second pass: merge fragmented clusters only when all cross-cluster
-  // faces remain similar. Never merge simply to match the roster headcount.
-  let merged=true;
-  while(merged){
-   merged=false;let best=null;
-   for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
-    const ga=groups[a],gb=groups[b];if(!ga.members.length||!gb.members.length)continue;
-    // Never combine two faces from one source photo, even during later passes.
-    const photos=new Set(ga.members.map(i=>items[i].sourcePhoto));
-    if(gb.members.some(i=>photos.has(items[i].sourcePhoto)))continue;
-    const cross=ga.members.flatMap(i=>gb.members.map(j=>pairScore(i,j)));
-    if(cross.some(v=>!Number.isFinite(v)))continue;
-    const minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
-    if(minimum<Math.max(0.48,threshold-0.12)||average<Math.max(0.62,threshold-0.02))continue;
-    if(!best||average>best.average)best={a,b,average};
-   }
-   if(best){
-    groups[best.a].members.push(...groups[best.b].members);
-    groups.splice(best.b,1);merged=true;
-   }
-  }
-
-  // The same-photo cannot-link constraint must also survive secondary merges.
-  // Keep the current result intact; the audit only reports any violations.
-  const photoConflicts=groups.slice(1).reduce((count,g)=>{
-   const photos=g.members.map(id=>items[id].sourcePhoto);
-   return count+photos.length-new Set(photos).size;
-  },0);
-  if(photoConflicts){
-   console.warn('Face grouping same-photo conflict audit:',photoConflicts);
-  }
+  groups=calculateFaceGroups(threshold);
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
   const perfReport='\n⚙️ 実行方式：'+executionProvider+'\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
