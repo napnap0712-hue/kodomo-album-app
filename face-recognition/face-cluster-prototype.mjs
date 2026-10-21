@@ -350,18 +350,18 @@ function renderManualPhotos(){
   if(items.some(item=>item.sourcePhoto===i))continue;
   const row=document.createElement('div');row.style.cssText='padding:12px 0;border-bottom:1px solid #e5ebf2';
   const title=document.createElement('strong');title.textContent=(i+1)+'枚目：'+photoNames[i]+'（顔未検出）';row.append(title);
-  if(photoUrls[i]){const img=document.createElement('img');img.src=photoUrls[i];img.alt='顔未検出の写真';img.style.cssText='display:block;max-width:180px;max-height:140px;object-fit:contain;margin:8px 0;border-radius:8px';row.append(img)}
+  if(urls[i]){const img=document.createElement('img');img.src=urls[i];img.alt='顔未検出の写真';img.style.cssText='display:block;max-width:180px;max-height:140px;object-fit:contain;margin:8px 0;border-radius:8px';row.append(img)}
   const assigned=manualPhotoAssignments.get(i)||new Set();
   const choices=document.createElement('div');choices.className='actions';
   for(const kid of roster){
    const label=document.createElement('label');label.style.cssText='border:1px solid #dbe2ed;padding:5px 8px;border-radius:8px';
-   const check=document.createElement('input');check.type='checkbox';check.checked=assigned.has(kid.name);
+   const check=document.createElement('input');check.type='checkbox';check.checked=assigned.has(String(kid.name||kid.displayName||kid.label||''));
    check.addEventListener('change',()=>{
     const next=new Set(manualPhotoAssignments.get(i)||[]);
-    if(check.checked)next.add(kid.name);else next.delete(kid.name);
+    if(check.checked)next.add(String(kid.name||kid.displayName||kid.label||''));else next.delete(String(kid.name||kid.displayName||kid.label||''));
     if(next.size)manualPhotoAssignments.set(i,next);else manualPhotoAssignments.delete(i);
    });
-   label.append(check,document.createTextNode(' '+kid.name));choices.append(label);
+   label.append(check,document.createTextNode(' '+String(kid.name||kid.displayName||kid.label||'')));choices.append(label);
   }
   if(!roster.length){const hint=document.createElement('p');hint.className='muted';hint.textContent='先に「登録済み園児を読み込む」を押してください。';choices.append(hint)}
   row.append(choices);host.append(row);
