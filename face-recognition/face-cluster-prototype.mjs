@@ -132,7 +132,7 @@ function calculateFaceGroups(threshold){
    const parts=[];
    for(const id of ordered){
     const candidates=parts.map((part,k)=>({k,min:Math.min(...part.map(other=>pairScore(id,other)))}))
-      .filter(candidate=>part.every(other=>items[other].sourcePhoto!==items[id].sourcePhoto))
+      .filter(candidate=>parts[candidate.k].every(other=>items[other].sourcePhoto!==items[id].sourcePhoto))
       .filter(candidate=>candidate.min>=threshold)
       .sort((a,b)=>b.min-a.min);
     if(candidates.length)parts[candidates[0].k].push(id);
