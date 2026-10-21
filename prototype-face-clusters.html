@@ -182,11 +182,11 @@ label{display:inline-block;margin:5px 0}
 <details class="advanced" id="timingPanel" hidden><summary>解析時間・モデルの診断</summary><p id="technicalStatus" class="muted"></p></details>
 </section>
 <section class="panel" id="quickReviewPanel">
-<div class="section-top"><span class="step">STEP 2</span><h2>迷った顔だけ確認</h2></div>
-<p class="muted">候補が正しいとは限りません。「同じ園児」「違う園児」を押すだけで判定を記録します。<strong>園児の名前をAIが推測することはありません。</strong></p>
+<div class="section-top"><span class="step">STEP 2</span><h2>顔を確認して、元写真を振り分ける</h2></div>
+<p class="muted">① 迷った顔だけ「同じ園児／違う園児」を確認 → ② 下の園児フォルダで<strong>元写真全体を見ながら</strong>名前を選び、不要な写真は1枚ずつ外せます。顔のアップは本人確認用です。<strong>園児名はAIが自動で決めません。</strong></p>
 <p id="quickReviewSummary" aria-live="polite">先に写真を解析してください。</p>
 <details class="advanced" id="verifiedPhotoFoldersPanel" hidden>
- <summary id="verifiedPhotoFoldersHeading">🗂 先生の確認から写真を整理（間違いも訂正できる）</summary>
+ <summary id="verifiedPhotoFoldersHeading">🌷 メインの作業：園児ごとに元写真を整理</summary>
  <p class="muted">顔のアップは<strong>園児本人の確認用</strong>です。その下に<strong>元写真全体を最初から表示</strong>します。写真をタップすると拡大して、1枚だけ別の園児へ移動・解除できます。<strong>職員・保護者など園児以外の顔があれば、「🗑 園児以外の顔フォルダを除外」を使ってね。</strong> 元写真やアルバムは削除しません。</p>
  <p class="muted"><strong>違う園児が混ざっていたら：</strong>「🔎 違う園児が混ざっている？」を開き、誤って「同じ園児」と判断した組を訂正できます。<strong>園児以外の顔だけがまとまったフォルダなら、上の除外機能を使ってね。</strong></p>
  <p id="verifiedPhotoFoldersStatus" class="muted"></p>
@@ -210,6 +210,7 @@ label{display:inline-block;margin:5px 0}
  <div id="folderCorrectionNotice" class="muted" role="status" aria-live="polite" hidden></div>
  <div class="actions"><button type="button" id="undoFolderCorrection" class="secondary" hidden>↩ 最後の訂正を戻す</button></div>
  <div id="verifiedPhotoFoldersGrid" class="teacher-groups"></div>
+ <div class="actions"><button type="button" id="goToFinalReview" class="secondary">✅ 写真の振り分けが終わったら、仮確定へ進む ↓</button></div>
  <details id="excludedFaceFoldersPanel" class="advanced" hidden>
   <summary id="excludedFaceFoldersHeading">🗑 除外した園児以外の顔フォルダ</summary>
   <p class="muted">園児以外（職員・保護者など）の顔フォルダを候補から外しています。元の写真は削除されません。間違えて除外した場合は元に戻せます。</p>
@@ -274,19 +275,22 @@ label{display:inline-block;margin:5px 0}
 </section>
 
 <section class="panel" id="finalPhotoAuditPanel" hidden>
- <div class="section-top"><span class="step">STEP 3</span><h2>📋 園児別の写真を最終点検（仮）</h2></div>
- <p class="muted">先生が確認した仮フォルダと園児名から写真を一覧表示します。<strong>写真をタップすると、顔のアップではなく元写真全体を見て、その1枚だけ移動・フォルダから解除できます。</strong>集合写真のほかの園児への紐づけと元画像は残ります。本番アルバムには反映しません。変更後は上の「今の作業を保存」を押してね。</p>
+ <div class="section-top"><span class="step">STEP 3</span><h2>📋 振り分け結果を確認</h2></div>
+ <p class="muted">上の園児フォルダで<strong>元写真を確認済みなら、ここですべて見直す必要はありません。</strong> 写真の枚数・未紐づけ・注意点を確認して、下の仮確定へ進んでね。必要なときだけ、園児別の写真一覧をもう一度開けます。本番アルバムは変更しません。</p>
  <div id="finalPhotoAuditSummary" class="final-audit-metrics" aria-live="polite"></div>
  <div id="finalPhotoAuditWarnings" role="status" aria-live="polite"></div>
  <div class="actions"><button id="undoPhotoCorrection" type="button" class="secondary" disabled>↩ 最後の写真移動・解除を戻す</button></div>
- <h3>🌷 園児別の写真一覧</h3>
- <div id="finalPhotoAuditChildren" class="final-audit-children"></div>
  <div id="finalPhotoAuditChecks"></div>
- <p class="muted">⚠️ 顔が同じ人物か・別のフォルダに同じ園児がいないか・園児以外の顔が混ざっていないかは、機械的な件数チェックだけでは保証できません。最後に写真を目視してね。</p>
+ <details id="optionalPhotoRecheck" class="advanced">
+  <summary>🔎 園児別の写真をもう一度確認する（必要なときだけ）</summary>
+  <p class="muted">STEP 2で確認した写真の再点検用です。顔のアップではなく元写真を表示し、1枚ずつ移動・解除できます。</p>
+  <div id="finalPhotoAuditChildren" class="final-audit-children"></div>
+ </details>
+ <p class="muted">⚠️ 件数の確認だけでは写真の本人確認はできません。STEP 2で顔と元写真を確認したうえで仮確定してね。</p>
 
 <div class="provisional-final-box" id="provisionalFinalBox">
  <h3>🔐 STEP 4　園児別写真の仮確定</h3>
- <p class="muted">園児別写真を先生が確認したあと、<strong>編集画面へ渡す前の候補</strong>を検証画面内だけに作ります。写真や名前は書き換えず、本番アルバムへも反映しません。<strong>仮確定は画面内の一時状態で、Safariを閉じると消えます。保存済みの検証データには影響しません。</strong></p>
+ <p class="muted">STEP 2で写真を確認したら、チェックを入れて<strong>園児別の振り分けを仮確定</strong>できます。本番アルバムには反映しません。仮確定後は下の保存ボタンで確認記録も保存できます。</p>
  <div id="provisionalFinalReadiness" class="muted" role="status" aria-live="polite">保存済みの作業を読み込んで確認してください。</div>
  <label><input type="checkbox" id="provisionalFinalVisualCheck"><span>園児別の写真・集合写真の紐づけ・園児以外の顔の混入を<strong>自分の目で確認しました</strong>。</span></label>
  <label id="provisionalFinalUnassignedLabel" hidden><input type="checkbox" id="provisionalFinalUnassignedCheck"><span id="provisionalFinalUnassignedText">未紐づけの写真が仮確定に含まれないことを確認しました。</span></label>
@@ -370,7 +374,7 @@ label{display:inline-block;margin:5px 0}
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-fullphoto-folder"></script>
-<div id="build-marker">かんたん検証 2026-10-22 AO</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-streamlined"></script>
+<div id="build-marker">かんたん検証 2026-10-22 AP</div>
 </body>
 </html>
