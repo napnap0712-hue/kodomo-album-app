@@ -715,10 +715,23 @@ function currentFaceGroupIndex(){
  }
  return map;
 }
+$('copyQuickReport')?.addEventListener('click',async()=>{
+ const report=$('faceEvaluationReport'),message=$('quickCopyStatus');
+ if(!report?.value){if(message)message.textContent='先に顔を解析してください。';return}
+ try{
+  if(!navigator.clipboard?.writeText)throw Error('clipboard unavailable');
+  await navigator.clipboard.writeText(report.value);
+  if(message)message.textContent='✅ 検証結果をコピーしました（写真・園児名なし）';
+ }catch(error){
+  report.focus();report.select();
+  if(message)message.textContent='テキストを選択したので、⌘＋Cでコピーしてください。';
+ }
+});
 // Compact teacher-first evaluation: inspect possible misses and mixed faces.
 // Never changes actual album data; scores are not identity probabilities.
 function renderQuickReview(){
  const summary=$('quickReviewSummary'),host=$('quickReviewCandidates');
+ const copy=$('copyQuickReport');if(copy)copy.disabled=!items.length;
  if(!summary||!host)return;
  host.replaceChildren();
  if(!items.length){
@@ -1099,6 +1112,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
  return results;
 }
 start.addEventListener('click',async()=>{
+ const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
