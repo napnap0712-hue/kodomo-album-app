@@ -61,7 +61,7 @@ label{display:inline-block;margin:5px 0}
 <select id="recognitionModel" hidden aria-label="顔認識モデル"><option value="buffalo_s" selected>ArcFace buffalo_s（軽量）</option></select>
 <label>判定の厳しさ <input id="threshold" type="range" min="0.45" max="0.90" value="0.65" step="0.01"> <output id="thresholdValue">0.65</output></label>
 <label><input type="checkbox" id="flipAugment"> 左右反転も比較（実験）</label>
-<label style="display:block"><input type="checkbox" id="compareEyelidAlignment" checked> 高画質＋まぶた補正を比較（Mac検証・認識時間が約2倍）</label>
+<label style="display:block"><input type="checkbox" id="compareEyelidAlignment"> 高画質＋まぶた補正を比較（Mac検証・認識時間が約2倍）</label>
 </details>
 <input type="file" id="lightweightOnnxFile" accept=".onnx" hidden>
 <input type="file" id="lightweightDataFile" accept=".data" hidden>
@@ -98,6 +98,12 @@ label{display:inline-block;margin:5px 0}
 <div class="actions"><button type="button" id="applyVerifiedGroups">確認した顔だけ仮統合</button><button type="button" id="undoVerifiedGroups" class="secondary" disabled>仮統合を戻す</button></div>
 </details>
 <details class="advanced"><summary>小さな顔の高画質補正を比較（実験）</summary><p class="muted">従来の縮小写真による認識と、元画質＋まぶた位置補正による認識を比較します。先生の確認済みの顔について数値を見られます。自動グループ化には反映しません。</p><div id="eyelidComparison"></div></details>
+<details class="advanced" id="r50ComparePanel"><summary>🧠 顔認識AIの高精度モデルを比較（MacBook・実験）</summary>
+<p class="muted">今の24件の顔を再検出せず、別の顔識別モデル（ArcFace R50）で比較します。初回は約174MBのモデルをダウンロードします。写真・顔データは送信しません。先生が確認した「同じ園児」の組と、同じ写真に別々に写った顔の組を参考に比較します。元のグループ分けは変更しません。モデルの重みは非商用研究用途限定のため、実際の園での運用はライセンス確認が必要です。</p>
+<div class="actions"><button type="button" id="compareRecognitionModels" class="secondary" disabled>別のAIで比較する（写真の再検出なし）</button></div>
+<p id="r50CompareStatus" role="status" class="muted"></p>
+<div id="r50CompareResult"></div>
+</details>
 <details class="advanced"><summary>5方式の比較（詳しく調べるとき）</summary>
 <button type="button" id="simulateFaceGrouping" class="secondary">5方式を比較</button>
 <div id="faceSimulationResult" class="muted" role="status"></div>
