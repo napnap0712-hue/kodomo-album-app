@@ -341,6 +341,32 @@ function installDrag(img,id){
  });
  img.addEventListener('pointercancel',cleanupDrag);
 }
+// In-memory manual photo links; never writes to albums or photo storage.
+const manualPhotoAssignments=new Map();
+function renderManualPhotos(){
+ const host=$('manualPhotoAssignments');if(!host)return;
+ host.replaceChildren();
+ for(let i=0;i<photoNames.length;i++){
+  if(items.some(item=>item.sourcePhoto===i))continue;
+  const row=document.createElement('div');row.style.cssText='padding:12px 0;border-bottom:1px solid #e5ebf2';
+  const title=document.createElement('strong');title.textContent=(i+1)+'枚目：'+photoNames[i]+'（顔未検出）';row.append(title);
+  if(photoUrls[i]){const img=document.createElement('img');img.src=photoUrls[i];img.alt='顔未検出の写真';img.style.cssText='display:block;max-width:180px;max-height:140px;object-fit:contain;margin:8px 0;border-radius:8px';row.append(img)}
+  const assigned=manualPhotoAssignments.get(i)||new Set();
+  const choices=document.createElement('div');choices.className='actions';
+  for(const kid of roster){
+   const label=document.createElement('label');label.style.cssText='border:1px solid #dbe2ed;padding:5px 8px;border-radius:8px';
+   const check=document.createElement('input');check.type='checkbox';check.checked=assigned.has(kid.name);
+   check.addEventListener('change',()=>{
+    const next=new Set(manualPhotoAssignments.get(i)||[]);
+    if(check.checked)next.add(kid.name);else next.delete(kid.name);
+    if(next.size)manualPhotoAssignments.set(i,next);else manualPhotoAssignments.delete(i);
+   });
+   label.append(check,document.createTextNode(' '+kid.name));choices.append(label);
+  }
+  if(!roster.length){const hint=document.createElement('p');hint.className='muted';hint.textContent='先に「登録済み園児を読み込む」を押してください。';choices.append(hint)}
+  row.append(choices);host.append(row);
+ }
+}
 function render(){
  selection.textContent='選択中：'+selected.size+'件';move.disabled=!selected.size;
  const existing=groups.filter(g=>g.members.length);
@@ -392,6 +418,7 @@ function render(){
  destination.replaceChildren();
  for(const g of existing){const opt=document.createElement('option');opt.value=g.id;opt.textContent=groupLabel(g.id);destination.append(opt)}
  const add=document.createElement('option');add.value='new';add.textContent='新しいグループ';destination.append(add);
+ renderManualPhotos();
  const photoLinks=$('photoLinks');
  if(photoLinks){photoLinks.replaceChildren();for(let i=0;i<photoNames.length;i++){
   const row=document.createElement('div');row.style.cssText='padding:8px 0;border-bottom:1px solid #e8edf3;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
@@ -523,7 +550,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
