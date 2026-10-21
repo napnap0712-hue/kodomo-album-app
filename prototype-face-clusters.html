@@ -84,6 +84,21 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .folder-review-confirm{border:1px solid #d7dfea;border-radius:10px;padding:10px;background:white;margin:8px 0}
 #folderCorrectionNotice{padding:10px 12px;border:1px solid #dbe3f2;border-radius:10px;background:#f8fafe;margin:10px 0}
 
+
+/* Read-only final inspection. The original photo is linked, never duplicated. */
+.final-audit-metrics{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.final-audit-metrics span{border:1px solid #dbe6f3;border-radius:10px;padding:7px 10px;background:#f5f9ff;font-size:.87rem;font-weight:650}
+.final-audit-notice{border:1px solid #e5eaf1;background:#fbfcff;border-radius:10px;padding:9px 12px;margin:8px 0;font-size:.88rem}
+.final-audit-children{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:10px}
+.final-audit-child{border:1px solid #dce5f0;border-radius:12px;padding:12px;background:#fff;margin:0;min-width:0}
+.final-audit-child summary{cursor:pointer;font-weight:750}
+.final-audit-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:9px;margin:10px 0}
+.final-audit-photo{margin:0;min-width:0}
+.final-audit-photo img{display:block;width:100%;aspect-ratio:1.15;object-fit:cover;border:1px solid #dae4ee;border-radius:9px}
+.final-audit-photo figcaption{font-size:.76rem;color:#52637a;overflow-wrap:anywhere;margin-top:4px}
+.final-audit-issue{margin:11px 0;padding:11px;border:1px solid #dce6f1;border-radius:12px;background:#fafcff}
+.final-audit-issue summary{cursor:pointer;font-weight:750}
+
 .teacher-photo{display:inline-flex;flex-direction:column;align-items:center;gap:2px;vertical-align:top;margin:3px}
 .teacher-photo img{width:58px;height:58px;object-fit:cover;border-radius:9px;border:1px solid #dde5ef}
 .teacher-photo span{font-size:.72rem;color:#67758a}
@@ -229,6 +244,17 @@ label{display:inline-block;margin:5px 0}
 </details>
 </details>
 </section>
+
+<section class="panel" id="finalPhotoAuditPanel" hidden>
+ <div class="section-top"><span class="step">STEP 3</span><h2>📋 園児別の写真を最終点検（仮）</h2></div>
+ <p class="muted">先生が確認した仮フォルダと園児名から、<strong>保存済みの作業を読み取るだけ</strong>の一覧です。集合写真は複数の園児に表示されますが、元写真は1枚のままです。<strong>本番アルバムには反映・確定しません。</strong></p>
+ <div id="finalPhotoAuditSummary" class="final-audit-metrics" aria-live="polite"></div>
+ <div id="finalPhotoAuditWarnings" role="status" aria-live="polite"></div>
+ <h3>🌷 園児別の写真一覧</h3>
+ <div id="finalPhotoAuditChildren" class="final-audit-children"></div>
+ <div id="finalPhotoAuditChecks"></div>
+ <p class="muted">⚠️ 顔が同じ人物か・別のフォルダに同じ園児がいないか・園児以外の顔が混ざっていないかは、機械的な件数チェックだけでは保証できません。最後に写真を目視してね。</p>
+</section>
 <section class="panel" id="folderEditorSection">
 <details id="folderEditor">
 <summary style="font-weight:750;cursor:pointer">📁 園児フォルダ・写真の手動振り分け（必要なときだけ）</summary>
@@ -257,7 +283,7 @@ label{display:inline-block;margin:5px 0}
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021local-draft-save-ai"></script>
-<div id="build-marker">かんたん検証 2026-10-21 AI</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021-final-audit"></script>
+<div id="build-marker">かんたん検証 2026-10-21 AJ</div>
 </body>
 </html>
