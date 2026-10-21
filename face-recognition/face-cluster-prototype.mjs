@@ -132,6 +132,7 @@ function calculateFaceGroups(threshold){
    const parts=[];
    for(const id of ordered){
     const candidates=parts.map((part,k)=>({k,min:Math.min(...part.map(other=>pairScore(id,other)))}))
+      .filter(candidate=>part.every(other=>items[other].sourcePhoto!==items[id].sourcePhoto))
       .filter(candidate=>candidate.min>=threshold)
       .sort((a,b)=>b.min-a.min);
     if(candidates.length)parts[candidates[0].k].push(id);
@@ -196,6 +197,22 @@ function calculateFaceGroups(threshold){
   // No secondary similarity-only merges: teacher confirmation remains
   // necessary for pairs without independent evidence.
 
+ // Final invariant: never display two detected faces from the same
+ // source photo inside a single provisional identity group.
+ const safeGroups=[groups[0]];
+ let repairedSamePhotoPairs=0;
+ for(const group of groups.slice(1)){
+  const partitions=[];
+  for(const id of group.members){
+   let part=partitions.find(part=>part.every(other=>items[other].sourcePhoto!==items[id].sourcePhoto));
+   if(!part){part=[];partitions.push(part)}
+   part.push(id);
+  }
+  if(partitions.length>1)repairedSamePhotoPairs+=partitions.length-1;
+  for(const members of partitions)safeGroups.push({id:group.id,members});
+ }
+ groups=safeGroups;
+ if(repairedSamePhotoPairs)console.warn('Same-photo face groups repaired:',repairedSamePhotoPairs);
  // Renumber after merging. Earlier numeric gaps made 18 actual groups
  // appear to be 20 when the last displayed candidate ID was 20.
  groups=groups.filter((g,index)=>index===0||g.members.length>0);
