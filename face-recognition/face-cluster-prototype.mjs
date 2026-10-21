@@ -191,6 +191,16 @@ function calculateFaceGroups(threshold){
    const ga=groups.find(g=>g.members.length===1&&g.members[0]===pair.left);
    const gb=groups.find(g=>g.members.length===1&&g.members[0]===pair.right);
    if(!ga||!gb||ga===gb)continue;
+   // Avoid joining a singleton pair when their supporting third face is
+   // already in a group that conflicts with either source photograph.
+   const evidenceGroups=groups.slice(1).filter(g=>g.members.some(k=>
+    k!==pair.left&&k!==pair.right&&
+    items[k].sourcePhoto!==items[pair.left].sourcePhoto&&
+    items[k].sourcePhoto!==items[pair.right].sourcePhoto&&
+    pairScore(pair.left,k)>=Math.max(0.60,threshold-0.05)&&
+    pairScore(pair.right,k)>=Math.max(0.60,threshold-0.05)
+   ));
+   if(!evidenceGroups.length)continue;
    ga.members.push(pair.right);
    groups=groups.filter(g=>g!==gb);
    matched.add(pair.left);matched.add(pair.right);
@@ -204,6 +214,9 @@ function calculateFaceGroups(threshold){
    pairScore(i,j)<minimumPairConsistency
   )));
   if(inconsistent.length)console.warn('Provisional face groups with low pairwise consistency:',inconsistent.length);
+  // Only independent faces from distinct source photos can corroborate.
+  // A face already in a larger group should not be used to join two singletons
+  // if that would contradict an existing same-photo identity constraint.
   // Conservative second pass: merge fragmented clusters only when all cross-cluster
   // faces remain similar. Never merge simply to match the roster headcount.
   let merged=true;
