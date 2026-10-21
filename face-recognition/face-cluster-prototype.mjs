@@ -4,6 +4,7 @@ import {buildVerifiedPhotoFolders} from './teacher-verified-folders.mjs?v=202610
 import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.mjs?v=20261021n1';
 import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-folder-visibility.mjs?v=20261021x1';
 import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261021save-ai';
+import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
 // Standalone research prototype. Writes ONLY to its isolated IndexedDB when the user explicitly chooses Save; never alters production album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -1052,6 +1053,7 @@ function refreshMissingPhotoPreview(model,missing){
   }
  }
  updateMissingPhotoReport();
+ renderFinalPhotoAudit();
 }
 function renderMissingPhotoPicker(model,missing){
  const section=$('missingFacePhotoPicker'),title=$('missingFacePhotoPickerTitle');
@@ -1186,6 +1188,116 @@ function appendFolderDeletionControl(card,bucket,key){
  confirm.append(explanation,row);card.append(actions,confirm);
 }
 
+function renderFinalPhotoAudit(){
+ const panel=$('finalPhotoAuditPanel');
+ if(!panel)return;
+ panel.hidden=!photoNames.length;
+ if(!photoNames.length)return;
+ const {visible,model}=currentPhotoFolderView();
+ const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
+ const audit=auditPhotoAssignments({
+  photoCount:photoNames.length,namedFolders:preview.named,roster,
+  excludedFolders:visible.excluded,
+  invalidAssignments:[...preview.invalid,...preview.duplicates],
+  contradictions:model.contradictions,
+  hasSourcePhotoConflicts:model.hasSourcePhotoConflicts
+ });
+ const metrics=$('finalPhotoAuditSummary'),warnings=$('finalPhotoAuditWarnings');
+ const childrenHost=$('finalPhotoAuditChildren'),checks=$('finalPhotoAuditChecks');
+ if(!metrics||!warnings||!childrenHost||!checks)return;
+ metrics.replaceChildren();warnings.replaceChildren();childrenHost.replaceChildren();checks.replaceChildren();
+ for(const label of [
+  '元写真 '+audit.photoCount+'枚',
+  '園児に紐づけ済み '+audit.linkedPhotoCount+'枚',
+  '未紐づけ '+audit.unassignedPhotos.length+'枚',
+  '複数園児の集合写真 '+audit.sharedPhotos.length+'枚',
+  '名前がある園児 '+audit.distinctNamedChildren+'名'
+ ]){
+  const badge=document.createElement('span');badge.textContent=label;metrics.append(badge);
+ }
+ const notices=[];
+ if(!roster.length)notices.push('⚠️ 園児名簿が未設定です。上の仮フォルダで名前を付けると、この画面に反映されます。');
+ if(audit.contradictionCount)notices.push('⚠️ 先生の顔確認に矛盾が'+audit.contradictionCount+'組あります。上の顔グループ画面で確認してね。');
+ if(audit.hasSourcePhotoConflicts)notices.push('⚠️ 同じ元写真の異なる顔が同じ仮フォルダに入っています。顔の構成を見直してね。');
+ if(audit.invalidAssignments.length)notices.push('⚠️ 無効・重複した園児名設定が'+audit.invalidAssignments.length+'件あります。名前を確認してね。');
+ if(audit.unnamedFolders.length)notices.push('🔎 園児名が未設定の仮フォルダ：'+audit.unnamedFolders.length+'件。職員など園児以外の顔でなければ名前を付けてね。');
+ if(audit.unassignedPhotos.length)notices.push('🔎 どの園児にも紐づいていない写真：'+audit.unassignedPhotos.length+'枚。園児以外だけの写真も含みます。');
+ if(audit.multipleFolders.length)notices.push('⚠️ 同じ園児名が複数の仮フォルダに設定：'+audit.multipleFolders.map(child=>child.name+'さん').join('・')+'。');
+ if(audit.countImbalance)notices.push('🔎 園児間の写真枚数に偏りがありそうです（最少'+audit.minCount+'枚／最多'+audit.maxCount+'枚）。撮影状況も含めて確認してね。');
+ if(audit.excludedWithChildren.length)notices.push('ℹ️ 除外した顔と園児の顔が同じ元写真に写っている可能性：'+audit.excludedWithChildren.length+'枚。園児の写真自体は除外していません。');
+ if(!notices.length)notices.push('✅ 件数上の要点検項目はありません。顔の本人確認と園児以外の写り込みは引き続き目視で確認してね。');
+ for(const message of notices){
+  const p=document.createElement('p');p.className='final-audit-notice';p.textContent=message;warnings.append(p);
+ }
+ function photoGallery(indices,labels=new Map(),manual=new Set()){
+  const gallery=document.createElement('div');gallery.className='final-audit-photo-grid';
+  for(const index of indices){
+   const tile=document.createElement('figure');tile.className='final-audit-photo';
+   const image=document.createElement('img');
+   image.loading='lazy';image.src=photoUrls[index]||'';
+   image.alt='写真'+(index+1);image.title=photoNames[index]||'';
+   const label=document.createElement('figcaption');
+   label.textContent='写真'+(index+1)+(manual.has(index)?'（手動追加）':'')+
+    (labels.has(index)?' ／ '+labels.get(index):'');
+   tile.append(image,label);gallery.append(tile);
+  }
+  return gallery;
+ }
+ if(!audit.children.length){
+  const note=document.createElement('p');note.className='muted';
+  note.textContent='園児の名前がまだありません。仮フォルダの上にある名簿から設定してね。';
+  childrenHost.append(note);
+ }
+ for(const child of audit.children){
+  const card=document.createElement('details');card.className='final-audit-child';
+  const heading=document.createElement('summary');
+  heading.textContent='🌷 '+child.name+'さん：写真'+child.photoIndexes.length+'枚'+
+   (child.manuallyAdded.length?'（手動'+child.manuallyAdded.length+'枚）':'');
+  card.append(heading);
+  if(child.photoIndexes.length)card.append(photoGallery(child.photoIndexes,new Map(),new Set(child.manuallyAdded)));
+  else{
+   const empty=document.createElement('p');empty.className='muted';
+   empty.textContent='この園児に紐づいた写真はまだありません。';card.append(empty);
+  }
+  childrenHost.append(card);
+ }
+ function reviewDetails(title,indices,description,labels=new Map(),open=false){
+  const section=document.createElement('details');section.className='final-audit-issue';
+  section.open=open;
+  const summary=document.createElement('summary');summary.textContent=title;section.append(summary);
+  const note=document.createElement('p');note.className='muted';note.textContent=description;section.append(note);
+  if(indices.length)section.append(photoGallery(indices,labels));
+  checks.append(section);
+  return section;
+ }
+ reviewDetails('🔎 未紐づけの元写真 '+audit.unassignedPhotos.length+'枚',
+  audit.unassignedPhotos,'園児が写っている場合は上の「顔が見つからない写真の振り分け」や仮フォルダの園児名を確認してね。園児以外だけの写真は未指定でも大丈夫です。',
+  new Map(),audit.unassignedPhotos.length>0&&audit.unassignedPhotos.length<=12);
+ const sharedNames=new Map(audit.sharedPhotos.map(row=>[
+  row.photoIndex,row.children.map(child=>child.name+'さん').join('・')
+ ]));
+ reviewDetails('📷 複数の園児に紐づいた集合写真 '+audit.sharedPhotos.length+'枚',
+  audit.sharedPhotos.map(row=>row.photoIndex),'同じ元写真を複製せず、複数園児から参照しています。写っている園児が正しいか写真で確認してね。',sharedNames);
+ if(audit.unnamedFolders.length){
+  const section=document.createElement('details');section.className='final-audit-issue';
+  const summary=document.createElement('summary');
+  summary.textContent='📁 園児名が未設定の仮フォルダ '+audit.unnamedFolders.length+'件';
+  section.append(summary);
+  for(const [index,folder] of audit.unnamedFolders.entries()){
+   const caption=document.createElement('p');caption.className='muted';
+   caption.textContent='仮フォルダ '+(index+1)+'：顔'+folder.faceCount+'件・写真'+folder.photoIndexes.length+'枚';
+   section.append(caption);
+   if(folder.photoIndexes.length)section.append(photoGallery(folder.photoIndexes));
+  }
+  checks.append(section);
+ }
+ if(audit.excludedWithChildren.length){
+  reviewDetails('👀 除外した顔と園児の顔が同じ元写真にある '+audit.excludedWithChildren.length+'枚',
+   audit.excludedWithChildren,
+   '職員や保護者が一緒に写った写真の可能性があります。除外した顔フォルダは園児として分類していません。元写真は消えません。');
+ }
+}
+
 function renderVerifiedPhotoFolders(){
  const panel=$('verifiedPhotoFoldersPanel');
  const title=$('verifiedPhotoFoldersHeading');
@@ -1206,6 +1318,7 @@ function renderVerifiedPhotoFolders(){
  if(!photoNames.length){
   panel.hidden=true;
   const exclude=$('excludedFaceFoldersPanel');if(exclude)exclude.hidden=true;
+  const audit=$('finalPhotoAuditPanel');if(audit)audit.hidden=true;
   return;
  }
  panel.hidden=false;
