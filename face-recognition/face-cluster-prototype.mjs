@@ -2245,11 +2245,15 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
 }
 // Explicit local photo + face-classification checkpoint.
 // No automatic writes, no upload, and no shared production-album storage.
-let analyzedSourceFiles=[],analysisFinished=false,faceDraftBusy=false;
+let analyzedSourceFiles=[],analysisFinished=false,faceDraftBusy=false,faceDraftPreviousStartDisabled=false;
 function faceDraftStatusText(message){
  const el=$('faceDraftStatus');if(el)el.textContent=message;
 }
 function faceDraftBusyState(busy){
+ if(busy){
+  faceDraftPreviousStartDisabled=start.disabled;
+  start.disabled=true;
+ }else start.disabled=faceDraftPreviousStartDisabled;
  faceDraftBusy=busy;
  for(const id of ['saveFaceDraft','restoreFaceDraft','removeFaceDraft']){
   const button=$(id);if(button)button.disabled=busy;
@@ -2453,6 +2457,7 @@ $('removeFaceDraft')?.addEventListener('click',async()=>{
 void updateSavedFaceDraftInfo();
 
 start.addEventListener('click',async()=>{
+ if(faceDraftBusy){status.textContent='保存・復元の処理中です。終了してから解析してください。';return;}
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  analyzedSourceFiles=[];analysisFinished=false;
