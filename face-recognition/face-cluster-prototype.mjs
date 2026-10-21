@@ -1060,7 +1060,7 @@ function renderMissingPhotoPicker(model,missing){
   refreshMissingPhotoPreview(model,missing);
   return;
  }
- title.textContent='📷 顔が見つからない写真 '+missing.length+'枚を手動で仮振り分け';
+ title.textContent='📷 顔が見つからない写真 '+missing.length+'枚（既存／新規）';
  for(const photoIndex of missing){
   const card=document.createElement('div');card.className='photo-missing-review';
   const heading=document.createElement('strong');
@@ -1069,11 +1069,14 @@ function renderMissingPhotoPicker(model,missing){
   const photo=photoUrls[photoIndex]||urls[photoIndex];
   if(photo){
    const image=document.createElement('img');
-   image.src=photo;image.alt='写真'+(photoIndex+1)+'の確認用プレビュー';
-   card.append(image);
+   image.loading='lazy';image.src=photo;
+   image.alt='写真'+(photoIndex+1)+'の確認用プレビュー';card.append(image);
   }
+  const current=document.createElement('strong');
+  current.textContent='① 既存の園児フォルダに追加';
+  card.append(current);
   const hint=document.createElement('p');hint.className='muted';
-  hint.textContent='写っている園児の仮フォルダにチェックしてね。分からない場合は空欄でOK。';
+  hint.textContent='写真に写っている園児のフォルダをチェック。集合写真は複数選択OK。園児がいなければ未指定にしてね。';
   card.append(hint);
   const options=document.createElement('div');options.className='photo-missing-options';
   for(let i=0;i<model.buckets.length;i++){
@@ -1083,13 +1086,20 @@ function renderMissingPhotoPicker(model,missing){
    checkbox.type='checkbox';
    checkbox.checked=manualPhotoFolderChoices.get(photoIndex)?.has(key)||false;
    checkbox.setAttribute('aria-label','写真'+(photoIndex+1)+'を仮フォルダ'+(i+1)+'に仮指定');
-   const face=document.createElement('img');
    const first=bucket.members[0];
-   face.src=items[first].url;face.alt='仮フォルダ'+(i+1)+'の顔の見本';
+   let face;
+   if(Number.isInteger(first)&&items[first]){
+    face=document.createElement('img');
+    face.src=items[first].url;face.alt='仮フォルダ'+(i+1)+'の顔の見本';
+   }else{
+    face=document.createElement('span');
+    face.textContent='📷';face.style.fontSize='22px';
+   }
    const name=document.createElement('span');
    const assignedChild=roster.find(child=>String(child.id)===String(verifiedFolderNames.get(key)||''));
    name.textContent=(assignedChild?assignedChild.name+'さん・':'')+
-    '仮フォルダ'+String(i+1).padStart(2,'0')+'（顔'+bucket.members.length+'件）';
+    '仮フォルダ'+String(i+1).padStart(2,'0')+
+    (bucket.kind==='manual'?'（写真から作成'+(bucket.customName?'・'+bucket.customName:'')+'）':'（顔'+bucket.members.length+'件）');
    checkbox.addEventListener('change',()=>{
     const selected=new Set(manualPhotoFolderChoices.get(photoIndex)||[]);
     if(checkbox.checked)selected.add(key);else selected.delete(key);
@@ -1099,7 +1109,40 @@ function renderMissingPhotoPicker(model,missing){
    });
    label.append(checkbox,face,name);options.append(label);
   }
-  card.append(options);body.append(card);
+  if(!model.buckets.length){
+   const empty=document.createElement('p');empty.className='muted';
+   empty.textContent='既存の園児フォルダはありません。下から新規フォルダを作れます。';
+   card.append(empty);
+  }
+  card.append(options);
+  const creator=document.createElement('div');creator.className='photo-folder-creator';
+  const label=document.createElement('strong');label.textContent='② 新規フォルダに分ける';
+  const note=document.createElement('p');note.className='muted';
+  note.textContent='既存にない園児なら新しい仮フォルダを作り、この写真を追加します。あとで園児名を選べます。';
+  const input=document.createElement('input');input.type='text';
+  input.maxLength=40;input.placeholder='仮のフォルダ名（任意）';
+  input.setAttribute('aria-label','写真'+(photoIndex+1)+'の新しいフォルダ名');
+  const button=document.createElement('button');button.type='button';button.textContent='＋ 新規フォルダを作る';
+  const message=document.createElement('p');message.className='muted';message.setAttribute('role','status');
+  button.addEventListener('click',()=>{
+   const proposed=validateNewPhotoFolderName(input.value);
+   if(proposed===null){
+    message.textContent='フォルダ名は40文字以内で入力してね。';return;
+   }
+   if(newManualPhotoFolders.size>=100){
+    message.textContent='新規フォルダは100件まで作成できます。';return;
+   }
+   const key='manual-'+(++manualFolderSequence);
+   newManualPhotoFolders.set(key,{name:proposed});
+   const chosen=new Set(manualPhotoFolderChoices.get(photoIndex)||[]);
+   chosen.add(key);manualPhotoFolderChoices.set(photoIndex,chosen);
+   folderManagementNotice='✅ 写真'+(photoIndex+1)+'を新しい仮フォルダへ追加しました。元の写真は変更していません。';
+   renderFaceEvaluation();
+  });
+  const actions=document.createElement('div');actions.className='actions';
+  actions.append(input,button);
+  creator.append(label,note,actions,message);card.append(creator);
+  body.append(card);
  }
  refreshMissingPhotoPreview(model,missing);
 }
