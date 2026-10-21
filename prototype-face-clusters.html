@@ -272,6 +272,19 @@ label{display:inline-block;margin:5px 0}
  </div>
  <p id="provisionalFinalStatus" class="muted" role="status" aria-live="polite">仮確定はまだ行っていません。</p>
  <div id="provisionalFinalDetails"></div>
+ <div class="provisional-final-box" id="provisionalApprovalStorage">
+  <strong>💾 仮確定をこのSafariに保存</strong>
+  <p class="muted">先に上の「今の作業を保存」で<strong>最新の写真と振り分け結果</strong>を保存してね。その作業と一致した仮確定だけ保存できます。写真は追加保存せず、確認記録と照合情報だけを別の端末内領域に保存します。</p>
+  <div class="actions">
+   <button type="button" id="saveProvisionalApproval" disabled>💾 仮確定を保存</button>
+   <button type="button" id="restoreProvisionalApproval" class="secondary">📂 保存した仮確定を開く</button>
+  </div>
+  <p id="provisionalApprovalStorageStatus" class="muted" role="status" aria-live="polite">保存状況を確認しています。</p>
+  <details class="advanced"><summary>保存した仮確定だけを削除</summary>
+   <p class="muted">確認記録だけを消します。元写真・振り分け・保存済みの作業・本番アルバムには触れません。</p>
+   <button type="button" id="deleteProvisionalApproval" class="secondary">保存した仮確定を消す</button>
+  </details>
+ </div>
 </div>
 </section>
 <section class="panel" id="folderEditorSection">
@@ -302,7 +315,7 @@ label{display:inline-block;margin:5px 0}
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-provisional-final"></script>
-<div id="build-marker">かんたん検証 2026-10-22 AK</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-provisional-save"></script>
+<div id="build-marker">かんたん検証 2026-10-22 AL</div>
 </body>
 </html>
