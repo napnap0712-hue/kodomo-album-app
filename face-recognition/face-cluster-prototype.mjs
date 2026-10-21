@@ -1,4 +1,5 @@
 import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v2';
+import {buildTeacherSeedGroups,suggestTeacherSeedPairs} from './teacher-seed-matches.mjs?v=20261021s1';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -785,6 +786,71 @@ function renderQuickReview(){
  const falseSplits=feedback.filter(p=>p.same&&lookup.get(p.i)!==lookup.get(p.j)).length;
  const falseMerges=feedback.filter(p=>!p.same&&lookup.get(p.i)===lookup.get(p.j)).length;
  const activeCount=groups.filter(g=>g.id!=='unknown'&&g.members.length).length;
+ if(r50Compared&&items.every(item=>Array.isArray(item.r50Vector))){
+  const photos=items.map(item=>item.sourcePhoto);
+  const teacherSeeds=buildTeacherSeedGroups(photos,feedback);
+  if(teacherSeeds.length){
+   const suggestions=suggestTeacherSeedPairs(
+    photos,feedback,(i,j)=>similarity(items[i].r50Vector,items[j].r50Vector),6
+   );
+   summary.textContent='🧠 R50の仮候補 ／ 先生が確認した園児の集まり '+teacherSeeds.length+
+    '組 ／ 未確認の顔から '+suggestions.length+'件を表示。正誤は先生の確認が必要です。';
+   const note=document.createElement('p');note.className='muted';note.style.gridColumn='1/-1';
+   note.textContent='過去の「同じ園児」の確認を基準に、まだ分類していない顔を提案します。確率ではなく似ている順の参考です。「同じ／違う」を選んでもアルバムは変更されません。';
+   host.append(note);
+   for(const suggestion of suggestions){
+    const card=document.createElement('article');card.className='pair-card';
+    const heading=document.createElement('strong');
+    heading.textContent='顔'+(suggestion.face+1)+' は、この確認済みグループ？';
+    card.append(heading);
+    const row=document.createElement('div');row.className='pair-faces';
+    const present=(face,label)=>{
+     const figure=document.createElement('figure');
+     const img=document.createElement('img');img.src=items[face].url;
+     img.alt='顔'+(face+1);figure.append(img);
+     const caption=document.createElement('figcaption');
+     caption.textContent=label+'・顔'+(face+1)+'（写真'+(items[face].sourcePhoto+1)+'）';
+     figure.append(caption);row.append(figure);
+    };
+    present(suggestion.face,'未確認');
+    present(suggestion.anchor,'確認済み');
+    if(suggestion.members.length>2){
+     const other=suggestion.members.find(id=>id!==suggestion.anchor);
+     if(other!==undefined)present(other,'同じ園児');
+    }
+    card.append(row);
+    const desc=document.createElement('p');desc.className='muted';
+    desc.textContent='グループ内の確認済み顔 '+suggestion.members.length+
+     '件 ／ R50平均 '+suggestion.mean.toFixed(3)+
+     (suggestion.margin===null?' ／ 比較できる別グループなし':' ／ 次点との差 '+suggestion.margin.toFixed(3))+
+     '（正解率ではありません）';
+    card.append(desc);
+    if(suggestion.margin!==null&&suggestion.margin<0.08){
+     const warn=document.createElement('p');warn.className='muted';
+     warn.textContent='⚠️ 別グループとも似ているため、顔写真を確認してね。';
+     card.append(warn);
+    }
+    const actions=document.createElement('div');actions.className='actions';
+    for(const [same,label] of [[true,'✅ 同じ園児'],[false,'違う園児']]){
+     const button=document.createElement('button');button.type='button';
+     if(!same)button.className='secondary';button.textContent=label;
+     button.addEventListener('click',()=>{
+      const i=suggestion.face,j=suggestion.anchor;
+      verifiedFacePairs.set(facePairKey(i,j),{i,j,same});
+      renderFaceEvaluation();
+     });
+     actions.append(button);
+    }
+    card.append(actions);host.append(card);
+   }
+   if(!suggestions.length){
+    const done=document.createElement('p');done.className='muted';
+    done.textContent='この確認済みグループに安全に提示できる未確認候補はありません。ほかの顔は手動確認できます。';
+    host.append(done);
+   }
+   return;
+  }
+ }
  summary.textContent='AIの仮グループ '+activeCount+'件 ／ 先生の確認 '+feedback.length+'組'+
   (feedback.length?' ／ 確認した範囲で：分かれた同じ園児 '+falseSplits+'組・混ざった別の園児 '+falseMerges+'組':' ／ 精度：未評価（先生の確認を読み込むと比較できます）');
  const restoreHint=$('restoreHint');if(restoreHint)restoreHint.hidden=feedback.length>0;
