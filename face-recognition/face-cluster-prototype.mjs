@@ -157,66 +157,9 @@ function calculateFaceGroups(threshold){
    groups=repaired;
   };
   splitSamePhotoConflicts();
-  // Strong reciprocal singleton matches: only combine a pair when both faces
-  // prefer each other by a wide margin over every other face. This avoids
-  // reducing the threshold globally (known to mix lookalike children).
-  // Safety: a reciprocal match can still be a different child. Require
-  // cross-photo evidence and never infer identity from a single weak score.
-  const singletonMatches=[];
-  const singletonGroups=groups.slice(1).filter(g=>g.members.length===1);
-  for(let a=0;a<singletonGroups.length;a++)for(let b=a+1;b<singletonGroups.length;b++){
-   const left=singletonGroups[a].members[0],right=singletonGroups[b].members[0];
-   if(items[left].sourcePhoto===items[right].sourcePhoto)continue;
-   const score=pairScore(left,right);
-   if(!Number.isFinite(score)||score<Math.max(0.73,threshold+0.06))continue;
-   const competitors=(id,other)=>items.map((_,k)=>k)
-     .filter(k=>k!==id&&k!==other&&items[k].sourcePhoto!==items[id].sourcePhoto)
-     .map(k=>pairScore(id,k)).filter(Number.isFinite);
-   const rivals=[...competitors(left,right),...competitors(right,left)];
-   // When two faces are each other's only plausible candidate, one pair is
-   // still insufficient to prove identity. Keep them separate for review.
-   const corroboration=items.some((_,k)=>k!==left&&k!==right&&
-     items[k].sourcePhoto!==items[left].sourcePhoto&&
-     items[k].sourcePhoto!==items[right].sourcePhoto&&
-     pairScore(left,k)>=Math.max(0.60,threshold-0.05)&&
-     pairScore(right,k)>=Math.max(0.60,threshold-0.05));
-   if(!corroboration)continue;
-   if(rivals.length&&score-Math.max(...rivals)<0.12)continue;
-   singletonMatches.push({left,right,score});
-  }
-  singletonMatches.sort((a,b)=>b.score-a.score);
-  const matched=new Set();
-  for(const pair of singletonMatches){
-   if(matched.has(pair.left)||matched.has(pair.right))continue;
-   const ga=groups.find(g=>g.members.length===1&&g.members[0]===pair.left);
-   const gb=groups.find(g=>g.members.length===1&&g.members[0]===pair.right);
-   if(!ga||!gb||ga===gb)continue;
-   // Avoid joining a singleton pair when their supporting third face is
-   // already in a group that conflicts with either source photograph.
-   const evidenceGroups=groups.slice(1).filter(g=>g.members.some(k=>
-    k!==pair.left&&k!==pair.right&&
-    items[k].sourcePhoto!==items[pair.left].sourcePhoto&&
-    items[k].sourcePhoto!==items[pair.right].sourcePhoto&&
-    pairScore(pair.left,k)>=Math.max(0.60,threshold-0.05)&&
-    pairScore(pair.right,k)>=Math.max(0.60,threshold-0.05)
-   ));
-   if(!evidenceGroups.length)continue;
-   ga.members.push(pair.right);
-   groups=groups.filter(g=>g!==gb);
-   matched.add(pair.left);matched.add(pair.right);
-  }
-  // The extra merge stage must not produce a pair below the minimum
-  // consistency floor, even if its top match is strong.
-  const minimumPairConsistency=Math.max(0.48,threshold-0.12);
-  const inconsistent=groups.slice(1).filter(g=>g.members.some((i,a)=>g.members.slice(a+1).some(j=>
-   items[i].sourcePhoto===items[j].sourcePhoto||
-   !Number.isFinite(pairScore(i,j))||
-   pairScore(i,j)<minimumPairConsistency
-  )));
-  if(inconsistent.length)console.warn('Provisional face groups with low pairwise consistency:',inconsistent.length);
-  // Only independent faces from distinct source photos can corroborate.
-  // A face already in a larger group should not be used to join two singletons
-  // if that would contradict an existing same-photo identity constraint.
+  // Do not automatically merge singleton groups from similarity alone.
+  // A previously observed different-child pair scored higher than several
+  // confirmed same-child pairs. Leave uncertain identities for review.
   // Conservative second pass: merge fragmented clusters only when all cross-cluster
   // faces remain similar. Never merge simply to match the roster headcount.
   let merged=true;
@@ -240,6 +183,11 @@ function calculateFaceGroups(threshold){
   }
 
 
+
+ // Renumber after merging. Earlier numeric gaps made 18 actual groups
+ // appear to be 20 when the last displayed candidate ID was 20.
+ groups=groups.filter((g,index)=>index===0||g.members.length>0);
+ groups.slice(1).forEach((g,index)=>{g.id=String(index+1)});
 
  return groups;
 }
