@@ -1019,7 +1019,57 @@ move.addEventListener('click',()=>{
  for(const id of selected)dest.members.push(id);
  selected.clear();invalidateAssignmentPreview();render();
 });
-async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugment=false){
+// Experimental four-point eyelid-centred alignment, compared against the
+// existing eye-corner alignment without changing the production embeddings.
+// Both recognitions run in-browser, and the alternate embedding stays in RAM.
+async function recognizeEyelidAlignment(canvas,mesh,session,ort,phaseTimings){
+ const eye=indices=>{
+  const points=indices.map(i=>mesh[i]);
+  if(points.some(p=>!p||!Number.isFinite(p[0])||!Number.isFinite(p[1])))throw Error('まぶたの座標が不正');
+  return [points.reduce((sum,p)=>sum+p[0],0)/points.length,points.reduce((sum,p)=>sum+p[1],0)/points.length];
+ };
+ const src=[
+  eye([33,133,159,145]),
+  eye([362,263,386,374]),
+  [mesh[1]?.[0],mesh[1]?.[1]],
+  [mesh[61]?.[0],mesh[61]?.[1]],
+  [mesh[291]?.[0],mesh[291]?.[1]]
+ ];
+ if(src.some(p=>p.some(value=>!Number.isFinite(value))))throw Error('代替アライメントの座標が不正');
+ const dst=[[38.2946,51.6963],[73.5318,51.5014],[56.0252,71.7366],[41.5493,92.3655],[70.7299,92.2041]];
+ const centroid=points=>points.reduce((sum,p)=>[sum[0]+p[0]/points.length,sum[1]+p[1]/points.length],[0,0]);
+ const sm=centroid(src),dm=centroid(dst);
+ let numeratorA=0,numeratorB=0,denominator=0;
+ for(let k=0;k<src.length;k++){
+  const x=src[k][0]-sm[0],y=src[k][1]-sm[1],u=dst[k][0]-dm[0],v=dst[k][1]-dm[1];
+  numeratorA+=x*u+y*v;numeratorB+=x*v-y*u;denominator+=x*x+y*y;
+ }
+ if(denominator<1)throw Error('代替アライメントの計算失敗');
+ const a=numeratorA/denominator,b=numeratorB/denominator;
+ const tx=dm[0]-a*sm[0]+b*sm[1],ty=dm[1]-b*sm[0]-a*sm[1];
+ const aligned=document.createElement('canvas');aligned.width=112;aligned.height=112;
+ const ctx=aligned.getContext('2d');ctx.setTransform(a,b,-b,a,tx,ty);ctx.drawImage(canvas,0,0);
+ const pixels=ctx.getImageData(0,0,112,112).data,plane=112*112;
+ const tensor=new Float32Array(plane*3);
+ for(let i=0;i<plane;i++)for(let c=0;c<3;c++)
+  tensor[c*plane+i]=(pixels[i*4+c]-127.5)/127.5;
+ const feeds={};
+ for(const name of session.inputNames)feeds[name]=new ort.Tensor('float32',tensor,[1,3,112,112]);
+ const started=performance.now();
+ const output=await session.run(feeds);
+ const elapsed=performance.now()-started;
+ phaseTimings.recognition+=elapsed;
+ phaseTimings.alternateRecognition=(phaseTimings.alternateRecognition||0)+elapsed;
+ phaseTimings.alternateFaces=(phaseTimings.alternateFaces||0)+1;
+ const vector=Array.from(output[session.outputNames[0]].data);
+ if(vector.length<64||vector.length>1024||vector.some(value=>!Number.isFinite(value)))
+  throw Error('代替アライメントの特徴データが不正');
+ const thumbnail=aligned.toDataURL('image/jpeg',0.72);
+ aligned.width=0;aligned.height=0;
+ return {vector,thumbnail};
+}
+
+async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugment=false,compareEyelidAlignment=false){
  const canvas=document.createElement('canvas'),scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));
  canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
  canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
@@ -1092,6 +1142,18 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
    vec=first.map((v,i)=>(v+second[i])*0.5);
   }
  }
+ let alternateVector=null,alternateAlignedThumbnail=null;
+ if(compareEyelidAlignment){
+  try{
+   const alternate=await recognizeEyelidAlignment(canvas,mesh,session,ort,phaseTimings);
+   alternateVector=alternate.vector;
+   alternateAlignedThumbnail=alternate.thumbnail;
+  }catch(error){
+   // Alternative recognition is diagnostic only and must never discard
+   // a valid original face embedding.
+   if(diagnostics.length<5)diagnostics.push('まぶた補正の比較を一部スキップ：'+String(error?.message||error).slice(0,120));
+  }
+ }
  const box=face.box||[];
  const bx=Array.isArray(box)?box[0]:box.x,by=Array.isArray(box)?box[1]:box.y,bw=Array.isArray(box)?box[2]:box.width,bh=Array.isArray(box)?box[3]:box.height;
  const crop=document.createElement('canvas');crop.width=160;crop.height=160;
@@ -1107,7 +1169,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
  }
  const faceSize=Number.isFinite(bw)&&Number.isFinite(bh)?Math.min(bw,bh):null;
  const faceQuality=faceSize==null?'不明':faceSize<55?'小さい顔・要確認':faceSize<95?'中くらいの顔':'大きい顔';
- results.push({vector:vec,thumbnail:crop.toDataURL('image/jpeg',0.82),alignedThumbnail:aligned.toDataURL('image/jpeg',0.72),faceSize,faceQuality});
+ results.push({vector:vec,alternateVector,thumbnail:crop.toDataURL('image/jpeg',0.82),alignedThumbnail:aligned.toDataURL('image/jpeg',0.72),alternateAlignedThumbnail,faceSize,faceQuality});
  }catch(error){console.warn('顔ごとの解析失敗',error);if(diagnostics.length<5)diagnostics.push(String(error?.message||error).slice(0,260))}
  }
  if(!results.length)throw Error('検出した顔の特徴を取得できません'+(diagnostics.length?'：'+diagnostics[0]:''));
@@ -1119,7 +1181,7 @@ start.addEventListener('click',async()=>{
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
- const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
+ const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,alternateRecognition:0,alternateFaces:0,faces:0,group:0};const startedAt=performance.now();
  try{
   const modelStarted=performance.now();
   status.textContent='AIモデルを準備しています…';
@@ -1186,10 +1248,10 @@ start.addEventListener('click',async()=>{
    if(stop)break;status.textContent='解析中 '+(i+1)+' / '+files.length+'枚';
    let bitmap;try{
     const decodeStart=performance.now();bitmap=await createImageBitmap(files[i]);timings.decode+=performance.now()-decodeStart;
-    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings,diagnostics,$('flipAugment')?.checked===true);timings.detectAndEmbed+=performance.now()-embedStart;
+    const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings,diagnostics,$('flipAugment')?.checked===true,$('compareEyelidAlignment')?.checked===true);timings.detectAndEmbed+=performance.now()-embedStart;
     for(let faceIndex=0;faceIndex<detected.length;faceIndex++){
-     const {vector,thumbnail,alignedThumbnail,faceSize,faceQuality}=detected[faceIndex];
-     items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,alignedThumbnail,faceSize,faceQuality,vector});
+     const {vector,alternateVector,thumbnail,alignedThumbnail,alternateAlignedThumbnail,faceSize,faceQuality}=detected[faceIndex];
+     items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,alignedThumbnail,alternateAlignedThumbnail,faceSize,faceQuality,vector,alternateVector});
     }
    }catch(e){failed.push((i+1)+'枚目: '+String(e?.message||e).slice(0,65))}finally{bitmap?.close()}
    await new Promise(r=>setTimeout(r,0));
