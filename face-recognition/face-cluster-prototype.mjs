@@ -2698,7 +2698,7 @@ start.addEventListener('click',async()=>{
   diagnostic.append(breakdown);
   const alignment=document.createElement('details');
   const alignmentTitle=document.createElement('summary');alignmentTitle.textContent='📐 AIが実際に比較した顔画像（位置合わせ確認）';alignment.append(alignmentTitle);
-  const alignmentNote=document.createElement('p');alignmentNote.className='muted';alignmentNote.textContent='左が元写真の顔、右がAIに入力した112×112の補正画像。顔の上下・傾き・左右の目の位置にズレがないか確認します。画像は端末内の一時データで、保存・送信しません。';alignment.append(alignmentNote);
+  const alignmentNote=document.createElement('p');alignmentNote.className='muted';alignmentNote.textContent='左が元写真の顔、右がAIに入力した112×112の補正画像。顔の上下・傾き・左右の目の位置にズレがないか確認します。画像はこの画面で処理します。先生が「今の作業を保存」を押すと端末内に保存されますが、外部送信しません。';alignment.append(alignmentNote);
   for(const [index,item] of items.entries()){
    if(!item.alignedThumbnail)continue;
    const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #e8edf3';
