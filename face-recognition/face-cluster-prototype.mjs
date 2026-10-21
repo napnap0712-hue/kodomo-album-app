@@ -83,16 +83,16 @@ $('recognitionModel').addEventListener('change',()=>{
 $('clear').addEventListener('click',()=>{selected.clear();render()});
 cancel.addEventListener('click',()=>{stop=true;status.textContent='中断しています…'});
 function calculateFaceGroups(threshold){
- const pairScores=[];
+ const clusterPairScores=[];
  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
   const score=similarity(items[i].vector,items[j].vector);
-  if(Number.isFinite(score))pairScores.push({i,j,score});
+  if(Number.isFinite(score))clusterPairScores.push({i,j,score});
  }
- pairScores.sort((a,b)=>b.score-a.score);
+ clusterPairScores.sort((a,b)=>b.score-a.score);
   groups=[{id:'unknown',members:[]}];let next=1;
   // DBSCAN: density-based face-embedding clustering, with singleton noise
   // retained as separate provisional groups for teacher review.
-  const scoreMap=new Map(pairScores.map(p=>[p.i+':'+p.j,p.score]));
+  const scoreMap=new Map(clusterPairScores.map(p=>[p.i+':'+p.j,p.score]));
   const pairScore=(i,j)=>i===j?1:scoreMap.get(Math.min(i,j)+':'+Math.max(i,j));
   // Complete-link grouping: an incoming face must match EVERY existing member.
   // This avoids DBSCAN chaining across lookalike children through one pose-matched pair.
@@ -757,7 +757,7 @@ start.addEventListener('click',async()=>{
 
   groupsHost.closest('section').after(diagnostic);
   render();
- }catch(e){status.textContent='⚠️ 解析できません: '+String(e?.message||e).slice(0,220)}
+ }catch(e){status.textContent='⚠️ 解析できません【診断版C】: '+String(e?.message||e).slice(0,220)+'\n詳細: '+String(e?.stack||'スタック情報なし').slice(0,700);console.error('Face analysis diagnostic C',e)}
  finally{try{await session?.release()}catch{}try{await human?.dispose?.()}catch{}start.disabled=false;cancel.disabled=true}
 });
 window.addEventListener('pagehide',()=>urls.forEach(URL.revokeObjectURL));
