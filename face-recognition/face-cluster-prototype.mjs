@@ -911,9 +911,58 @@ function renderQuickReview(){
     card.append(actions);host.append(card);
    }
    if(!suggestions.length){
-    const done=document.createElement('p');done.className='muted';
-    done.textContent='この確認済みグループに安全に提示できる未確認候補はありません。ほかの顔は手動確認できます。';
-    host.append(done);
+    // Remaining faces cannot be added to the four confirmed groups:
+    // suggest possible NEW children among those faces instead.
+    const unassignedPairs=suggestUnassignedFacePairs(
+     photos,feedback,
+     (i,j)=>pairScore(i,j),
+     (i,j)=>similarity(items[i].r50Vector,items[j].r50Vector),
+     3
+    );
+    summary.textContent='✅ 既存'+teacherSeeds.length+'グループへの追加候補なし。別の園児かもしれない未分類の顔同士を'+unassignedPairs.length+'組だけ確認できます。';
+    note.textContent='先生の「違う園児」と同じ写真の別顔の条件を守ると、既存グループに追加できる顔はありません。残った顔同士を軽量AIとR50の順位で比較します。まだ同じ園児とは断定しません。';
+    if(quickReport?.value){
+     quickReport.value+='\n【未分類の顔同士の確認候補】'+unassignedPairs.length+'組（軽量・R50の平均順位）';
+    }
+    for(const suggestion of unassignedPairs){
+     const card=document.createElement('article');card.className='pair-card';
+     const heading=document.createElement('strong');
+     heading.textContent='新しい園児グループかも？';
+     card.append(heading);
+     const faces=document.createElement('div');faces.className='pair-faces';
+     for(const id of [suggestion.i,suggestion.j]){
+      const figure=document.createElement('figure');
+      const img=document.createElement('img');img.src=items[id].url;img.alt='顔'+(id+1);
+      const caption=document.createElement('figcaption');
+      caption.textContent='顔'+(id+1)+'・写真'+(items[id].sourcePhoto+1);
+      figure.append(img,caption);faces.append(figure);
+     }
+     card.append(faces);
+     const score=document.createElement('p');score.className='muted';
+     score.textContent='軽量モデル '+suggestion.lightScore.toFixed(3)+
+      ' ／ R50 '+suggestion.r50Score.toFixed(3)+'（モデルごとに尺度が異なり、正解率ではありません）';
+     card.append(score);
+     const actions=document.createElement('div');actions.className='actions';
+     for(const [same,label] of [[true,'✅ 同じ園児'],[false,'違う園児']]){
+      const button=document.createElement('button');button.type='button';
+      button.textContent=label;if(!same)button.className='secondary';
+      button.addEventListener('click',()=>{
+       verifiedFacePairs.set(facePairKey(suggestion.i,suggestion.j),{i:suggestion.i,j:suggestion.j,same});
+       renderFaceEvaluation();
+      });
+      actions.append(button);
+     }
+     card.append(actions);host.append(card);
+     if(quickReport?.value){
+      quickReport.value+='\n顔'+(suggestion.i+1)+' ↔ 顔'+(suggestion.j+1)+
+       '：軽量 '+suggestion.lightScore.toFixed(4)+' / R50 '+suggestion.r50Score.toFixed(4)+'（先生の確認待ち）';
+     }
+    }
+    if(!unassignedPairs.length){
+     const done=document.createElement('p');done.className='muted';
+     done.textContent='未分類の顔同士も、まだ確認していない安全な組み合わせはありません。顔一覧から個別に確認できます。';
+     host.append(done);
+    }
    }
    return;
   }
