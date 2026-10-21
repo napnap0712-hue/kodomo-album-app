@@ -243,6 +243,13 @@ function calculateFaceGroups(threshold){
 
  return groups;
 }
+// Pair comparison shared by grouping diagnostics and manual review.
+// Recompute from in-memory vectors so it never depends on a local cluster scope.
+function pairScore(i,j){
+ if(i===j)return 1;
+ if(!items[i]?.vector||!items[j]?.vector)return NaN;
+ return similarity(items[i].vector,items[j].vector);
+}
 function regroupFromExistingVectors(threshold){
  if(!items.length)return;
  groups=calculateFaceGroups(threshold);
