@@ -173,7 +173,18 @@ function calculateFaceGroups(threshold){
      items[k].sourcePhoto!==items[right].sourcePhoto&&
      pairScore(left,k)>=Math.max(0.60,threshold-0.05)&&
      pairScore(right,k)>=Math.max(0.60,threshold-0.05));
-    if(corroborated)repaired.push(group);
+    const own=pairScore(left,right);
+    const alternatives=items.map((_,k)=>k).filter(k=>k!==left&&k!==right)
+     .filter(k=>items[k].sourcePhoto!==items[left].sourcePhoto&&items[k].sourcePhoto!==items[right].sourcePhoto)
+     .flatMap(k=>[pairScore(left,k),pairScore(right,k)]).filter(Number.isFinite);
+    const strongestAlternative=alternatives.length?Math.max(...alternatives):-1;
+    // Split only ambiguous two-face pairs; preserve strong unambiguous
+    // pairs even when the child appears in just two photographs.
+    const ambiguous=!corroborated&&(
+     own<Math.max(0.70,threshold+0.05)||
+     own-strongestAlternative<0.08
+    );
+    if(!ambiguous)repaired.push(group);
     else{
      repaired.push({id:group.id,members:[left]});
      repaired.push({id:String(next++),members:[right]});
