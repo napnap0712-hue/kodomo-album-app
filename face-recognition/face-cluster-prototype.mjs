@@ -482,6 +482,30 @@ function renderPendingFaceImport(){
   panel.append(confirm);host.append(panel);
  }
 }
+// Recover teacher-reviewed pair identities safely across reruns.
+ // The original face index is only trusted when BOTH photo identities
+ // and the measured embedding similarity still agree.
+function findMatchingReviewedPair(photoA,photoB,oldLeft,oldRight,oldScore){
+ const left=items.map((item,i)=>item.sourcePhoto===photoA?i:-1).filter(i=>i>=0);
+ const right=items.map((item,i)=>item.sourcePhoto===photoB?i:-1).filter(i=>i>=0);
+ const directLeft=oldLeft-1,directRight=oldRight-1;
+ const within=(i,j,tolerance)=>{
+  const score=pairScore(i,j);
+  return i!==j&&Number.isFinite(score)&&Math.abs(score-oldScore)<=tolerance;
+ };
+ const directValid=items[directLeft]?.sourcePhoto===photoA&&items[directRight]?.sourcePhoto===photoB&&within(directLeft,directRight,0.025);
+ if(directValid)return {i:directLeft,j:directRight,reason:'写真番号・顔番号・比較値一致'};
+ const candidates=[];
+ for(const i of left)for(const j of right){
+  if(i===j||!within(i,j,0.025))continue;
+  candidates.push({i,j,delta:Math.abs(pairScore(i,j)-oldScore)});
+ }
+ candidates.sort((a,b)=>a.delta-b.delta);
+ if(candidates.length===1)return {i:candidates[0].i,j:candidates[0].j,reason:'写真番号・比較値の唯一の一致'};
+ if(candidates.length>1&&candidates[0].delta<=0.006&&candidates[1].delta-candidates[0].delta>=0.035)
+  return {i:candidates[0].i,j:candidates[0].j,reason:'写真番号・比較値の明確な一致'};
+ return null;
+}
 function validateFaceReportAndImport(){
  const raw=$('faceEvaluationImport')?.value||'';
  const feedback=$('faceEvaluationMessage');
@@ -491,7 +515,7 @@ function validateFaceReportAndImport(){
  if(!count)return fail('写真数と検出顔数を含む検証結果を貼り付けてください。');
  if(+count[1]!==photoNames.length)return fail('写真枚数が異なります。前回と同じ枚数・順番の写真を選んでください。');
  const lines=raw.split(/\r?\n/).filter(line=>/^顔\d+\(写真\d+\)/.test(line.trim()));
- if(!lines.length)return fail('確認済みの顔の組が見つかりません。');
+ if(!lines.length)return fail('このテキストは「先生が確認した顔の組 0」の結果だよ。前回の7組が記載されたテキストを貼り付けてね。今の確認記録は変更していません。');
  const imported=new Map(),manual=[];
  for(const line of lines){
   const match=line.trim().match(/^顔(\d+)\(写真(\d+)\)\s*↔\s*顔(\d+)\(写真(\d+)\)：(同じ園児|違う園児)\s*\/\s*値\s+(-?\d+(?:\.\d+)?)/);
@@ -500,17 +524,12 @@ function validateFaceReportAndImport(){
   if(photoA<0||photoB<0||photoA>=photoNames.length||photoB>=photoNames.length||!Number.isFinite(oldScore))
    return fail('写真番号または比較値が不正です。');
   if(same&&photoA===photoB)return fail('同じ写真の別々の顔は同じ園児として登録できません。');
-  const left=items.map((item,i)=>item.sourcePhoto===photoA?i:-1).filter(i=>i>=0);
-  const right=items.map((item,i)=>item.sourcePhoto===photoB?i:-1).filter(i=>i>=0);
-  // Only auto-restore a pair when both source photos have exactly one face
-  // and the cross-device score still matches the earlier teacher-reviewed pair.
-  if(left.length===1&&right.length===1&&left[0]!==right[0]&&
-     Number.isFinite(pairScore(left[0],right[0]))&&
-     Math.abs(pairScore(left[0],right[0])-oldScore)<=0.035){
-   const i=left[0],j=right[0],key=facePairKey(i,j);
+  const match=findMatchingReviewedPair(photoA,photoB,oldLeft,oldRight,oldScore);
+  if(match){
+   const key=facePairKey(match.i,match.j);
    if(imported.has(key)&&imported.get(key).same!==same)
     return fail('同じ顔の組に矛盾した判定があります。');
-   imported.set(key,{i,j,same});
+   imported.set(key,{i:match.i,j:match.j,same});
   }else{
    manual.push({photoA,photoB,oldLeft,oldRight,same,oldScore,selectedLeft:null,selectedRight:null});
   }
@@ -523,7 +542,7 @@ function validateFaceReportAndImport(){
  renderFaceEvaluation();renderPendingFaceImport();
  if(feedback){
   const countWarning=+count[2]===items.length?'':'（前回'+count[2]+'顔・今回は'+items.length+'顔）';
-  feedback.textContent='✅ 自動復元 '+imported.size+'組 ／ 顔を見て再確認 '+manual.length+'組 '+countWarning+'。同じ写真の選択順序であることを確認してください。アルバムは変更しません。';
+  feedback.textContent='✅ 前回の確認'+lines.length+'組から、自動復元 '+imported.size+'組 ／ 目視確認 '+manual.length+'組 '+countWarning+'。今の解析結果を変更せず、先生の確認だけ復元しました。';
  }
 }
 function applyVerifiedFaceMerges(){
