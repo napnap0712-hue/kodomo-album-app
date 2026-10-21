@@ -15,6 +15,11 @@ export function checkFinalizationReadiness(audit){
   blockers.push('無効または重複した園児名の設定があります。');
  if(audit?.multipleFolders?.length)
   blockers.push('同じ園児名に複数の仮フォルダが設定されています。');
+ const emptyNamed=(audit?.children||[]).filter(child=>child.folderKeys?.length&&!child.photoIndexes?.length);
+ if(emptyNamed.length)blockers.push(
+  '写真が0枚になった園児の仮フォルダがあります：'+emptyNamed.map(child=>child.name+'さん').join('・')+
+  '。写真を追加するか、この園児フォルダを見直してください。');
+
  if(audit?.unnamedFolders?.length)
   blockers.push('園児名が未設定の仮フォルダが'+audit.unnamedFolders.length+'件あります。園児以外なら除外、園児なら名前を付けてください。');
  return {
