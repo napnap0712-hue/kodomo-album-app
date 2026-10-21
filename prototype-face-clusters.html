@@ -96,8 +96,9 @@ label{display:inline-block;margin:5px 0}
 <p class="muted">候補が正しいとは限りません。「同じ園児」「違う園児」を押すだけで判定を記録します。<strong>園児の名前をAIが推測することはありません。</strong></p>
 <p id="quickReviewSummary" aria-live="polite">先に写真を解析してください。</p>
 <details class="advanced" id="verifiedPhotoFoldersPanel" hidden>
- <summary id="verifiedPhotoFoldersHeading">🗂 先生の確認から写真を整理（仮プレビュー）</summary>
- <p class="muted">写真は園児ごとに表示します。集合写真は写っている複数の園児に表示されますが、写真を複製・保存するわけではありません。従来のAI仮グループや実際のアルバムは変更しません。</p>
+ <summary id="verifiedPhotoFoldersHeading">🗂 先生の確認から写真を整理（間違いも訂正できる）</summary>
+ <p class="muted">これは先生の確認記録から作った仮フォルダです。「同じ園児」と登録した組に誤りがあれば、違う園児が混ざることがあります。写真・アルバムはまだ変更しません。</p>
+ <p class="muted"><strong>違う園児が混ざっていたら：</strong>そのフォルダの「🔎 違う園児が混ざっている？」を開いて、以前「同じ園児」と判断した2枚の顔を見直し、間違えた組だけ「この2つは違う園児」から訂正してね。直前の訂正は戻せます。</p>
  <p id="verifiedPhotoFoldersStatus" class="muted"></p>
  <div id="folderCorrectionNotice" class="muted" role="status" aria-live="polite" hidden></div>
  <div class="actions"><button type="button" id="undoFolderCorrection" class="secondary" hidden>↩ 最後の訂正を戻す</button></div>
