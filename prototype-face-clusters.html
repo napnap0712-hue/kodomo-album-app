@@ -96,6 +96,11 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .final-audit-photo{margin:0;min-width:0}
 .final-audit-photo img{display:block;width:100%;aspect-ratio:1.15;object-fit:cover;border:1px solid #dae4ee;border-radius:9px}
 .final-audit-photo figcaption{font-size:.76rem;color:#52637a;overflow-wrap:anywhere;margin-top:4px}
+
+.provisional-final-box{border:1px solid #cfdfef;background:#f7fbff;border-radius:14px;padding:16px;margin-top:18px}
+.provisional-final-box label{display:flex;align-items:flex-start;gap:9px;margin:10px 0;font-size:.9rem}
+.provisional-final-box input[type=checkbox]{width:18px;height:18px;flex-shrink:0;margin-top:3px}
+.provisional-final-box .actions{margin-top:12px}
 .final-audit-issue{margin:11px 0;padding:11px;border:1px solid #dce6f1;border-radius:12px;background:#fafcff}
 .final-audit-issue summary{cursor:pointer;font-weight:750}
 
@@ -254,6 +259,20 @@ label{display:inline-block;margin:5px 0}
  <div id="finalPhotoAuditChildren" class="final-audit-children"></div>
  <div id="finalPhotoAuditChecks"></div>
  <p class="muted">⚠️ 顔が同じ人物か・別のフォルダに同じ園児がいないか・園児以外の顔が混ざっていないかは、機械的な件数チェックだけでは保証できません。最後に写真を目視してね。</p>
+
+<div class="provisional-final-box" id="provisionalFinalBox">
+ <h3>🔐 STEP 4　園児別写真の仮確定</h3>
+ <p class="muted">園児別写真を先生が確認したあと、<strong>編集画面へ渡す前の候補</strong>を検証画面内だけに作ります。写真や名前は書き換えず、本番アルバムへも反映しません。<strong>仮確定は画面内の一時状態で、Safariを閉じると消えます。保存済みの検証データには影響しません。</strong></p>
+ <div id="provisionalFinalReadiness" class="muted" role="status" aria-live="polite">保存済みの作業を読み込んで確認してください。</div>
+ <label><input type="checkbox" id="provisionalFinalVisualCheck"><span>園児別の写真・集合写真の紐づけ・園児以外の顔の混入を<strong>自分の目で確認しました</strong>。</span></label>
+ <label id="provisionalFinalUnassignedLabel" hidden><input type="checkbox" id="provisionalFinalUnassignedCheck"><span id="provisionalFinalUnassignedText">未紐づけの写真が仮確定に含まれないことを確認しました。</span></label>
+ <div class="actions">
+  <button type="button" id="createProvisionalFinal" disabled>🔐 確認した結果を仮確定</button>
+  <button type="button" id="cancelProvisionalFinal" class="secondary" hidden>仮確定を取り消す</button>
+ </div>
+ <p id="provisionalFinalStatus" class="muted" role="status" aria-live="polite">仮確定はまだ行っていません。</p>
+ <div id="provisionalFinalDetails"></div>
+</div>
 </section>
 <section class="panel" id="folderEditorSection">
 <details id="folderEditor">
@@ -283,7 +302,7 @@ label{display:inline-block;margin:5px 0}
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021-final-audit"></script>
-<div id="build-marker">かんたん検証 2026-10-21 AJ</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-provisional-final"></script>
+<div id="build-marker">かんたん検証 2026-10-22 AK</div>
 </body>
 </html>
