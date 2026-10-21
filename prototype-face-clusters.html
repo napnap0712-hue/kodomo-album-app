@@ -37,6 +37,17 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .verified-folder-card{background:#fff}
 .verified-folder-card .faces{margin:8px 0}
 .verified-folder-card .muted{font-size:.8rem}
+.verified-names-panel{border:1px solid #dae5f2;border-radius:12px;background:#f8fbff;padding:13px;margin:12px 0}
+.verified-names-panel .actions{margin:8px 0}.verified-names-panel select{padding:8px;border:1px solid #d8e2ef;border-radius:9px;background:#fff}
+.folder-child-picker{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:9px 0}
+.folder-child-picker select{font-size:.88rem;max-width:100%;min-width:130px;padding:8px 10px;border:1px solid #d4ddeb;border-radius:9px;background:#fff}
+.folder-child-picker span{color:#65758a;font-size:.8rem}
+.named-folder-header{background:#edf7ff;border:1px solid #c8e1f5;padding:6px 9px;border-radius:9px;margin-bottom:9px;font-size:.9rem;font-weight:700}
+.folder-photo-gallery{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px}
+.folder-photo-preview{display:inline-flex;flex-direction:column;align-items:center;gap:3px;margin:2px 0;width:78px}
+.folder-photo-preview img{width:74px;height:62px;border-radius:8px;object-fit:cover;display:block;border:1px solid #d9e5ef}
+.folder-photo-preview span{font-size:.73rem;color:#64758a;text-align:center}
+
 .photo-missing-review{padding:12px 0;border-top:1px solid #e4eaf2}
 .photo-missing-review:first-child{border-top:0}
 .photo-missing-review img{max-width:300px;max-height:230px;width:auto;height:auto;display:block;object-fit:contain;border-radius:11px;margin:8px 0}
@@ -110,6 +121,17 @@ label{display:inline-block;margin:5px 0}
  <p class="muted">これは先生の確認記録から作った仮フォルダです。「同じ園児」と登録した組に誤りがあれば、違う園児が混ざることがあります。写真・アルバムはまだ変更しません。</p>
  <p class="muted"><strong>違う園児が混ざっていたら：</strong>そのフォルダの「🔎 違う園児が混ざっている？」を開いて、以前「同じ園児」と判断した2枚の顔を見直し、間違えた組だけ「この2つは違う園児」から訂正してね。直前の訂正は戻せます。</p>
  <p id="verifiedPhotoFoldersStatus" class="muted"></p>
+ <div class="verified-names-panel">
+  <strong>🌷 園児名を仮フォルダに付ける</strong>
+  <p class="muted">登録済みのクラス名簿を端末内から参照します。園児名の保存・自動確定はせず、先生が選択した組み合わせだけ画面に表示します。</p>
+  <div class="actions">
+   <label for="verifiedFolderRosterClass">クラス</label>
+   <select id="verifiedFolderRosterClass" aria-label="仮フォルダで使うクラス"></select>
+   <button type="button" id="loadVerifiedFolderRoster" class="secondary">登録済み園児を読み込む</button>
+  </div>
+  <p id="verifiedFolderRosterStatus" class="muted" role="status" aria-live="polite">園児名を付ける場合は、クラスを選んで読み込んでね。</p>
+  <p class="muted">ひとつの園児名は1つの仮フォルダだけに設定できます。名簿にない場合は「未設定」で残してね。検証結果のコピーに園児名は含めません。</p>
+ </div>
  <div id="folderCorrectionNotice" class="muted" role="status" aria-live="polite" hidden></div>
  <div class="actions"><button type="button" id="undoFolderCorrection" class="secondary" hidden>↩ 最後の訂正を戻す</button></div>
  <div id="verifiedPhotoFoldersGrid" class="teacher-groups"></div>
