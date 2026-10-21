@@ -331,6 +331,7 @@ let draggingFace=null,pressTimer=null,dragGhost=null,dragPointer=null,dragJustFi
 function relocateFace(id,target){
  if(!Number.isInteger(id)||!groups.some(g=>g.id===target))return;
  if(groups.find(g=>g.id===target).members.includes(id))return;
+ clearVerifiedMergeUndo();
  for(const g of groups)g.members=g.members.filter(x=>x!==id);
  groups.find(g=>g.id===target).members.push(id);
  selected.clear();invalidateAssignmentPreview();render();
@@ -740,6 +741,7 @@ function render(){
 }
 move.addEventListener('click',()=>{
  if(!selected.size)return;
+ clearVerifiedMergeUndo();
  let target=destination.value;
  if(target==='new'){target=String(Math.max(0,...groups.map(g=>Number(g.id)||0))+1);groups.push({id:target,members:[]})}
  const dest=groups.find(g=>g.id===target);if(!dest)return;
@@ -1025,6 +1027,7 @@ start.addEventListener('click',async()=>{
     const first=groups.find(g=>g.id===firstId),second=groups.find(g=>g.id===secondId);
     if(!first||!second||first===second||hasExcludedPair(first,second)){refreshGroupPairs();return;}
     if(!window.confirm('顔写真を確認しましたか？ この2グループを1つにまとめます（アルバムデータは変更しません）。'))return;
+    clearVerifiedMergeUndo();
     // Record one representative teacher-confirmed pair before merging.
     let representative=null;
     for(const i of first.members)for(const j of second.members){
