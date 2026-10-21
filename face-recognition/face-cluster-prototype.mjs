@@ -1,6 +1,7 @@
 import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v2';
 import {buildTeacherSeedGroups,suggestTeacherSeedPairs,suggestUnassignedFacePairs} from './teacher-seed-matches.mjs?v=20261021s2';
 import {buildVerifiedPhotoFolders} from './teacher-verified-folders.mjs?v=20261021f1';
+import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.mjs?v=20261021n1';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -94,6 +95,62 @@ let roster=[];
 const classSelect=$('rosterClass');
 for(const [id,name] of rosterClasses){const option=document.createElement('option');option.value=id;option.textContent=name;classSelect.append(option)}
 classSelect.value='tulip';
+// Teacher-name associations are only held in RAM; never written to a real album.
+const verifiedRosterClass=$('verifiedFolderRosterClass');
+for(const [id,name] of rosterClasses){
+ const option=document.createElement('option');option.value=id;option.textContent=name;
+ verifiedRosterClass?.append(option);
+}
+if(verifiedRosterClass)verifiedRosterClass.value=classSelect.value;
+const verifiedFolderNames=new Map();
+let verifiedRosterScope='',folderNameStatus='';
+function folderRosterSignature(){
+ return classSelect.value+'::'+roster.map(k=>String(k.id)+':'+String(k.name)).sort().join('|');
+}
+function reconcileVerifiedRoster(){
+ const next=roster.length?folderRosterSignature():'';
+ if(verifiedRosterScope!==next){
+  verifiedFolderNames.clear();
+  folderNameStatus=verifiedRosterScope?'⚠️ 名簿が変わったため、以前の園児名の仮指定は解除しました。':'';
+  verifiedRosterScope=next;
+ }
+ const status=$('verifiedFolderRosterStatus');
+ if(status)status.textContent=roster.length?
+  '✅ '+roster.length+'名を参照中（この画面内だけ）。'+folderNameStatus:
+  '園児名簿が読み込まれていません。クラス名簿を読み込むか、一時入力を使ってね。';
+}
+verifiedRosterClass?.addEventListener('change',()=>{
+ if(verifiedRosterClass.value!==classSelect.value){
+  classSelect.value=verifiedRosterClass.value;
+  classSelect.dispatchEvent(new Event('change'));
+ }
+});
+$('loadVerifiedFolderRoster')?.addEventListener('click',()=>{
+ if(verifiedRosterClass?.value!==classSelect.value){
+  classSelect.value=verifiedRosterClass.value;
+  classSelect.dispatchEvent(new Event('change'));
+ }
+ $('loadRoster').click();
+});
+$('useVerifiedFolderManualNames')?.addEventListener('click',()=>{
+ const input=$('verifiedFolderManualNames');
+ const names=(input?.value||'').split(/\r?\n/).map(name=>name.trim()).filter(Boolean);
+ const unique=[...new Set(names)];
+ const status=$('verifiedFolderRosterStatus');
+ if(!unique.length){
+  if(status)status.textContent='⚠️ 名前を1行に1名ずつ入力してね。まだ変更していません。';
+  return;
+ }
+ if(unique.length>100){
+  if(status)status.textContent='⚠️ 一度に登録できる仮名簿は100名までです。';
+  return;
+ }
+ roster=unique.map((name,index)=>({id:'preview-'+classSelect.value+'-'+index,name}));
+ reconcileVerifiedRoster();
+ if(status)status.textContent='✅ 一時名簿 '+unique.length+'名を使用中。保存・送信はしません。';
+ renderFaceEvaluation();
+});
+
 function readRegisteredChildren(){
  const meta=JSON.parse(localStorage.getItem('omoide-year-meta-v1')||'null');
  const schoolYear=()=>{const d=new Date();return d.getFullYear()-(d.getMonth()<3?1:0)};
@@ -106,10 +163,24 @@ function readRegisteredChildren(){
  return value.filter(k=>k&&typeof k.name==='string'&&k.name.trim()).map(k=>({id:String(k.id),name:k.name}));
 }
 $('loadRoster').addEventListener('click',()=>{
- try{roster=readRegisteredChildren();$('rosterStatus').textContent=roster.length+'名を参照読み込みしました（端末内の登録データは未変更）。';render()}
- catch(e){roster=[];$('rosterStatus').textContent='読み込めませんでした：'+String(e.message||e);render()}
+ try{
+  roster=readRegisteredChildren();
+  reconcileVerifiedRoster();
+  $('rosterStatus').textContent=roster.length+'名を参照読み込みしました（端末内の登録データは未変更）。';
+  render();
+ }catch(e){
+  roster=[];reconcileVerifiedRoster();
+  $('rosterStatus').textContent='読み込めませんでした：'+String(e.message||e);
+  render();
+ }
 });
-classSelect.addEventListener('change',()=>{roster=[];$('rosterStatus').textContent='クラスを変更しました。「登録済み園児を読み込む」を押してください。';render()});
+classSelect.addEventListener('change',()=>{
+ roster=[];
+ if(verifiedRosterClass)verifiedRosterClass.value=classSelect.value;
+ reconcileVerifiedRoster();
+ $('rosterStatus').textContent='クラスを変更しました。「登録済み園児を読み込む」を押してください。';
+ render();
+});
 
 // The file inputs are declared in HTML to remain visible even if script loading fails.
 const lightInput=$('lightweightOnnxFile'),dataInput=$('lightweightDataFile');
@@ -855,7 +926,7 @@ function renderSamePairCorrection(host,pair){
 // Folder IDs (01,02...) can change when a teacher fixes a mistaken pair.
 // Use confirmed face composition as the temporary identifier instead.
 function provisionalPhotoFolderKey(bucket){
- return [...bucket.members].sort((a,b)=>a-b).join(':');
+ return verifiedFolderKey(bucket);
 }
 const missingPhotoReportHeader='\n【顔未検出写真の手動仮指定】';
 function updateMissingPhotoReport(){
@@ -1932,7 +2003,7 @@ start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();verifiedFolderNames.clear();folderNameStatus='';const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,alternateRecognition:0,alternateFaces:0,faces:0,group:0};const startedAt=performance.now();
  try{
