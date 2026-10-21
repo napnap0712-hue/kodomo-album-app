@@ -9,6 +9,7 @@ import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
 import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs?v=20261022-ak';
 import {bindProvisionalApprovalUi} from './provisional-approval-ui.mjs?v=20261022-al';
 import {bindAlbumPhotoHandoffUi} from './album-photo-handoff-ui.mjs?v=20261022-am';
+import {bindPhotoOriginalReviewUi} from './photo-original-review-ui.mjs?v=20261022-an';
 // Standalone research prototype. Writes ONLY to its isolated IndexedDB when the user explicitly chooses Save; never alters production album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -489,6 +490,7 @@ const manualPhotoAssignments=new Map();
 // This never writes to the album and intentionally does not use folder numbers.
 const manualPhotoFolderChoices=new Map();
 const photoFolderCorrections=new Map();
+let photoOriginalReviewUi={open:()=>false},lastPhotoCorrectionUndo=null;
 function renderManualPhotos(){
  const host=$('manualPhotoAssignments');if(!host)return;
  host.replaceChildren();
@@ -1049,7 +1051,10 @@ function refreshMissingPhotoPreview(model,missing){
     image.alt='写真'+(photoIndex+1)+'（仮プレビュー）';
     const label=document.createElement('span');label.textContent='写真'+(photoIndex+1)+
      (row.manuallyAdded.includes(photoIndex)?'・手動':'');
-    tile.append(image,label);target.append(tile);
+    const open=document.createElement('button');open.type='button';open.className='photo-review-button';
+    open.setAttribute('aria-label','元写真'+(photoIndex+1)+'を拡大して振り分けを修正');
+    open.addEventListener('click',()=>photoOriginalReviewUi.open(photoIndex,row.key));
+    open.append(image);tile.append(open,label);target.append(tile);
    }
    const title=grid.querySelector('[data-folder-photo-heading="'+row.key+'"]');
    if(title)title.textContent='📷 写真をサムネイルで見る（'+row.photoIndexes.length+'枚）';
@@ -1317,6 +1322,57 @@ $('cancelProvisionalFinal')?.addEventListener('click',()=>{
  renderFinalPhotoAudit();
 });
 
+
+function photoCorrectionScope(){
+ return JSON.stringify({
+  source:photoNames,faces:faceReviewSignature(),
+  folders:[...verifiedFolderNames].sort((a,b)=>a[0].localeCompare(b[0])),
+  manual:[...newManualPhotoFolders].sort((a,b)=>a[0].localeCompare(b[0]))
+ });
+}
+function updatePhotoCorrectionUndoButton(){
+ const button=$('undoPhotoCorrection');
+ if(!button)return;
+ if(lastPhotoCorrectionUndo?.scope!==photoCorrectionScope())lastPhotoCorrectionUndo=null;
+ button.disabled=!lastPhotoCorrectionUndo;
+}
+function applyPhotoCorrection({photoIndex,fromKey,toKey}){
+ const {model}=currentPhotoFolderView();
+ const named=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,
+  manualPhotoFolderChoices,photoFolderCorrections).named.filter(row=>row.childId);
+ const source=named.find(row=>row.key===fromKey);
+ const destination=named.find(row=>row.key===toKey);
+ if(fromKey&&(!source||!source.photoIndexes.includes(photoIndex)))
+  throw new Error('この写真は選択した園児のフォルダにありません。もう一度写真を開いてね。');
+ if(toKey&&!destination)
+  throw new Error('移動先のフォルダが見つかりません。');
+ if(!fromKey&&!toKey)throw new Error('追加先フォルダを選んでね。');
+ const old=photoFolderCorrectionsAsRows(photoFolderCorrections);
+ const result=transferPhotoFolderCorrection(photoFolderCorrections,photoIndex,fromKey,toKey,{
+  photoCount:photoNames.length,folderKeys:new Set(named.map(row=>row.key))
+ });
+ photoFolderCorrections.clear();
+ for(const [index,entries] of result)photoFolderCorrections.set(index,entries);
+ lastPhotoCorrectionUndo={rows:old,scope:photoCorrectionScope()};
+ folderManagementNotice='✅ 写真'+(photoIndex+1)+'：'+
+  (fromKey?(source.childName+'さんから'+(toKey?(destination.childName+'さんへ移動しました'):'外しました')):
+   destination.childName+'さんへ追加しました')+
+  '。元の写真・AI顔認識・ほかの園児との紐づけは変更していません。再度「今の作業を保存」してね。';
+ renderVerifiedPhotoFolders();
+ return folderManagementNotice;
+}
+$('undoPhotoCorrection')?.addEventListener('click',()=>{
+ if(!lastPhotoCorrectionUndo||lastPhotoCorrectionUndo.scope!==photoCorrectionScope()){
+  lastPhotoCorrectionUndo=null;updatePhotoCorrectionUndoButton();return;
+ }
+ const previous=lastPhotoCorrectionUndo.rows;
+ photoFolderCorrections.clear();
+ for(const [index,entries] of previous)photoFolderCorrections.set(index,new Map(entries));
+ lastPhotoCorrectionUndo=null;
+ folderManagementNotice='↩ 最後の写真の移動・解除を戻しました。元写真や顔認識の結果はそのままです。';
+ renderVerifiedPhotoFolders();
+});
+
 function renderFinalPhotoAudit(){
  const panel=$('finalPhotoAuditPanel');
  if(!panel)return;
@@ -1358,7 +1414,7 @@ function renderFinalPhotoAudit(){
  for(const message of notices){
   const p=document.createElement('p');p.className='final-audit-notice';p.textContent=message;warnings.append(p);
  }
- function photoGallery(indices,labels=new Map(),manual=new Set()){
+ function photoGallery(indices,labels=new Map(),manual=new Set(),folderKey=''){
   const gallery=document.createElement('div');gallery.className='final-audit-photo-grid';
   for(const index of indices){
    const tile=document.createElement('figure');tile.className='final-audit-photo';
@@ -1368,7 +1424,10 @@ function renderFinalPhotoAudit(){
    const label=document.createElement('figcaption');
    label.textContent='写真'+(index+1)+(manual.has(index)?'（手動追加）':'')+
     (labels.has(index)?' ／ '+labels.get(index):'');
-   tile.append(image,label);gallery.append(tile);
+   const open=document.createElement('button');open.type='button';open.className='photo-review-button';
+   open.setAttribute('aria-label','元写真'+(index+1)+'を拡大して振り分けを修正');
+   open.addEventListener('click',()=>photoOriginalReviewUi.open(index,folderKey));
+   open.append(image);tile.append(open,label);gallery.append(tile);
   }
   return gallery;
  }
@@ -1383,7 +1442,7 @@ function renderFinalPhotoAudit(){
   heading.textContent='🌷 '+child.name+'さん：写真'+child.photoIndexes.length+'枚'+
    (child.manuallyAdded.length?'（手動'+child.manuallyAdded.length+'枚）':'');
   card.append(heading);
-  if(child.photoIndexes.length)card.append(photoGallery(child.photoIndexes,new Map(),new Set(child.manuallyAdded)));
+  if(child.photoIndexes.length)card.append(photoGallery(child.photoIndexes,new Map(),new Set(child.manuallyAdded),child.folderKeys[0]||''));
   else{
    const empty=document.createElement('p');empty.className='muted';
    empty.textContent='この園児に紐づいた写真はまだありません。';card.append(empty);
@@ -1426,6 +1485,7 @@ function renderFinalPhotoAudit(){
    '職員や保護者が一緒に写った写真の可能性があります。除外した顔フォルダは園児として分類していません。元写真は消えません。');
  }
  renderProvisionalFinalControls(audit);
+ updatePhotoCorrectionUndoButton();
 }
 
 function renderVerifiedPhotoFolders(){
@@ -2734,6 +2794,19 @@ approvalUi=bindProvisionalApprovalUi({
  formatDate:faceDraftTimestamp
 });
 
+
+
+photoOriginalReviewUi=bindPhotoOriginalReviewUi({
+ getData:()=>{
+  const {model}=currentPhotoFolderView();
+  return {
+   photoNames,photoUrls,
+   namedFolders:buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,
+    manualPhotoFolderChoices,photoFolderCorrections).named
+  };
+ },
+ applyChange:applyPhotoCorrection
+});
 
 albumHandoffUi=bindAlbumPhotoHandoffUi({
  getData:()=>{
