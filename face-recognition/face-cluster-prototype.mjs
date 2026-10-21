@@ -474,9 +474,15 @@ function renderFaceEvaluation(){
   row.textContent='顔'+(i+1)+'（'+(items[i].sourcePhoto+1)+'枚目）と顔'+(j+1)+'（'+(items[j].sourcePhoto+1)+'枚目） ／ 比較値 '+(Number.isFinite(score)?score.toFixed(4):'算出不可')+' ／ AI初回：'+(baselineSame(i,j)?'同じグループ':'別グループ')+' ／ 現在：'+(currentSame(i,j)?'同じグループ':'別グループ');
   choice.append(row);
   const actions=document.createElement('div');actions.className='actions';
+  if(items[i].sourcePhoto===items[j].sourcePhoto){
+   const warning=document.createElement('p');warning.className='muted';
+   warning.textContent='同じ写真で別々に検出された顔です。同じ園児としては登録できません。';
+   choice.append(warning);
+  }
   for(const [same,label] of [[true,'✅ 同じ園児'],[false,'🚫 違う園児']]){
    const button=document.createElement('button');button.type='button';
    button.className=same?'':'secondary';button.textContent=label;
+   if(same&&items[i].sourcePhoto===items[j].sourcePhoto)button.disabled=true;
    button.addEventListener('click',()=>{
     verifiedFacePairs.set(facePairKey(i,j),{i,j,same});
     selectedReviewFaces=[];
