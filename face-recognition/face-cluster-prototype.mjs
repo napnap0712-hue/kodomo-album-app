@@ -328,6 +328,8 @@ function render(){
     const evidence=document.createElement('p');evidence.className='muted';
    evidence.textContent='一致した顔の組 '+pair.support+'/'+pair.total+' ／ 小さい顔 '+pair.smallFaces+'件'+(pair.samePhoto?' ／ ⚠️ 同じ写真に別々の顔あり':'');
    row.append(evidence);
+   if(safeCandidates.includes(pair)){const mark=document.createElement('span');mark.textContent=' ／ 🛡️ 複数顔で一致';title.append(mark);}
+   const evidence=document.createElement('p');evidence.className='muted';evidence.textContent='基準以上の一致 '+pair.support+'/'+pair.total+'組 ／ 小さい顔 '+pair.smallFaces+'件';row.append(evidence);
    const faces=document.createElement('div');faces.className='faces';
     for(const id of g.members){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';installDrag(img,id);faces.append(img)}
     section.append(faces);card.append(section);
@@ -679,14 +681,24 @@ start.addEventListener('click',async()=>{
   const smallFaces=items.filter(item=>item.faceQuality==='小さい顔・要確認').length;
   distribution.textContent='📊 分割状況：単独顔グループ '+singleton+'件 ／ 複数顔グループ '+multi+'件 ／ 小さい顔 '+smallFaces+'件（除外なし）';
   host.append(distribution);
-  const eligible=groupPairs.filter(p=>p.minimum>=0.48&&p.average>=0.55&&p.maximum>=0.60);
+  const eligible=groupPairs.filter(p=>!p.samePhoto&&p.minimum>=0.48&&p.average>=0.55&&p.maximum>=0.60);
+  // Suggest only mutually unique matches with multiple independent supporting
+  // face comparisons. This is a read-only preview, never an automatic merge.
+  const safeCandidates=eligible.filter(p=>{
+   if(p.total<2||p.support<2||p.support/p.total<0.5)return false;
+   const rivals=eligible.filter(q=>q!==p&&(q.a===p.a||q.b===p.a||q.a===p.b||q.b===p.b));
+   return rivals.every(q=>p.average-q.average>=0.09);
+  });
+  const safeNote=document.createElement('p');safeNote.className='muted';
+  safeNote.textContent='🛡️ 複数の顔で一致し、競合が少ない統合候補：'+safeCandidates.length+'組（提案のみ・自動統合なし）';
+  host.append(safeNote);
   const ambiguous=eligible.filter(p=>eligible.some(q=>q!==p&&(q.a===p.a||q.b===p.a||q.a===p.b||q.b===p.b)&&Math.abs(q.average-p.average)<0.07)).length;
   const caution=document.createElement('p');caution.className='muted';
   caution.textContent='🔎 統合候補 '+eligible.length+'組 ／ 似た候補が競合する組 '+ambiguous+'組。競合は別の園児の可能性があるため自動統合しません。';
   host.append(caution);
   const heading2=document.createElement('h3');heading2.textContent='🧩 分かれたグループの類似候補（上位15組）';host.append(heading2);
   const guide=document.createElement('p');guide.className='muted';guide.textContent='最大値だけで判断せず、グループ全体の平均・最小値も確認します。条件に合わない組は統合候補に表示しません。候補も正解保証ではありません。';host.append(guide);
-  for(const pair of likely.slice(0,15)){
+  for(const pair of [...safeCandidates,...likely.filter(p=>!safeCandidates.includes(p))].slice(0,15)){
    const row=document.createElement('div');row.style.cssText='padding:10px 0;border-bottom:1px solid #e8edf3';
    const title=document.createElement('strong');title.textContent='グループ '+groups[pair.a].id+' ↔ '+groups[pair.b].id+' ／ 最大 '+pair.maximum.toFixed(3)+'・平均 '+pair.average.toFixed(3)+'・最小 '+pair.minimum.toFixed(3);row.append(title);
    const faces=document.createElement('div');faces.className='faces';
