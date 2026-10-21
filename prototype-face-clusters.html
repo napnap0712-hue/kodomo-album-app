@@ -73,6 +73,11 @@ label{display:inline-block;margin:5px 0}
 <div class="section-top"><span class="step">STEP 2</span><h2>迷った顔だけ確認</h2></div>
 <p class="muted">候補が正しいとは限りません。「同じ園児」「違う園児」を押すだけで判定を記録します。<strong>園児の名前をAIが推測することはありません。</strong></p>
 <p id="quickReviewSummary" aria-live="polite">先に写真を解析してください。</p>
+<div id="restoreHint" class="advanced" hidden>
+ <strong>📋 前回の先生の確認を引き継ぐ</strong>
+ <p class="muted">今は先生の確認が0組なので、誤判定0組でも精度が良くなったとは判断できません。前回7組を確認したテキストを貼り付けると、その記録を再利用できます。</p>
+ <button type="button" id="showRestoreInput" class="secondary">前回の7組の結果を貼り付ける</button>
+</div>
 <p id="eyelidQuickSummary" class="muted" aria-live="polite" hidden></p>
 <div id="quickReviewCandidates" class="pair-grid"></div>
 <div class="actions" style="margin-top:13px"><button type="button" id="copyQuickReport" class="secondary" disabled>📋 検証結果をコピー</button><span id="quickCopyStatus" class="muted" aria-live="polite"></span></div>
@@ -83,7 +88,7 @@ label{display:inline-block;margin:5px 0}
 <div id="faceEvaluationGallery" class="face-grid"></div><div id="faceEvaluationChoice"></div>
 </details>
 <div class="advanced"><strong>前回の判定結果を復元</strong>
-<p class="muted">前回コピーしたテキストがあれば貼り付けてね。顔が見つからない組だけ目視で確認します。</p>
+<p class="muted">※「先生が確認した顔の組 0」のテキストでは復元できません。前に確認した7組が書かれた結果を使います。特定できる顔は自動復元し、曖昧な組だけ確認します。</p>
 <textarea id="faceEvaluationImport" class="compact-input" rows="3" placeholder="【顔グループ検証】から始まるテキスト"></textarea>
 <div class="actions"><button type="button" id="importFaceEvaluation" class="secondary">前回の判定を読み込む</button></div>
 <p id="faceEvaluationMessage" class="muted" role="status"></p><div id="faceEvaluationImportReview"></div>
@@ -132,7 +137,7 @@ label{display:inline-block;margin:5px 0}
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021hires-eye-2"></script>
-<div id="build-marker">かんたん検証 2026-10-21 W</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021restore-guidance-x"></script>
+<div id="build-marker">かんたん検証 2026-10-21 X</div>
 </body>
 </html>
