@@ -2275,7 +2275,7 @@ function assembleFaceDraftRecord(){
  if(!analysisFinished||!photoNames.length||analyzedSourceFiles.length!==photoNames.length)
   throw new Error('写真の解析が完了した状態で保存してください。途中の解析結果は保存しません。');
  const photos=analyzedSourceFiles.map((blob,index)=>({
-  blob,name:photoNames[index],size:blob.size,type:blob.type||'image/jpeg',
+  blob,name:photoNames[index],size:blob.size,type:blob.type||'',
   lastModified:Number.isFinite(blob.lastModified)?blob.lastModified:Date.now()
  }));
  const faces=items.map(face=>({
@@ -2321,7 +2321,7 @@ function prepareFaceDraftRestore(record){
  if(!checked.ok)throw new Error(checked.error);
  const source=record.data;
  const files=source.photos.map(photo=>new File([photo.blob],photo.name,{
-  type:photo.type||'image/jpeg',
+  type:photo.type||'',
   lastModified:Number.isFinite(photo.lastModified)?photo.lastModified:Date.now()
  }));
  if(files.some((file,index)=>file.size!==source.photos[index].size))
