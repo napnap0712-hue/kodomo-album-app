@@ -42,3 +42,36 @@ export function suggestTeacherSeedPairs(photoIds,verifiedPairs,score,maxResults=
  candidates.sort((a,b)=>(b.margin??-1)-(a.margin??-1)||b.mean-a.mean||a.face-b.face);
  return candidates.slice(0,Math.max(0,Math.trunc(maxResults)));
 }
+
+// When known children are ruled out by human negatives or photo conflicts,
+// suggest *pairs among the remaining faces* rather than bypassing cannot-links.
+// Both networks are used only to prioritize reviews; their raw score scales
+// are NOT interchangeable, hence mean rank rather than mean cosine score.
+export function suggestUnassignedFacePairs(photoIds,verifiedPairs,scoreA,scoreB=null,maxResults=4){
+ const known=new Set(buildTeacherSeedGroups(photoIds,verifiedPairs).flat());
+ const blocked=new Set(verifiedPairs.map(p=>[Math.min(p.i,p.j),Math.max(p.i,p.j)].join(':')));
+ const candidates=[];
+ for(let i=0;i<photoIds.length;i++){
+  if(known.has(i))continue;
+  for(let j=i+1;j<photoIds.length;j++){
+   if(known.has(j)||photoIds[i]===photoIds[j]||blocked.has(i+':'+j))continue;
+   const a=Number(scoreA(i,j)),b=scoreB?Number(scoreB(i,j)):null;
+   if(!Number.isFinite(a)||(scoreB&&!Number.isFinite(b)))continue;
+   candidates.push({i,j,lightScore:a,r50Score:b});
+  }
+ }
+ if(!candidates.length)return[];
+ const rankedA=[...candidates].sort((x,y)=>y.lightScore-x.lightScore||x.i-y.i||x.j-y.j);
+ const orderA=new Map(rankedA.map((pair,index)=>[pair.i+':'+pair.j,index+1]));
+ let orderB=null;
+ if(scoreB){
+  const rankedB=[...candidates].sort((x,y)=>y.r50Score-x.r50Score||x.i-y.i||x.j-y.j);
+  orderB=new Map(rankedB.map((pair,index)=>[pair.i+':'+pair.j,index+1]));
+ }
+ for(const pair of candidates){
+  const key=pair.i+':'+pair.j;
+  pair.reviewRank=orderB?(orderA.get(key)+orderB.get(key))/2:orderA.get(key);
+ }
+ candidates.sort((x,y)=>x.reviewRank-y.reviewRank||x.i-y.i||x.j-y.j);
+ return candidates.slice(0,Math.max(0,Math.trunc(maxResults)));
+}
