@@ -1,6 +1,9 @@
 import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v2';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
+// The alternate inference is a Mac research step, not an iPhone default.
+if(/iPhone|iPad|Android/i.test(navigator.userAgent)){const option=$('compareEyelidAlignment');if(option)option.checked=false;}
+
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
 let stop=false,items=[],groups=[],selected=new Set(),urls=[],photoNames=[],photoUrls=[];
 const groupNames=new Map();
@@ -802,6 +805,58 @@ function renderQuickReview(){
  }
 }
 
+function renderEyelidComparison(){
+ const host=$('eyelidComparison');if(!host)return;
+ host.replaceChildren();
+ if(!items.length){host.textContent='先に写真を解析してください。';return;}
+ const available=items.filter(item=>Array.isArray(item.alternateVector)&&item.alternateVector.length===item.vector.length).length;
+ if(!available){host.textContent='この解析では補正方式の比較を実行していません。写真解析の前に「目の位置の補正を2方式で比較」をオンにしてください。';return;}
+ const caption=document.createElement('p');caption.className='muted';
+ caption.textContent='比較できた顔 '+available+'/'+items.length+'件。初回の特徴データはそのままです。';
+ host.append(caption);
+ const labeled=[...verifiedFacePairs.values()].map(pair=>{
+  const a=items[pair.i],b=items[pair.j];
+  if(!a?.alternateVector||!b?.alternateVector)return null;
+  const oldScore=pairScore(pair.i,pair.j),newScore=similarity(a.alternateVector,b.alternateVector);
+  if(!Number.isFinite(oldScore)||!Number.isFinite(newScore))return null;
+  const delta=newScore-oldScore;
+  return {...pair,oldScore,newScore,delta,improved:pair.same?delta>0:delta<0};
+ }).filter(Boolean);
+ if(!labeled.length){
+  const note=document.createElement('p');note.className='muted';
+  note.textContent='先生が同じ園児・違う園児と確認した組み合わせを使って比較します。「前回の判定を読み込む」か顔を確認すると、数値が出ます。';
+  host.append(note);return;
+ }
+ const better=labeled.filter(p=>p.improved).length;
+ const worse=labeled.filter(p=>!p.improved&&Math.abs(p.delta)>0.001).length;
+ const summary=document.createElement('p');
+ summary.textContent='確認した'+labeled.length+'組中：改善方向 '+better+'組 ／ 悪化方向 '+worse+'組（比較値だけの参考。本人確認の精度保証ではありません）';
+ host.append(summary);
+ const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+ const header=document.createElement('tr');
+ for(const value of ['顔の組','従来補正','まぶた補正','変化']){
+  const th=document.createElement('th');th.textContent=value;th.style.cssText='text-align:left;padding:7px 4px;border-bottom:1px solid #dbe2ed';header.append(th);
+ }
+ table.append(header);
+ for(const pair of labeled){
+  const row=document.createElement('tr');
+  const values=[
+   '顔'+(pair.i+1)+' ↔ 顔'+(pair.j+1)+'（'+(pair.same?'同じ園児':'違う園児')+'）',
+   pair.oldScore.toFixed(4),
+   pair.newScore.toFixed(4),
+   (pair.delta>0?'+':'')+pair.delta.toFixed(4)
+  ];
+  for(const v of values){
+   const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:7px 4px;border-bottom:1px solid #edf1f6';row.append(td);
+  }
+  table.append(row);
+ }
+ const wrap=document.createElement('div');wrap.style.overflowX='auto';wrap.append(table);host.append(wrap);
+ const note=document.createElement('p');note.className='muted';
+ note.textContent='比較値の上昇が常に正解とは限りません。違う園児同士の検証も含めて総合的に判断し、実測で改善すると分かるまでは自動グループ化に使いません。';
+ host.append(note);
+}
+
 function renderFaceEvaluation(){
  const gallery=$('faceEvaluationGallery'),choice=$('faceEvaluationChoice'),results=$('faceEvaluationResults');
  if(!gallery||!choice||!results)return;
@@ -811,6 +866,7 @@ function renderFaceEvaluation(){
  if(!items.length){
   results.textContent='写真を解析すると顔の一覧が表示されます。';
   renderQuickReview();
+  renderEyelidComparison();
   return;
  }
  const summary=document.createElement('p');
@@ -928,6 +984,7 @@ function renderFaceEvaluation(){
   }
  }
  renderQuickReview();
+ renderEyelidComparison();
 }
 
 function render(){
