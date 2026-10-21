@@ -53,3 +53,11 @@ test('空の作業や園児に写真がない場合は仮確定できない',()=
  const empty=auditPhotoAssignments({photoCount:2,roster:[{id:'1',name:'あお'}]});
  assert.equal(checkFinalizationReadiness(empty).ready,false);
 });
+
+test('写真をすべてフォルダから外した園児は仮確定の前に確認が必要',()=>{
+ const audit=sample();
+ const empty={...audit,children:audit.children.map((child,index)=>index===0?
+  {...child,photoIndexes:[],manuallyAdded:[]}:child)};
+ assert.equal(checkFinalizationReadiness(empty).ready,false);
+ assert.ok(checkFinalizationReadiness(empty).blockers.some(message=>message.includes('0枚')));
+});
