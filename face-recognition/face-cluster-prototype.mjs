@@ -713,6 +713,78 @@ function currentFaceGroupIndex(){
  }
  return map;
 }
+// Compact teacher-first evaluation: inspect possible misses and mixed faces.
+// Never changes actual album data; scores are not identity probabilities.
+function renderQuickReview(){
+ const summary=$('quickReviewSummary'),host=$('quickReviewCandidates');
+ if(!summary||!host)return;
+ host.replaceChildren();
+ if(!items.length){
+  summary.textContent='先に写真を解析してください。';
+  return;
+ }
+ const lookup=currentFaceGroupIndex();
+ const feedback=[...verifiedFacePairs.values()];
+ const falseSplits=feedback.filter(p=>p.same&&lookup.get(p.i)!==lookup.get(p.j)).length;
+ const falseMerges=feedback.filter(p=>!p.same&&lookup.get(p.i)===lookup.get(p.j)).length;
+ const activeCount=groups.filter(g=>g.id!=='unknown'&&g.members.length).length;
+ summary.textContent='AIの仮グループ '+activeCount+'件 ／ 先生の確認 '+feedback.length+'組 ／ 確認した範囲で：分かれた同じ園児 '+falseSplits+'組・混ざった別の園児 '+falseMerges+'組';
+ const sameGroup=[],differentGroup=[];
+ for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+  if(items[i].sourcePhoto===items[j].sourcePhoto)continue;
+  const key=facePairKey(i,j);
+  if(verifiedFacePairs.has(key))continue;
+  const score=pairScore(i,j);
+  if(!Number.isFinite(score))continue;
+  if(lookup.get(i)===lookup.get(j)&&lookup.has(i)){
+   sameGroup.push({i,j,score,type:'inside'});
+  }else if(score>=Math.max(0.50,Number($('threshold').value)-0.15)){
+   differentGroup.push({i,j,score,type:'outside'});
+  }
+ }
+ sameGroup.sort((a,b)=>a.score-b.score);
+ differentGroup.sort((a,b)=>b.score-a.score);
+ const suggestions=[...sameGroup.slice(0,3),...differentGroup.slice(0,5)];
+ if(!suggestions.length){
+  const note=document.createElement('p');note.className='muted';
+  note.textContent='自動で見つかった確認候補はありません。低い比較値でも同じ園児の場合があるので、「ほかの顔を選ぶ」から確認できます。';
+  host.append(note);return;
+ }
+ const notice=document.createElement('p');notice.className='muted';
+ notice.style.gridColumn='1/-1';
+ notice.textContent='顔の比較値から最大8組を表示（正しさの保証はありません）。ここにない同じ園児もいます。';
+ host.append(notice);
+ for(const pair of suggestions){
+  const card=document.createElement('article');card.className='pair-card';
+  const heading=document.createElement('strong');
+  heading.textContent=pair.type==='inside'?'同じグループ内の2人を確認':'別グループの似ている顔を確認';
+  card.append(heading);
+  const row=document.createElement('div');row.className='pair-faces';
+  for(const id of [pair.i,pair.j]){
+   const figure=document.createElement('figure');
+   const image=document.createElement('img');image.src=items[id].url;image.alt='顔'+(id+1);
+   const caption=document.createElement('figcaption');
+   caption.textContent='顔'+(id+1)+'・写真'+(items[id].sourcePhoto+1);
+   figure.append(image,caption);row.append(figure);
+  }
+  card.append(row);
+  const score=document.createElement('p');score.className='muted';
+  score.textContent='比較値 '+pair.score.toFixed(3)+'（正解率ではありません）';card.append(score);
+  const buttons=document.createElement('div');buttons.className='actions';
+  for(const [same,label] of [[true,'同じ園児'],[false,'違う園児']]){
+   const button=document.createElement('button');button.type='button';
+   if(!same)button.className='secondary';
+   button.textContent=label;
+   button.addEventListener('click',()=>{
+    verifiedFacePairs.set(facePairKey(pair.i,pair.j),{i:pair.i,j:pair.j,same});
+    renderFaceEvaluation();
+   });
+   buttons.append(button);
+  }
+  card.append(buttons);host.append(card);
+ }
+}
+
 function renderFaceEvaluation(){
  const gallery=$('faceEvaluationGallery'),choice=$('faceEvaluationChoice'),results=$('faceEvaluationResults');
  if(!gallery||!choice||!results)return;
@@ -721,6 +793,7 @@ function renderFaceEvaluation(){
  const current=currentFaceGroupIndex();
  if(!items.length){
   results.textContent='写真を解析すると顔の一覧が表示されます。';
+  renderQuickReview();
   return;
  }
  const summary=document.createElement('p');
@@ -837,6 +910,7 @@ function renderFaceEvaluation(){
    row.append(remove);results.append(row);
   }
  }
+ renderQuickReview();
 }
 
 function render(){
