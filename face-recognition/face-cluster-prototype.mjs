@@ -932,8 +932,9 @@ const missingPhotoReportHeader='\n【顔未検出写真の手動仮指定】';
 function updateMissingPhotoReport(){
  const report=$('faceEvaluationReport');
  if(!report?.value)return;
- const pos=report.value.indexOf(missingPhotoReportHeader);
- if(pos!==-1)report.value=report.value.slice(0,pos);
+ // Remove only our own photo-number lines, not later model comparison
+ // results or the anonymized child-name assignment count.
+ report.value=report.value.replace(/\n【顔未検出写真の手動仮指定】(?:\n写真\d+：[^\n]*)*/g,'');
  const detected=new Set(items.map(item=>item.sourcePhoto));
  const missing=photoNames.map((_,i)=>i).filter(index=>!detected.has(index));
  if(!missing.length)return;
