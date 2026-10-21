@@ -7,6 +7,7 @@ import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraf
 import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
 import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs?v=20261022-ak';
 import {bindProvisionalApprovalUi} from './provisional-approval-ui.mjs?v=20261022-al';
+import {bindAlbumPhotoHandoffUi} from './album-photo-handoff-ui.mjs?v=20261022-am';
 // Standalone research prototype. Writes ONLY to its isolated IndexedDB when the user explicitly chooses Save; never alters production album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -1193,7 +1194,7 @@ function appendFolderDeletionControl(card,bucket,key){
 
 let provisionalFinalCandidate=null,lastFinalReviewSignature='',lastFinalReviewAudit=null;
 
-let persistedPhotoDraftSignature='',approvalUi={refresh:()=>{}};
+let persistedPhotoDraftSignature='',approvalUi={refresh:()=>{}},albumHandoffUi={refresh:()=>{}};
 function currentFinalReviewAudit(){
  const {visible,model}=currentPhotoFolderView();
  const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
@@ -1242,6 +1243,7 @@ function updateProvisionalFinalControls(){
   !visual?.checked||(check.needsUnassignedAcknowledgement&&!unassigned?.checked);
  if(cancel)cancel.hidden=!provisionalFinalCandidate;
  approvalUi.refresh();
+ albumHandoffUi.refresh();
  if(status)status.textContent=provisionalFinalMessage;
  if(!preview)return;
  preview.replaceChildren();
@@ -2638,6 +2640,7 @@ function applyFaceDraftRestore(staged){
  render();
  persistedPhotoDraftSignature=lastFinalReviewSignature;
  approvalUi.refresh();
+ albumHandoffUi.refresh();
  status.textContent='✅ 保存した続きから再開：写真'+photoNames.length+'枚・顔'+items.length+
   '件・先生の確認'+verifiedFacePairs.size+'組。写真の再解析なし。'+
   ' この画面で変更したら「今の作業を保存」をもう一度押してね。';
@@ -2656,6 +2659,7 @@ $('saveFaceDraft')?.addEventListener('click',async()=>{
   const saved=await saveFaceDraft(record);
   persistedPhotoDraftSignature=signatureAtSave===finalAuditSourceSignature(currentFinalReviewAudit())?signatureAtSave:'';
   approvalUi.refresh();
+  albumHandoffUi.refresh();
   faceDraftStatusText('✅ 保存完了：写真'+saved.photoCount+'枚・顔'+saved.faceCount+
    '件・確認'+saved.reviewCount+'組 ／ '+faceDraftTimestamp(saved.savedAt)+
    '。次回は「保存した続きから開く」を押してね。変更後はもう一度保存してください。');
@@ -2696,6 +2700,7 @@ $('removeFaceDraft')?.addEventListener('click',async()=>{
   await deleteFaceDraft();
   persistedPhotoDraftSignature='';
   approvalUi.refresh();
+  albumHandoffUi.refresh();
   faceDraftStatusText('✅ このSafariの検証用保存データを削除しました。現在画面の作業と本番アルバムは変更していません。');
  }catch(error){
   faceDraftStatusText('⚠️ 保存データを削除できませんでした：'+String(error?.message||error).slice(0,200));
@@ -2719,6 +2724,19 @@ approvalUi=bindProvisionalApprovalUi({
   updateProvisionalFinalControls();
  },
  formatDate:faceDraftTimestamp
+});
+
+
+albumHandoffUi=bindAlbumPhotoHandoffUi({
+ getData:()=>{
+  const audit=currentFinalReviewAudit();
+  return {
+   candidate:provisionalFinalCandidate,audit,
+   signature:finalAuditSourceSignature(audit),
+   persistedSignature:persistedPhotoDraftSignature,
+   photoNames,photoUrls,roster,rosterClass:classSelect.value,faceDraftBusy
+  };
+ }
 });
 
 void updateSavedFaceDraftInfo();
