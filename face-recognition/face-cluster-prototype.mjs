@@ -325,7 +325,10 @@ function render(){
    for(const g of folder.groups){
     const section=document.createElement('div');section.style.cssText='padding:8px 0;border-top:1px solid #e8edf3';
     const label=document.createElement('span');label.textContent='候補 '+g.id+'（顔'+g.members.length+'件）';section.append(label,makePicker(g));
-    const faces=document.createElement('div');faces.className='faces';
+    const evidence=document.createElement('p');evidence.className='muted';
+   evidence.textContent='一致した顔の組 '+pair.support+'/'+pair.total+' ／ 小さい顔 '+pair.smallFaces+'件'+(pair.samePhoto?' ／ ⚠️ 同じ写真に別々の顔あり':'');
+   row.append(evidence);
+   const faces=document.createElement('div');faces.className='faces';
     for(const id of g.members){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';installDrag(img,id);faces.append(img)}
     section.append(faces);card.append(section);
    }
@@ -660,12 +663,15 @@ start.addEventListener('click',async()=>{
    const cross=left.flatMap(i=>right.map(j=>pairScore(i,j))).filter(Number.isFinite);
    if(!cross.length)continue;
    const maximum=Math.max(...cross),minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
-   groupPairs.push({a,b,maximum,minimum,average});
+   const samePhoto=left.some(i=>right.some(j=>items[i].sourcePhoto===items[j].sourcePhoto));
+   const smallFaces=[...left,...right].filter(i=>items[i].faceQuality==='小さい顔・要確認').length;
+   const support=cross.filter(score=>score>=Number($('threshold').value)).length;
+   groupPairs.push({a,b,maximum,minimum,average,samePhoto,smallFaces,support,total:cross.length});
   }
   // A single high-scoring face pair is insufficient evidence to recommend
   // merging two clusters. Prioritize broad agreement across both groups.
   groupPairs.sort((x,y)=>(y.average*0.65+y.minimum*0.35)-(x.average*0.65+x.minimum*0.35));
-  const likely=groupPairs.filter(p=>p.minimum>=0.48&&p.average>=0.55&&p.maximum>=0.60);
+  const likely=groupPairs.filter(p=>!p.samePhoto&&p.minimum>=0.48&&p.average>=0.55&&p.maximum>=0.60);
   const distribution=document.createElement('p');distribution.className='muted';
   const sizes=groups.slice(1).map(g=>g.members.length);
   const singleton=sizes.filter(n=>n===1).length;
