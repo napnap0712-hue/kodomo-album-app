@@ -2,6 +2,7 @@ import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v2';
 import {buildTeacherSeedGroups,suggestTeacherSeedPairs,suggestUnassignedFacePairs} from './teacher-seed-matches.mjs?v=20261021s2';
 import {buildVerifiedPhotoFolders} from './teacher-verified-folders.mjs?v=20261021f1';
 import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.mjs?v=20261021n1';
+import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-folder-visibility.mjs?v=20261021x1';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -103,6 +104,11 @@ for(const [id,name] of rosterClasses){
 }
 if(verifiedRosterClass)verifiedRosterClass.value=classSelect.value;
 const verifiedFolderNames=new Map();
+// Preview-only exclusions and new folders never delete a source image,
+// modify verified face-pairs, or write to album storage.
+const excludedVerifiedFolders=new Set();
+const newManualPhotoFolders=new Map();
+let manualFolderSequence=0,folderManagementNotice='';
 let verifiedRosterScope='',folderNameStatus='';
 function folderRosterSignature(){
  return classSelect.value+'::'+roster.map(k=>String(k.id)+':'+String(k.name)).sort().join('|');
@@ -929,6 +935,43 @@ function renderSamePairCorrection(host,pair){
 function provisionalPhotoFolderKey(bucket){
  return verifiedFolderKey(bucket);
 }
+function currentPhotoFolderView(){
+ const base=buildVerifiedPhotoFolders(items.map(item=>item.sourcePhoto),[...verifiedFacePairs.values()]);
+ const visible=composeVisibleChildFolders(base.buckets,excludedVerifiedFolders,newManualPhotoFolders);
+ return {base,visible,model:{...base,buckets:visible.visible}};
+}
+function getExcludedFaceIndexes(){
+ const view=currentPhotoFolderView();
+ return new Set(view.visible.excluded.flatMap(bucket=>bucket.members));
+}
+function renderExcludedPhotoFolderRestores(view){
+ const panel=$('excludedFaceFoldersPanel'),heading=$('excludedFaceFoldersHeading');
+ const body=$('excludedFaceFoldersBody');
+ if(!panel||!heading||!body)return;
+ panel.hidden=!view.excluded.length;
+ body.replaceChildren();
+ heading.textContent='🗑 除外済み '+view.excluded.length+'フォルダ（元写真はそのまま）';
+ for(const bucket of view.excluded){
+  const key=provisionalPhotoFolderKey(bucket);
+  const card=document.createElement('div');card.className='excluded-face-card';
+  const faces=document.createElement('div');
+  for(const id of bucket.members){
+   const image=document.createElement('img');
+   image.src=items[id]?.url||'';image.alt='除外した顔'+(id+1);faces.append(image);
+  }
+  const label=document.createElement('p');label.className='muted';
+  label.textContent='顔 '+bucket.members.map(id=>id+1).join('・')+' ／ 写真'+bucket.photos.map(id=>id+1).join('・');
+  const restore=document.createElement('button');
+  restore.type='button';restore.className='secondary';restore.textContent='↩ このフォルダを戻す';
+  restore.addEventListener('click',()=>{
+   excludedVerifiedFolders.delete(key);
+   folderManagementNotice='✅ 除外した顔フォルダを元に戻しました。';
+   renderFaceEvaluation();
+  });
+  card.append(faces,label,restore);body.append(card);
+ }
+}
+
 const missingPhotoReportHeader='\n【顔未検出写真の手動仮指定】';
 function updateMissingPhotoReport(){
  const report=$('faceEvaluationReport');
@@ -2100,7 +2143,7 @@ start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();verifiedFolderNames.clear();folderNameStatus='';const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();verifiedFolderNames.clear();excludedVerifiedFolders.clear();newManualPhotoFolders.clear();manualFolderSequence=0;folderManagementNotice='';folderNameStatus='';const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,alternateRecognition:0,alternateFaces:0,faces:0,group:0};const startedAt=performance.now();
  try{
