@@ -3,6 +3,7 @@ import {buildTeacherSeedGroups,suggestTeacherSeedPairs,suggestUnassignedFacePair
 import {buildVerifiedPhotoFolders} from './teacher-verified-folders.mjs?v=20261021f1';
 import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.mjs?v=20261021n1';
 import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-folder-visibility.mjs?v=20261021x1';
+import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261021save-ai';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -2242,9 +2243,219 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
  if(!results.length)throw Error('検出した顔の特徴を取得できません'+(diagnostics.length?'：'+diagnostics[0]:''));
  return results;
 }
+// Explicit local photo + face-classification checkpoint.
+// No automatic writes, no upload, and no shared production-album storage.
+let analyzedSourceFiles=[],analysisFinished=false,faceDraftBusy=false;
+function faceDraftStatusText(message){
+ const el=$('faceDraftStatus');if(el)el.textContent=message;
+}
+function faceDraftBusyState(busy){
+ faceDraftBusy=busy;
+ for(const id of ['saveFaceDraft','restoreFaceDraft','removeFaceDraft']){
+  const button=$(id);if(button)button.disabled=busy;
+ }
+}
+function faceDraftTimestamp(millis){
+ try{return new Intl.DateTimeFormat('ja-JP',{dateStyle:'medium',timeStyle:'short'}).format(new Date(millis));}
+ catch{return '日時不明';}
+}
+async function updateSavedFaceDraftInfo(){
+ try{
+  const info=await faceDraftInfo();
+  if(info?.schema===FACE_DRAFT_SCHEMA&&info?.version===1){
+   faceDraftStatusText('💾 このSafari内に保存済み：'+info.photoCount+'枚・顔'+info.faceCount+
+    '件・確認'+info.reviewCount+'組 ／ '+faceDraftTimestamp(info.savedAt)+
+    '。画面を閉じていても「保存した続きから開く」で再開できます。');
+  }else faceDraftStatusText('保存済みの検証データはありません。写真を解析した後に「今の作業を保存」を押してね。');
+ }catch(error){
+  faceDraftStatusText('⚠️ 保存状況を読み取れません：'+String(error?.message||error).slice(0,140));
+ }
+}
+function assembleFaceDraftRecord(){
+ if(!analysisFinished||!photoNames.length||analyzedSourceFiles.length!==photoNames.length)
+  throw new Error('写真の解析が完了した状態で保存してください。途中の解析結果は保存しません。');
+ const photos=analyzedSourceFiles.map((blob,index)=>({
+  blob,name:photoNames[index],size:blob.size,type:blob.type||'image/jpeg',
+  lastModified:Number.isFinite(blob.lastModified)?blob.lastModified:Date.now()
+ }));
+ const faces=items.map(face=>({
+  name:String(face.name||''),sourcePhoto:face.sourcePhoto,
+  url:face.url,alignedThumbnail:face.alignedThumbnail||null,
+  alternateAlignedThumbnail:face.alternateAlignedThumbnail||null,
+  faceSize:face.faceSize??null,faceQuality:face.faceQuality??null,
+  vector:Array.from(face.vector||[]),
+  recognitionInput:face.recognitionInput||null,
+  alternateVector:face.alternateVector?Array.from(face.alternateVector):null,
+  r50Vector:face.r50Vector?Array.from(face.r50Vector):null
+ }));
+ const record={
+  schema:FACE_DRAFT_SCHEMA,version:1,savedAt:Date.now(),
+  data:{
+   photos,photoNames:[...photoNames],faces,
+   groups:groups.map(g=>({id:String(g.id),members:[...g.members]})),
+   initialFaceGroups:[...initialFaceGroups],initialGroupCount,
+   initialCandidateCount,currentCandidateCount,manualMergeCount,
+   verifiedPairs:[...verifiedFacePairs.values()].map(pair=>({...pair})),
+   groupNames:[...groupNames.entries()],
+   rosterClass:classSelect.value,
+   roster:roster.map(child=>({id:String(child.id),name:String(child.name)})),
+   verifiedFolderNames:[...verifiedFolderNames.entries()],
+   excludedVerifiedFolders:[...excludedVerifiedFolders],
+   newManualPhotoFolders:[...newManualPhotoFolders].map(([key,entry])=>[key,{name:entry.name}]),
+   manualFolderSequence,
+   manualPhotoFolderChoices:[...manualPhotoFolderChoices].map(([index,keys])=>[index,[...keys]]),
+   manualPhotoAssignments:[...manualPhotoAssignments].map(([index,names])=>[index,[...names]]),
+   excludedFacePairs:[...excludedFacePairs],
+   r50Compared,
+   threshold:Number($('threshold')?.value)||0.65,
+   useEyelid:Boolean($('compareEyelidAlignment')?.checked),
+   flipAugment:Boolean($('flipAugment')?.checked)
+  }
+ };
+ const checked=validateFaceDraft(record);
+ if(!checked.ok)throw new Error(checked.error);
+ return record;
+}
+function prepareFaceDraftRestore(record){
+ const checked=validateFaceDraft(record);
+ if(!checked.ok)throw new Error(checked.error);
+ const source=record.data;
+ const files=source.photos.map(photo=>new File([photo.blob],photo.name,{
+  type:photo.type||'image/jpeg',
+  lastModified:Number.isFinite(photo.lastModified)?photo.lastModified:Date.now()
+ }));
+ if(files.some((file,index)=>file.size!==source.photos[index].size))
+  throw new Error('復元する写真のサイズが一致しません。変更を中止しました。');
+ const stagedUrls=[];
+ try{
+  for(const file of files)stagedUrls.push(URL.createObjectURL(file));
+ }catch(error){
+  stagedUrls.forEach(URL.revokeObjectURL);
+  throw error;
+ }
+ return {checked,files,urls:stagedUrls,data:source,savedAt:record.savedAt};
+}
+function applyFaceDraftRestore(staged){
+ const data=staged.data;
+ // All restoration checks and source photo URLs have been prepared above.
+ // Mutate the currently open prototype only after those succeed.
+ urls.forEach(URL.revokeObjectURL);
+ urls=[...staged.urls];photoUrls=[...staged.urls];
+ photoNames=[...data.photoNames];
+ analyzedSourceFiles=[...staged.files];
+ analysisFinished=true;
+ queued.splice(0,queued.length,...staged.files);
+ updateCount();
+ items=data.faces.map(face=>({
+  ...face,vector:[...face.vector],
+  recognitionInput:face.recognitionInput?new Float32Array(face.recognitionInput):null,
+  alternateVector:face.alternateVector?[...face.alternateVector]:null,
+  r50Vector:face.r50Vector?[...face.r50Vector]:null
+ }));
+ groups=data.groups.map(group=>({id:String(group.id),members:[...group.members]}));
+ initialFaceGroups=[...data.initialFaceGroups];
+ initialGroupCount=data.initialGroupCount;
+ initialCandidateCount=data.initialCandidateCount??null;
+ currentCandidateCount=data.currentCandidateCount??null;
+ manualMergeCount=data.manualMergeCount||0;
+ const replaceMap=(destination,rows)=>{destination.clear();for(const [key,value] of rows)destination.set(key,value);};
+ replaceMap(verifiedFacePairs,data.verifiedPairs.map(pair=>[facePairKey(pair.i,pair.j),{...pair}]));
+ replaceMap(groupNames,data.groupNames);
+ classSelect.value=data.rosterClass;
+ if(verifiedRosterClass)verifiedRosterClass.value=data.rosterClass;
+ roster=data.roster.map(child=>({...child}));
+ verifiedRosterScope=roster.length?folderRosterSignature():'';
+ folderNameStatus='';
+ replaceMap(verifiedFolderNames,data.verifiedFolderNames);
+ excludedVerifiedFolders.clear();
+ for(const key of data.excludedVerifiedFolders)excludedVerifiedFolders.add(key);
+ replaceMap(newManualPhotoFolders,data.newManualPhotoFolders.map(([key,entry])=>[key,{...entry}]));
+ manualFolderSequence=Number.isInteger(data.manualFolderSequence)?data.manualFolderSequence:0;
+ replaceMap(manualPhotoFolderChoices,data.manualPhotoFolderChoices.map(([index,keys])=>[index,new Set(keys)]));
+ replaceMap(manualPhotoAssignments,data.manualPhotoAssignments.map(([index,names])=>[index,new Set(names)]));
+ excludedFacePairs.clear();
+ for(const key of data.excludedFacePairs)excludedFacePairs.add(key);
+ r50Compared=Boolean(data.r50Compared)&&items.every(face=>Array.isArray(face.r50Vector));
+ r50CompareRunning=false;
+ lastFolderCorrection=null;folderCorrectionNoticeText='';
+ lastVerifiedGroupSnapshot=null;alternativeGrouping=null;evidenceVariants=null;
+ pendingFaceImport=[];const pending=$('faceEvaluationImportReview');if(pending)pending.replaceChildren();
+ selectedReviewFaces=[];selected.clear();openedFolder=null;
+ refreshGroupPairsUI=()=>{};
+ start.disabled=false;cancel.disabled=true;stop=false;
+ const threshold=$('threshold');if(threshold&&Number.isFinite(data.threshold))threshold.value=String(data.threshold);
+ const thresholdValue=$('thresholdValue');if(thresholdValue)thresholdValue.value=Number(threshold.value).toFixed(2);
+ if($('flipAugment'))$('flipAugment').checked=Boolean(data.flipAugment);
+ if($('compareEyelidAlignment'))$('compareEyelidAlignment').checked=Boolean(data.useEyelid);
+ const diag=$('diagnosticsMount');if(diag)diag.replaceChildren();
+ const timer=$('timingPanel');if(timer)timer.hidden=true;
+ const rosterLabel=$('rosterStatus');if(rosterLabel)rosterLabel.textContent='保存した名簿 '+roster.length+'名を画面内に復元しました。登録済みの名簿は変更していません。';
+ folderManagementNotice='💾 保存済みの除外・新規フォルダ・手動振り分けを復元しました。';
+ render();
+ status.textContent='✅ 保存した続きから再開：写真'+photoNames.length+'枚・顔'+items.length+
+  '件・先生の確認'+verifiedFacePairs.size+'組。写真の再解析なし。'+
+  ' この画面で変更したら「今の作業を保存」をもう一度押してね。';
+}
+$('saveFaceDraft')?.addEventListener('click',async()=>{
+ if(faceDraftBusy)return;
+ if(start.disabled||!analysisFinished){
+  faceDraftStatusText('⚠️ 写真の解析が完了してから保存してね。');return;
+ }
+ if(!window.confirm('元写真・顔の特徴情報・先生の確認記録・園児名を、この端末のSafari内に保存します。共有パソコンではほかの利用者もアクセスできる可能性があります。保存しますか？'))return;
+ faceDraftBusyState(true);
+ try{
+  const record=assembleFaceDraftRecord();
+  faceDraftStatusText('💾 このブラウザに保存しています。写真の枚数・データ量によっては容量が必要です。');
+  const saved=await saveFaceDraft(record);
+  faceDraftStatusText('✅ 保存完了：写真'+saved.photoCount+'枚・顔'+saved.faceCount+
+   '件・確認'+saved.reviewCount+'組 ／ '+faceDraftTimestamp(saved.savedAt)+
+   '。次回は「保存した続きから開く」を押してね。変更後はもう一度保存してください。');
+ }catch(error){
+  faceDraftStatusText('⚠️ 保存に失敗しました。現在の画面は変更していません。'+
+   String(error?.message||error).slice(0,230)+
+   '。端末の容量・Safariのサイト保存設定も確認してください。');
+  console.warn('Isolated face draft save failed',error);
+ }finally{faceDraftBusyState(false);}
+});
+$('restoreFaceDraft')?.addEventListener('click',async()=>{
+ if(faceDraftBusy)return;
+ if(start.disabled){
+  faceDraftStatusText('⚠️ 解析中は復元できません。処理が終わってから押してね。');return;
+ }
+ if(photoNames.length&&!window.confirm('現在画面に表示している写真と仮振り分けを、保存した作業で置き換えます。未保存の変更は消えます。続けますか？'))return;
+ faceDraftBusyState(true);
+ try{
+  faceDraftStatusText('📂 保存した作業を読み込んでいます。');
+  const snapshot=await loadFaceDraft();
+  if(!snapshot)throw new Error('保存データがありません。先に「今の作業を保存」を押してください。');
+  const staged=prepareFaceDraftRestore(snapshot);
+  applyFaceDraftRestore(staged);
+  faceDraftStatusText('✅ 写真'+staged.checked.photoCount+'枚・顔'+staged.checked.faceCount+
+   '件・確認'+staged.checked.reviewCount+'組を復元しました。写真の再解析は不要です。'+
+   ' 最終保存：'+faceDraftTimestamp(staged.savedAt));
+ }catch(error){
+  faceDraftStatusText('⚠️ 保存データを読み込めませんでした：'+String(error?.message||error).slice(0,220)+
+   '。保存形式が不正な場合は現在の作業を保護するため復元しません。');
+  console.warn('Isolated face draft restore failed',error);
+ }finally{faceDraftBusyState(false);}
+});
+$('removeFaceDraft')?.addEventListener('click',async()=>{
+ if(faceDraftBusy)return;
+ if(!window.confirm('このSafariに保存した検証用の元写真・顔データ・園児名を削除しますか？【現在画面に開いている作業と本番アルバムは変更しません】'))return;
+ faceDraftBusyState(true);
+ try{
+  await deleteFaceDraft();
+  faceDraftStatusText('✅ このSafariの検証用保存データを削除しました。現在画面の作業と本番アルバムは変更していません。');
+ }catch(error){
+  faceDraftStatusText('⚠️ 保存データを削除できませんでした：'+String(error?.message||error).slice(0,200));
+ }finally{faceDraftBusyState(false);}
+});
+void updateSavedFaceDraftInfo();
+
 start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
+ analyzedSourceFiles=[];analysisFinished=false;
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
  r50Compared=false;r50CompareRunning=false;lastFolderCorrection=null;folderCorrectionNoticeText='';evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();manualPhotoFolderChoices.clear();verifiedFolderNames.clear();excludedVerifiedFolders.clear();newManualPhotoFolders.clear();manualFolderSequence=0;folderManagementNotice='';folderNameStatus='';const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
@@ -2502,6 +2713,7 @@ start.addEventListener('click',async()=>{
   const diagnosticMount=$('diagnosticsMount');
   if(diagnosticMount)diagnosticMount.replaceChildren(diagnostic);
   else groupsHost.closest('section').after(diagnostic);
+  analyzedSourceFiles=[...files];analysisFinished=true;
   render();
  }catch(e){status.textContent='⚠️ 解析できません【かんたん検証T】: '+String(e?.message||e).slice(0,220)+'\n詳細: '+String(e?.stack||'スタック情報なし').slice(0,700);console.error('Face analysis diagnostic C',e)}
  finally{try{await session?.release()}catch{}try{await human?.dispose?.()}catch{}start.disabled=false;cancel.disabled=true}
