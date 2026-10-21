@@ -1,5 +1,5 @@
 import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v2';
-import {buildTeacherSeedGroups,suggestTeacherSeedPairs} from './teacher-seed-matches.mjs?v=20261021s1';
+import {buildTeacherSeedGroups,suggestTeacherSeedPairs,suggestUnassignedFacePairs} from './teacher-seed-matches.mjs?v=20261021s2';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -771,7 +771,64 @@ $('copyQuickReport')?.addEventListener('click',async()=>{
 });
 // Compact teacher-first evaluation: inspect possible misses and mixed faces.
 // Never changes actual album data; scores are not identity probabilities.
+// Only teacher-confirmed positives create these overview groups.
+// A rejected pair or two faces in the same source photo is a hard cannot-link.
+// No album changes, no additional photo scans, no personal names stored.
+function renderTeacherConfirmedOverview(){
+ const panel=$('teacherConfirmedDetails'),heading=$('teacherConfirmedHeading');
+ const host=$('teacherConfirmedGroups'),pendingHost=$('teacherUnclassifiedFaces'),note=$('teacherGroupNote');
+ if(!panel||!heading||!host||!pendingHost||!note)return;
+ if(!items.length||!verifiedFacePairs.size){panel.hidden=true;host.replaceChildren();pendingHost.replaceChildren();return;}
+ panel.hidden=false;host.replaceChildren();pendingHost.replaceChildren();
+ const photos=items.map(item=>item.sourcePhoto);
+ const feedback=[...verifiedFacePairs.values()];
+ const groups=buildTeacherSeedGroups(photos,feedback);
+ const assigned=new Set(groups.flat());
+ const remaining=items.map((_,i)=>i).filter(i=>!assigned.has(i));
+ heading.textContent='📚 先生が確認した '+groups.length+'グループ（顔'+assigned.size+'件） ／ 未分類 '+remaining.length+'件';
+ const imageTile=id=>{
+  const tile=document.createElement('div');tile.className='teacher-photo';
+  const image=document.createElement('img');image.src=items[id].url;
+  image.alt='顔'+(id+1)+'（写真'+(items[id].sourcePhoto+1)+'）';
+  const label=document.createElement('span');
+  label.textContent='顔'+(id+1)+'・写真'+(items[id].sourcePhoto+1);
+  tile.append(image,label);return tile;
+ };
+ groups.forEach((members,index)=>{
+  const card=document.createElement('div');card.className='teacher-card';
+  const title=document.createElement('strong');
+  title.textContent='園児グループ '+(index+1)+'（顔'+members.length+'件・先生が確認済み）';
+  const faces=document.createElement('div');faces.className='faces';
+  members.forEach(id=>faces.append(imageTile(id)));
+  card.append(title,faces);host.append(card);
+ });
+ if(!groups.length){
+  const empty=document.createElement('p');empty.className='muted';
+  empty.textContent='「同じ園児」の確認がまだないので、先生の確認済みグループはありません。';
+  host.append(empty);
+ }
+ const title=document.createElement('strong');
+ title.textContent='まだ園児グループが決まっていない顔 '+remaining.length+'件';
+ pendingHost.append(title);
+ const faces=document.createElement('div');faces.className='teacher-unassigned';
+ remaining.forEach(id=>faces.append(imageTile(id)));
+ pendingHost.append(faces);
+ const canJoin=(face,members)=>members.every(id=>photos[face]!==photos[id]&&
+  !feedback.some(p=>!p.same&&((p.i===face&&p.j===id)||(p.j===face&&p.i===id))));
+ const excludedAll=groups.length>0&&remaining.every(id=>groups.every(g=>!canJoin(id,g)));
+ note.textContent=excludedAll?
+  '未分類の顔は、確認済みの「違う園児」または同じ写真の別顔という条件により、既存の全グループには追加できません。未分類の顔同士で新しい園児グループを探します。':
+  '未分類の顔は同一人物か確定していません。先生の確認が増えると、この一覧は自動で整理されます。';
+ const report=$('faceEvaluationReport');
+ if(report?.value){
+  report.value+='\n【先生の確認済みグループ】'+groups.length+'組・顔'+assigned.size+'件 / 未分類 '+remaining.length+'件';
+  groups.forEach((members,index)=>{report.value+='\nグループ'+(index+1)+'：'+members.map(id=>'顔'+(id+1)).join('・');});
+  report.value+='\n未分類：'+remaining.map(id=>'顔'+(id+1)).join('・');
+ }
+}
+
 function renderQuickReview(){
+ renderTeacherConfirmedOverview();
  const summary=$('quickReviewSummary'),host=$('quickReviewCandidates');
  const copy=$('copyQuickReport');if(copy)copy.disabled=!items.length;
  if(!summary||!host)return;
