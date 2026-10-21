@@ -325,11 +325,6 @@ function render(){
    for(const g of folder.groups){
     const section=document.createElement('div');section.style.cssText='padding:8px 0;border-top:1px solid #e8edf3';
     const label=document.createElement('span');label.textContent='候補 '+g.id+'（顔'+g.members.length+'件）';section.append(label,makePicker(g));
-    const evidence=document.createElement('p');evidence.className='muted';
-   evidence.textContent='一致した顔の組 '+pair.support+'/'+pair.total+' ／ 小さい顔 '+pair.smallFaces+'件'+(pair.samePhoto?' ／ ⚠️ 同じ写真に別々の顔あり':'');
-   row.append(evidence);
-   if(safeCandidates.includes(pair)){const mark=document.createElement('span');mark.textContent=' ／ 🛡️ 複数顔で一致';title.append(mark);}
-   const evidence=document.createElement('p');evidence.className='muted';evidence.textContent='基準以上の一致 '+pair.support+'/'+pair.total+'組 ／ 小さい顔 '+pair.smallFaces+'件';row.append(evidence);
    const faces=document.createElement('div');faces.className='faces';
     for(const id of g.members){const img=document.createElement('img');img.src=items[id].url;img.alt=items[id].name;img.title=items[id].name;img.className='face';installDrag(img,id);faces.append(img)}
     section.append(faces);card.append(section);
