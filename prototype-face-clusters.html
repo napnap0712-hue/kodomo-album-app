@@ -89,8 +89,8 @@ label{display:inline-block;margin:5px 0}
 </details>
 <div id="restoreHint" class="advanced" hidden>
  <strong>📋 前回の先生の確認を引き継ぐ</strong>
- <p class="muted">今は先生の確認が0組なので、誤判定0組でも精度が良くなったとは判断できません。前回7組を確認したテキストを貼り付けると、その記録を再利用できます。</p>
- <button type="button" id="showRestoreInput" class="secondary">前回の7組の結果を貼り付ける</button>
+ <p class="muted">今は先生の確認が0組なので、誤判定0組でも精度が良くなったとは判断できません。前回先生が確認したテキストを貼り付けると、その記録を再利用できます。</p>
+ <button type="button" id="showRestoreInput" class="secondary">前回の確認結果を貼り付ける</button>
 </div>
 <p id="eyelidQuickSummary" class="muted" aria-live="polite" hidden></p>
 <div id="quickReviewCandidates" class="pair-grid"></div>
@@ -102,7 +102,7 @@ label{display:inline-block;margin:5px 0}
 <div id="faceEvaluationGallery" class="face-grid"></div><div id="faceEvaluationChoice"></div>
 </details>
 <div class="advanced"><strong>前回の判定結果を復元</strong>
-<p class="muted">※「先生が確認した顔の組 0」のテキストでは復元できません。前に確認した7組が書かれた結果を使います。特定できる顔は自動復元し、曖昧な組だけ確認します。</p>
+<p class="muted">※「先生が確認した顔の組 0」のテキストでは復元できません。前に確認した組が書かれた結果を使います。特定できる顔は自動復元し、曖昧な組だけ確認します。</p>
 <textarea id="faceEvaluationImport" class="compact-input" rows="3" placeholder="【顔グループ検証】から始まるテキスト"></textarea>
 <div class="actions"><button type="button" id="importFaceEvaluation" class="secondary">前回の判定を読み込む</button></div>
 <p id="faceEvaluationMessage" class="muted" role="status"></p><div id="faceEvaluationImportReview"></div>
@@ -113,7 +113,7 @@ label{display:inline-block;margin:5px 0}
 </details>
 <details class="advanced"><summary>小さな顔の高画質補正を比較（実験）</summary><p class="muted">従来の縮小写真による認識と、元画質＋まぶた位置補正による認識を比較します。先生の確認済みの顔について数値を見られます。自動グループ化には反映しません。</p><div id="eyelidComparison"></div></details>
 <details class="advanced" id="r50ComparePanel"><summary>🧠 顔認識AIの高精度モデルを比較（MacBook・実験）</summary>
-<p class="muted">今の24件の顔を再検出せず、別の顔識別モデル（ArcFace R50）で比較します。初回は約174MBのモデルをダウンロードします。写真・顔データは送信しません。先生が確認した「同じ園児」の組と、同じ写真に別々に写った顔の組を参考に比較します。元のグループ分けは変更しません。モデルの重みは非商用研究用途限定のため、実際の園での運用はライセンス確認が必要です。</p>
+<p class="muted">解析済みの顔を再検出せず、別の顔識別モデル（ArcFace R50）で比較します。初回は約174MBのモデルをダウンロードします。写真・顔データは送信しません。先生が確認した「同じ園児」の組と、同じ写真に別々に写った顔の組を参考に比較します。元のグループ分けは変更しません。モデルの重みは非商用研究用途限定のため、実際の園での運用はライセンス確認が必要です。</p>
 <div class="actions"><button type="button" id="compareRecognitionModels" class="secondary" disabled>別のAIで比較する（写真の再検出なし）</button></div>
 <p id="r50CompareStatus" role="status" class="muted"></p>
 <div id="r50CompareResult"></div>
@@ -157,7 +157,7 @@ label{display:inline-block;margin:5px 0}
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021teacher-groups-ab"></script>
-<div id="build-marker">かんたん検証 2026-10-21 AB</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021teacher-groups-ac"></script>
+<div id="build-marker">かんたん検証 2026-10-21 AC</div>
 </body>
 </html>
