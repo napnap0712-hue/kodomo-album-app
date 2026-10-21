@@ -24,6 +24,14 @@ $('previewAssignments').addEventListener('click',()=>{
   if(!byName.has(name))byName.set(name,new Set());
   for(const id of g.members){const index=items[id]?.sourcePhoto;if(Number.isInteger(index))byName.get(name).add(index)}
  }
+ for(const [photoIndex,names] of manualPhotoAssignments){
+  if(!Number.isInteger(photoIndex)||photoIndex<0||photoIndex>=photoNames.length)continue;
+  for(const name of names){
+   if(!name)continue;
+   if(!byName.has(name))byName.set(name,new Set());
+   byName.get(name).add(photoIndex);
+  }
+ }
  const host=$('assignmentPreview');host.replaceChildren();
  for(const [name,indices] of byName){
   const ids=[...indices].sort((a,b)=>a-b);confirmedAssignments.set(name,ids);
@@ -360,6 +368,7 @@ function renderManualPhotos(){
     const next=new Set(manualPhotoAssignments.get(i)||[]);
     if(check.checked)next.add(String(kid.name||kid.displayName||kid.label||''));else next.delete(String(kid.name||kid.displayName||kid.label||''));
     if(next.size)manualPhotoAssignments.set(i,next);else manualPhotoAssignments.delete(i);
+    invalidateAssignmentPreview();
    });
    label.append(check,document.createTextNode(' '+String(kid.name||kid.displayName||kid.label||'')));choices.append(label);
   }
