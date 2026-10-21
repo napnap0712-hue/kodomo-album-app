@@ -1,4 +1,4 @@
-import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v1';
+import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v2';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
@@ -757,7 +757,7 @@ function renderFaceEvaluation(){
    report.value+='\n別方式の試算 '+alternativeGrouping.length+'グループ / 確認済みとの不一致 '+wrong+'組';
   }
  }
-  if(evidenceVariants){
+  if(report&&evidenceVariants){
    for(const variant of evidenceVariants){
     const membership=new Map();
     for(const g of variant.groups)for(const id of g.members)membership.set(id,g.id);
