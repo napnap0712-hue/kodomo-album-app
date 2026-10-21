@@ -806,7 +806,9 @@ function renderQuickReview(){
 }
 
 function renderEyelidComparison(){
- const host=$('eyelidComparison');if(!host)return;
+ const host=$('eyelidComparison'),quick=$('eyelidQuickSummary');
+ if(quick){quick.hidden=true;quick.textContent='';}
+ if(!host)return;
  host.replaceChildren();
  if(!items.length){host.textContent='先に写真を解析してください。';return;}
  const available=items.filter(item=>Array.isArray(item.alternateVector)&&item.alternateVector.length===item.vector.length).length;
@@ -829,6 +831,10 @@ function renderEyelidComparison(){
  }
  const better=labeled.filter(p=>p.improved).length;
  const worse=labeled.filter(p=>!p.improved&&Math.abs(p.delta)>0.001).length;
+ if(quick){
+  quick.hidden=false;
+  quick.textContent='🔬 目の位置合わせを比較：先生の確認'+labeled.length+'組中、比較値が改善方向 '+better+'組・悪化方向 '+worse+'組（自動統合には使っていません）';
+ }
  const summary=document.createElement('p');
  summary.textContent='確認した'+labeled.length+'組中：改善方向 '+better+'組 ／ 悪化方向 '+worse+'組（比較値だけの参考。本人確認の精度保証ではありません）';
  host.append(summary);
