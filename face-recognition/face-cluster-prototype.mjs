@@ -160,29 +160,30 @@ function calculateFaceGroups(threshold){
   // Do not automatically merge singleton groups from similarity alone.
   // A previously observed different-child pair scored higher than several
   // confirmed same-child pairs. Leave uncertain identities for review.
-  // Conservative second pass: merge fragmented clusters only when all cross-cluster
-  // faces remain similar. Never merge simply to match the roster headcount.
-  let merged=true;
-  while(merged){
-   merged=false;let best=null;
-   for(let a=1;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
-    const ga=groups[a],gb=groups[b];if(!ga.members.length||!gb.members.length)continue;
-    // Never combine two faces from one source photo, even during later passes.
-    const photos=new Set(ga.members.map(i=>items[i].sourcePhoto));
-    if(gb.members.some(i=>photos.has(items[i].sourcePhoto)))continue;
-    const cross=ga.members.flatMap(i=>gb.members.map(j=>pairScore(i,j)));
-    if(cross.some(v=>!Number.isFinite(v)))continue;
-    const minimum=Math.min(...cross),average=cross.reduce((sum,v)=>sum+v,0)/cross.length;
-    if(minimum<Math.max(0.48,threshold-0.12)||average<Math.max(0.62,threshold-0.02))continue;
-    if(!best||average>best.average)best={a,b,average};
+  // A pair of different children can score above the threshold.
+  // Do not let a single face-to-face edge create a confirmed two-face
+  // identity unless other photographs corroborate it independently.
+  const requireIndependentEvidence=()=>{
+   const repaired=[groups[0]];
+   for(const group of groups.slice(1)){
+    if(group.members.length!==2){repaired.push(group);continue}
+    const [left,right]=group.members;
+    const corroborated=items.some((_,k)=>k!==left&&k!==right&&
+     items[k].sourcePhoto!==items[left].sourcePhoto&&
+     items[k].sourcePhoto!==items[right].sourcePhoto&&
+     pairScore(left,k)>=Math.max(0.60,threshold-0.05)&&
+     pairScore(right,k)>=Math.max(0.60,threshold-0.05));
+    if(corroborated)repaired.push(group);
+    else{
+     repaired.push({id:group.id,members:[left]});
+     repaired.push({id:String(next++),members:[right]});
+    }
    }
-   if(best){
-    groups[best.a].members.push(...groups[best.b].members);
-    groups.splice(best.b,1);merged=true;
-   }
-  }
-
-
+   groups=repaired;
+  };
+  requireIndependentEvidence();
+  // No secondary similarity-only merges: teacher confirmation remains
+  // necessary for pairs without independent evidence.
 
  // Renumber after merging. Earlier numeric gaps made 18 actual groups
  // appear to be 20 when the last displayed candidate ID was 20.
