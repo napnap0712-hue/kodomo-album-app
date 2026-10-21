@@ -1,3 +1,4 @@
+import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v1';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 const input=$('photos'),start=$('start'),cancel=$('cancel'),status=$('status'),groupsHost=$('groups'),destination=$('destination'),move=$('move'),selection=$('selection');
@@ -19,7 +20,7 @@ const verifiedFacePairs=new Map();
 let selectedReviewFaces=[];
 let initialFaceGroups=[];
 let refreshGroupPairsUI=()=>{};
-let lastVerifiedGroupSnapshot=null,alternativeGrouping=null;
+let lastVerifiedGroupSnapshot=null,alternativeGrouping=null,evidenceVariants=null;
 function clearVerifiedMergeUndo(){lastVerifiedGroupSnapshot=null;const el=$('undoVerifiedGroups');if(el)el.disabled=true;}
 
 
@@ -257,7 +258,7 @@ function pairScore(i,j){
 function regroupFromExistingVectors(threshold){
  if(!items.length)return;
  groups=calculateFaceGroups(threshold);
- alternativeGrouping=null;lastVerifiedGroupSnapshot=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;
+ evidenceVariants=null;alternativeGrouping=null;lastVerifiedGroupSnapshot=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;
  groupNames.clear();selected.clear();openedFolder=null;invalidateAssignmentPreview();render();
  refreshGroupPairsUI();
  // The original AI grouping remains the baseline for verified teacher feedback.
@@ -620,21 +621,67 @@ function simulateGreedyFaceGrouping(){
  return trial.map((g,i)=>({id:String(i+1),members:g.members}));
 }
 function renderSimulationResult(){
- const result=$('faceSimulationResult');if(!result)return;
- if(!alternativeGrouping){result.textContent='';return}
- const lookup=new Map();
- for(const g of alternativeGrouping)for(const id of g.members)lookup.set(id,g.id);
- const labels=[...verifiedFacePairs.values()];
- const wrong=labels.filter(p=>(lookup.get(p.i)===lookup.get(p.j))!==p.same);
- const positives=labels.filter(p=>p.same).length,negatives=labels.length-positives;
- const validation=labels.length?'不一致 '+wrong.length+'組':'不一致 未評価（確認済み0組）';
- const samePhoto=alternativeGrouping.some(g=>{
-  const photos=g.members.map(i=>items[i].sourcePhoto);
-  return new Set(photos).size!==photos.length;
- });
- result.textContent='📊 別方式の試算：'+alternativeGrouping.length+'グループ ／ 先生の確認'+labels.length+'組・'+validation+'（同じ園児 '+positives+'組・違う園児 '+negatives+'組） ／ 同じ写真の別顔混在 '+(samePhoto?'あり':'なし')+
-  (labels.length===0?'。⚠️ 先生の確認が復元できていないため、精度は未評価です。':negatives===0?'。⚠️ 「違う園児」の確認がないため、誤統合の安全性は判定できません。':'。まだ検証済みの組み合わせだけの参考値です。')+
-  ' 現在のグループには反映していません。';
+ const host=$('faceSimulationResult');if(!host)return;
+ host.replaceChildren();
+ if(!alternativeGrouping)return;
+ const feedback=[...verifiedFacePairs.values()];
+ const positives=feedback.filter(p=>p.same).length,negatives=feedback.length-positives;
+ const baseline=groups.filter(g=>g.id!=='unknown'&&g.members.length);
+ const variants=[
+  ['現在の仮グループ',baseline],
+  ['従来の単純な別方式',alternativeGrouping],
+  ...(evidenceVariants||[]).map(v=>[v.label,v.groups])
+ ];
+ const metrics=candidate=>{
+  const membership=new Map();
+  for(const g of candidate)for(const id of g.members)membership.set(id,g.id);
+  const falseSplit=feedback.filter(p=>p.same&&membership.get(p.i)!==membership.get(p.j)).length;
+  const falseMerge=feedback.filter(p=>!p.same&&membership.get(p.i)===membership.get(p.j)).length;
+  const conflicts=candidate.reduce((count,g)=>{
+   const ids=g.members.map(i=>items[i].sourcePhoto);
+   return count+ids.length-new Set(ids).size;
+  },0);
+  return {falseSplit,falseMerge,conflicts};
+ };
+ const summary=document.createElement('p');summary.className='muted';
+ summary.textContent='写真の再解析なしで比較 ／ 検証済み：同じ園児 '+positives+'組・違う園児 '+negatives+'組。数字は確認した組だけの結果です。';
+ host.append(summary);
+ const table=document.createElement('table');table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+ const head=document.createElement('tr');
+ for(const label of ['方式','グループ','同じ園児の分割','違う園児の混在']){
+  const th=document.createElement('th');th.textContent=label;th.style.cssText='padding:8px 4px;border-bottom:1px solid #dbe2ed;text-align:left';head.append(th);
+ }
+ table.append(head);
+ for(const [label,candidate] of variants){
+  const stats=metrics(candidate);
+  const tr=document.createElement('tr');
+  for(const value of [label,candidate.length,positives?stats.falseSplit+'/'+positives:'未評価',negatives?stats.falseMerge+'/'+negatives:'未評価']){
+   const td=document.createElement('td');td.textContent=String(value);td.style.cssText='padding:9px 4px;border-bottom:1px solid #e9eff6;vertical-align:top';tr.append(td);
+  }
+  if(stats.conflicts){tr.title='同じ写真に写る別々の顔が混在しています';tr.style.background='#fff0e8'}
+  table.append(tr);
+ }
+ const wrap=document.createElement('div');wrap.style.overflowX='auto';wrap.append(table);host.append(wrap);
+ const warning=document.createElement('p');warning.className='muted';
+ warning.textContent='⚠️ 方式の違いは試算のみ。'+(!negatives?'「違う園児」の確認が0組なので、グループ数を減らしても誤統合が増えるか判定できません。':'確認済み以外の顔には誤統合が残る可能性があります。')+' 実際の仮グループやアルバムは変更していません。';
+ host.append(warning);
+ const split=[...feedback].filter(p=>p.same&&
+   variants.slice(1).some(([,candidate])=>{
+    const g1=candidate.find(g=>g.members.includes(p.i));
+    return !g1?.members.includes(p.j);
+   }));
+ if(split.length){
+  const reasons=document.createElement('details');
+  const title=document.createElement('summary');title.textContent='分かれたままの確認済み顔：'+split.length+'組（比較値と理由の目安）';reasons.append(title);
+  for(const p of split.slice(0,12)){
+   const score=pairScore(p.i,p.j);
+   const line=document.createElement('p');line.className='muted';
+   const thr=Number($('threshold').value);
+   line.textContent='顔'+(p.i+1)+'↔顔'+(p.j+1)+'：'+score.toFixed(4)+(score<thr?' ／ 基準未満。顔の向きや画質・モデルの影響も考えられます。':' ／ 基準以上でも、競合する顔やグループ全体の整合性で分割される場合があります。');
+   reasons.append(line);
+  }
+  host.append(reasons);
+ }
 }
 $('importFaceEvaluation')?.addEventListener('click',validateFaceReportAndImport);
 $('applyVerifiedGroups')?.addEventListener('click',applyVerifiedFaceMerges);
@@ -645,6 +692,16 @@ $('simulateFaceGrouping')?.addEventListener('click',()=>{
   return;
  }
  alternativeGrouping=simulateGreedyFaceGrouping();
+ const photos=items.map(item=>item.sourcePhoto);
+ const threshold=Number($('threshold').value);
+ evidenceVariants=[
+  ['conservative','安全優先（試算）'],
+  ['balanced','バランス（試算）'],
+  ['exploratory','探索型（試算）']
+ ].map(([mode,label])=>{
+  const candidate=groupFacesWithEvidence(photos,pairScore,threshold,mode);
+  return {mode,label,groups:candidate.groups.map((members,index)=>({id:String(index+1),members})),steps:candidate.details.length};
+ });
  renderSimulationResult();
 });
 
@@ -700,6 +757,14 @@ function renderFaceEvaluation(){
    report.value+='\n別方式の試算 '+alternativeGrouping.length+'グループ / 確認済みとの不一致 '+wrong+'組';
   }
  }
+  if(evidenceVariants){
+   for(const variant of evidenceVariants){
+    const membership=new Map();
+    for(const g of variant.groups)for(const id of g.members)membership.set(id,g.id);
+    const missed=feedback.filter(p=>(membership.get(p.i)===membership.get(p.j))!==p.same).length;
+    report.value+='\\n'+variant.label+': '+variant.groups.length+'グループ / 確認済みと不一致 '+missed+'組';
+   }
+  }
  const sameScores=feedback.filter(p=>p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
  const differentScores=feedback.filter(p=>!p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
  if(sameScores.length||differentScores.length){
@@ -960,7 +1025,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
