@@ -43,6 +43,18 @@ export function validateFaceDraft(record){
   photosSeen.add(face.sourcePhoto);
   if(face.r50Vector!=null&&!validVector(face.r50Vector))
    return fail('R50比較の保存情報が不正です。');
+  if(face.alternateVector!=null&&!validVector(face.alternateVector))
+   return fail('別方式の顔特徴情報が不正です。');
+  if(face.recognitionInput!=null){
+   const input=face.recognitionInput;
+   if(!(Array.isArray(input)||ArrayBuffer.isView(input))||
+      input.length!==3*112*112)
+    return fail('顔'+(i+1)+'の追加AI入力形式が不正です。');
+  }
+  for(const image of [face.alignedThumbnail,face.alternateAlignedThumbnail]){
+   if(image!=null&&(typeof image!=='string'||!/^data:image\/(?:jpeg|png|webp);base64,/.test(image)||image.length>3_000_000))
+    return fail('顔補正サムネイルの情報が不正です。');
+  }
  }
  if(!Array.isArray(data.groups)||!data.groups.length)
   return fail('顔グループの情報がありません。');
