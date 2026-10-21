@@ -24,6 +24,7 @@ let selectedReviewFaces=[];
 let initialFaceGroups=[];
 let refreshGroupPairsUI=()=>{};
 let lastVerifiedGroupSnapshot=null,alternativeGrouping=null,evidenceVariants=null;
+let r50Compared=false,r50CompareRunning=false;
 function clearVerifiedMergeUndo(){lastVerifiedGroupSnapshot=null;const el=$('undoVerifiedGroups');if(el)el.disabled=true;}
 
 
@@ -1283,7 +1284,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
  }
  const faceSize=Number.isFinite(bw)&&Number.isFinite(bh)?Math.min(bw,bh):null;
  const faceQuality=faceSize==null?'不明':faceSize<55?'小さい顔・要確認':faceSize<95?'中くらいの顔':'大きい顔';
- results.push({vector:vec,alternateVector,thumbnail:crop.toDataURL('image/jpeg',0.82),alignedThumbnail:aligned.toDataURL('image/jpeg',0.72),alternateAlignedThumbnail,faceSize,faceQuality});
+ results.push({vector:vec,recognitionInput:tensor,alternateVector,thumbnail:crop.toDataURL('image/jpeg',0.82),alignedThumbnail:aligned.toDataURL('image/jpeg',0.72),alternateAlignedThumbnail,faceSize,faceQuality});
  }catch(error){console.warn('顔ごとの解析失敗',error);if(diagnostics.length<5)diagnostics.push(String(error?.message||error).slice(0,260))}
  }
  if(!results.length)throw Error('検出した顔の特徴を取得できません'+(diagnostics.length?'：'+diagnostics[0]:''));
@@ -1293,7 +1294,7 @@ start.addEventListener('click',async()=>{
  const copied=$('quickCopyStatus');if(copied)copied.textContent='';
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ r50Compared=false;r50CompareRunning=false;evidenceVariants=null;pendingFaceImport=[];const pendingHost=$('faceEvaluationImportReview');if(pendingHost)pendingHost.replaceChildren();lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();const timingPanel=$('timingPanel');if(timingPanel)timingPanel.hidden=true;const diagnosticsMount=$('diagnosticsMount');if(diagnosticsMount)diagnosticsMount.replaceChildren();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,alternateRecognition:0,alternateFaces:0,faces:0,group:0};const startedAt=performance.now();
  try{
@@ -1364,8 +1365,8 @@ start.addEventListener('click',async()=>{
     const decodeStart=performance.now();bitmap=await createImageBitmap(files[i]);timings.decode+=performance.now()-decodeStart;
     const embedStart=performance.now();const detected=await embed(bitmap,human,session,ort,timings,diagnostics,$('flipAugment')?.checked===true,$('compareEyelidAlignment')?.checked===true);timings.detectAndEmbed+=performance.now()-embedStart;
     for(let faceIndex=0;faceIndex<detected.length;faceIndex++){
-     const {vector,alternateVector,thumbnail,alignedThumbnail,alternateAlignedThumbnail,faceSize,faceQuality}=detected[faceIndex];
-     items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,alignedThumbnail,alternateAlignedThumbnail,faceSize,faceQuality,vector,alternateVector});
+     const {vector,recognitionInput,alternateVector,thumbnail,alignedThumbnail,alternateAlignedThumbnail,faceSize,faceQuality}=detected[faceIndex];
+     items.push({name:files[i].name+'（顔'+(faceIndex+1)+'）',sourcePhoto:i,url:thumbnail,alignedThumbnail,alternateAlignedThumbnail,faceSize,faceQuality,vector,recognitionInput,alternateVector});
     }
    }catch(e){failed.push((i+1)+'枚目: '+String(e?.message||e).slice(0,65))}finally{bitmap?.close()}
    await new Promise(r=>setTimeout(r,0));
