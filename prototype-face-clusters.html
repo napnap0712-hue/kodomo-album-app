@@ -56,6 +56,16 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .photo-missing-option input{width:18px;height:18px;flex-shrink:0;accent-color:#176ad6}
 .photo-missing-option img{width:36px;height:36px;object-fit:cover;margin:0;border-radius:7px;flex-shrink:0}
 .photo-missing-option span{font-size:.84rem}
+.excluded-face-card{border:1px solid #e1e8f3;border-radius:10px;padding:10px;margin:8px 0;background:#f8fbff}
+.excluded-face-card img{width:48px;height:48px;border-radius:8px;object-fit:cover;margin:3px}
+.excluded-face-card button{margin-top:6px}
+.photo-folder-creator{border:1px solid #d8e5f2;background:#f9fcff;padding:12px;border-radius:11px;margin:12px 0}
+.photo-folder-creator input{max-width:100%;min-width:180px;padding:9px;border:1px solid #cfddec;border-radius:9px}
+.photo-folder-creator .actions{margin:8px 0}
+.photo-folder-card-actions{margin:8px 0}
+.photo-folder-card-actions button{font-size:.84rem}
+.photo-folder-delete-confirm{border:1px solid #eacfd0;border-radius:9px;padding:10px;margin:9px 0;background:#fff9f8}
+
 .manual-photo-chip{border-color:#adcde9;background:#eff7ff}
 
 .folder-review-links{margin:9px 0 1px;padding:9px;border:1px solid #dce6f0;background:#f7fafd;border-radius:10px}
@@ -140,9 +150,14 @@ label{display:inline-block;margin:5px 0}
  <div id="folderCorrectionNotice" class="muted" role="status" aria-live="polite" hidden></div>
  <div class="actions"><button type="button" id="undoFolderCorrection" class="secondary" hidden>↩ 最後の訂正を戻す</button></div>
  <div id="verifiedPhotoFoldersGrid" class="teacher-groups"></div>
+ <details id="excludedFaceFoldersPanel" class="advanced" hidden>
+  <summary id="excludedFaceFoldersHeading">🗑 除外した園児以外の顔フォルダ</summary>
+  <p class="muted">園児以外（職員・保護者など）の顔フォルダを候補から外しています。元の写真は削除されません。間違えて除外した場合は元に戻せます。</p>
+  <div id="excludedFaceFoldersBody"></div>
+ </details>
  <details id="missingFacePhotoPicker" class="advanced" hidden>
-  <summary id="missingFacePhotoPickerTitle">📷 顔が見つからない写真を手動で仮振り分け</summary>
-  <p class="muted">顔が検出されなかった写真を見て、写っている園児の仮フォルダにチェックしてください。複数人なら複数選べます。どの園児か分からない写真は未選択のままで大丈夫です。</p>
+  <summary id="missingFacePhotoPickerTitle">📷 顔が見つからない写真の振り分け（既存／新規）</summary>
+  <p class="muted">① 既存の園児フォルダに追加するか、② 新しいフォルダを作って分けます。集合写真なら複数選択できます。職員だけの写真などは未指定のままで大丈夫。元の写真は削除しません。</p>
   <div id="missingFacePhotoPickerBody"></div>
   <p id="missingFacePhotoPickerStatus" class="muted" role="status" aria-live="polite"></p>
  </details>
