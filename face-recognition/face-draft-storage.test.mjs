@@ -72,3 +72,20 @@ test('invalid generated child folder metadata cannot restore',()=>{
  const s=sample();s.data.newManualPhotoFolders=[['unknown-key',{name:'X'}]];
  assert.equal(validateFaceDraft(s).ok,false);
 });
+
+test('corrupted child roster rows never alter a current album',()=>{
+ const data=sample();data.data.roster=[null];
+ assert.equal(validateFaceDraft(data).ok,false);
+ const wrong=sample();wrong.data.groupNames=[[null,'bad']];
+ assert.equal(validateFaceDraft(wrong).ok,false);
+});
+test('corrupted recognition tensor never passes pre-restore checking',()=>{
+ const data=sample();data.data.faces[0].recognitionInput={malicious:'object'};
+ assert.equal(validateFaceDraft(data).ok,false);
+ const good=sample();good.data.faces[0].recognitionInput=new Float32Array(3*112*112);
+ assert.equal(validateFaceDraft(good).ok,true);
+});
+test('invalid manual photo folder references cannot be restored',()=>{
+ const data=sample();data.data.manualPhotoFolderChoices=[[123,['manual-1']]];
+ assert.equal(validateFaceDraft(data).ok,false);
+});
