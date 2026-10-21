@@ -762,7 +762,7 @@ function renderFaceEvaluation(){
     const membership=new Map();
     for(const g of variant.groups)for(const id of g.members)membership.set(id,g.id);
     const missed=feedback.filter(p=>(membership.get(p.i)===membership.get(p.j))!==p.same).length;
-    report.value+='\\n'+variant.label+': '+variant.groups.length+'グループ / 確認済みと不一致 '+missed+'組';
+    report.value+='\n'+variant.label+': '+variant.groups.length+'グループ / 確認済みと不一致 '+missed+'組';
    }
   }
  const sameScores=feedback.filter(p=>p.same).map(p=>pairScore(p.i,p.j)).filter(Number.isFinite);
