@@ -5,7 +5,7 @@ import {
  loadProvisionalApproval,matchProvisionalApproval,fingerprintProvisionalReview
 } from './provisional-approval-storage.mjs';
 
-export function bindAlbumPhotoHandoffUi({getData}){
+export function bindAlbumPhotoHandoffUi({getData,onPhotoOpen}){
  const $=id=>document.getElementById(id);
  const panel=$('albumPhotoHandoffPanel'),launch=$('albumPhotoHandoffOpen');
  const status=$('albumPhotoHandoffStatus'),info=$('albumPhotoHandoffInfo');
@@ -35,7 +35,13 @@ export function bindAlbumPhotoHandoffUi({getData}){
    caption.textContent='写真'+(photo.photoIndex+1)+
     (photo.childIds.length>1?'・集合':'')+
     (photo.manuallyAddedTo.includes(value)?'・手動':'');
-   fig.append(img,caption);gallery.append(fig);
+   const button=document.createElement('button');button.type='button';button.className='photo-review-button';
+   button.setAttribute('aria-label','元写真'+(photo.photoIndex+1)+'を大きく確認・振り分けを修正');
+   button.addEventListener('click',()=>{
+    const folder=plan.children.find(c=>c.id===value);
+    onPhotoOpen?.(photo.photoIndex,folder?.folderKeys?.[0]||'');
+   });
+   button.append(img);fig.append(button,caption);gallery.append(fig);
   }
  }
  function reset(){
