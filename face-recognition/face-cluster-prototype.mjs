@@ -982,6 +982,25 @@ function refreshMissingPhotoPreview(model,missing){
     list.append(chip);
    }
   }
+  const preview=buildNamedFolderPreview(model.buckets,roster,verifiedFolderNames,manualPhotoFolderChoices);
+  for(const target of grid.querySelectorAll('[data-folder-photo-gallery]')){
+   const row=preview.named.find(entry=>entry.key===target.dataset.folderPhotoGallery);
+   target.replaceChildren();
+   if(!row)continue;
+   for(const photoIndex of row.photoIndexes){
+    const tile=document.createElement('div');tile.className='folder-photo-preview';
+    const image=document.createElement('img');image.loading='lazy';
+    image.src=photoUrls[photoIndex]||urls[photoIndex]||'';
+    image.alt='写真'+(photoIndex+1)+'（仮プレビュー）';
+    const label=document.createElement('span');label.textContent='写真'+(photoIndex+1)+
+     (row.manuallyAdded.includes(photoIndex)?'・手動':'');
+    tile.append(image,label);target.append(tile);
+   }
+   const title=grid.querySelector('[data-folder-photo-heading="'+row.key+'"]');
+   if(title)title.textContent='📷 写真をサムネイルで見る（'+row.photoIndexes.length+'枚）';
+   const count=grid.querySelector('[data-folder-photo-count="'+row.key+'"]');
+   if(count)count.textContent='この園児が写る写真（'+row.photoIndexes.length+'枚・仮）';
+  }
  }
  updateMissingPhotoReport();
 }
@@ -993,6 +1012,7 @@ function renderMissingPhotoPicker(model,missing){
  section.hidden=!missing.length;
  if(!missing.length){
   manualPhotoFolderChoices.clear();
+  refreshMissingPhotoPreview(model,missing);
   return;
  }
  title.textContent='📷 顔が見つからない写真 '+missing.length+'枚を手動で仮振り分け';
@@ -1150,6 +1170,7 @@ function renderVerifiedPhotoFolders(){
    ...bucket.photos,
    ...[...manualPhotoFolderChoices].filter(([,keys])=>keys.has(key)).map(([index])=>index)
   ]).size;
+  subtitle.dataset.folderPhotoCount=key;
   subtitle.textContent='この園児が写る写真（'+galleryCount+'枚・仮）';
   card.append(subtitle);
   const photoList=document.createElement('div');
@@ -1165,6 +1186,7 @@ function renderVerifiedPhotoFolders(){
   photoGallery.className='advanced';
   photoGallery.style.margin='8px 0';
   const galleryHeading=document.createElement('summary');
+  galleryHeading.dataset.folderPhotoHeading=key;
   galleryHeading.textContent='📷 写真をサムネイルで見る（'+galleryCount+'枚）';
   const photoGrid=document.createElement('div');
   photoGrid.className='folder-photo-gallery';
