@@ -266,7 +266,7 @@ label{display:inline-block;margin:5px 0}
 
 <section class="panel" id="finalPhotoAuditPanel" hidden>
  <div class="section-top"><span class="step">STEP 3</span><h2>📋 園児別の写真を最終点検（仮）</h2></div>
- <p class="muted">先生が確認した仮フォルダと園児名から、<strong>保存済みの作業を読み取るだけ</strong>の一覧です。集合写真は複数の園児に表示されますが、元写真は1枚のままです。<strong>本番アルバムには反映・確定しません。</strong></p>
+ <p class="muted">先生が確認した仮フォルダと園児名から写真を一覧表示します。<strong>写真をタップすると、顔のアップではなく元写真全体を見て、その1枚だけ移動・フォルダから解除できます。</strong>集合写真のほかの園児への紐づけと元画像は残ります。本番アルバムには反映しません。変更後は上の「今の作業を保存」を押してね。</p>
  <div id="finalPhotoAuditSummary" class="final-audit-metrics" aria-live="polite"></div>
  <div id="finalPhotoAuditWarnings" role="status" aria-live="polite"></div>
  <div class="actions"><button id="undoPhotoCorrection" type="button" class="secondary" disabled>↩ 最後の写真移動・解除を戻す</button></div>
@@ -304,14 +304,14 @@ label{display:inline-block;margin:5px 0}
 </section>
 <section class="panel" id="albumPhotoHandoffPanel" hidden>
  <div class="section-top"><span class="step">STEP 5</span><h2>📖 おもいでブックの編集用写真をプレビュー</h2></div>
- <p class="muted"><strong>先生が保存した仮確定</strong>を確認し、編集画面で使う園児別写真の候補を表示します。集合写真は元写真1枚を複数園児から参照します。<strong>これは連携の読み取り試験です。編集画面への取り込み・アルバムの保存や変更はまだ行いません。</strong></p>
+ <p class="muted"><strong>先生が保存した仮確定</strong>から編集用の写真を表示します。写真をタップすると元写真全体を確認でき、園児フォルダの紐づけだけ修正できます。修正すると仮確定は解除されるため、もう一度保存と確認が必要です。<strong>実際のアルバム編集画面への取り込みはまだ行いません。</strong></p>
  <div class="actions"><button type="button" id="albumPhotoHandoffOpen" disabled>📂 確認済みの編集用写真を見る</button></div>
  <p id="albumPhotoHandoffStatus" class="muted" role="status" aria-live="polite">保存した仮確定を開くと使えます。</p>
  <label for="albumPhotoHandoffChild"><strong>表示する園児・写真一覧</strong></label>
  <select id="albumPhotoHandoffChild" hidden style="width:100%;max-width:430px;padding:10px;border:1px solid #dbe5f1;border-radius:10px;background:white"></select>
  <p id="albumPhotoHandoffInfo" class="muted"></p>
  <div id="albumPhotoHandoffPhotos" class="final-audit-photo-grid"></div>
- <p class="muted">💡 この画面では園児名・写真の紐づけは変更できません。変更するときは上のフォルダ分けに戻って修正し、保存と仮確定をやり直してください。</p>
+ <p class="muted">💡 園児を選んで写真をタップすると、移動やフォルダからの解除ができます。修正後は「今の作業を保存」→「仮確定」→「仮確定を保存」の順で更新してね。元写真と本番アルバムは変更しません。</p>
 </section>
 <section class="panel" id="folderEditorSection">
 <details id="folderEditor">
