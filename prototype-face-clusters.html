@@ -33,6 +33,10 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .teacher-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:12px 0}
 .teacher-card{border:1px solid #dee6f1;background:#fafcff;border-radius:12px;padding:12px}
 .teacher-card strong{display:block;font-size:.94rem;margin-bottom:8px}
+.folder-photo-chip{display:inline-block;margin:2px 4px 2px 0;padding:3px 7px;border:1px solid #dce6f1;border-radius:8px;font-size:.76rem;background:#fff;color:#44566b}
+.verified-folder-card{background:#fff}
+.verified-folder-card .faces{margin:8px 0}
+.verified-folder-card .muted{font-size:.8rem}
 .teacher-photo{display:inline-flex;flex-direction:column;align-items:center;gap:2px;vertical-align:top;margin:3px}
 .teacher-photo img{width:58px;height:58px;object-fit:cover;border-radius:9px;border:1px solid #dde5ef}
 .teacher-photo span{font-size:.72rem;color:#67758a}
@@ -80,6 +84,13 @@ label{display:inline-block;margin:5px 0}
 <div class="section-top"><span class="step">STEP 2</span><h2>迷った顔だけ確認</h2></div>
 <p class="muted">候補が正しいとは限りません。「同じ園児」「違う園児」を押すだけで判定を記録します。<strong>園児の名前をAIが推測することはありません。</strong></p>
 <p id="quickReviewSummary" aria-live="polite">先に写真を解析してください。</p>
+<details class="advanced" id="verifiedPhotoFoldersPanel" hidden>
+ <summary id="verifiedPhotoFoldersHeading">🗂 先生の確認から写真を整理（仮プレビュー）</summary>
+ <p class="muted">写真は園児ごとに表示します。集合写真は写っている複数の園児に表示されますが、写真を複製・保存するわけではありません。従来のAI仮グループや実際のアルバムは変更しません。</p>
+ <p id="verifiedPhotoFoldersStatus" class="muted"></p>
+ <div id="verifiedPhotoFoldersGrid" class="teacher-groups"></div>
+ <p id="verifiedPhotoFoldersWarnings" class="muted" role="status"></p>
+</details>
 <details class="advanced" id="teacherConfirmedDetails" hidden>
  <summary id="teacherConfirmedHeading">📚 先生が確認した顔のグループ</summary>
  <p class="muted">同じ園児と確認できた顔だけをまとめて表示します。未分類の顔は勝手にほかの園児と統合しません。</p>
