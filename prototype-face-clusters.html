@@ -37,6 +37,11 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .verified-folder-card{background:#fff}
 .verified-folder-card .faces{margin:8px 0}
 .verified-folder-card .muted{font-size:.8rem}
+.face-draft-box{border:1px solid #cfdded;background:#f8fbff;border-radius:14px;margin-top:15px;padding:15px}
+.face-draft-box strong{display:block;margin-bottom:8px}
+.face-draft-box .actions{margin:10px 0}
+.face-draft-box .actions button{font-size:.88rem}
+.face-draft-box .muted{margin:7px 0}
 .verified-names-panel{border:1px solid #dae5f2;border-radius:12px;background:#f8fbff;padding:13px;margin:12px 0}
 .verified-names-panel .actions{margin:8px 0}.verified-names-panel select{padding:8px;border:1px solid #d8e2ef;border-radius:9px;background:#fff}
 .folder-child-picker{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:9px 0}
@@ -120,6 +125,17 @@ label{display:inline-block;margin:5px 0}
 <input type="file" id="lightweightDataFile" accept=".data" hidden>
 <p id="groupProgress" class="muted" aria-live="polite"></p>
 <p id="status" role="status">写真を選ぶと解析を開始できます。</p>
+<div class="face-draft-box" id="faceDraftPanel">
+ <strong>💾 続きから編集するための端末内保存</strong>
+ <p class="muted">このMacBookのSafari内に、<strong>元写真・顔の特徴データ・先生の確認・園児名・手動振り分け・除外した顔フォルダ</strong>をまとめて保存します。<strong>保存ボタンを押すまで記録しません。</strong> 園児の写真や名前は外部に送信しません。</p>
+ <div class="actions">
+  <button type="button" id="saveFaceDraft">💾 今の作業を保存</button>
+  <button type="button" id="restoreFaceDraft" class="secondary">📂 保存した続きから開く</button>
+  <button type="button" id="removeFaceDraft" class="secondary">保存データを消す</button>
+ </div>
+ <p id="faceDraftStatus" role="status" aria-live="polite" class="muted">保存済みデータを確認しています。</p>
+ <p class="muted">※ このブラウザ専用で、他の端末とは同期しません。Safariのサイトデータを消すと失われます。共有端末では保存に注意してください。検証用データの保存・削除だけを行い、本番アルバムには触れません。</p>
+</div>
 <details class="advanced" id="timingPanel" hidden><summary>解析時間・モデルの診断</summary><p id="technicalStatus" class="muted"></p></details>
 </section>
 <section class="panel" id="quickReviewPanel">
