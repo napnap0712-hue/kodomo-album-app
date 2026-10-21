@@ -1,5 +1,6 @@
 import {groupFacesWithEvidence} from './face-group-evidence.mjs?v=20261021v2';
 import {buildTeacherSeedGroups,suggestTeacherSeedPairs,suggestUnassignedFacePairs} from './teacher-seed-matches.mjs?v=20261021s2';
+import {buildVerifiedPhotoFolders} from './teacher-verified-folders.mjs?v=20261021f1';
 // Standalone in-memory experiment. Never writes to album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
@@ -774,6 +775,91 @@ $('copyQuickReport')?.addEventListener('click',async()=>{
 // Only teacher-confirmed positives create these overview groups.
 // A rejected pair or two faces in the same source photo is a hard cannot-link.
 // No album changes, no additional photo scans, no personal names stored.
+// A read-only picture-to-child preview driven by explicit teacher labels.
+// Every detected face is displayed in exactly one temporary folder.
+// One original source photo can be listed in several folders (group photo).
+function renderVerifiedPhotoFolders(){
+ const panel=$('verifiedPhotoFoldersPanel');
+ const title=$('verifiedPhotoFoldersHeading');
+ const summary=$('verifiedPhotoFoldersStatus');
+ const container=$('verifiedPhotoFoldersGrid');
+ const warnings=$('verifiedPhotoFoldersWarnings');
+ if(!panel||!title||!summary||!container||!warnings)return;
+ container.replaceChildren();warnings.textContent='';
+ if(!items.length||!verifiedFacePairs.size){
+  panel.hidden=true;
+  return;
+ }
+ panel.hidden=false;
+ const model=buildVerifiedPhotoFolders(
+  items.map(item=>item.sourcePhoto),[...verifiedFacePairs.values()]
+ );
+ const confirmed=model.buckets.filter(b=>b.kind==='confirmed').length;
+ const independent=model.buckets.filter(b=>b.kind==='individual'&&b.independentlyDistinct).length;
+ const unresolved=model.singletonCount-independent;
+ title.textContent='🗂 写真の仮フォルダ：'+model.buckets.length+'件（同じ園児の確認済み '+confirmed+'・単独 '+model.singletonCount+'）';
+ const seenPhotos=new Set(items.map(item=>item.sourcePhoto));
+ const withoutFaces=photoNames.map((_,index)=>index).filter(index=>!seenPhotos.has(index));
+ summary.textContent='先生の確認 '+model.reviewedPairs+'組 ／ 分類した顔 '+model.coveredFaces+'/'+items.length+
+  '件 ／ 写真 '+seenPhotos.size+'/'+photoNames.length+'枚（顔が見つかった写真） ／ 単独のうち他と別人確認 '+independent+'件';
+ const countPerOriginalPhoto=new Map();
+ model.buckets.forEach((bucket,index)=>{
+  const card=document.createElement('article');
+  card.className='teacher-card verified-folder-card';
+  const heading=document.createElement('strong');
+  heading.textContent='仮フォルダ '+String(index+1).padStart(2,'0')+' ／ '+
+   (bucket.kind==='confirmed'?'同じ園児と確認（顔'+bucket.members.length+'件）':
+    bucket.independentlyDistinct?'ほかの顔とは別の園児（顔1件）':'単独の顔・園児未確定');
+  card.append(heading);
+  const faces=document.createElement('div');faces.className='faces';
+  for(const id of bucket.members){
+   const tile=document.createElement('div');tile.className='teacher-photo';
+   const image=document.createElement('img');image.src=items[id].url;image.alt='顔'+(id+1);
+   const description=document.createElement('span');
+   description.textContent='顔'+(id+1);
+   tile.append(image,description);faces.append(tile);
+  }
+  card.append(faces);
+  const subtitle=document.createElement('div');
+  subtitle.className='muted';
+  subtitle.textContent='この園児が写る写真（'+bucket.photos.length+'枚）';
+  card.append(subtitle);
+  const photoList=document.createElement('div');
+  for(const photoIndex of bucket.photos){
+   const chip=document.createElement('span');chip.className='folder-photo-chip';
+   chip.textContent='写真'+(photoIndex+1);
+   photoList.append(chip);
+   countPerOriginalPhoto.set(photoIndex,(countPerOriginalPhoto.get(photoIndex)||0)+1);
+  }
+  card.append(photoList);
+  container.append(card);
+ });
+ const sharedPhotos=[...countPerOriginalPhoto].filter(([,count])=>count>1).map(([index])=>index+1);
+ const issues=[];
+ if(!model.allFacesCovered)issues.push('顔の件数が一致しません。全写真を確認してください。');
+ if(model.hasSourcePhotoConflicts)issues.push('同じ写真の別の顔が同じフォルダに入りました。仮プレビューは利用しないでください。');
+ if(model.contradictions.length)issues.push('先生の確認に矛盾が'+model.contradictions.length+'組あります。必ず確認してください。');
+ if(unresolved)issues.push('単独の顔'+unresolved+'件は、ほかの園児との違いが未確認です。');
+ if(withoutFaces.length)issues.push('顔未検出の写真：'+withoutFaces.map(index=>'写真'+(index+1)).join('・')+'（手動確認が必要）');
+ warnings.textContent=
+  (issues.length?'⚠️ '+issues.join(' ／ '):'✅ 今回の確認結果に矛盾は見つかりませんでした。')+
+  (sharedPhotos.length?' ／ 📷 集合写真として複数のフォルダに表示：'+sharedPhotos.map(index=>'写真'+index).join('・'):'')+
+  ' ／ この分類は画面上の仮プレビューです。元写真を複製・保存したり、アルバムを変更したりしません。';
+ const report=$('faceEvaluationReport');
+ if(report?.value){
+  report.value+='\n【先生の確認からの写真別仮フォルダ】'+model.buckets.length+'件'+
+   '（複数顔の確認済み '+confirmed+'・単独 '+model.singletonCount+'）';
+  report.value+='\n顔の分類 '+model.coveredFaces+'/'+items.length+'件 / 確認の矛盾 '+model.contradictions.length+'組';
+  for(const bucket of model.buckets){
+   report.value+='\n仮フォルダ'+String(bucket.id).padStart(2,'0')+' '+
+    (bucket.kind==='confirmed'?'同じ園児確認済み':bucket.independentlyDistinct?'別人確認済み・単独':'単独保留')+
+    '：顔'+bucket.members.map(id=>id+1).join('・')+
+    ' / 写真'+bucket.photos.map(index=>index+1).join('・');
+  }
+  if(withoutFaces.length)report.value+='\n顔未検出：写真'+withoutFaces.map(i=>i+1).join('・');
+ }
+}
+
 function renderTeacherConfirmedOverview(){
  const panel=$('teacherConfirmedDetails'),heading=$('teacherConfirmedHeading');
  const host=$('teacherConfirmedGroups'),pendingHost=$('teacherUnclassifiedFaces'),note=$('teacherGroupNote');
@@ -829,6 +915,7 @@ function renderTeacherConfirmedOverview(){
 
 function renderQuickReview(){
  renderTeacherConfirmedOverview();
+ renderVerifiedPhotoFolders();
  const summary=$('quickReviewSummary'),host=$('quickReviewCandidates');
  const copy=$('copyQuickReport');if(copy)copy.disabled=!items.length;
  if(!summary||!host)return;
