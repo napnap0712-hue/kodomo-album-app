@@ -130,6 +130,11 @@ label{display:inline-block;margin:5px 0}
    <button type="button" id="loadVerifiedFolderRoster" class="secondary">登録済み園児を読み込む</button>
   </div>
   <p id="verifiedFolderRosterStatus" class="muted" role="status" aria-live="polite">園児名を付ける場合は、クラスを選んで読み込んでね。</p>
+  <details class="advanced"><summary>園児名簿が見つからないとき（一時入力）</summary>
+   <p class="muted">このブラウザに登録済みの園児がいない場合は、園児名を1行に1名ずつ入力できます。データは画面内だけで使用し、保存・送信しません。</p>
+   <textarea id="verifiedFolderManualNames" class="compact-input" rows="3" placeholder="園児名を1行ずつ入力"></textarea>
+   <button type="button" id="useVerifiedFolderManualNames" class="secondary">この名前を一時利用する</button>
+  </details>
   <p class="muted">ひとつの園児名は1つの仮フォルダだけに設定できます。名簿にない場合は「未設定」で残してね。検証結果のコピーに園児名は含めません。</p>
  </div>
  <div id="folderCorrectionNotice" class="muted" role="status" aria-live="polite" hidden></div>
