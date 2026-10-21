@@ -4,7 +4,7 @@ import {buildVerifiedPhotoFolders} from './teacher-verified-folders.mjs?v=202610
 import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.mjs?v=20261021n1';
 import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-folder-visibility.mjs?v=20261021x1';
 import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261021save-ai';
-// Standalone in-memory experiment. Never writes to album storage.
+// Standalone research prototype. Writes ONLY to its isolated IndexedDB when the user explicitly chooses Save; never alters production album storage.
 const $=id=>document.getElementById(id);
 // The alternate inference is a Mac research step, not an iPhone default.
 if(/iPhone|iPad|Android/i.test(navigator.userAgent)){const option=$('compareEyelidAlignment');if(option)option.checked=false;}
@@ -23,7 +23,7 @@ function updateGroupProgress(){
 }
 
 // Teacher-verified comparisons only; cleared every time a new photo batch starts.
-// Never send or persist identifiable photos, vectors, or verification labels.
+// Photos, vectors and review labels stay in memory unless the user explicitly saves them to isolated local IndexedDB. Never send them off-device.
 const verifiedFacePairs=new Map();
 // At most one reversible correction; never changes saved albums or AI clusters.
 let lastFolderCorrection=null,folderCorrectionNoticeText='';
@@ -1923,7 +1923,7 @@ function renderFaceEvaluation(){
   results.append(evidence);
  }
  const help=document.createElement('p');help.className='muted';
- help.textContent='下の顔から2件をタップして「同じ園児」「違う園児」を記録。AIの判定と比較します。記録してもグループは移動せず、端末にも保存しません。';
+ help.textContent='下の顔から2件をタップして「同じ園児」「違う園児」を記録。AIの判定と比較します。判定してもAIグループは移動しません。先生が上の保存ボタンを押した場合だけ、この端末に記録します。';
  results.append(help);
  const chosen=selectedReviewFaces;
  for(let id=0;id<items.length;id++){
@@ -2551,7 +2551,7 @@ start.addEventListener('click',async()=>{
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
   const heading=document.createElement('h2');heading.textContent='🔎 顔の比較値（高い順・上位20組）';diagnostic.append(heading);
-  const info=document.createElement('p');info.className='muted';info.textContent='比較値は正解率ではありません。高いほど似ている傾向ですが、同一人物を保証しません。写真・比較値は保存しません。';diagnostic.append(info);
+  const info=document.createElement('p');info.className='muted';info.textContent='比較値は正解率ではありません。高いほど似ている傾向ですが、同一人物を保証しません。元写真と比較用の特徴データは、上の保存ボタンを押した場合だけこの端末内に保存します。';diagnostic.append(info);
   const diagnosticPairs=[];
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
    const score=similarity(items[i].vector,items[j].vector);
