@@ -524,12 +524,12 @@ function validateFaceReportAndImport(){
   if(photoA<0||photoB<0||photoA>=photoNames.length||photoB>=photoNames.length||!Number.isFinite(oldScore))
    return fail('写真番号または比較値が不正です。');
   if(same&&photoA===photoB)return fail('同じ写真の別々の顔は同じ園児として登録できません。');
-  const match=findMatchingReviewedPair(photoA,photoB,oldLeft,oldRight,oldScore);
-  if(match){
-   const key=facePairKey(match.i,match.j);
+  const foundPair=findMatchingReviewedPair(photoA,photoB,oldLeft,oldRight,oldScore);
+  if(foundPair){
+   const key=facePairKey(foundPair.i,foundPair.j);
    if(imported.has(key)&&imported.get(key).same!==same)
     return fail('同じ顔の組に矛盾した判定があります。');
-   imported.set(key,{i:match.i,j:match.j,same});
+   imported.set(key,{i:foundPair.i,j:foundPair.j,same});
   }else{
    manual.push({photoA,photoB,oldLeft,oldRight,same,oldScore,selectedLeft:null,selectedRight:null});
   }
