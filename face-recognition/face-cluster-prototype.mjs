@@ -18,6 +18,7 @@ function updateGroupProgress(){
 const verifiedFacePairs=new Map();
 let selectedReviewFaces=[];
 let initialFaceGroups=[];
+let refreshGroupPairsUI=()=>{};
 const excludedFacePairs=new Set();
 const facePairKey=(a,b)=>Math.min(a,b)+':'+Math.max(a,b);
 const hasExcludedPair=(a,b)=>a.members.some(i=>b.members.some(j=>excludedFacePairs.has(facePairKey(i,j))));
@@ -253,6 +254,7 @@ function regroupFromExistingVectors(threshold){
  if(!items.length)return;
  groups=calculateFaceGroups(threshold);
  groupNames.clear();selected.clear();openedFolder=null;invalidateAssignmentPreview();render();
+ refreshGroupPairsUI();
  // The original AI grouping remains the baseline for verified teacher feedback.
 
 }
@@ -667,7 +669,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
@@ -848,6 +850,13 @@ start.addEventListener('click',async()=>{
     const first=groups.find(g=>g.id===firstId),second=groups.find(g=>g.id===secondId);
     if(!first||!second||first===second||hasExcludedPair(first,second)){refreshGroupPairs();return;}
     if(!window.confirm('顔写真を確認しましたか？ この2グループを1つにまとめます（アルバムデータは変更しません）。'))return;
+    // Record one representative teacher-confirmed pair before merging.
+    let representative=null;
+    for(const i of first.members)for(const j of second.members){
+     const score=pairScore(i,j);
+     if(Number.isFinite(score)&&(!representative||score>representative.score))representative={i,j,score};
+    }
+    if(representative)verifiedFacePairs.set(facePairKey(representative.i,representative.j),{i:representative.i,j:representative.j,same:true});
     first.members.push(...second.members);
     groups=groups.filter(g=>g!==second);
     if(!groupNames.has(first.id)&&groupNames.has(second.id))groupNames.set(first.id,groupNames.get(second.id));
@@ -860,12 +869,19 @@ start.addEventListener('click',async()=>{
    reject.addEventListener('click',()=>{
     const first=groups.find(g=>g.id===firstId),second=groups.find(g=>g.id===secondId);
     if(!first||!second)return;
-    for(const i of first.members)for(const j of second.members)excludedFacePairs.add(facePairKey(i,j));
-    refreshGroupPairs();
+    let representative=null;
+    for(const i of first.members)for(const j of second.members){
+     const score=pairScore(i,j);
+     if(Number.isFinite(score)&&(!representative||score>representative.score))representative={i,j,score};
+     excludedFacePairs.add(facePairKey(i,j));
+    }
+    if(representative)verifiedFacePairs.set(facePairKey(representative.i,representative.j),{i:representative.i,j:representative.j,same:false});
+    refreshGroupPairs();renderFaceEvaluation();
    });
    row.append(reject);host.append(row);
   }
   };
+  refreshGroupPairsUI=refreshGroupPairs;
   refreshGroupPairs();
   const breakdown=document.createElement('details');
   const summary=document.createElement('summary');summary.textContent='🧪 統合されない理由を確認（顔ごとの比較）';breakdown.append(summary);
