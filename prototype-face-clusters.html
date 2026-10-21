@@ -92,6 +92,20 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .final-audit-children{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:10px}
 .final-audit-child{border:1px solid #dce5f0;border-radius:12px;padding:12px;background:#fff;margin:0;min-width:0}
 .final-audit-child summary{cursor:pointer;font-weight:750}
+
+/* Teacher reviews the COMPLETE original, not the cropped face thumbnail. */
+.photo-review-dialog{border:0;border-radius:18px;padding:0;width:min(94vw,850px);max-height:94dvh;box-shadow:0 24px 80px #18273f55;background:#fff}
+.photo-review-dialog::backdrop{background:#142339bf}
+.photo-review-dialog-inner{padding:14px 17px 20px;max-height:94dvh;overflow:auto}
+.photo-review-dialog-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.photo-review-dialog-image{display:block;width:100%;height:auto;max-height:65dvh;object-fit:contain;background:#eff2f6;border-radius:12px;margin:10px 0}
+.photo-review-dialog-label{font-size:.9rem;font-weight:700;overflow-wrap:anywhere}
+.photo-review-actions{display:flex;flex-wrap:wrap;align-items:end;gap:9px;margin-top:12px}
+.photo-review-actions label{display:flex;flex-direction:column;gap:5px;flex:1 1 190px;font-size:.87rem}
+.photo-review-actions select{width:100%;padding:9px;border:1px solid #cfdce9;border-radius:10px;background:#fff}
+.photo-review-button{display:block;width:100%;background:transparent;border:0;padding:0;text-align:left;color:inherit;min-height:0}
+.photo-review-button:focus-visible{outline:3px solid #1d74d7;outline-offset:3px}
+.photo-review-button img{width:100%}
 .final-audit-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:9px;margin:10px 0}
 .final-audit-photo{margin:0;min-width:0}
 .final-audit-photo img{display:block;width:100%;aspect-ratio:1.15;object-fit:cover;border:1px solid #dae4ee;border-radius:9px}
@@ -322,11 +336,31 @@ label{display:inline-block;margin:5px 0}
 </details>
 <details class="panel advanced" id="developerDiagnostics"><summary>開発者向けの診断・比較値・手動統合</summary><div id="diagnosticsMount"></div></details>
 </main>
+
+<dialog id="photoReviewDialog" class="photo-review-dialog" aria-labelledby="photoReviewHeading">
+ <div class="photo-review-dialog-inner">
+  <div class="photo-review-dialog-header">
+   <strong id="photoReviewHeading">🖼 元写真を確認</strong>
+   <button id="photoReviewClose" type="button" class="secondary">閉じる ×</button>
+  </div>
+  <img id="photoReviewFullImage" class="photo-review-dialog-image" alt="元写真全体">
+  <p id="photoReviewPhotoDescription" class="photo-review-dialog-label"></p>
+  <p class="muted">顔のアップではなく元写真全体を確認できます。ここで直すのは<strong>アルバム用の写真の紐づけだけ</strong>。AIの顔判定・集合写真のほかの園児・元画像はそのまま残ります。</p>
+  <div class="photo-review-actions" id="photoReviewControls">
+   <label>移動先の園児フォルダ
+    <select id="photoReviewMoveDestination"></select>
+   </label>
+   <button type="button" id="photoReviewMove">この写真だけ移動／追加</button>
+   <button type="button" id="photoReviewUnlink" class="secondary">この園児のフォルダから外す</button>
+  </div>
+  <p id="photoReviewMessage" class="muted" role="status"></p>
+ </div>
+</dialog>
 <script>
 window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
 window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-album-preview"></script>
-<div id="build-marker">かんたん検証 2026-10-22 AM</div>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261022-photo-edit"></script>
+<div id="build-marker">かんたん検証 2026-10-22 AN</div>
 </body>
 </html>
