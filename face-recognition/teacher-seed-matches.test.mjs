@@ -1,7 +1,7 @@
 // Synthetic-only teacher-anchored grouping tests. No real photos or embeddings.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildTeacherSeedGroups,suggestTeacherSeedPairs} from './teacher-seed-matches.mjs';
+import {buildTeacherSeedGroups,suggestTeacherSeedPairs,suggestUnassignedFacePairs} from './teacher-seed-matches.mjs';
 
 const photos=[0,1,2,3,4,4,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
 const confirmed=[
@@ -42,4 +42,28 @@ test('teacher positive edges do not contradict explicit negatives',()=>{
  const seeds=buildTeacherSeedGroups(photos,feedback);
  assert.equal(seeds.length,1);
  assert.equal(seeds[0].length,2);
+});
+
+test('new child proposals never conflict with teacher rejections or shared photos',()=>{
+ const photos=[0,1,2,3,4,4,5,6];
+ const checked=[{i:0,j:1,same:true},{i:2,j:3,same:false},{i:4,j:5,same:false}];
+ const rows=suggestUnassignedFacePairs(photos,checked,()=>.8,()=>.8,12);
+ assert.ok(rows.length>0);
+ for(const pair of rows){
+  assert.notEqual(photos[pair.i],photos[pair.j]);
+  assert.ok(!checked.some(p=>p.i===pair.i&&p.j===pair.j));
+  assert.ok(![0,1].includes(pair.i)&&![0,1].includes(pair.j));
+ }
+});
+test('a two-model consensus rank is computed without averaging incompatible scores',()=>{
+ const light=(i,j)=>i===0&&j===1?.95:i===2&&j===3?.8:.12;
+ const r50=(i,j)=>i===0&&j===1?.10:i===2&&j===3?.9:.08;
+ const rows=suggestUnassignedFacePairs([0,1,2,3],[],light,r50,4);
+ assert.equal(rows.length,4);
+ assert.ok(rows.every(p=>Number.isFinite(p.reviewRank)));
+ assert.ok(rows.some(p=>p.i===0&&p.j===1));
+ assert.ok(rows.some(p=>p.i===2&&p.j===3));
+});
+test('all faces in same source photograph cannot become a new-child match',()=>{
+ assert.deepEqual(suggestUnassignedFacePairs([0,0],[],()=>.9,()=>.9),[]);
 });
