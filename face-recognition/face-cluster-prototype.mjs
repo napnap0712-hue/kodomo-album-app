@@ -723,8 +723,10 @@ $('copyQuickReport')?.addEventListener('click',async()=>{
   await navigator.clipboard.writeText(report.value);
   if(message)message.textContent='✅ 検証結果をコピーしました（写真・園児名なし）';
  }catch(error){
+  const outer=$('faceEvaluationPanel');if(outer)outer.open=true;
+  const inner=report.closest('details');if(inner)inner.open=true;
   report.focus();report.select();
-  if(message)message.textContent='テキストを選択したので、⌘＋Cでコピーしてください。';
+  if(message)message.textContent='コピーが自動でできなかったため、結果を選択しました。⌘＋Cでコピーしてください。';
  }
 });
 // Compact teacher-first evaluation: inspect possible misses and mixed faces.
