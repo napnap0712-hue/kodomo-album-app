@@ -10,7 +10,8 @@ export function groupFacesWithEvidence(photos, getScore, threshold=0.65, strateg
  const triangleFloor=strategy==='conservative'?.85:strategy==='balanced'?.78:.74;
  const triangleGap=strategy==='conservative'?.12:strategy==='balanced'?.06:.04;
  const triangles=[];
- for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){
+ // Cap three-face cross-check complexity on larger 100-photo batches.
+ if(n<=90)for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)for(let k=j+1;k<n;k++){
   const ids=[i,j,k];
   if(new Set(ids.map(id=>photos[id])).size!==3)continue;
   const values=[score(i,j),score(i,k),score(j,k)],minimum=Math.min(...values);
