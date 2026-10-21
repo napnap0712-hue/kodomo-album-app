@@ -6,7 +6,7 @@ import {transferPhotoFolderCorrection,trimPhotoFolderCorrections,photoFolderCorr
 import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-folder-visibility.mjs?v=20261021x1';
 import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261022-an';
 import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
-import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs?v=20261022-ak';
+import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs?v=20261022-an';
 import {bindProvisionalApprovalUi} from './provisional-approval-ui.mjs?v=20261022-al';
 import {bindAlbumPhotoHandoffUi} from './album-photo-handoff-ui.mjs?v=20261022-an';
 import {bindPhotoOriginalReviewUi} from './photo-original-review-ui.mjs?v=20261022-an';
