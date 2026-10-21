@@ -871,7 +871,7 @@ function renderTeacherConfirmedOverview(){
  const groups=buildTeacherSeedGroups(photos,feedback);
  const assigned=new Set(groups.flat());
  const remaining=items.map((_,i)=>i).filter(i=>!assigned.has(i));
- heading.textContent='📚 先生が確認した '+groups.length+'グループ（顔'+assigned.size+'件） ／ 未分類 '+remaining.length+'件';
+ heading.textContent='📚 先生が確認した '+groups.length+'グループ（顔'+assigned.size+'件） ／ 単独 '+remaining.length+'件';
  const imageTile=id=>{
   const tile=document.createElement('div');tile.className='teacher-photo';
   const image=document.createElement('img');image.src=items[id].url;
@@ -894,7 +894,7 @@ function renderTeacherConfirmedOverview(){
   host.append(empty);
  }
  const title=document.createElement('strong');
- title.textContent='まだ園児グループが決まっていない顔 '+remaining.length+'件';
+ title.textContent='まだ他の顔とまとめていない単独の顔 '+remaining.length+'件';
  pendingHost.append(title);
  const faces=document.createElement('div');faces.className='teacher-unassigned';
  remaining.forEach(id=>faces.append(imageTile(id)));
@@ -1006,8 +1006,17 @@ function renderQuickReview(){
      (i,j)=>similarity(items[i].r50Vector,items[j].r50Vector),
      3
     );
-    summary.textContent='✅ 既存'+teacherSeeds.length+'グループへの追加候補なし。別の園児かもしれない未分類の顔同士を'+unassignedPairs.length+'組だけ確認できます。';
-    note.textContent='先生の「違う園児」と同じ写真の別顔の条件を守ると、既存グループに追加できる顔はありません。残った顔同士を軽量AIとR50の順位で比較します。まだ同じ園児とは断定しません。';
+    const currentReview=buildVerifiedPhotoFolders(photos,feedback);
+    const allSinglesDifferent=currentReview.singletonCount>0&&
+     currentReview.separatedSingletonCount===currentReview.singletonCount;
+    summary.textContent=unassignedPairs.length?
+     '🧠 確認済み'+teacherSeeds.length+'グループへの追加候補なし ／ 未確認の顔同士 '+unassignedPairs.length+'組を確認できます。':
+     '✅ 先生の確認から'+currentReview.buckets.length+'つの仮フォルダに整理できます。追加確認が必要な顔の組はありません。';
+    note.textContent=unassignedPairs.length?
+     '未分類の顔同士を軽量AIとR50の順位で比較しました。正しい園児かは先生の判断が必要です。':
+     (allSinglesDifferent?
+      '残った単独の顔は、既存グループとも互いとも「違う園児」と確認済みです。追加候補0件は正常です。':
+      'まだ確認していない安全な候補はありません。必要なら、ほかの顔の組を個別に確認できます。');
     if(quickReport?.value){
      quickReport.value+='\n【未分類の顔同士の確認候補】'+unassignedPairs.length+'組（軽量・R50の平均順位）';
     }
