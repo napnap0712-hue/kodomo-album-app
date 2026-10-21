@@ -20,6 +20,8 @@ let selectedReviewFaces=[];
 let initialFaceGroups=[];
 let refreshGroupPairsUI=()=>{};
 let lastVerifiedGroupSnapshot=null,alternativeGrouping=null;
+function clearVerifiedMergeUndo(){lastVerifiedGroupSnapshot=null;const el=$('undoVerifiedGroups');if(el)el.disabled=true;}
+
 
 const excludedFacePairs=new Set();
 const facePairKey=(a,b)=>Math.min(a,b)+':'+Math.max(a,b);
