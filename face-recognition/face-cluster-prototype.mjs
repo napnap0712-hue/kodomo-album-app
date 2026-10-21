@@ -793,6 +793,16 @@ function renderQuickReview(){
    const suggestions=suggestTeacherSeedPairs(
     photos,feedback,(i,j)=>similarity(items[i].r50Vector,items[j].r50Vector),6
    );
+   const quickReport=$('faceEvaluationReport');
+   if(quickReport?.value){
+    quickReport.value+='\n【R50の確認候補】確認済みの園児グループ '+teacherSeeds.length+'組 / 未確認の候補 '+suggestions.length+'件';
+    for(const suggestion of suggestions){
+     quickReport.value+='\n顔'+(suggestion.face+1)+' → 確認済みグループ代表・顔'+(suggestion.anchor+1)+
+      '：平均 '+suggestion.mean.toFixed(4)+
+      (suggestion.margin===null?' / 次点なし':' / 次点との差 '+suggestion.margin.toFixed(4))+
+      ' / 先生の確認待ち';
+    }
+   }
    summary.textContent='🧠 R50の仮候補 ／ 先生が確認した園児の集まり '+teacherSeeds.length+
     '組 ／ 未確認の顔から '+suggestions.length+'件を表示。正誤は先生の確認が必要です。';
    const note=document.createElement('p');note.className='muted';note.style.gridColumn='1/-1';
