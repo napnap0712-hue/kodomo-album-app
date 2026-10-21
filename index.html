@@ -776,6 +776,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p class="muted">選んだ写真を見開きに配置し、タイトルや背景を調整できます。</p>
 </section>
 <section class="screen" data-screen="photoAssign">
+<p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT</p><h1>写真を振り分ける</h1><p class="lead">写真を選び、写っている園児をチェックしてください。複数人を選べます。</p></div></div>
 <div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="testRecognitionComparison" class="secondary" type="button">🔍 最初の写真で顔照合を試す</button><span id="recognitionComparisonStatus" class="muted" role="status">候補のみ表示・振り分けは変更しません。</span></div><div id="recognitionComparisonResults" style="margin:5px 0 10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button id="testRecognitionBatch" class="secondary" type="button">📸 まとめて顔照合</button><label style="display:inline-flex;align-items:center;gap:5px;font-size:13px">対象 <select id="recognitionBatchSize" aria-label="顔照合する写真の枚数"><option value="5">5枚</option><option value="20">20枚</option><option value="all">すべて</option></select></label><button id="cancelRecognitionBatch" class="secondary" type="button" disabled>中断</button><span id="recognitionBatchStatus" class="muted" role="status">候補のみ表示・自動確定なし。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="confirmSelectedRecognition" class="secondary" type="button" disabled>✅ 選択した園児をまとめて確定</button><span id="recognitionSelectedCount" class="muted">選択 0件</span></div><label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;margin:5px 0"><input id="recognitionHideConfirmed" type="checkbox"> 未確認の顔だけ表示</label><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0"><button id="applyRecognitionDraft" class="secondary" type="button" disabled>📂 AI候補を仮振り分け</button><span id="recognitionDraftStatus" class="muted">照合結果を確認してから仮振り分けできます。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" class="secondary" id="clusterPhotoFaces">🍎 同じ顔をグループ化（全写真）</button><button type="button" class="secondary" id="stopFaceGrouping" disabled>中断</button><span id="faceGroupingStatus" class="muted" role="status">園児の名前はまだ付けず、写真も移動しません。</span></div><div style="border:1px solid #dce4ef;padding:12px;border-radius:12px;margin:12px 0"><strong>🧪 AuraFace 動作試験（写真は送信しません）</strong><p class="muted">初回は公開モデル約261MBのダウンロードが必要です。人工データによるモデル実行のみ確認します。園児の顔識別・振り分けはまだ行いません。</p><button type="button" class="secondary" id="testAuraFaceProbe">AuraFaceの実行環境を確認</button><p id="auraFaceProbeStatus" class="muted" role="status">未実行</p><div style="margin-top:12px;border-top:1px solid #e5ebf2;padding-top:12px"><strong>📷 AuraFaceで顔写真2枚を比較（試験）</strong><p class="muted">顔が1人だけ写った写真を2枚選択してください。顔の位置を補正して比較値を出します。既存の振り分け・保存データには触れません。</p><div style="display:grid;gap:8px;margin-top:8px"><label class="field">写真① <input id="auraFaceCompareFile1" type="file" accept="image/*"></label><label class="field">写真② <input id="auraFaceCompareFile2" type="file" accept="image/*"></label></div><button type="button" class="secondary" id="compareAuraFaceTwo" style="margin-top:8px">選んだ2枚を比較</button><p id="auraFaceCompareStatus" class="muted" role="status">未実行</p></div><div style="border-top:1px solid #e5ebf2;padding-top:12px;margin-top:12px"><strong>📊 AuraFaceの一括識別比較（試験）</strong><p class="muted">異なる2人の園児について、顔が1人だけ写っている写真をそれぞれ2枚以上選んでね。合計20枚まで。画像を保存・送信したり、自動振り分けしたりしません。</p><div style="display:grid;gap:8px"><label class="field">園児Aの写真を1枚ずつ追加<input id="auraBatchGroupA" type="file" accept="image/*"></label><div id="auraBatchListA" class="muted">0枚</div><label class="field">園児Bの写真を1枚ずつ追加<input id="auraBatchGroupB" type="file" accept="image/*"></label><div id="auraBatchListB" class="muted">0枚</div></div><p class="muted">写真を選ぶたびに追加されます。選んだ写真は各一覧の「×」で取り消せます。</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button id="auraBatchStart" class="secondary" type="button">一括比較を開始</button><button id="auraBatchCancel" class="secondary" type="button" disabled>中断</button></div><p id="auraBatchStatus" class="muted" role="status">未実行</p><div id="auraBatchResults"></div></div></div><div id="faceGroupingResults" style="display:grid;gap:8px"></div><div id="recognitionBatchResults"></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div><p id="photoAssignProgress" class="muted"></p><div id="assignClassSummary" class="photoUsageSummary"></div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div><div id="assignmentFolderBar" style="display:flex;flex-wrap:wrap;gap:7px;margin:12px 0"></div><p id="assignmentFolderHint" class="muted">フォルダを選ぶと、その園児に紐づいた写真だけ表示します。</p><div id="photoAssignGrid" class="assignGrid"></div>
@@ -1941,6 +1942,134 @@ function renderClassPhotoSummary(id,used){
  details.append(list);host.append(details);
 }
 $('#finishPhotoAssign').addEventListener('click',()=>startEditingWithSelectedPhotos());
+
+// Explicit handoff from the face-review prototype to a NEW, still-empty album only.
+// Never edits an existing album or writes any saved album database until the user later saves.
+let approvedPhotoImportBusy=false,approvedPhotoImportTicket=null;
+const approvedImportPreview=$('#previewApprovedPhotoImport');
+const approvedImportApply=$('#applyApprovedPhotoImport');
+const approvedImportStatus=$('#approvedPhotoImportStatus');
+const approvedImportSummary=$('#approvedPhotoImportSummary');
+function approvedImportMessage(message){approvedImportStatus.textContent=message;}
+function approvedImportBusyState(value){
+ approvedPhotoImportBusy=value;
+ approvedImportPreview.disabled=value;
+ approvedImportApply.disabled=value||!approvedPhotoImportTicket;
+}
+function clearApprovedPhotoImport(){
+ approvedPhotoImportTicket=null;
+ approvedImportSummary.replaceChildren();
+ approvedImportSummary.hidden=true;
+ approvedImportApply.hidden=true;
+ approvedImportApply.disabled=true;
+}
+async function readApprovedImportPreview(){
+ const [{loadFaceDraft},{loadProvisionalApproval},{prepareVerifiedAlbumEditorImport}]=await Promise.all([
+  import('./face-recognition/face-draft-storage.mjs?v=20261022-an'),
+  import('./face-recognition/provisional-approval-storage.mjs?v=20261022-al'),
+  import('./face-recognition/verified-album-editor-import.mjs?v=20261022-aq')
+ ]);
+ const [draft,approval]=await Promise.all([loadFaceDraft(),loadProvisionalApproval()]);
+ if(!draft)throw Error('写真と園児別フォルダの保存済み作業がありません。顔振り分け検証画面で「今の作業を保存」してね。');
+ const plan=await prepareVerifiedAlbumEditorImport({
+  savedDraft:draft,savedApproval:approval,selectedClassId:selected.id,
+  registeredRoster:getChildren(selected.id)
+ });
+ return {draft,plan};
+}
+approvedImportPreview.addEventListener('click',async()=>{
+ if(approvedPhotoImportBusy)return;
+ clearApprovedPhotoImport();
+ if(files.length||editingId||safeSplitEditorMode){
+  approvedImportMessage('⚠️ 取り込みは写真を選ぶ前の新しいアルバムで行ってね。今開いている写真やアルバムを上書きしません。');return;
+ }
+ approvedImportBusyState(true);
+ approvedImportMessage('🔎 このSafariに保存した写真・先生の仮確定・園児名簿を照合しています。');
+ try{
+  const classId=selected.id,year=activeYear();
+  const rosterAtStart=JSON.stringify(getChildren(classId));
+  const {draft,plan}=await readApprovedImportPreview();
+  if(selected.id!==classId||activeYear()!==year||
+     JSON.stringify(getChildren(classId))!==rosterAtStart||files.length)
+   throw Error('確認中にクラスまたは園児名簿・写真が変更されました。もう一度確認してね。');
+  approvedPhotoImportTicket={
+   classId,year,rosterAtStart,sourceSignature:plan.sourceSignature,
+   savedAt:plan.savedAt,photoCount:plan.photoCount
+  };
+  const metrics=document.createElement('p');
+  metrics.className='muted';
+  metrics.textContent='✅ '+displayClassName(selected)+' ／ 元写真'+plan.photoCount+
+   '枚 ／ 園児に紐づいた写真'+plan.linkedPhotoCount+'枚 ／ 集合写真'+
+   plan.sharedPhotoCount+'枚 ／ 未紐づけ'+plan.unassignedCount+'枚';
+  approvedImportSummary.append(metrics);
+  const list=document.createElement('div');
+  list.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:8px 0';
+  for(const child of plan.children){
+   const badge=document.createElement('span');
+   badge.style.cssText='background:#fff;border:1px solid #d7e2f0;border-radius:8px;padding:5px 8px;font-size:12px';
+   badge.textContent='📁 '+child.name+'さん '+child.photoCount+'枚';
+   list.append(badge);
+  }
+  approvedImportSummary.append(list);
+  const note=document.createElement('p');note.className='muted';
+  note.textContent='元写真は1枚ずつ保持し、集合写真は複数の園児フォルダから参照します。未紐づけの写真は未振り分けとして残します。新しいアルバムの写真選択にだけ反映し、まだ保存しません。';
+  approvedImportSummary.append(note);
+  approvedImportSummary.hidden=false;
+  approvedImportApply.hidden=false;
+  approvedImportMessage('✅ 保存した仮確定とクラス名簿が一致しました。内容を確認してから下の取り込みボタンを押してね。');
+ }catch(error){
+  clearApprovedPhotoImport();
+  approvedImportMessage('⚠️ 取り込み準備ができません：'+String(error?.message||error).slice(0,260)+
+   '。現在の写真・既存のアルバムは変更していません。');
+ }finally{approvedImportBusyState(false);}
+});
+approvedImportApply.addEventListener('click',async()=>{
+ if(approvedPhotoImportBusy||!approvedPhotoImportTicket)return;
+ const ticket=approvedPhotoImportTicket;
+ if(files.length||editingId||safeSplitEditorMode||selected.id!==ticket.classId||
+    activeYear()!==ticket.year||JSON.stringify(getChildren(ticket.classId))!==ticket.rosterAtStart){
+  clearApprovedPhotoImport();approvedImportMessage('⚠️ 新しいアルバムの状態が変わったため、取り込みを中止しました。もう一度確認してね。');return;
+ }
+ if(!window.confirm('先生が仮確定した元写真'+ticket.photoCount+
+  '枚を、この新しいアルバムの写真選択に取り込みますか？ 保存済みアルバムは変更しません。'))return;
+ approvedImportBusyState(true);
+ approvedImportMessage('📂 保存内容と仮確定をもう一度照合し、写真を準備しています。');
+ try{
+  const {draft,plan}=await readApprovedImportPreview();
+  if(ticket.savedAt!==plan.savedAt||ticket.sourceSignature!==plan.sourceSignature||
+     ticket.photoCount!==plan.photoCount||
+     selected.id!==ticket.classId||activeYear()!==ticket.year||
+     JSON.stringify(getChildren(ticket.classId))!==ticket.rosterAtStart||files.length)
+   throw Error('確認後に保存データかクラスが変更されました。再度取り込みを確認してね。');
+  // Stage every File before changing the editor's in-memory photo selection.
+  const stagedFiles=draft.data.photos.map(photo=>new File([photo.blob],photo.name,{
+   type:photo.type||photo.blob.type||'image/jpeg',lastModified:photo.lastModified
+  }));
+  if(stagedFiles.length!==plan.assignments.length||
+     stagedFiles.some((file,index)=>file.size!==draft.data.photos[index].size))
+   throw Error('写真の読み込みに失敗しました。取り込みは行っていません。');
+  if(selected.id!==ticket.classId||activeYear()!==ticket.year||files.length)
+   throw Error('写真準備中に別のアルバムが開かれました。取り込みは行っていません。');
+  files=stagedFiles;
+  photoAssignments=plan.assignments.map(ids=>[...ids]);
+  activeAssignmentFolder='all';
+  $('#photoInput').value='';
+  clearApprovedPhotoImport();
+  renderPhotoAssignmentPage();
+  show('photoAssign');
+  const notice=$('#approvedImportPhotoAssignNotice');
+  if(notice){
+   notice.hidden=false;
+   notice.textContent='✅ 先生が確認した振り分けを読み込みました：元写真'+
+    files.length+'枚。写真と園児の紐づけを確認したら「編集に進む」を押してね。まだアルバムは保存していません。';
+  }
+ }catch(error){
+  approvedImportMessage('⚠️ 取り込みませんでした：'+String(error?.message||error).slice(0,250)+
+   '。元の保存作業・既存のアルバムは未変更です。');
+  clearApprovedPhotoImport();
+ }finally{approvedImportBusyState(false);}
+});
+
 $('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;photoAssignments=picked.map(()=>[]);renderPhotoAssignmentPage();show('photoAssign');});
 $('#continueEdit').addEventListener('click',()=>{if(!files.length)return;renderPhotoAssignmentPage();show('photoAssign');return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';$('#editorStatus').textContent='写真を自由に配置できます。タップして選択し、ドラッグして編集してください。';refreshEditor();show('editor');});
 let spreadIndex=0,designElements=[],selectedElementId=null,elementCounter=0;
