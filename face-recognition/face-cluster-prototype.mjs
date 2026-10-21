@@ -737,9 +737,25 @@ function currentFaceGroupIndex(){
  }
  return map;
 }
+function openPreviousReviewImport(){
+ const outer=$('faceEvaluationPanel');if(outer)outer.open=true;
+ const importInput=$('faceEvaluationImport');
+ if(importInput){
+  const box=importInput.closest('details');
+  if(box)box.open=true;
+  importInput.focus();
+  importInput.scrollIntoView({behavior:'smooth',block:'center'});
+ }
+}
+$('showRestoreInput')?.addEventListener('click',openPreviousReviewImport);
 $('copyQuickReport')?.addEventListener('click',async()=>{
  const report=$('faceEvaluationReport'),message=$('quickCopyStatus');
  if(!report?.value){if(message)message.textContent='先に顔を解析してください。';return}
+ if(items.length&&verifiedFacePairs.size===0){
+  openPreviousReviewImport();
+  if(message)message.textContent='⚠️ 先生の確認が0組です。以前の7組の結果を読み込んでからコピーしてね。';
+  return;
+ }
  try{
   if(!navigator.clipboard?.writeText)throw Error('clipboard unavailable');
   await navigator.clipboard.writeText(report.value);
@@ -760,6 +776,7 @@ function renderQuickReview(){
  host.replaceChildren();
  if(!items.length){
   summary.textContent='先に写真を解析してください。';
+  const restoreHint=$('restoreHint');if(restoreHint)restoreHint.hidden=true;
   return;
  }
  const lookup=currentFaceGroupIndex();
@@ -767,7 +784,9 @@ function renderQuickReview(){
  const falseSplits=feedback.filter(p=>p.same&&lookup.get(p.i)!==lookup.get(p.j)).length;
  const falseMerges=feedback.filter(p=>!p.same&&lookup.get(p.i)===lookup.get(p.j)).length;
  const activeCount=groups.filter(g=>g.id!=='unknown'&&g.members.length).length;
- summary.textContent='AIの仮グループ '+activeCount+'件 ／ 先生の確認 '+feedback.length+'組 ／ 確認した範囲で：分かれた同じ園児 '+falseSplits+'組・混ざった別の園児 '+falseMerges+'組';
+ summary.textContent='AIの仮グループ '+activeCount+'件 ／ 先生の確認 '+feedback.length+'組'+
+  (feedback.length?' ／ 確認した範囲で：分かれた同じ園児 '+falseSplits+'組・混ざった別の園児 '+falseMerges+'組':' ／ 精度：未評価（先生の確認を読み込むと比較できます）');
+ const restoreHint=$('restoreHint');if(restoreHint)restoreHint.hidden=feedback.length>0;
  const sameGroup=[],differentGroup=[];
  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
   if(items[i].sourcePhoto===items[j].sourcePhoto)continue;
@@ -831,7 +850,7 @@ function renderEyelidComparison(){
  host.replaceChildren();
  if(!items.length){host.textContent='先に写真を解析してください。';return;}
  const available=items.filter(item=>Array.isArray(item.alternateVector)&&item.alternateVector.length===item.vector.length).length;
- if(!available){host.textContent='この解析では補正方式の比較を実行していません。写真解析の前に「目の位置の補正を2方式で比較」をオンにしてください。';return;}
+ if(!available){host.textContent='この解析では高画質補正を比較していません。写真解析前に「高画質＋まぶた補正を比較」をオンにしてください。';return;}
  const caption=document.createElement('p');caption.className='muted';
  caption.textContent='比較できた顔 '+available+'/'+items.length+'件。初回の特徴データはそのままです。';
  host.append(caption);
