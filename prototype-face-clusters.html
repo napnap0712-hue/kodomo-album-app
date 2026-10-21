@@ -31,6 +31,8 @@ select,textarea,input[type=text]{font:inherit;max-width:100%}
 .pair-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
 .pair-card{border:1px solid #e0e6f0;border-radius:13px;padding:12px;background:#fff}
 .teacher-groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin:12px 0}
+/* Wider folder cards keep whole photos legible and reduce extra scrolling. */
+#verifiedPhotoFoldersGrid{grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr))}
 .teacher-card{border:1px solid #dee6f1;background:#fafcff;border-radius:12px;padding:12px}
 .teacher-card strong{display:block;font-size:.94rem;margin-bottom:8px}
 .folder-photo-chip{display:inline-block;margin:2px 4px 2px 0;padding:3px 7px;border:1px solid #dce6f1;border-radius:8px;font-size:.76rem;background:#fff;color:#44566b}
