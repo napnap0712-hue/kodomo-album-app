@@ -855,6 +855,13 @@ function renderEyelidComparison(){
  const note=document.createElement('p');note.className='muted';
  note.textContent='比較値の上昇が常に正解とは限りません。違う園児同士の検証も含めて総合的に判断し、実測で改善すると分かるまでは自動グループ化に使いません。';
  host.append(note);
+ const report=$('faceEvaluationReport');
+ if(report&&report.value){
+  report.value+='\n【顔位置合わせの比較】'+labeled.length+'組 ／ 改善方向 '+better+'組 ／ 悪化方向 '+worse+'組';
+  for(const pair of labeled){
+   report.value+='\n顔'+(pair.i+1)+' ↔ 顔'+(pair.j+1)+' '+(pair.same?'同じ園児':'違う園児')+'：従来 '+pair.oldScore.toFixed(4)+' / まぶた補正 '+pair.newScore.toFixed(4);
+  }
+ }
 }
 
 function renderFaceEvaluation(){
@@ -1325,7 +1332,7 @@ start.addEventListener('click',async()=>{
   const perfReport='\n⚙️ 実行方式：'+executionProvider+'\n⏱ 計測：AI準備 '+seconds(timings.model)+' ／ 写真読み込み '+seconds(timings.decode)+' ／ 顔検出＋特徴解析 '+seconds(timings.detectAndEmbed)+'（うち顔検出 '+seconds(timings.detection)+'・AI特徴抽出 '+seconds(timings.recognition)+'／'+timings.faces+'顔） ／ グループ化 '+seconds(timings.group)+' ／ 合計 '+seconds(performance.now()-startedAt)+'（この端末での実測）';
   status.textContent='✅ '+(files.length-failed.length)+' / '+files.length+'枚解析 ／ 顔'+items.length+'件 ／ AI仮グループ'+(groups.length-1)+'件。'+(failed.length?'\n⚠️ 顔を見つけられなかった写真：'+failed.map(v=>v.split(':')[0]).join('、')+'（手動で振り分けできます）':'');
   const timing=$('technicalStatus'),timingPanel=$('timingPanel');
-  if(timing)timing.textContent='実行モデル：'+selectedModel+'\n'+perfReport+'\n'+(diagnostics.length?'モデル詳細：'+[...new Set(diagnostics)].join(' ／ '):'')+'\n'+(failed.length?'顔未検出：'+failed.join(' ／ '):'');
+  if(timing)timing.textContent='実行モデル：'+selectedModel+'\n'+perfReport+'\n'+(timings.alternateFaces?'まぶた補正：'+timings.alternateFaces+'顔／追加認識 '+seconds(timings.alternateRecognition)+'\n':'')+(diagnostics.length?'モデル詳細：'+[...new Set(diagnostics)].join(' ／ '):'')+'\n'+(failed.length?'顔未検出：'+failed.join(' ／ '):'');
   if(timingPanel)timingPanel.hidden=false;
   const old=$('pairDiagnostics');if(old)old.remove();
   const diagnostic=document.createElement('section');diagnostic.id='pairDiagnostics';diagnostic.className='panel';
