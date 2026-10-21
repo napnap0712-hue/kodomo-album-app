@@ -1231,8 +1231,9 @@ function renderVerifiedPhotoFolders(){
    (cancelledOldNames?' ⚠️ グループ変更のため、以前の名前の仮指定を'+cancelledOldNames+'件解除しました。もう一度選んでね。':'');
  }
  const confirmed=model.buckets.filter(b=>b.kind==='confirmed').length;
- const independent=model.buckets.filter(b=>b.kind==='individual'&&b.independentlyDistinct).length;
- const unresolved=model.singletonCount-independent;
+ const soloFolders=model.buckets.filter(b=>b.kind==='individual');
+ const independent=soloFolders.filter(b=>b.independentlyDistinct).length;
+ const unresolved=soloFolders.length-independent;
  title.textContent='🗂 園児の仮フォルダ：'+model.buckets.length+'件（確認済み '+confirmed+'・単独 '+model.buckets.filter(b=>b.kind==='individual').length+'・新規 '+visible.newFolderCount+'）';
  const managementInfo=$('folderManagementNotice');
  if(managementInfo){managementInfo.hidden=!folderManagementNotice;managementInfo.textContent=folderManagementNotice;}
@@ -1374,13 +1375,15 @@ function renderVerifiedPhotoFolders(){
  const report=$('faceEvaluationReport');
  if(report?.value){
   report.value+='\n【先生の確認からの写真別仮フォルダ】'+model.buckets.length+'件'+
-   '（複数顔の確認済み '+confirmed+'・単独 '+model.singletonCount+'）';
+   '（複数顔の確認済み '+confirmed+'・単独 '+soloFolders.length+'・新規 '+visible.newFolderCount+'）';
   report.value+='\n顔の分類 '+model.coveredFaces+'/'+items.length+'件 / 確認の矛盾 '+model.contradictions.length+'組';
   for(const bucket of model.buckets){
    report.value+='\n仮フォルダ'+String(bucket.id).padStart(2,'0')+' '+
-    (bucket.kind==='confirmed'?'同じ園児確認済み':bucket.independentlyDistinct?'別人確認済み・単独':'単独保留')+
-    '：顔'+bucket.members.map(id=>id+1).join('・')+
-    ' / 写真'+bucket.photos.map(index=>index+1).join('・');
+    (bucket.kind==='manual'?'顔未検出から新規作成':bucket.kind==='confirmed'?'同じ園児確認済み':bucket.independentlyDistinct?'別人確認済み・単独':'単独保留')+
+    '：'+(bucket.members.length?'顔'+bucket.members.map(id=>id+1).join('・'):'顔検出なし')+
+    ' / '+new Set([...bucket.photos,
+     ...[...manualPhotoFolderChoices].filter(([,keys])=>keys.has(provisionalPhotoFolderKey(bucket))).map(([index])=>index)]).size+
+    '枚の元写真を参照';
   }
   if(withoutFaces.length)report.value+='\n顔未検出：写真'+withoutFaces.map(i=>i+1).join('・');
   report.value+='\n【園児名との仮紐づけ】'+namedCount+'/'+model.buckets.length+
