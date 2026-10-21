@@ -538,7 +538,7 @@ start.addEventListener('click',async()=>{
   }
   if(stop){status.textContent='⏹ 中断しました。アルバムへの変更はありません。';return}
   const groupingStart=performance.now();
-  const threshold=selectedModel==='lightweight'?0.70:Number($('threshold').value);
+  const threshold=Number($('threshold').value);
   const pairScores=[];
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
    const score=similarity(items[i].vector,items[j].vector);
