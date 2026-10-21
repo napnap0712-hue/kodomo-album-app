@@ -2809,6 +2809,7 @@ photoOriginalReviewUi=bindPhotoOriginalReviewUi({
 });
 
 albumHandoffUi=bindAlbumPhotoHandoffUi({
+ onPhotoOpen:(photoIndex,key)=>photoOriginalReviewUi.open(photoIndex,key),
  getData:()=>{
   const audit=currentFinalReviewAudit();
   return {
