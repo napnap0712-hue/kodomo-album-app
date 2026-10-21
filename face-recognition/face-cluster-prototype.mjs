@@ -13,6 +13,11 @@ function updateGroupProgress(){
  host.textContent='📊 グループ：解析直後 '+initialGroupCount+'件 → 現在 '+current+'件（手動統合 '+manualMergeCount+'回） ／ 統合候補：'+candidates;
 }
 
+// Teacher-verified comparisons only; cleared every time a new photo batch starts.
+// Never send or persist identifiable photos, vectors, or verification labels.
+const verifiedFacePairs=new Map();
+let selectedReviewFaces=[];
+let initialFaceGroups=[];
 const excludedFacePairs=new Set();
 const facePairKey=(a,b)=>Math.min(a,b)+':'+Math.max(a,b);
 const hasExcludedPair=(a,b)=>a.members.some(i=>b.members.some(j=>excludedFacePairs.has(facePairKey(i,j))));
@@ -248,6 +253,8 @@ function regroupFromExistingVectors(threshold){
  if(!items.length)return;
  groups=calculateFaceGroups(threshold);
  groupNames.clear();selected.clear();openedFolder=null;invalidateAssignmentPreview();render();
+ // The original AI grouping remains the baseline for verified teacher feedback.
+
 }
 $('threshold').addEventListener('change',()=>{
  if(!items.length)return;
@@ -385,8 +392,99 @@ function renderManualPhotos(){
   row.append(choices);host.append(row);
  }
 }
+
+function currentFaceGroupIndex(){
+ const map=new Map();
+ for(const group of groups){
+  if(group.id==='unknown')continue;
+  for(const id of group.members)map.set(id,group.id);
+ }
+ return map;
+}
+function renderFaceEvaluation(){
+ const gallery=$('faceEvaluationGallery'),choice=$('faceEvaluationChoice'),results=$('faceEvaluationResults');
+ if(!gallery||!choice||!results)return;
+ gallery.replaceChildren();choice.replaceChildren();results.replaceChildren();
+ const current=currentFaceGroupIndex();
+ if(!items.length){
+  results.textContent='写真を解析すると顔の一覧が表示されます。';
+  return;
+ }
+ const summary=document.createElement('p');
+ summary.className='muted';
+ const baselineSame=(i,j)=>initialFaceGroups[i]!=null&&initialFaceGroups[i]===initialFaceGroups[j];
+ const currentSame=(i,j)=>current.has(i)&&current.get(i)===current.get(j);
+ const feedback=[...verifiedFacePairs.values()];
+ const errorCounts=(sameFn)=>feedback.filter(pair=>sameFn(pair.i,pair.j)!==pair.same).length;
+ const conflicts=groups.slice(1).reduce((count,g)=>{
+  const photos=g.members.map(id=>items[id]?.sourcePhoto);
+  return count+photos.length-new Set(photos).size;
+ },0);
+ summary.textContent='先生の確認 '+feedback.length+'組 ／ 初回AIの不一致 '+errorCounts(baselineSame)+'組 → 現在の不一致 '+errorCounts(currentSame)+'組 ／ 同じ写真の別顔の混在 '+conflicts+'組';
+ results.append(summary);
+ const help=document.createElement('p');help.className='muted';
+ help.textContent='下の顔から2件をタップして「同じ園児」「違う園児」を記録。AIの判定と比較します。記録してもグループは移動せず、端末にも保存しません。';
+ results.append(help);
+ const chosen=selectedReviewFaces;
+ for(let id=0;id<items.length;id++){
+  const face=items[id],button=document.createElement('button');
+  button.type='button';button.className='secondary';button.style.cssText='padding:5px;min-width:66px;border:2px solid '+(chosen.includes(id)?'#176ad6':'transparent')+';background:#edf3fa;color:#263344';
+  button.setAttribute('aria-pressed',String(chosen.includes(id)));
+  button.setAttribute('aria-label','顔'+(id+1)+'、写真'+(face.sourcePhoto+1)+'枚目');
+  const img=document.createElement('img');img.src=face.url;img.alt='顔'+(id+1);img.style.cssText='width:56px;height:56px;object-fit:cover;border-radius:7px;display:block';
+  const caption=document.createElement('span');caption.textContent='顔'+(id+1);caption.style.cssText='font-size:11px;display:block';
+  button.append(img,caption);
+  button.addEventListener('click',()=>{
+   if(selectedReviewFaces.includes(id))selectedReviewFaces=selectedReviewFaces.filter(n=>n!==id);
+   else if(selectedReviewFaces.length===2)selectedReviewFaces=[id];
+   else selectedReviewFaces.push(id);
+   renderFaceEvaluation();
+  });
+  gallery.append(button);
+ }
+ if(chosen.length===2){
+  const [i,j]=chosen,score=pairScore(i,j);
+  const row=document.createElement('p');row.className='muted';
+  row.textContent='顔'+(i+1)+'（'+(items[i].sourcePhoto+1)+'枚目）と顔'+(j+1)+'（'+(items[j].sourcePhoto+1)+'枚目） ／ 比較値 '+(Number.isFinite(score)?score.toFixed(4):'算出不可')+' ／ AI初回：'+(baselineSame(i,j)?'同じグループ':'別グループ')+' ／ 現在：'+(currentSame(i,j)?'同じグループ':'別グループ');
+  choice.append(row);
+  const actions=document.createElement('div');actions.className='actions';
+  for(const [same,label] of [[true,'✅ 同じ園児'],[false,'🚫 違う園児']]){
+   const button=document.createElement('button');button.type='button';
+   button.className=same?'':'secondary';button.textContent=label;
+   button.addEventListener('click',()=>{
+    verifiedFacePairs.set(facePairKey(i,j),{i,j,same});
+    selectedReviewFaces=[];
+    renderFaceEvaluation();
+   });
+   actions.append(button);
+  }
+  choice.append(actions);
+ }else{
+  const note=document.createElement('p');note.className='muted';
+  note.textContent='比較する顔をあと'+(2-chosen.length)+'件選んでね。';
+  choice.append(note);
+ }
+ if(feedback.length){
+  const title=document.createElement('strong');title.textContent='先生が確認した組み合わせ';results.append(title);
+  for(const pair of feedback){
+   const row=document.createElement('div');row.style.cssText='display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid #e8edf3;flex-wrap:wrap';
+   for(const id of [pair.i,pair.j]){
+    const img=document.createElement('img');img.src=items[id].url;img.alt='顔'+(id+1);img.style.cssText='width:45px;height:45px;object-fit:cover;border-radius:7px';row.append(img);
+   }
+   const label=document.createElement('span');label.className='muted';
+   label.textContent=(pair.same?'同じ園児':'違う園児')+' ／ 初回'+(baselineSame(pair.i,pair.j)===pair.same?'一致':'不一致')+'・現在'+(currentSame(pair.i,pair.j)===pair.same?'一致':'不一致');
+   row.append(label);
+   const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='取消';
+   remove.style.padding='6px 10px';
+   remove.addEventListener('click',()=>{verifiedFacePairs.delete(facePairKey(pair.i,pair.j));renderFaceEvaluation()});
+   row.append(remove);results.append(row);
+  }
+ }
+}
+
 function render(){
  updateGroupProgress();
+ renderFaceEvaluation();
  selection.textContent='選択中：'+selected.size+'件';move.disabled=!selected.size;
  const existing=groups.filter(g=>g.members.length);
  const overview=$('folderOverview'),detail=$('folderDetail'),actions=$('folderActions');
@@ -569,7 +667,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
@@ -650,6 +748,8 @@ start.addEventListener('click',async()=>{
   const groupingStart=performance.now();
   const threshold=Number($('threshold').value);
   groups=calculateFaceGroups(threshold);
+  initialFaceGroups=Array(items.length).fill(null);
+  for(const g of groups.slice(1))for(const id of g.members)initialFaceGroups[id]=g.id;
   initialGroupCount=groups.length-1;updateGroupProgress();
   timings.group=performance.now()-groupingStart;
   const seconds=ms=>(ms/1000).toFixed(1)+'秒';
