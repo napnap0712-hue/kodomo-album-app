@@ -1,13 +1,134 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>顔グループ化・独立試作</title>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>おもいでブック｜AI顔グループ検証</title>
 <style>
-:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;color:#263344;background:#f6f8fc}body{margin:0;padding:20px;max-width:980px;margin:auto}h1{font-size:1.45rem}p{line-height:1.6}.panel{background:white;padding:16px;border-radius:16px;margin:12px 0;box-shadow:0 2px 10px #0001}button,.button{border:0;border-radius:12px;padding:12px 16px;background:#176ad6;color:white;font-weight:700;cursor:pointer}button:disabled{opacity:.45}button.secondary{background:#e9eef5;color:#263344}input[type=file]:not([hidden]){display:block;margin:12px 0;max-width:100%}input[hidden]{display:none!important}input[type=range]{width:200px;vertical-align:middle}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}.group{border:1px solid #dbe2ed;border-radius:12px;padding:10px;background:#fff}.faces{display:flex;flex-wrap:wrap;gap:6px}.face{width:60px;height:60px;object-fit:cover;border-radius:10px;border:3px solid transparent;cursor:pointer}.face.selected{border-color:#176ad6}.muted{color:#66758b;font-size:.88rem}.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}#status{white-space:pre-wrap}label{display:inline-block;margin:8px 0}.advanced{margin:12px 0;padding:12px;border:1px solid #e0e7f0;border-radius:12px}.advanced summary{font-weight:700;cursor:pointer}.advanced[open] summary{margin-bottom:12px}</style></head>
-<body><h1>🧪 AI顔グループ化・独立試作</h1><p class="muted">既存アルバム・園児フォルダには反映しません。写真と特徴データは保存・アップロードしません。初回はAIモデルのダウンロードが必要です。InsightFaceの公開モデルは非商用研究用途に限定されています。</p>
-<section class="panel"><strong>① 写真を選択</strong><input id="photos" type="file" accept="image/*" multiple><div class="actions"><button type="button" id="addPhotos" class="secondary">＋ 写真を追加選択</button><button type="button" id="folderPhotos" class="secondary">📁 フォルダから一括追加</button><button type="button" id="clearPhotos" class="secondary">選択写真をクリア</button></div><input id="folderInput" type="file" accept="image/*" webkitdirectory multiple hidden><p id="photoCount" class="muted">0枚選択済み（追加選択できます）</p><div class="actions"><span class="muted">顔認識：ArcFace buffalo_s（軽量）</span><select id="recognitionModel" hidden aria-label="顔認識モデル"><option value="buffalo_s" selected>ArcFace buffalo_s（軽量）</option></select><button id="start">解析して仮グループ化</button><button id="cancel" class="secondary" disabled>中断</button></div><details class="advanced"><summary>⚙️ 詳細設定（必要なときだけ）</summary><label>グループの厳しさ <input id="threshold" type="range" min="0.45" max="0.90" value="0.65" step="0.01"> <output id="thresholdValue">0.65</output></label><label><input type="checkbox" id="flipAugment"> 左右反転比較（実験）</label></details><input type="file" id="lightweightOnnxFile" accept=".onnx" hidden><input type="file" id="lightweightDataFile" accept=".data" hidden><p id="groupProgress" class="muted" aria-live="polite"></p><p id="status" role="status">まだ解析していません。</p></section>
-<section class="panel"><strong>② 顔を確認・修正</strong><p class="muted">園児名を選ぶと同じ園児のグループがまとまります。判定が難しい顔は「未分類」に残ります。</p><div class="actions"><label>クラス <select id="rosterClass"></select></label><button type="button" id="loadRoster" class="secondary">登録済み園児を読み込む</button><span id="rosterStatus" class="muted"></span></div><div id="folderActions" class="actions" hidden><span id="selection">選択中：0件</span><select id="destination" aria-label="移動先グループ"></select><button id="move" disabled>選択した顔を移動</button><button id="clear" class="secondary">選択解除</button></div><details class="advanced"><summary>AIの園児名候補（任意）</summary><div class="actions"><button type="button" id="suggestAssignments">AI仮振り分けを提案</button><span id="suggestStatus"></span></div><div id="suggestionReview"></div><button type="button" id="applySuggestions" disabled>チェックした候補だけ仮反映</button></details><div class="advanced"><strong>📷 顔が見つからない写真の手動振り分け</strong><p class="muted">顔が検出できなかった写真だけ表示します。園児を複数選択できます。アルバムには保存されません。</p><div id="manualPhotoAssignments"></div></div><details class="advanced" id="faceEvaluationPanel"><summary>🧪 AIの顔判定を検証（再解析不要）</summary><p class="muted">顔を2つタップして「同じ園児」か「違う園児」を教えてください。AIが最初に分けた結果と、現在の結果を比較できます。判定結果はこの画面限りです。</p><div id="faceEvaluationGallery" class="actions" style="gap:6px;align-items:flex-start"></div><div id="faceEvaluationChoice"></div><div class="advanced"><strong>📋 前回の検証結果を読み込む</strong><p class="muted">コピーした検証テキストを貼り付けてください。写真を同じ順番で選択してください。顔の検出数が違っても、特定できた組は復元し、判断できない顔だけ写真を見て選び直せます。</p><textarea id="faceEvaluationImport" rows="4" placeholder="【顔グループ検証】から始まるテキストを貼り付け" style="display:block;width:100%;box-sizing:border-box;border:1px solid #dbe2ed;border-radius:10px;padding:10px"></textarea><div class="actions"><button type="button" id="importFaceEvaluation" class="secondary">確認結果を復元</button><button type="button" id="applyVerifiedGroups">✅ 確認済みの同じ園児だけ仮統合</button><button type="button" id="undoVerifiedGroups" class="secondary" disabled>↩ 仮統合を戻す</button></div><p id="faceEvaluationMessage" class="muted" role="status"></p><div id="faceEvaluationImportReview"></div></div><div class="advanced"><strong>🧪 別方式のグループ化を比較</strong><p class="muted">解析済みの顔特徴を使って、現行方式・従来方式・安全優先・バランス・探索型を比較します。グループは変更しません。「違う園児」の確認がない場合は誤統合の安全性を評価できません。</p><button type="button" id="simulateFaceGrouping" class="secondary">5方式のグループ化を比較</button><div id="faceSimulationResult" class="muted" role="status" style="margin-top:10px"></div></div><div id="faceEvaluationResults"></div><p class="muted">統合・候補除外の操作も、代表の顔1組を検証記録に追加します。下のテキストには写真や園児名は含めません。</p><label for="faceEvaluationReport">検証結果のテキスト（コピーして共有できます）</label><textarea id="faceEvaluationReport" readonly rows="7" style="display:block;width:100%;box-sizing:border-box;border:1px solid #dbe2ed;border-radius:10px;padding:10px;font-size:13px;line-height:1.5"></textarea></details><div id="folderOverview" class="grid"></div><div id="folderDetail" hidden><button id="backToFolders" type="button" class="secondary">← 一覧へ戻る</button><h3 id="openFolderTitle"></h3><p class="muted">パソコン：顔をドラッグ。iPhone：顔を長押しして、下の移動先へ運ぶ。</p><div id="folderDropTargets" class="grid"></div><div id="groups" class="grid"></div></div></section><details class="panel advanced"><summary>写真ごとの顔の紐づけ（詳細）</summary><p class="muted">1枚の写真に複数の顔がある場合、それぞれの仮グループを表示します。検出できなかった写真も一覧に残します。写真の複製・保存はしません。</p><div id="photoLinks"></div></details><details class="panel advanced"><summary>園児別の仮振り分け確認（任意）</summary><p class="muted">仮グループに園児名を入力すると、該当する元写真の番号を表示します。集合写真は複数の園児に表示されます。既存の園児名簿・写真データは変更しません。</p><div id="childFolders"></div><div class="actions"><button id="previewAssignments" type="button">確認して仮振り分け</button></div><p id="assignmentStatus" class="muted">確認するまでは仮振り分けを作成しません。</p><div id="assignmentPreview"></div></details>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;color:#283448;background:#f5f7fb;font-size:16px}
+*{box-sizing:border-box}body{margin:0 auto;padding:22px 16px 54px;max-width:1000px;line-height:1.55}
+h1{font-size:clamp(1.32rem,3vw,1.7rem);line-height:1.3;margin:0 0 8px}h2{font-size:1.12rem;margin:0}h3{font-size:1rem}
+p{margin:8px 0;line-height:1.65}.muted{color:#67758a;font-size:.88rem}
+.app-head{padding:8px 5px 12px}.app-head p{max-width:830px}
+.panel{background:white;border:1px solid #e3eaf3;border-radius:18px;padding:22px;margin:14px 0;box-shadow:0 3px 14px #193c6510}
+.section-top{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.step{font-size:.72rem;font-weight:800;color:#2166c2;background:#eaf2ff;border-radius:12px;padding:5px 9px;white-space:nowrap}
+button{font:inherit;border:0;border-radius:11px;padding:10px 15px;background:#196ad6;color:white;font-weight:700;cursor:pointer;min-height:40px}
+button:disabled{opacity:.45;cursor:default}
+button.secondary{background:#eaf0f7;color:#2d3b4e}button:hover:not(:disabled){filter:brightness(.97)}
+input[type=file]:not([hidden]){display:block;max-width:100%;margin:8px 0}
+[hidden],input[hidden]{display:none!important}
+input[type=range]{width:min(215px,50vw);vertical-align:middle}
+select,textarea,input[type=text]{font:inherit;max-width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:10px}
+.actions,.face-grid{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.group{border:1px solid #e1e7ef;border-radius:13px;padding:12px;background:#fff}
+.faces{display:flex;flex-wrap:wrap;gap:6px}.face{width:60px;height:60px;object-fit:cover;border-radius:9px;border:2px solid transparent;cursor:pointer}.face.selected{border-color:#176ad6}
+.advanced{margin:12px 0;border:1px solid #e1e8f1;border-radius:13px;padding:13px}
+.advanced>summary{font-weight:700;cursor:pointer;list-style-position:inside}
+.advanced[open]>summary{margin-bottom:12px}
+.compact-input{width:100%;padding:11px;border:1px solid #d8e2ef;border-radius:10px;line-height:1.5}
+.pair-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.pair-card{border:1px solid #e0e6f0;border-radius:13px;padding:12px;background:#fff}
+.pair-card p{margin:5px 0}.pair-faces{display:flex;gap:10px;margin:9px 0}.pair-faces figure{margin:0;text-align:center;min-width:80px}
+.pair-faces img{width:72px;height:72px;object-fit:cover;border-radius:10px;display:block;margin:auto}
+.pair-faces figcaption{font-size:.75rem;color:#67758a}.pair-card .actions button{flex:1;font-size:.85rem;padding:9px 10px}
+#status{white-space:pre-wrap;font-size:.9rem}#groupProgress{font-weight:650}
+#quickReviewSummary{margin:4px 0 14px}
+#faceEvaluationChoice{position:sticky;top:0;background:white;z-index:2;padding:3px}
+#build-marker{position:fixed;bottom:10px;right:10px;background:#283b55;color:white;font-size:11px;padding:5px 8px;border-radius:8px;opacity:.9;z-index:20;pointer-events:none}
+label{display:inline-block;margin:5px 0}
+#folderOverview{margin-top:16px}
+#technicalStatus{white-space:pre-wrap}
+@media(max-width:620px){body{padding:13px 10px 50px}.panel{padding:15px;margin:11px 0}.actions button{max-width:100%}.pair-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="app-head">
+<h1>📷 AI顔グループ分け テスト</h1>
+<p class="muted">写真を選んで、AIが間違えやすい組み合わせだけ確認します。写真・顔の特徴は端末内で扱い、アルバムや園児名簿は変更しません。初回はAIモデルのダウンロードが必要です（公開モデルは非商用研究用途）。</p>
+</header>
+<main>
+<section class="panel">
+<div class="section-top"><span class="step">STEP 1</span><h2>写真を選んで解析</h2></div>
+<input id="photos" type="file" accept="image/*" multiple>
+<p id="photoCount" class="muted">0枚選択済み</p>
+<div class="actions"><button id="start">AIで顔をグループ化</button><button id="cancel" class="secondary" disabled>中断</button></div>
+<details class="advanced"><summary>写真の追加・詳しい設定</summary>
+<div class="actions"><button type="button" id="addPhotos" class="secondary">＋ 写真を追加</button><button type="button" id="folderPhotos" class="secondary">フォルダごと選択</button><button type="button" id="clearPhotos" class="secondary">写真をクリア</button></div>
+<input id="folderInput" type="file" accept="image/*" webkitdirectory multiple hidden>
+<p class="muted">モデル：ArcFace buffalo_s（軽量）</p>
+<select id="recognitionModel" hidden aria-label="顔認識モデル"><option value="buffalo_s" selected>ArcFace buffalo_s（軽量）</option></select>
+<label>判定の厳しさ <input id="threshold" type="range" min="0.45" max="0.90" value="0.65" step="0.01"> <output id="thresholdValue">0.65</output></label>
+<label><input type="checkbox" id="flipAugment"> 左右反転も比較（実験）</label>
+</details>
+<input type="file" id="lightweightOnnxFile" accept=".onnx" hidden>
+<input type="file" id="lightweightDataFile" accept=".data" hidden>
+<p id="groupProgress" class="muted" aria-live="polite"></p>
+<p id="status" role="status">写真を選ぶと解析を開始できます。</p>
+<details class="advanced" id="timingPanel" hidden><summary>解析時間・モデルの診断</summary><p id="technicalStatus" class="muted"></p></details>
+</section>
+<section class="panel" id="quickReviewPanel">
+<div class="section-top"><span class="step">STEP 2</span><h2>迷った顔だけ確認</h2></div>
+<p class="muted">候補が正しいとは限りません。「同じ園児」「違う園児」を押すだけで判定を記録します。<strong>園児の名前をAIが推測することはありません。</strong></p>
+<p id="quickReviewSummary" aria-live="polite">先に写真を解析してください。</p>
+<div id="quickReviewCandidates" class="pair-grid"></div>
+<details id="faceEvaluationPanel" class="advanced">
+<summary>ほかの顔を選ぶ・前回の結果を読み込む</summary>
+<p class="muted">候補に出なかった園児は、下の顔一覧から2つ選んで確認できます。</p>
+<details class="advanced"><summary>すべての顔から2つ選ぶ</summary>
+<div id="faceEvaluationGallery" class="face-grid"></div><div id="faceEvaluationChoice"></div>
+</details>
+<div class="advanced"><strong>前回の判定結果を復元</strong>
+<p class="muted">前回コピーしたテキストがあれば貼り付けてね。顔が見つからない組だけ目視で確認します。</p>
+<textarea id="faceEvaluationImport" class="compact-input" rows="3" placeholder="【顔グループ検証】から始まるテキスト"></textarea>
+<div class="actions"><button type="button" id="importFaceEvaluation" class="secondary">前回の判定を読み込む</button></div>
+<p id="faceEvaluationMessage" class="muted" role="status"></p><div id="faceEvaluationImportReview"></div>
+</div>
+<details class="advanced"><summary>確認済みの顔だけ仮統合（任意）</summary>
+<p class="muted">AIの検証用です。園児の名前や実際のアルバムには反映しません。</p>
+<div class="actions"><button type="button" id="applyVerifiedGroups">確認した顔だけ仮統合</button><button type="button" id="undoVerifiedGroups" class="secondary" disabled>仮統合を戻す</button></div>
+</details>
+<details class="advanced"><summary>5方式の比較（詳しく調べるとき）</summary>
+<button type="button" id="simulateFaceGrouping" class="secondary">5方式を比較</button>
+<div id="faceSimulationResult" class="muted" role="status"></div>
+</details>
+<details class="advanced"><summary>確認履歴・検証結果のコピー</summary>
+<div id="faceEvaluationResults"></div>
+<label for="faceEvaluationReport">確認結果（写真・園児名なし）</label>
+<textarea id="faceEvaluationReport" class="compact-input" readonly rows="7"></textarea>
+</details>
+</details>
+</section>
+<section class="panel" id="folderEditorSection">
+<details id="folderEditor">
+<summary style="font-weight:750;cursor:pointer">📁 園児フォルダ・写真の手動振り分け（必要なときだけ）</summary>
+<p class="muted">園児名を一度選ぶと、その園児の写真をまとめて確認できます。顔の見えない写真は手動で指定できます。</p>
+<div class="actions"><label>クラス <select id="rosterClass"></select></label><button type="button" id="loadRoster" class="secondary">登録済み園児を読み込む</button><span id="rosterStatus" class="muted"></span></div>
+<div id="folderActions" class="actions" hidden><span id="selection">選択中：0件</span><select id="destination" aria-label="移動先グループ"></select><button id="move" disabled>選択した顔を移動</button><button id="clear" class="secondary">選択解除</button></div>
+<details class="advanced"><summary>AIの園児名候補（任意）</summary>
+<div class="actions"><button type="button" id="suggestAssignments">AI仮振り分けを提案</button><span id="suggestStatus"></span></div>
+<div id="suggestionReview"></div><button type="button" id="applySuggestions" disabled>チェックした候補だけ仮反映</button>
+</details>
+<details class="advanced" id="manualPhotoArea"><summary>顔が見つからない写真の手動振り分け</summary>
+<p class="muted">写真の園児を選択できます。1枚に複数人も指定できます（画面内のみ）。</p>
+<div id="manualPhotoAssignments"></div></details>
+<div id="folderOverview" class="grid"></div>
+<div id="folderDetail" hidden><button id="backToFolders" type="button" class="secondary">← 一覧へ戻る</button><h3 id="openFolderTitle"></h3><p class="muted">パソコンはドラッグで移動できます。</p><div id="folderDropTargets" class="grid"></div><div id="groups" class="grid"></div></div>
+</details>
+</section>
+<details class="panel advanced"><summary>元写真ごとの顔の紐づけ（詳細）</summary><div id="photoLinks"></div></details>
+<details class="panel advanced"><summary>園児別の仮振り分け結果（任意）</summary>
+<div id="childFolders"></div><button id="previewAssignments" type="button">仮振り分け結果を確認</button>
+<p id="assignmentStatus" class="muted">確認するまでは仮振り分けを作成しません。</p><div id="assignmentPreview"></div>
+</details>
+<details class="panel advanced" id="developerDiagnostics"><summary>開発者向けの診断・比較値・手動統合</summary><div id="diagnosticsMount"></div></details>
+</main>
 <script>
-window.addEventListener('error',event=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面の読み込みエラー：'+String(event.message||'不明').slice(0,250);});
-window.addEventListener('unhandledrejection',event=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面の処理エラー：'+String(event.reason?.message||event.reason).slice(0,250);});
+window.addEventListener('error',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 画面のエラー：'+String(e.message||'不明').slice(0,250)});
+window.addEventListener('unhandledrejection',e=>{const s=document.getElementById('status');if(s)s.textContent='⚠️ 処理のエラー：'+String(e.reason?.message||e.reason).slice(0,250)});
 </script>
-<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021evidence-compare-2"></script><div id="build-marker" style="position:fixed;bottom:6px;right:6px;z-index:99999;background:#152a44;color:white;padding:5px 9px;border-radius:7px;font:12px system-ui;opacity:.9">検証版 2026-10-21 R</div>
-</body></html>
+<script type="module" src="./face-recognition/face-cluster-prototype.mjs?v=20261021simple-ui-1"></script>
+<div id="build-marker">かんたん検証 2026-10-21 S</div>
+</body>
+</html>
