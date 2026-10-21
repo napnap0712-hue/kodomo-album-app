@@ -19,6 +19,8 @@ const verifiedFacePairs=new Map();
 let selectedReviewFaces=[];
 let initialFaceGroups=[];
 let refreshGroupPairsUI=()=>{};
+let lastVerifiedGroupSnapshot=null,alternativeGrouping=null;
+
 const excludedFacePairs=new Set();
 const facePairKey=(a,b)=>Math.min(a,b)+':'+Math.max(a,b);
 const hasExcludedPair=(a,b)=>a.members.some(i=>b.members.some(j=>excludedFacePairs.has(facePairKey(i,j))));
@@ -253,6 +255,7 @@ function pairScore(i,j){
 function regroupFromExistingVectors(threshold){
  if(!items.length)return;
  groups=calculateFaceGroups(threshold);
+ alternativeGrouping=null;lastVerifiedGroupSnapshot=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;
  groupNames.clear();selected.clear();openedFolder=null;invalidateAssignmentPreview();render();
  refreshGroupPairsUI();
  // The original AI grouping remains the baseline for verified teacher feedback.
@@ -395,6 +398,145 @@ function renderManualPhotos(){
  }
 }
 
+
+function validateFaceReportAndImport(){
+ const raw=$('faceEvaluationImport')?.value||'';
+ const feedback=$('faceEvaluationMessage');
+ const fail=text=>{if(feedback)feedback.textContent='⚠️ '+text;return};
+ if(!items.length)return fail('先に写真を解析してください。');
+ const count=raw.match(/写真数\s+(\d+)\s*\/\s*検出顔\s+(\d+)/);
+ if(!count||+count[1]!==photoNames.length||+count[2]!==items.length)
+  return fail('写真数・検出顔数が一致しません。別の解析結果には読み込めません。');
+ const lines=raw.split(/\r?\n/).filter(line=>/^顔\d+\(写真\d+\)/.test(line.trim()));
+ if(!lines.length)return fail('確認した顔の組み合わせが見つかりません。');
+ const imported=new Map();
+ for(const line of lines){
+  const match=line.match(/^顔(\d+)\(写真(\d+)\)\s*↔\s*顔(\d+)\(写真(\d+)\)：(同じ園児|違う園児)\s*\/\s*値\s+(-?\d+(?:\.\d+)?)/);
+  if(!match)return fail('読み取れない行があります。検証結果を全文コピーして貼り付けてください。');
+  const i=+match[1]-1,j=+match[3]-1,photoA=+match[2]-1,photoB=+match[4]-1,same=match[5]==='同じ園児',oldScore=+match[6];
+  if(!items[i]||!items[j]||i===j||items[i].sourcePhoto!==photoA||items[j].sourcePhoto!==photoB)
+   return fail('顔番号または写真番号が一致しません。写真の選択順序や顔の検出順序を確認してください。');
+  if(same&&photoA===photoB)return fail('同じ写真の別々の顔を同一人物として復元できません。');
+  const currentScore=pairScore(i,j);
+  if(!Number.isFinite(currentScore)||Math.abs(currentScore-oldScore)>0.035)
+   return fail('顔'+(i+1)+'と顔'+(j+1)+'の比較値が前回と一致しません。同じ写真でも顔の認識順序が違う可能性があります。');
+  const key=facePairKey(i,j);
+  if(imported.has(key)&&imported.get(key).same!==same)return fail('同じ顔の組に矛盾した判定があります。');
+  imported.set(key,{i,j,same});
+ }
+ verifiedFacePairs.clear();
+ for(const [key,value] of imported)verifiedFacePairs.set(key,value);
+ selectedReviewFaces=[];
+ renderFaceEvaluation();
+ if(feedback)feedback.textContent='✅ '+imported.size+'組の先生の判定を復元しました。グループ分けはまだ変更していません。';
+}
+function applyVerifiedFaceMerges(){
+ const feedback=$('faceEvaluationMessage');
+ if(!items.length||!verifiedFacePairs.size){
+  if(feedback)feedback.textContent='先に解析して、同じ園児の確認結果を登録してください。';
+  return;
+ }
+ const candidates=[...verifiedFacePairs.values()].filter(p=>p.same);
+ if(!candidates.length){if(feedback)feedback.textContent='「同じ園児」の判定がまだありません。';return}
+ const trial=groups.map(g=>({id:g.id,members:[...g.members]}));
+ const preservedNames=new Map(groupNames);
+ const nameChanges=new Map(groupNames);
+ let joined=0,skipped=0;
+ const canJoin=(left,right)=>{
+  const photos=new Set(left.members.map(i=>items[i].sourcePhoto));
+  if(right.members.some(i=>photos.has(items[i].sourcePhoto)))return false;
+  const leftName=nameChanges.get(left.id),rightName=nameChanges.get(right.id);
+  if(leftName&&rightName&&leftName!==rightName)return false;
+  if(hasExcludedPair(left,right))return false;
+  return ![...verifiedFacePairs.values()].some(p=>!p.same&&
+   ((left.members.includes(p.i)&&right.members.includes(p.j))||
+    (left.members.includes(p.j)&&right.members.includes(p.i))));
+ };
+ for(const pair of candidates){
+  const left=trial.find(g=>g.members.includes(pair.i)),right=trial.find(g=>g.members.includes(pair.j));
+  if(!left||!right){skipped++;continue}
+  if(left===right)continue;
+  if(!canJoin(left,right)){skipped++;continue}
+  left.members.push(...right.members);
+  trial.splice(trial.indexOf(right),1);
+  if(!nameChanges.has(left.id)&&nameChanges.has(right.id))nameChanges.set(left.id,nameChanges.get(right.id));
+  nameChanges.delete(right.id);
+  joined++;
+ }
+ if(!joined){
+  if(feedback)feedback.textContent='統合できる組はありませんでした。既に同じグループか、同じ写真・異なる園児の判定などに矛盾しています。（保留 '+skipped+'組）';
+  return;
+ }
+ lastVerifiedGroupSnapshot={groups:groups.map(g=>({id:g.id,members:[...g.members]})),names:preservedNames,mergeCount:manualMergeCount};
+ groups=trial;
+ groupNames.clear();for(const [key,value] of nameChanges)groupNames.set(key,value);
+ manualMergeCount+=joined;
+ selected.clear();invalidateAssignmentPreview();render();refreshGroupPairsUI();
+ const undo=$('undoVerifiedGroups');if(undo)undo.disabled=false;
+ if(feedback)feedback.textContent='✅ 先生が同じ園児と確認した組だけ '+joined+'回仮統合しました。（保留 '+skipped+'組）写真・アルバムは変更していません。';
+}
+function undoVerifiedFaceMerges(){
+ if(!lastVerifiedGroupSnapshot)return;
+ groups=lastVerifiedGroupSnapshot.groups;
+ groupNames.clear();for(const [key,value] of lastVerifiedGroupSnapshot.names)groupNames.set(key,value);
+ manualMergeCount=lastVerifiedGroupSnapshot.mergeCount;
+ lastVerifiedGroupSnapshot=null;
+ const undo=$('undoVerifiedGroups');if(undo)undo.disabled=true;
+ selected.clear();invalidateAssignmentPreview();render();refreshGroupPairsUI();
+ const message=$('faceEvaluationMessage');if(message)message.textContent='↩ 確認済みグループの仮統合を戻しました。先生の確認記録は残っています。';
+}
+function simulateGreedyFaceGrouping(){
+ if(!items.length)return[];
+ const threshold=Number($('threshold').value);
+ const trial=items.map((_,i)=>({members:[i]}));
+ const pairs=[];
+ for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+  if(items[i].sourcePhoto===items[j].sourcePhoto)continue;
+  const score=pairScore(i,j);
+  if(Number.isFinite(score)&&score>=threshold)pairs.push({i,j,score});
+ }
+ pairs.sort((a,b)=>b.score-a.score);
+ for(const pair of pairs){
+  const left=trial.find(g=>g.members.includes(pair.i));
+  const right=trial.find(g=>g.members.includes(pair.j));
+  if(!left||!right||left===right)continue;
+  const photos=new Set(left.members.map(i=>items[i].sourcePhoto));
+  if(right.members.some(i=>photos.has(items[i].sourcePhoto)))continue;
+  // Complete-link prevents a high-scoring bridge from combining lookalikes.
+  if(!left.members.every(i=>right.members.every(j=>pairScore(i,j)>=threshold)))continue;
+  left.members.push(...right.members);
+  trial.splice(trial.indexOf(right),1);
+ }
+ return trial.map((g,i)=>({id:String(i+1),members:g.members}));
+}
+function renderSimulationResult(){
+ const result=$('faceSimulationResult');if(!result)return;
+ if(!alternativeGrouping){result.textContent='';return}
+ const lookup=new Map();
+ for(const g of alternativeGrouping)for(const id of g.members)lookup.set(id,g.id);
+ const labels=[...verifiedFacePairs.values()];
+ const wrong=labels.filter(p=>(lookup.get(p.i)===lookup.get(p.j))!==p.same);
+ const positives=labels.filter(p=>p.same).length,negatives=labels.length-positives;
+ const samePhoto=alternativeGrouping.some(g=>{
+  const photos=g.members.map(i=>items[i].sourcePhoto);
+  return new Set(photos).size!==photos.length;
+ });
+ result.textContent='📊 別方式の試算：'+alternativeGrouping.length+'グループ ／ 先生の確認'+labels.length+'組中、不一致 '+wrong.length+'組（同じ園児 '+positives+'組・違う園児 '+negatives+'組） ／ 同じ写真の別顔混在 '+(samePhoto?'あり':'なし')+
+  (negatives===0?'。⚠️ 「違う園児」の確認がないため、誤統合の安全性は判定できません。':'。まだ検証済みの組み合わせだけの参考値です。')+
+  ' 現在のグループには反映していません。';
+}
+$('importFaceEvaluation')?.addEventListener('click',validateFaceReportAndImport);
+$('applyVerifiedGroups')?.addEventListener('click',applyVerifiedFaceMerges);
+$('undoVerifiedGroups')?.addEventListener('click',undoVerifiedFaceMerges);
+$('simulateFaceGrouping')?.addEventListener('click',()=>{
+ if(!items.length){
+  const result=$('faceSimulationResult');if(result)result.textContent='先に顔を解析してください。';
+  return;
+ }
+ alternativeGrouping=simulateGreedyFaceGrouping();
+ renderSimulationResult();
+});
+
 function currentFaceGroupIndex(){
  const map=new Map();
  for(const group of groups){
@@ -417,6 +559,7 @@ function renderFaceEvaluation(){
  summary.className='muted';
  const baselineSame=(i,j)=>initialFaceGroups[i]!=null&&initialFaceGroups[i]===initialFaceGroups[j];
  const currentSame=(i,j)=>current.has(i)&&current.get(i)===current.get(j);
+ renderSimulationResult();
  const feedback=[...verifiedFacePairs.values()];
  const errorCounts=(sameFn)=>feedback.filter(pair=>sameFn(pair.i,pair.j)!==pair.same).length;
  const conflicts=groups.slice(1).reduce((count,g)=>{
@@ -699,7 +842,7 @@ async function embed(bitmap,human,session,ort,phaseTimings,diagnostics,flipAugme
 start.addEventListener('click',async()=>{
  const files=[...queued];if(files.length<2){status.textContent='2枚以上の写真を選んでください。';return}
  if(files.length>100){status.textContent='試作版は一度に100枚までです。';return}
- verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
+ lastVerifiedGroupSnapshot=null;alternativeGrouping=null;const undoVerified=$('undoVerifiedGroups');if(undoVerified)undoVerified.disabled=true;verifiedFacePairs.clear();selectedReviewFaces=[];initialFaceGroups=[];refreshGroupPairsUI=()=>{};initialGroupCount=null;initialCandidateCount=null;currentCandidateCount=null;manualMergeCount=0;updateGroupProgress();stop=false;start.disabled=true;cancel.disabled=false;selected.clear();openedFolder=null;items=[];groups=[];groupNames.clear();invalidateAssignmentPreview();manualPhotoAssignments.clear();photoNames=files.map(f=>f.name);urls.forEach(URL.revokeObjectURL);urls=files.map(file=>URL.createObjectURL(file));photoUrls=[...urls];render();
  let session,human;
  const timings={model:0,decode:0,detectAndEmbed:0,detection:0,recognition:0,faces:0,group:0};const startedAt=performance.now();
  try{
