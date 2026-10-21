@@ -1042,7 +1042,9 @@ function renderMissingPhotoPicker(model,missing){
    const first=bucket.members[0];
    face.src=items[first].url;face.alt='仮フォルダ'+(i+1)+'の顔の見本';
    const name=document.createElement('span');
-   name.textContent='仮フォルダ'+String(i+1).padStart(2,'0')+'（顔'+bucket.members.length+'件）';
+   const assignedChild=roster.find(child=>String(child.id)===String(verifiedFolderNames.get(key)||''));
+   name.textContent=(assignedChild?assignedChild.name+'さん・':'')+
+    '仮フォルダ'+String(i+1).padStart(2,'0')+'（顔'+bucket.members.length+'件）';
    checkbox.addEventListener('change',()=>{
     const selected=new Set(manualPhotoFolderChoices.get(photoIndex)||[]);
     if(checkbox.checked)selected.add(key);else selected.delete(key);
