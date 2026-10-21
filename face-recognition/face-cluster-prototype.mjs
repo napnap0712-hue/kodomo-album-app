@@ -1121,14 +1121,19 @@ function renderVerifiedPhotoFolders(){
   correctionNotice.textContent=folderCorrectionNoticeText;
  }
  container.replaceChildren();warnings.textContent='';
- if(!items.length||!verifiedFacePairs.size){
+ if(!photoNames.length){
   panel.hidden=true;
+  const exclude=$('excludedFaceFoldersPanel');if(exclude)exclude.hidden=true;
   return;
  }
  panel.hidden=false;
- const model=buildVerifiedPhotoFolders(
-  items.map(item=>item.sourcePhoto),[...verifiedFacePairs.values()]
- );
+ let {base,visible,model}=currentPhotoFolderView();
+ if(visible.staleExclusions.length){
+  for(const key of visible.staleExclusions)excludedVerifiedFolders.delete(key);
+  folderManagementNotice='⚠️ 顔のグループ構成が変わったため、前の除外指定は解除されました。もう一度確認してください。';
+  ({base,visible,model}=currentPhotoFolderView());
+ }
+ renderExcludedPhotoFolderRestores(visible);
  const validFolderKeys=new Set(model.buckets.map(provisionalPhotoFolderKey));
  let cancelledOldNames=0;
  for(const key of [...verifiedFolderNames.keys()]){
@@ -1151,11 +1156,13 @@ function renderVerifiedPhotoFolders(){
  const confirmed=model.buckets.filter(b=>b.kind==='confirmed').length;
  const independent=model.buckets.filter(b=>b.kind==='individual'&&b.independentlyDistinct).length;
  const unresolved=model.singletonCount-independent;
- title.textContent='🗂 写真の仮フォルダ：'+model.buckets.length+'件（同じ園児の確認済み '+confirmed+'・単独 '+model.singletonCount+'）';
+ title.textContent='🗂 園児の仮フォルダ：'+model.buckets.length+'件（確認済み '+confirmed+'・単独 '+model.buckets.filter(b=>b.kind==='individual').length+'・新規 '+visible.newFolderCount+'）';
+ const managementInfo=$('folderManagementNotice');
+ if(managementInfo){managementInfo.hidden=!folderManagementNotice;managementInfo.textContent=folderManagementNotice;}
  const seenPhotos=new Set(items.map(item=>item.sourcePhoto));
  const withoutFaces=photoNames.map((_,index)=>index).filter(index=>!seenPhotos.has(index));
- summary.textContent='先生の確認 '+model.reviewedPairs+'組 ／ 分類した顔 '+model.coveredFaces+'/'+items.length+
-  '件 ／ 写真 '+seenPhotos.size+'/'+photoNames.length+'枚（顔が見つかった写真） ／ 単独のうち他と別人確認 '+independent+'件';
+ summary.textContent='先生の確認 '+model.reviewedPairs+'組 ／ 園児の候補として表示する顔 '+visible.faceCount+'/'+items.length+
+  '件 ／ 除外した顔 '+visible.excludedFaceCount+'件 ／ 顔が見つかった写真 '+seenPhotos.size+'/'+photoNames.length+'枚';
  const countPerOriginalPhoto=new Map();
  model.buckets.forEach((bucket,index)=>{
   const card=document.createElement('article');
@@ -1199,7 +1206,8 @@ function renderVerifiedPhotoFolders(){
   naming.append(caption,picker);card.append(naming);
   const heading=document.createElement('strong');
   heading.textContent='仮フォルダ '+String(index+1).padStart(2,'0')+' ／ '+
-   (bucket.kind==='confirmed'?'「同じ園児」記録で構成（顔'+bucket.members.length+'件・要目視確認）':
+   (bucket.kind==='manual'?'写真から作った新規フォルダ'+(bucket.customName?'「'+bucket.customName+'」':'')+'（顔検出なし）':
+    bucket.kind==='confirmed'?'「同じ園児」記録で構成（顔'+bucket.members.length+'件・要目視確認）':
     bucket.independentlyDistinct?'ほかの顔とは別の園児（顔1件）':'単独の顔・園児未確定');
   card.append(heading);
   const faces=document.createElement('div');faces.className='faces';
@@ -1279,6 +1287,7 @@ function renderVerifiedPhotoFolders(){
   container.append(review);
  }
  if(unresolved)issues.push('単独の顔'+unresolved+'件は、ほかの園児との違いが未確認です。');
+ if(visible.excludedFaceCount)issues.push('園児以外として除外：'+visible.excludedFaceCount+'件（元写真はそのまま）');
  if(withoutFaces.length)issues.push('顔未検出の写真：'+withoutFaces.map(index=>'写真'+(index+1)).join('・')+'（手動確認が必要）');
  warnings.textContent=
   (issues.length?'⚠️ '+issues.join(' ／ '):'✅ 確認記録どうしの矛盾はありません（正しい園児の組かどうかは顔写真で確認してください）。')+
@@ -1298,6 +1307,9 @@ function renderVerifiedPhotoFolders(){
   if(withoutFaces.length)report.value+='\n顔未検出：写真'+withoutFaces.map(i=>i+1).join('・');
   report.value+='\n【園児名との仮紐づけ】'+namedCount+'/'+model.buckets.length+
    'フォルダ（園児名・園児IDは検証結果に含めません）';
+  if(visible.excluded.length)report.value+='\n【園児以外として除外】'+visible.excluded.length+'フォルダ / 顔'+visible.excludedFaceCount+'件'+
+   visible.excluded.map(b=>'\n除外した顔：'+b.members.map(i=>i+1).join('・')).join('');
+  if(visible.newFolderCount)report.value+='\n【写真から作った新規フォルダ】'+visible.newFolderCount+'件（名前は含めません）';
  }
 }
 
