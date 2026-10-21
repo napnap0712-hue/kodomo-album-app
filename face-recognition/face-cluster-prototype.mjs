@@ -157,6 +157,34 @@ function calculateFaceGroups(threshold){
    groups=repaired;
   };
   splitSamePhotoConflicts();
+  // Strong reciprocal singleton matches: only combine a pair when both faces
+  // prefer each other by a wide margin over every other face. This avoids
+  // reducing the threshold globally (known to mix lookalike children).
+  const singletonMatches=[];
+  const singletonGroups=groups.slice(1).filter(g=>g.members.length===1);
+  for(let a=0;a<singletonGroups.length;a++)for(let b=a+1;b<singletonGroups.length;b++){
+   const left=singletonGroups[a].members[0],right=singletonGroups[b].members[0];
+   if(items[left].sourcePhoto===items[right].sourcePhoto)continue;
+   const score=pairScore(left,right);
+   if(!Number.isFinite(score)||score<Math.max(0.73,threshold+0.06))continue;
+   const competitors=(id,other)=>items.map((_,k)=>k)
+     .filter(k=>k!==id&&k!==other&&items[k].sourcePhoto!==items[id].sourcePhoto)
+     .map(k=>pairScore(id,k)).filter(Number.isFinite);
+   const rivals=[...competitors(left,right),...competitors(right,left)];
+   if(rivals.length&&score-Math.max(...rivals)<0.12)continue;
+   singletonMatches.push({left,right,score});
+  }
+  singletonMatches.sort((a,b)=>b.score-a.score);
+  const matched=new Set();
+  for(const pair of singletonMatches){
+   if(matched.has(pair.left)||matched.has(pair.right))continue;
+   const ga=groups.find(g=>g.members.length===1&&g.members[0]===pair.left);
+   const gb=groups.find(g=>g.members.length===1&&g.members[0]===pair.right);
+   if(!ga||!gb||ga===gb)continue;
+   ga.members.push(pair.right);
+   groups=groups.filter(g=>g!==gb);
+   matched.add(pair.left);matched.add(pair.right);
+  }
   // Conservative second pass: merge fragmented clusters only when all cross-cluster
   // faces remain similar. Never merge simply to match the roster headcount.
   let merged=true;
