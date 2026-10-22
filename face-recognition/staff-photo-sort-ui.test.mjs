@@ -215,14 +215,14 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
  assert.doesNotMatch(body,/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\./);
 });
 
-test('BEは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BE/);
+test('BFは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
+ assert.match(html,/PHOTO SORT · 2026-10-23 BF/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
  assert.match(html,/前の判定 /);
  assert.match(html,/改善後 /);
- assert.match(html,/v=20261023-be/);
+ assert.match(html,/v=20261023-bf/);
 });
 
 test('BCは匿名の類似度分布と基準値を表示、アルバムを替えると閉じる',()=>{
@@ -254,4 +254,27 @@ test('BEでは単独候補の救済結果を診断に加え、園児名の確定
  assert.match(html,/写真や顔の特徴データを送信・保存せず/);
  assert.match(html,/mergeAlbumAiGroupsBatchSafely/);
  assert.match(html,/photoAssignments=data\.assignConfirmedAlbumCluster/);
+});
+
+test('BFは単独候補の似た顔を横断的に表示し、先生のチェック後だけ統合する',()=>{
+ assert.match(html,/id="albumAiSingletonReview"/);
+ assert.match(html,/id="albumAiFindSingletonPairs"/);
+ assert.match(html,/id="albumAiSingletonPairs"/);
+ assert.match(html,/function renderCurrentAlbumSingletonPairs\(\)/);
+ assert.match(html,/data\.suggestSingletonGroupPairs/);
+ assert.match(html,/data\.mergeTeacherReviewedGroupPairs/);
+ assert.match(html,/check\.addEventListener\('change'/);
+ assert.match(html,/window\.confirm\('選んだ'/);
+ assert.match(html,/data\.mergeUndo\.push\(snapshot\)/);
+ assert.match(html,/renderCurrentAlbumAiGroups\(\);renderCurrentAlbumSingletonPairs\(\)/);
+});
+test('写真や端末変更時に単独候補表示を破棄し、勝手に顔を外部送信しない',()=>{
+ assert.match(html,/function clearCurrentAlbumSingletonPairs\(\)/);
+ assert.match(html,/clearCurrentAlbumSingletonPairs\(\);/);
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const stop=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const snippet=html.slice(start,stop);
+ assert.ok(stop>start);
+ assert.doesNotMatch(snippet,/files\.splice\(|localStorage\.|indexedDB\.|fetch\(|sendBeacon\(/);
+ assert.match(snippet,/if\(data!==albumAiGroupsData\|\|!data\.valid\(\)\)/);
 });
