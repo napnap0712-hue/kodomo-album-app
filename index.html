@@ -818,6 +818,9 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .currentAlbumAiGroup .groupContent{padding-top:9px}
 .currentAlbumAiGroup .mergeSuggestionBox{border:1px solid #e0e7f3;background:#f8fafc;border-radius:10px;padding:9px;margin:10px 0;display:grid;gap:7px}
 .currentAlbumAiGroup .mergeSuggestionRow{display:flex;align-items:center;gap:8px;padding:7px;border:1px solid #e5eaf1;border-radius:9px;background:white}
+.currentAlbumAiGroup .mergeSuggestionRow input[type=checkbox]{width:22px;height:22px;flex:none;accent-color:#2772bf}
+.currentAlbumAiGroup .mergeSuggestionActions{display:grid;gap:8px;border-top:1px solid #e2e8f0;padding-top:10px}
+.currentAlbumAiGroup .mergeSuggestionActions button{min-height:44px}
 .currentAlbumAiGroup .mergeSuggestionRow img{width:46px;height:46px;border-radius:8px;object-fit:cover;background:#ecf3fa;flex-shrink:0}
 .currentAlbumAiGroup .mergeSuggestionRow span{flex:1;font-size:12px}
 .currentAlbumAiGroup .mergeSuggestionRow button{min-height:38px}
@@ -870,7 +873,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AZ</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 BA</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
  <strong>🌷 園児別フォルダ</strong>
  <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
@@ -2110,6 +2113,25 @@ function mergeAlbumAiGroupsSafely(data,currentGroup,otherGroup){
  data.selections.clear();
  renderCurrentAlbumAiGroups();
 }
+function mergeAlbumAiGroupsBatchSafely(data,currentGroup,sourceKeys){
+ if(data!==albumAiGroupsData||!data.valid())throw Error('アルバムの写真が変わりました。');
+ if(data.confirmed.has(currentGroup.key))throw Error('確定済みのグループは統合できません。');
+ if(!Array.isArray(sourceKeys)||!sourceKeys.length)throw Error('まとめる候補をチェックしてね。');
+ const candidates=sourceKeys.map(key=>data.groups.find(g=>g.key===key));
+ if(candidates.some(g=>!g||data.confirmed.has(g.key)))
+  throw Error('確認済み・削除済みのグループは統合できません。');
+ const snapshot=data.groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
+ // Validate ALL selected groups before making a single edit or undo snapshot.
+ const joined=data.mergeTeacherAlbumGroupsBatch(data.groups,data.samples,currentGroup.key,sourceKeys);
+ if(!data.mergeUndo)data.mergeUndo=[];
+ data.mergeUndo.push(snapshot);
+ if(data.mergeUndo.length>10)data.mergeUndo.shift();
+ data.groups=joined;
+ data.expanded.add(currentGroup.key);
+ data.mergeSuggestions=null;
+ data.selections.clear();
+ renderCurrentAlbumAiGroups();
+}
 function renderCurrentAlbumAiGroups(){
  const data=albumAiGroupsData,host=$('#currentAlbumAiGroups');
  if(!host)return;
@@ -2217,17 +2239,45 @@ function renderCurrentAlbumAiGroups(){
    recommendations.className='secondary';recommendations.textContent='🔎 似ている別グループを探す';
    const recommendationResults=document.createElement('div');recommendationResults.className='mergeSuggestionBox';
    recommendationResults.hidden=true;
+   const checkedGroupKeys=new Set();
    const mergeMessage=document.createElement('p');mergeMessage.className='muted';
    recommendations.addEventListener('click',()=>{
     if(!data.valid()||data!==albumAiGroupsData)return;
     recommendationResults.hidden=false;
     recommendationResults.replaceChildren();
+    checkedGroupKeys.clear();
     if(!data.mergeSuggestions){
      data.mergeSuggestions=data.suggestCurrentAlbumGroupMerges(data.samples,
       data.groups.filter(item=>!data.confirmed.has(item.key)),
-      {similarity:faceEmbeddingSimilarity,minScore:.55,limit:4});
+      {similarity:faceEmbeddingSimilarity,minScore:.55,limit:12});
     }
     const matches=data.mergeSuggestions.get(group.key)||[];
+    const actions=document.createElement('div');actions.className='mergeSuggestionActions';
+    const picked=document.createElement('span');picked.className='muted';picked.setAttribute('role','status');
+    const mergeChecked=document.createElement('button');mergeChecked.type='button';mergeChecked.className='primary';
+    const refreshPicked=()=>{
+     picked.textContent='チェックした候補：'+checkedGroupKeys.size+'組';
+     mergeChecked.textContent='✅ 選んだ'+checkedGroupKeys.size+'組をまとめる';
+     mergeChecked.disabled=checkedGroupKeys.size===0;
+    };
+    mergeChecked.addEventListener('click',()=>{
+     if(!data.valid()||data!==albumAiGroupsData){
+      mergeMessage.textContent='⚠️ 今の写真が変わりました。AI解析をやり直してね。';return;
+     }
+     const keys=[...checkedGroupKeys];
+     if(!keys.length){mergeMessage.textContent='先にまとめるグループをチェックしてね。';return}
+     const numberOfPhotos=keys.reduce((sum,key)=>{
+      const match=data.groups.find(g=>g.key===key);
+      return sum+(match?albumAiPhotoIndexes(match,data).length:0);
+     },0);
+     if(!window.confirm('チェックした'+keys.length+'組（元写真のべ'+numberOfPhotos+'枚）は、すべてこのグループと同じ園児ですか？ 確認できた場合だけまとめます。'))return;
+     try{
+      mergeAlbumAiGroupsBatchSafely(data,group,keys);
+      $('#currentAlbumAiFeedback').textContent='✅ '+keys.length+'組を一度にまとめました。「直前のグループ統合を戻す」で一括取り消しできます。';
+     }catch(e){mergeMessage.textContent='⚠️ '+String(e?.message||e)}
+    });
+    actions.append(picked,mergeChecked);
+    refreshPicked();
     if(!matches.length){
      const empty=document.createElement('p');empty.className='muted';
      empty.textContent='似ている候補は見つかりませんでした。下のメニューから手動でまとめることもできます。';
@@ -2237,6 +2287,12 @@ function renderCurrentAlbumAiGroups(){
      const other=data.groups.find(candidate=>candidate.key===match.key);
      if(!other||data.confirmed.has(other.key))continue;
      const row=document.createElement('div');row.className='mergeSuggestionRow';
+     const check=document.createElement('input');check.type='checkbox';check.value=other.key;
+     check.setAttribute('aria-label','グループ'+(data.groups.indexOf(other)+1)+'を統合候補としてチェック');
+     check.addEventListener('change',()=>{
+      if(check.checked)checkedGroupKeys.add(other.key);else checkedGroupKeys.delete(other.key);
+      refreshPicked();
+     });
      const preview=document.createElement('img');
      preview.alt='候補グループの顔の見本';preview.loading='lazy';
      const first=other.faceIndexes[0],sample=data.samples[first];
@@ -2257,8 +2313,9 @@ function renderCurrentAlbumAiGroups(){
        $('#currentAlbumAiFeedback').textContent='✅ グループを1組にまとめました。直前の統合は「戻す」で取り消せます。';
       }catch(e){mergeMessage.textContent='⚠️ '+String(e?.message||e)}
      });
-     row.append(preview,caption,merge);recommendationResults.append(row);
+     row.append(check,preview,caption,merge);recommendationResults.append(row);
     }
+    if(matches.length)recommendationResults.append(actions);
    });
    const manualDestination=document.createElement('select');manualDestination.setAttribute('aria-label','手動でまとめるグループ');
    const manualEmpty=document.createElement('option');manualEmpty.value='';manualEmpty.textContent='他のグループを選んでまとめる';manualDestination.append(manualEmpty);
@@ -2458,10 +2515,10 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   if(!samples.length){
    status.textContent='⚠️ 今回の写真から顔の特徴を読み取れませんでした。下の写真一覧から手動で園児を選べます。';return;
   }
-  const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups}=await import('./face-recognition/cluster-current-album.mjs?v=20261022-az');
+  const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch}=await import('./face-recognition/cluster-current-album.mjs?v=20261022-ba');
   check();
   const result=clusterCurrentAlbumFaces(samples,{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles.length});
-  albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeUndo:[],mergeSuggestions:null,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
+  albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,mergeUndo:[],mergeSuggestions:null,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
   status.textContent='✅ 今回の写真'+sourceFiles.length+'枚から'+result.faceCount+'顔・'+result.groups.length+
    'グループを作りました（目標 約'+result.targetGroups+'組、単独・要確認'+result.uncertainGroups+'組）。安全にまとめられない候補は残しています。園児に紐づけた候補は消えていきます。';
   renderCurrentAlbumAiGroups();
