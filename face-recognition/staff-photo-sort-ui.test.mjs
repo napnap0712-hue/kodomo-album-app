@@ -215,14 +215,14 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
  assert.doesNotMatch(body,/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\./);
 });
 
-test('BDは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-22 BD/);
+test('BEは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
+ assert.match(html,/PHOTO SORT · 2026-10-23 BE/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
  assert.match(html,/前の判定 /);
  assert.match(html,/改善後 /);
- assert.match(html,/v=20261022-bd/);
+ assert.match(html,/v=20261023-be/);
 });
 
 test('BCは匿名の類似度分布と基準値を表示、アルバムを替えると閉じる',()=>{
@@ -241,4 +241,17 @@ test('BDの補助判定も現在アルバムだけで実施し、顔の生デー
  assert.match(html,/複数顔の一致で /);
  assert.match(html,/result\.clusteringDiagnostics\.consensusMerges/);
  assert.match(html,/写真や顔の特徴データを送信・保存せず/);
+});
+
+test('BEでは単独候補の救済結果を診断に加え、園児名の確定UIは維持する',()=>{
+ assert.match(html,/result\.clusteringDiagnostics\.orphanRescues/);
+ assert.match(html,/stats\.orphanBefore/);
+ assert.match(html,/stats\.orphanRescues/);
+ assert.match(html,/stats\.orphanCandidates/);
+ assert.match(html,/stats\.orphanAmbiguous/);
+ assert.match(html,/stats\.orphanSamePhoto/);
+ assert.match(html,/単独候補の追加検討/);
+ assert.match(html,/写真や顔の特徴データを送信・保存せず/);
+ assert.match(html,/mergeAlbumAiGroupsBatchSafely/);
+ assert.match(html,/photoAssignments=data\.assignConfirmedAlbumCluster/);
 });
