@@ -1,7 +1,7 @@
 // Face clustering for ONE newly created album. Pure, stateless and independent
 // of previous albums, approved face drafts or any saved nursery photographs.
 // Similarities are heuristic scores, NOT identification accuracy.
-export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.035}={}){
+export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.035,photoCount}={}){
  if(!Array.isArray(samples)||typeof similarity!=='function')throw Error('顔の解析結果がありません。');
  const n=samples.length;
  if(n>3000)throw Error('解析する顔が多すぎます。');
@@ -88,6 +88,61 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
    improved=true;
   }
  }
+ // Soft target: roughly one tentative group per two imported photos. This is
+ // NOT a quota: low-confidence or same-photo faces must remain separate.
+ const totalPhotos=Number.isInteger(photoCount)&&photoCount>0?photoCount:
+    new Set(samples.map(s=>s.index)).size;
+ const targetGroups=Math.max(1,Math.ceil(totalPhotos/2));
+ const countGroups=()=>sets.filter(g=>g.length).length;
+ let adaptiveMerges=0;
+ // Find mutual-best compatible groups rather than just mutually nearest faces.
+ // Requiring cross-group agreement prevents an accidental chain of lookalikes.
+ while(countGroups()>targetGroups){
+  const live=sets.map((g,k)=>({g,k})).filter(item=>item.g.length);
+  const options=[];
+  for(let a=0;a<live.length;a++)for(let b=a+1;b<live.length;b++){
+   const left=live[a],right=live[b];
+   if(left.g.some(i=>right.g.some(j=>samples[i].index===samples[j].index)))continue;
+   const values=[];
+   for(const i of left.g)for(const j of right.g)values.push(scores[i][j]);
+   const peak=Math.max(...values),floor=Math.min(...values);
+   const mean=values.reduce((sum,v)=>sum+v,0)/values.length;
+   // A strong peak alone cannot hide disagreement among other faces.
+   const support=values.filter(v=>v>=.72).length;
+   const approved=peak>=.81&&floor>=.60&&mean>=.70 ||
+      peak>=.76&&floor>=.66&&mean>=.72&&
+        (Math.min(left.g.length,right.g.length)===1||support>=2);
+   if(!approved)continue;
+   const quality=mean+.12*peak+.02*Math.min(3,support);
+   options.push({a:left.k,b:right.k,quality});
+  }
+  if(!options.length)break;
+  const preferences=new Map();
+  for(const option of options){
+   for(const [key,other] of [[option.a,option.b],[option.b,option.a]]){
+    const arr=preferences.get(key)||[];
+    arr.push({other,quality:option.quality});preferences.set(key,arr);
+   }
+  }
+  for(const choices of preferences.values())choices.sort((a,b)=>b.quality-a.quality);
+  const mutual=options.filter(option=>{
+   const left=preferences.get(option.a),right=preferences.get(option.b);
+   if(left[0]?.other!==option.b||right[0]?.other!==option.a)return false;
+   // Do not hide genuinely ambiguous alternatives.
+   if(left[1]&&left[0].quality-left[1].quality<.035)return false;
+   if(right[1]&&right[0].quality-right[1].quality<.035)return false;
+   return true;
+  }).sort((a,b)=>b.quality-a.quality);
+  if(!mutual.length)break;
+  let changed=false;
+  for(const choice of mutual){
+   if(countGroups()<=targetGroups)break;
+   if(!sets[choice.a].length||!sets[choice.b].length)continue;
+   sets[choice.a].push(...sets[choice.b]);sets[choice.b]=[];
+   adaptiveMerges++;changed=true;
+  }
+  if(!changed)break;
+ }
  const groups=sets.filter(g=>g.length).map((faceIndexes,i)=>({
   key:'current-'+i,
   faceIndexes:[...faceIndexes],
@@ -96,7 +151,7 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
  groups.sort((a,b)=>b.faceIndexes.length-a.faceIndexes.length||
     a.photoIndexes[0]-b.photoIndexes[0]);
  return {groups,faceCount:n,uncertainGroups:groups.filter(g=>g.faceIndexes.length===1).length,
-  preventedMerges};
+  preventedMerges,adaptiveMerges,targetGroups};
 }
 // The teacher's confirmation belongs only to the current selected album. A
 // cluster's identity is NEVER inferred from a previous album or roster photo.
