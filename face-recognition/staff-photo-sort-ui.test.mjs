@@ -177,7 +177,7 @@ test('未確定グループから似た顔を提案し先生が確認して統�
  const view=html.slice(start,stop);
  assert.match(view,/似ている別グループを探す/);
  assert.match(view,/data\.suggestCurrentAlbumGroupMerges/);
- assert.match(view,/data\.mergeTeacherAlbumGroups/);
+ assert.match(html,/const groups=data\.mergeTeacherAlbumGroups/);
  assert.match(view,/window\.confirm\('この2グループは本当に同じ園児ですか/);
  assert.match(view,/mergeAlbumAiGroupsSafely\(data,group,other\)/);
  assert.match(view,/同じ園児と確認できましたか/);
