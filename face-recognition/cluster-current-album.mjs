@@ -125,12 +125,18 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
    }
   }
   for(const choices of preferences.values())choices.sort((a,b)=>b.quality-a.quality);
+  // A three-way close match is not ambiguous when every candidate also
+  // agrees with the other candidates (a consistent triangle).
+  const agree=(a,b)=>{
+   const left=sets[a],right=sets[b];
+   if(left.some(i=>right.some(j=>samples[i].index===samples[j].index)))return false;
+   return left.every(i=>right.every(j=>scores[i][j]>=.75));
+  };
   const mutual=options.filter(option=>{
    const left=preferences.get(option.a),right=preferences.get(option.b);
    if(left[0]?.other!==option.b||right[0]?.other!==option.a)return false;
-   // Do not hide genuinely ambiguous alternatives.
-   if(left[1]&&left[0].quality-left[1].quality<.035)return false;
-   if(right[1]&&right[0].quality-right[1].quality<.035)return false;
+   if(left[1]&&left[0].quality-left[1].quality<.035&&!agree(option.b,left[1].other))return false;
+   if(right[1]&&right[0].quality-right[1].quality<.035&&!agree(option.a,right[1].other))return false;
    return true;
   }).sort((a,b)=>b.quality-a.quality);
   if(!mutual.length)break;
