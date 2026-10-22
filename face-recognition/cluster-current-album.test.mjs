@@ -369,3 +369,15 @@ test('単独候補の選択に循環があれば拒否して編集しない',()=
   {sourceKey:'g0',targetKey:'g1'},{sourceKey:'g1',targetKey:'g2'}
  ]),/重複/);
 });
+
+test('救済候補が0件の原因を顔データを含めず比較ごとに集計する',()=>{
+ const faces=Array.from({length:7},(_,i)=>sample(i,i));
+ const result=clusterCurrentAlbumFaces(faces,{
+  similarity:(a,b)=>a[0]===b[0]?.91:.3,photoCount:7
+ });
+ const d=result.clusteringDiagnostics.orphanReviewReasons;
+ assert.ok(d.checked>=0);
+ assert.equal(d.eligible,0);
+ assert.equal(d.checked,d.firstTooLow+d.secondTooLow+d.meanTooLow+d.weakestTooLow+d.eligible);
+ assert.ok(!('embeddings' in d)&&!('children' in d)&&!('photoIndexes' in d));
+});
