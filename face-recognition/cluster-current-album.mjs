@@ -285,6 +285,12 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
    const left=top.get(match.a),right=top.get(match.b);
    if(left[0]?.other!==match.b||right[0]?.other!==match.a)return false;
    const margin=.045;
+   const nearCount=items=>items.filter(x=>items[0].quality-x.quality<margin).length;
+   // A face nearly equally similar to many other faces lacks a distinctive
+   // match; coherence of an arbitrarily large all-lookalike set is not proof.
+   if(nearCount(left)>3||nearCount(right)>3){
+    calibratedAmbiguous++;return false;
+   }
    if(left[1]&&left[0].quality-left[1].quality<margin&&!consistent(match.b,left[1].other)){
     calibratedAmbiguous++;return false;
    }
@@ -367,6 +373,10 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   const mutual=potential.filter(pair=>{
    const left=rankings.get(pair.a),right=rankings.get(pair.b);
    if(left[0]?.other!==pair.b||right[0]?.other!==pair.a)return false;
+   const nearCount=items=>items.filter(x=>items[0].quality-x.quality<.042).length;
+   if(nearCount(left)>3||nearCount(right)>3){
+    consensusAmbiguous++;return false;
+   }
    if(left[1]&&left[0].quality-left[1].quality<.042&&
       !consistent(pair.b,left[1].other)){consensusAmbiguous++;return false}
    if(right[1]&&right[0].quality-right[1].quality<.042&&
