@@ -2528,7 +2528,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,mergeUndo:[],mergeSuggestions:null,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
   status.textContent='✅ 今回の写真'+sourceFiles.length+'枚から'+result.faceCount+'顔・'+result.groups.length+
    'グループ。前の判定 '+result.beforeCommunityGroups+'組 → 改善後 '+result.groups.length+
-   '組（追加統合 '+(result.communityMerges+result.clusteringDiagnostics.calibratedMerges+result.clusteringDiagnostics.consensusMerges)+'組）。参考目標 約'+
+   '組（追加統合 '+(result.communityMerges+result.clusteringDiagnostics.calibratedMerges+result.clusteringDiagnostics.consensusMerges+result.clusteringDiagnostics.neighborhoodMerges)+'組）。参考目標 約'+
    result.targetGroups+'組・単独要確認'+result.uncertainGroups+'組。別の園児を無理にまとめず、先生が確認して園児名を付けてね。';
   const stats=result.clusteringDiagnostics,bands=stats.nearestScoreRanges;
   $('#currentAlbumAiDiagnostics').textContent=
@@ -2537,8 +2537,10 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
    '0.60〜0.69 '+bands.weak+'顔／0.60未満 '+bands.low+'顔／比較候補なし '+bands.missing+'顔。'+
    '同じ写真に写る別々の顔の比較 '+stats.negativePairs+'組。'+
    '今回の追加結合の基準値 '+stats.calibratedThreshold.toFixed(3)+'。'+
-   '以前の追加結合 '+stats.calibratedMerges+'組／複数顔の一致で新たに '+stats.consensusMerges+'組。'+
+   '以前の追加結合 '+stats.calibratedMerges+'組／複数顔の一致で '+stats.consensusMerges+'組。'+
+   '周りの顔との相対比較から '+stats.neighborhoodMerges+'組を追加で統合。'+
    '複数顔の一致候補 '+stats.consensusCandidates+'件・判定が曖昧で見送り '+stats.consensusAmbiguous+'件。'+
+   '相対比較の候補 '+stats.neighborhoodCandidates+'件・曖昧で見送り '+stats.neighborhoodAmbiguous+'件。'+
    'これは正解率を示すものではありません。写真や顔の特徴データを送信・保存せず、この端末内で集計しています。';
   $('#currentAlbumAiDiagnosticPanel').hidden=false;
   renderCurrentAlbumAiGroups();
