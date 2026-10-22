@@ -169,3 +169,23 @@ test('園児名の選択と写真移動先の選択を連動させる',()=>{
  assert.match(html,/chooser\.value=sameChild/);
  assert.match(html,/nextAssignments=data\.assignConfirmedAlbumCluster/);
 });
+
+
+test('未確定グループから似た顔を提案し先生が確認して統合できる',()=>{
+ const start=html.indexOf('function renderCurrentAlbumAiGroups()');
+ const stop=html.indexOf("$('#albumAiPendingOnly')?.addEventListener",start);
+ const view=html.slice(start,stop);
+ assert.match(view,/似ている別グループを探す/);
+ assert.match(view,/data\.suggestCurrentAlbumGroupMerges/);
+ assert.match(view,/data\.mergeTeacherAlbumGroups/);
+ assert.match(view,/window\.confirm\('この2グループは本当に同じ園児ですか/);
+ assert.match(view,/mergeAlbumAiGroupsSafely\(data,group,other\)/);
+ assert.match(view,/同じ園児と確認できましたか/);
+});
+test('教師が統合した顔グループは直前の状態に戻せる',()=>{
+ assert.match(html,/id="albumAiUndoMerge"/);
+ assert.match(html,/data\.mergeUndo\.push\(snapshot\)/);
+ assert.match(html,/const previous=data\.mergeUndo\.pop\(\)/);
+ assert.match(html,/data\.groups=previous/);
+ assert.match(html,/data\.mergeUndo=\[\];data\.mergeSuggestions=null/);
+});
