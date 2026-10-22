@@ -218,6 +218,105 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   }
   if(!changed)break;
  }
+
+ // Album-local calibration: faces captured together are certain different
+ // people, so use their upper similarity range as a hard-negative reference.
+ // Do not save reference embeddings or use another album's identities.
+ const negativePairs=[];
+ for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+  if(samples[i].index!==samples[j].index)continue;
+  const value=similarity(samples[i].embedding,samples[j].embedding);
+  if(Number.isFinite(value))negativePairs.push(value);
+ }
+ negativePairs.sort((a,b)=>a-b);
+ const negativeQuantile=negativePairs.length>=3?
+  negativePairs[Math.min(negativePairs.length-1,Math.floor(negativePairs.length*.9))]:null;
+ const calibratedThreshold=negativeQuantile===null?.675:
+  Math.max(.635,Math.min(.78,negativeQuantile+.13));
+ let calibratedMerges=0,calibratedPairs=0,calibratedAmbiguous=0,calibratedSamePhoto=0;
+ // A moderate, mutually supported pass for fragmented small communities.
+ // Missing a reciprocal absolute #1 should not reject a whole triangle of
+ // consistently similar same-person photos. Ambiguity remains unmerged.
+ while(countGroups()>targetGroups){
+  const live=sets.map((g,k)=>({g,k})).filter(item=>item.g.length);
+  const matches=[];
+  for(let a=0;a<live.length;a++)for(let b=a+1;b<live.length;b++){
+   const left=live[a],right=live[b];
+   if(left.g.some(i=>right.g.some(j=>samples[i].index===samples[j].index))){
+    calibratedSamePhoto++;continue;
+   }
+   const values=[];
+   for(const i of left.g)for(const j of right.g)values.push(scores[i][j]);
+   const mean=values.reduce((acc,v)=>acc+v,0)/values.length;
+   const min=Math.min(...values),max=Math.max(...values);
+   // Every face must be reasonably consistent with the other group, so
+   // a high-scoring lookalike cannot drag unrelated children into it.
+   const minAccepted=Math.max(.49,calibratedThreshold-.13);
+   if(max<calibratedThreshold||mean<calibratedThreshold-.025||
+      min<minAccepted)continue;
+   if(values.length>=4&&values.filter(v=>v>=calibratedThreshold-.03).length<Math.ceil(values.length*.5))continue;
+   const quality=mean+.08*max+.01*Math.min(3,values.filter(v=>v>=calibratedThreshold).length);
+   matches.push({a:left.k,b:right.k,quality});
+  }
+  if(!matches.length)break;
+  calibratedPairs+=matches.length;
+  const top=new Map();
+  for(const match of matches)for(const [key,other] of [[match.a,match.b],[match.b,match.a]]){
+   const arr=top.get(key)||[];
+   arr.push({other,quality:match.quality});top.set(key,arr);
+  }
+  for(const arr of top.values())arr.sort((a,b)=>b.quality-a.quality);
+  const consistent=(g1,g2)=>{
+   const first=sets[g1],second=sets[g2];
+   if(first.some(i=>second.some(j=>samples[i].index===samples[j].index)))return false;
+   let sum=0,count=0,min=1;
+   for(const i of first)for(const j of second){
+    const score=scores[i][j];sum+=score;count++;if(score<min)min=score;
+   }
+   return min>=calibratedThreshold-.10&&sum/count>=calibratedThreshold-.015;
+  };
+  const chosen=matches.filter(match=>{
+   const left=top.get(match.a),right=top.get(match.b);
+   if(left[0]?.other!==match.b||right[0]?.other!==match.a)return false;
+   const margin=.045;
+   if(left[1]&&left[0].quality-left[1].quality<margin&&!consistent(match.b,left[1].other)){
+    calibratedAmbiguous++;return false;
+   }
+   if(right[1]&&right[0].quality-right[1].quality<margin&&!consistent(match.a,right[1].other)){
+    calibratedAmbiguous++;return false;
+   }
+   return true;
+  }).sort((a,b)=>b.quality-a.quality);
+  if(!chosen.length)break;
+  let any=false;
+  for(const match of chosen){
+   if(countGroups()<=targetGroups)break;
+   const left=sets[match.a],right=sets[match.b];
+   if(!left.length||!right.length)continue;
+   if(left.some(i=>right.some(j=>samples[i].index===samples[j].index)))continue;
+   // A whole-round merge may introduce newly incompatible cross-pairs;
+   // re-check against the enlarged groups, not stale initial candidates.
+   const cross=[];
+   for(const i of left)for(const j of right)cross.push(scores[i][j]);
+   const mean=cross.reduce((acc,v)=>acc+v,0)/cross.length;
+   if(Math.min(...cross)<Math.max(.49,calibratedThreshold-.13)||
+      mean<calibratedThreshold-.025)continue;
+   left.push(...right);sets[match.b]=[];
+   calibratedMerges++;any=true;
+  }
+  if(!any)break;
+ }
+ const unmergedGroups=countGroups();
+ const clusteringDiagnostics={
+  negativePairs:negativePairs.length,
+  negativeReference:negativeQuantile,
+  calibratedThreshold,
+  calibratedMerges,
+  calibratedPairs,
+  calibratedAmbiguous,
+  calibratedSamePhoto,
+  unmergedGroups
+ };
  const groups=sets.filter(g=>g.length).map((faceIndexes,i)=>({
   key:'current-'+i,
   faceIndexes:[...faceIndexes],
@@ -226,7 +325,7 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
  groups.sort((a,b)=>b.faceIndexes.length-a.faceIndexes.length||
     a.photoIndexes[0]-b.photoIndexes[0]);
  return {groups,faceCount:n,uncertainGroups:groups.filter(g=>g.faceIndexes.length===1).length,
-  preventedMerges,adaptiveMerges,communityMerges,beforeCommunityGroups,targetGroups};
+  preventedMerges,adaptiveMerges,communityMerges,beforeCommunityGroups,targetGroups,clusteringDiagnostics};
 }
 // The teacher's confirmation belongs only to the current selected album. A
 // cluster's identity is NEVER inferred from a previous album or roster photo.
