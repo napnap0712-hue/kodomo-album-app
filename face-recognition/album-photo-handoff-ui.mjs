@@ -2,7 +2,7 @@
 // Intentionally NEVER mutates production album editor state or writes photo storage.
 import {buildAlbumPhotoHandoff,previewEditorPhotoAssignments} from './album-photo-handoff.mjs';
 import {
- loadProvisionalApproval,matchProvisionalApproval,fingerprintProvisionalReview
+ loadProvisionalApproval,matchSavedProvisionalApproval
 } from './provisional-approval-storage.mjs';
 
 export function bindAlbumPhotoHandoffUi({getData,onPhotoOpen}){
@@ -71,8 +71,7 @@ export function bindAlbumPhotoHandoffUi({getData,onPhotoOpen}){
   try{
    const record=await loadProvisionalApproval();
    if(!record)throw Error('保存した仮確定がありません。STEP 4で仮確定を保存してね。');
-   const digest=await fingerprintProvisionalReview(state.signature);
-   const matched=matchProvisionalApproval(record,digest,state.audit);
+   const matched=await matchSavedProvisionalApproval(record,state.signature,state.audit);
    if(!matched.ok)throw Error(matched.error);
    const latest=getData();
    if(latest.signature!==state.signature||!latest.candidate||
@@ -98,7 +97,9 @@ export function bindAlbumPhotoHandoffUi({getData,onPhotoOpen}){
    picker.value=plan.children[0].id;
    picker.hidden=false;
    showPlan();
-   say('✅ 編集用写真の参照候補を準備できました。園児を選んで写真を確認してね。元画像・アルバム・保存済みの振り分けは変更していません。');
+   say('✅ 編集用写真の参照候補を準備できました。'+
+    (matched.legacyFormat?'以前の仮確定の保存形式も安全に照合しました。':'')+
+    '園児を選んで写真を確認してね。元画像・アルバム・保存済みの振り分けは変更していません。');
   }catch(error){
    reset();say('⚠️ 連携プレビューを開けません：'+String(error?.message||error).slice(0,220));
   }finally{busy=false;refresh();}
