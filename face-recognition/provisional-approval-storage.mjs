@@ -58,6 +58,29 @@ export function matchProvisionalApproval(record,digest,audit){
  return {ok:true};
 }
 
+
+// Compatibility with approvals saved before the optional photo-level corrections
+// were added to the signed source (2026-10-22 AN).
+// IMPORTANT: Only an EMPTY corrections array is eligible. When any photo was moved,
+// we must NEVER accept the older digest because it did not sign those changes.
+// This is strict digest verification, not an approval bypass; no saved data is rewritten.
+export async function matchSavedProvisionalApproval(record,signature,audit){
+ const digest=await fingerprintProvisionalReview(signature);
+ const current=matchProvisionalApproval(record,digest,audit);
+ if(current.ok)return {ok:true,legacyFormat:false};
+ let parsed;
+ try{parsed=JSON.parse(signature)}catch{return current;}
+ if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||
+    !Object.prototype.hasOwnProperty.call(parsed,'photoCorrections')||
+    !Array.isArray(parsed.photoCorrections)||parsed.photoCorrections.length!==0)
+  return current;
+ const older={...parsed};
+ delete older.photoCorrections;
+ const oldDigest=await fingerprintProvisionalReview(JSON.stringify(older));
+ const oldMatch=matchProvisionalApproval(record,oldDigest,audit);
+ return oldMatch.ok?{ok:true,legacyFormat:true}:current;
+}
+
 function openDatabase(){
  return new Promise((resolve,reject)=>{
   if(typeof indexedDB==='undefined'){reject(new Error('このブラウザでは端末内保存に対応していません。'));return;}
