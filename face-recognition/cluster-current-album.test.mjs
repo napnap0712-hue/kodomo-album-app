@@ -154,3 +154,37 @@ test('一括統合は空選択、同グループ重複、存在しない候補�
  assert.throws(()=>mergeTeacherAlbumGroupsBatch(groups,faces,'target',['missing']),/確認/);
  assert.deepEqual(groups[0].faceIndexes,[0]);
 });
+
+test('147枚の似た写真を近傍の同意で追加統合し、同一園児を分裂させにくくする',()=>{
+ const faces=Array.from({length:147},(_,i)=>({index:i,embedding:[i%12,i]}));
+ const similarity=(a,b)=>a[0]===b[0]?
+  (.68+.09*(((a[1]*67+b[1]*97)%19)/18)):.32;
+ const out=clusterCurrentAlbumFaces(faces,{similarity,photoCount:147});
+ assert.equal(out.targetGroups,74);
+ assert.ok(out.communityMerges>0);
+ assert.ok(out.groups.length<100,
+  '似ている写真を従来方式よりまとめられること');
+ assert.ok(out.groups.length<out.beforeCommunityGroups);
+ assert.ok(out.groups.every(group=>
+  new Set(group.faceIndexes.map(i=>faces[i].embedding[0])).size===1),
+  '別園児の顔を混ぜないこと');
+});
+test('顔同士の比較値が低い別園児は目標枚数まで強制的にまとめない',()=>{
+ const faces=Array.from({length:147},(_,i)=>({index:i,embedding:[i]}));
+ const out=clusterCurrentAlbumFaces(faces,{
+  similarity:(a,b)=>a[0]===b[0]?.95:.39,photoCount:147
+ });
+ assert.equal(out.groups.length,147);
+ assert.equal(out.communityMerges,0);
+});
+test('同じ写真にいる別の顔はコミュニティ結合でも一つにならない',()=>{
+ const faces=Array.from({length:30},(_,i)=>({
+  index:Math.floor(i/2),embedding:[i%2,i]
+ }));
+ const out=clusterCurrentAlbumFaces(faces,{
+  similarity:(a,b)=>a[0]===b[0]?.77:.73,photoCount:15
+ });
+ assert.ok(out.groups.every(group=>
+  group.faceIndexes.length===new Set(group.faceIndexes.map(i=>faces[i].index)).size
+ ));
+});
