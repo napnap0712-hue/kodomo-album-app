@@ -1,6 +1,6 @@
 // Small UI adapter for the separate approval-only IndexedDB. Never handles image Blobs.
 import {
- fingerprintProvisionalReview,buildProvisionalApproval,matchProvisionalApproval,
+ fingerprintProvisionalReview,buildProvisionalApproval,matchSavedProvisionalApproval,
  saveProvisionalApproval,loadProvisionalApproval,deleteProvisionalApproval
 } from './provisional-approval-storage.mjs';
 import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs';
@@ -54,8 +54,7 @@ export function bindProvisionalApprovalUi({getState,onRestored,formatDate}){
    if(!saved)throw Error('保存した仮確定がありません。');
    const {audit,signature,persistedSignature}=getState();
    if(signature!==persistedSignature)throw Error('振り分けが保存済み作業と異なります。元の保存済み作業を開いてね。');
-   const digest=await fingerprintProvisionalReview(signature);
-   const matched=matchProvisionalApproval(saved,digest,audit);
+   const matched=await matchSavedProvisionalApproval(saved,signature,audit);
    if(!matched.ok)throw Error(matched.error);
    const readiness=checkFinalizationReadiness(audit);
    if(!readiness.ready)throw Error('仮確定できない項目が残っています：'+readiness.blockers.join('／'));
@@ -66,7 +65,9 @@ export function bindProvisionalApprovalUi({getState,onRestored,formatDate}){
     visuallyReviewed:true,acknowledgedUnassigned:true
    });
    onRestored({candidate,audit,signature});
-   report('✅ 仮確定の復元成功（'+formatDate(saved.savedAt)+'に保存）。写真の再解析やアルバムの変更はありません。');
+   report('✅ 仮確定の復元成功（'+formatDate(saved.savedAt)+'に保存）'+
+    (matched.legacyFormat?'：旧保存形式を確認済み。':'。')+
+    '写真の再解析やアルバムの変更はありません。');
   }catch(error){
    report('⚠️ 仮確定を読み込めませんでした：'+String(error?.message||error).slice(0,220)+
     '。現在の写真・振り分けは変更していません。');
