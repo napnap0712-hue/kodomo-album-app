@@ -799,7 +799,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <div class="top"><button class="back" data-back="classProjects">‹</button><div class="topText"><p class="brand">NEW ALBUM</p><h1>写真を選ぶ</h1><p class="lead">写真を選んでから、アルバムの設定や編集に進めます。</p></div></div>
 <section id="approvedPhotoImportPanel" style="border:1px solid #cddff2;background:#f7fbff;border-radius:16px;padding:15px;margin:16px 0">
  <strong style="display:block;margin-bottom:7px">🌷 確認済みの園児別写真を取り込む</strong>
- <span style="display:block;font-size:11px;color:#65758a;margin-bottom:8px">新規アルバム写真連携 2026-10-22 AS</span>
+ <span style="display:block;font-size:11px;color:#65758a;margin-bottom:8px">新規アルバム写真連携 2026-10-22 AT</span>
  <p class="muted" style="margin:5px 0 10px">AI顔グループ検証で<strong>先生が確認・保存した写真の振り分け</strong>を、新しいアルバムに引き継ぎます。園児名とクラスが一致するときだけ取り込めます。写真や既存アルバムを勝手に変更しません。</p>
  <button type="button" class="secondary" id="previewApprovedPhotoImport">📂 保存した振り分けを確認</button>
  <p id="approvedPhotoImportStatus" role="status" aria-live="polite" class="muted" style="overflow-wrap:anywhere;margin:8px 0"></p>
@@ -814,7 +814,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AS</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AT</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
 <section id="assignmentTransferPanel" class="assignmentTransferPanel">
  <p id="assignmentTransferStatus" role="status" aria-live="polite">写真の振り分けを確認中…</p>
  <button type="button" id="applySavedAssignmentsToLoaded" class="secondary" hidden>🌷 保存済みの振り分けをこの写真に適用</button>
@@ -2133,8 +2133,8 @@ function clearApprovedPhotoImport(){
 async function readApprovedImportPreview(){
  const [{loadFaceDraft},{loadProvisionalApproval},{prepareVerifiedAlbumEditorImport}]=await Promise.all([
   import('./face-recognition/face-draft-storage.mjs?v=20261022-an'),
-  import('./face-recognition/provisional-approval-storage.mjs?v=20261022-al'),
-  import('./face-recognition/verified-album-editor-import.mjs?v=20261022-aq')
+  import('./face-recognition/provisional-approval-storage.mjs?v=20261022-at'),
+  import('./face-recognition/verified-album-editor-import.mjs?v=20261022-at')
  ]);
  const [draft,approval]=await Promise.all([loadFaceDraft(),loadProvisionalApproval()]);
  if(!draft)throw Error('写真と園児別フォルダの保存済み作業がありません。顔振り分け検証画面で「今の作業を保存」してね。');
@@ -2183,7 +2183,9 @@ approvedImportPreview.addEventListener('click',async()=>{
   approvedImportSummary.append(note);
   approvedImportSummary.hidden=false;
   approvedImportApply.hidden=false;
-  approvedImportMessage('✅ 保存した仮確定とクラス名簿が一致しました。内容を確認してから下の取り込みボタンを押してね。');
+  approvedImportMessage('✅ 保存した仮確定とクラス名簿が一致しました。'+
+   (plan.legacyApprovalVerified?'以前の保存形式も安全に照合できました。':'')+
+   '内容を確認してから下の取り込みボタンを押してね。');
  }catch(error){
   clearApprovedPhotoImport();
   approvedImportMessage('⚠️ 取り込み準備ができません：'+String(error?.message||error).slice(0,260)+
@@ -2286,7 +2288,9 @@ $('#applySavedAssignmentsToLoaded')?.addEventListener('click',async()=>{
   if(notice){
    notice.hidden=false;
    notice.textContent='✅ 元写真を完全照合して、先生が保存した園児別の振り分けを'+
-    total+'枚に反映しました。集合写真の複数人の紐づけも引き継いでいます。まだアルバムは保存していません。';
+    total+'枚に反映しました。'+
+    (plan.legacyApprovalVerified?'以前の仮確定も安全に確認済みです。':'')+
+    '集合写真の複数人の紐づけも引き継いでいます。まだアルバムは保存していません。';
   }
  }catch(error){
   message.textContent='⚠️ 保存済みの振り分けを適用できません：'+String(error?.message||error).slice(0,250)+
