@@ -111,3 +111,46 @@ test('先生による写真1枚だけの移動結果が編集用の園児IDに�
  assert.equal(result.linkedPhotoCount,2);
  assert.equal(result.unassignedCount,0);
 });
+
+test('AL時代に保存した仮確定は、修正がなければ厳密に照合して復元できる',async()=>{
+ const {draft,roster}=fixture();
+ delete draft.data.photoFolderCorrections; // historic stored format
+ const {audit,signature}=restoreApprovedPhotoAudit(draft);
+ const previous=JSON.parse(signature);delete previous.photoCorrections;
+ const historicalDigest=await fingerprintProvisionalReview(JSON.stringify(previous));
+ const candidate=createProvisionalFinalization(audit,{
+  rosterClass:'tulip',sourceSignature:JSON.stringify(previous),visuallyReviewed:true,acknowledgedUnassigned:true
+ });
+ const historicalApproval=buildProvisionalApproval(candidate,historicalDigest);
+ const plan=await prepareVerifiedAlbumEditorImport({
+  savedDraft:draft,savedApproval:historicalApproval,selectedClassId:'tulip',registeredRoster:roster
+ });
+ assert.equal(plan.legacyApprovalVerified,true);
+ assert.deepEqual(plan.assignments,[['a','b'],[]]);
+});
+test('以前の仮確定に別の写真振り分けや園児名簿を混ぜては復元できない',async()=>{
+ const {draft,roster}=fixture();
+ delete draft.data.photoFolderCorrections;
+ const {audit,signature}=restoreApprovedPhotoAudit(draft);
+ const previous=JSON.parse(signature);delete previous.photoCorrections;
+ const candidate=createProvisionalFinalization(audit,{
+  rosterClass:'tulip',sourceSignature:JSON.stringify(previous),visuallyReviewed:true,acknowledgedUnassigned:true
+ });
+ const record=buildProvisionalApproval(candidate,await fingerprintProvisionalReview(JSON.stringify(previous)));
+ draft.data.photoFolderCorrections=[[0,[['0',false]]]];
+ await assert.rejects(prepareVerifiedAlbumEditorImport({
+  savedDraft:draft,savedApproval:record,selectedClassId:'tulip',registeredRoster:roster
+ }),/一致/);
+ draft.data.photoFolderCorrections=[];
+ draft.data.verifiedFolderNames=[['0','b'],['1','a']];
+ await assert.rejects(prepareVerifiedAlbumEditorImport({
+  savedDraft:draft,savedApproval:record,selectedClassId:'tulip',registeredRoster:roster
+ }),/一致/);
+});
+test('旧保存ではなく現在の署名を検証した場合は旧形式扱いにならない',async()=>{
+ const {draft,roster,approval}=await approvedFixture();
+ const plan=await prepareVerifiedAlbumEditorImport({
+  savedDraft:draft,savedApproval:approval,selectedClassId:'tulip',registeredRoster:roster
+ });
+ assert.equal(plan.legacyApprovalVerified,false);
+});
