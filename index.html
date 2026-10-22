@@ -873,7 +873,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 BB</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 BC</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
  <strong>🌷 園児別フォルダ</strong>
  <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
@@ -887,6 +887,10 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
   <button type="button" id="cancelCurrentAlbumAi" class="secondary" hidden>中断</button>
  </div>
  <p id="currentAlbumAiStatus" role="status" aria-live="polite" class="muted">今回の写真だけを解析します。実行するまでは写真を変更しません。</p>
+ <details id="currentAlbumAiDiagnosticPanel" class="assignmentAdvanced" hidden>
+  <summary>🔎 AI判定の詳しい結果（顔データは送信しません）</summary>
+  <p id="currentAlbumAiDiagnostics" class="muted"></p>
+ </details>
  <div class="currentAlbumAiReviewBar">
   <label><input type="checkbox" id="albumAiPendingOnly" checked> 未確定のグループだけ表示</label>
   <span id="albumAiWorkSummary" class="muted"></span>
@@ -2026,6 +2030,7 @@ function clearCurrentAlbumAi(){
  $('#currentAlbumAiGroups')?.replaceChildren();
  if(albumAiPreviewObserver){albumAiPreviewObserver.disconnect();albumAiPreviewObserver=null}
  $('#albumAiMoreGroups')?.setAttribute('hidden','');
+ if($('#currentAlbumAiDiagnosticPanel'))$('#currentAlbumAiDiagnosticPanel').hidden=true;
  if($('#albumAiUndoMerge'))$('#albumAiUndoMerge').hidden=true;
  if($('#albumAiWorkSummary'))$('#albumAiWorkSummary').textContent='';
  if($('#currentAlbumAiFeedback'))$('#currentAlbumAiFeedback').textContent='';
@@ -2046,6 +2051,7 @@ $('#cancelCurrentAlbumAi')?.addEventListener('click',()=>{
  if($('#albumAiWorkSummary'))$('#albumAiWorkSummary').textContent='';
  if($('#currentAlbumAiFeedback'))$('#currentAlbumAiFeedback').textContent='';
  $('#currentAlbumAiStatus').textContent='⏹ 中断しました。振り分け・写真は変更していません。';
+ $('#currentAlbumAiDiagnosticPanel').hidden=true;
  $('#analyzeCurrentAlbum').disabled=false;
  $('#cancelCurrentAlbumAi').hidden=true;
  albumAiRunning=false;
@@ -2483,6 +2489,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   $('#currentAlbumAiStatus').textContent='⚠️ 一度にAI解析できるのは150枚までです。写真を分けて取り込んでね。';return;
  }
  const token=++albumAiGeneration;albumAiRunning=true;albumAiGroupsData=null;
+ $('#currentAlbumAiDiagnosticPanel').hidden=true;
  if($('#currentAlbumAiFeedback'))$('#currentAlbumAiFeedback').textContent='';
  const status=$('#currentAlbumAiStatus'),host=$('#currentAlbumAiGroups');
  const button=$('#analyzeCurrentAlbum'),cancel=$('#cancelCurrentAlbumAi');
@@ -2515,12 +2522,24 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   if(!samples.length){
    status.textContent='⚠️ 今回の写真から顔の特徴を読み取れませんでした。下の写真一覧から手動で園児を選べます。';return;
   }
-  const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch}=await import('./face-recognition/cluster-current-album.mjs?v=20261022-bb');
+  const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch}=await import('./face-recognition/cluster-current-album.mjs?v=20261022-bc');
   check();
   const result=clusterCurrentAlbumFaces(samples,{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles.length});
   albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,mergeUndo:[],mergeSuggestions:null,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
   status.textContent='✅ 今回の写真'+sourceFiles.length+'枚から'+result.faceCount+'顔・'+result.groups.length+
-   'グループを作りました（従来の判定 '+result.beforeCommunityGroups+'組 → 改善後 '+result.groups.length+'組／追加で'+result.communityMerges+'組を統合）。参考目標 約'+result.targetGroups+'組・単独要確認'+result.uncertainGroups+'組。安全に結合できない顔は残します。園児名を付けた候補は消えていきます。';
+   'グループ。前の判定 '+result.beforeCommunityGroups+'組 → 改善後 '+result.groups.length+
+   '組（追加統合 '+(result.communityMerges+result.clusteringDiagnostics.calibratedMerges)+'組）。参考目標 約'+
+   result.targetGroups+'組・単独要確認'+result.uncertainGroups+'組。別の園児を無理にまとめず、先生が確認して園児名を付けてね。';
+  const stats=result.clusteringDiagnostics,bands=stats.nearestScoreRanges;
+  $('#currentAlbumAiDiagnostics').textContent=
+   '今回の顔'+result.faceCount+'個の最も似ている別写真の顔との比較値：'+
+   '0.80以上 '+bands.high+'顔／0.70〜0.79 '+bands.moderate+'顔／'+
+   '0.60〜0.69 '+bands.weak+'顔／0.60未満 '+bands.low+'顔／比較候補なし '+bands.missing+'顔。'+
+   '同じ写真に写る別々の顔の比較 '+stats.negativePairs+'組。'+
+   '今回の追加結合の基準値 '+stats.calibratedThreshold.toFixed(3)+'。'+
+   '追加結合 '+stats.calibratedMerges+'組、曖昧で見送り '+stats.calibratedAmbiguous+'件。'+
+   'これは正解率を示すものではありません。写真や顔の特徴データを送信・保存せず、この端末内で集計しています。';
+  $('#currentAlbumAiDiagnosticPanel').hidden=false;
   renderCurrentAlbumAiGroups();
   check();
  }catch(error){
