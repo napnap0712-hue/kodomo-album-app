@@ -306,6 +306,87 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   }
   if(!any)break;
  }
+
+ // Consensus bridge for faces photographed under very different conditions.
+ // Full cross-group averages are brittle: one profile/shadowed face can cause
+ // a genuine classmate's entire cluster to be rejected. The strongest 2+ pair
+ // matches can instead provide evidence, but never bypass co-occurrence conflicts.
+ const consensusThreshold=Math.max(.74,Math.min(.82,calibratedThreshold));
+ let consensusMerges=0,consensusCandidates=0,consensusAmbiguous=0,consensusConflict=0;
+ while(countGroups()>targetGroups){
+  const live=sets.map((g,k)=>({g,k})).filter(item=>item.g.length);
+  const potential=[];
+  for(let a=0;a<live.length;a++)for(let b=a+1;b<live.length;b++){
+   const first=live[a],second=live[b];
+   if(first.g.some(i=>second.g.some(j=>samples[i].index===samples[j].index))){
+    consensusConflict++;continue;
+   }
+   const values=[];
+   for(const i of first.g)for(const j of second.g)values.push(scores[i][j]);
+   values.sort((x,y)=>y-x);
+   const best=values[0],secondBest=values[1]??-1,minimum=values[values.length-1];
+   const mean=values.reduce((acc,v)=>acc+v,0)/values.length;
+   const supporting=values.filter(v=>v>=consensusThreshold-.035).length;
+   const hasMultiple=first.g.length>1||second.g.length>1;
+   // Pairwise orphan matches must be very clear on their own.
+   const strongSingleton=!hasMultiple&&best>=Math.max(.84,consensusThreshold+.06);
+   // Two distinct strong face-pairs are more robust evidence than averaging
+   // in all low-quality profile faces in a larger group.
+   const supportedGroup=hasMultiple&&values.length>=2&&
+    best>=consensusThreshold+.045&&secondBest>=consensusThreshold-.012&&
+    minimum>=Math.max(.45,consensusThreshold-.31)&&
+    mean>=Math.max(.59,consensusThreshold-.15)&&supporting>=2;
+   if(!strongSingleton&&!supportedGroup)continue;
+   const quality=hasMultiple?(best+secondBest)/2+.08*mean:best;
+   potential.push({a:first.k,b:second.k,quality,best,secondBest});
+  }
+  if(!potential.length)break;
+  consensusCandidates+=potential.length;
+  const rankings=new Map();
+  for(const candidate of potential)for(const [id,other] of [[candidate.a,candidate.b],[candidate.b,candidate.a]]){
+   const list=rankings.get(id)||[];
+   list.push({other,quality:candidate.quality});
+   rankings.set(id,list);
+  }
+  for(const list of rankings.values())list.sort((a,b)=>b.quality-a.quality);
+  const consistent=(a,b)=>{
+   const left=sets[a],right=sets[b];
+   if(left.some(i=>right.some(j=>samples[i].index===samples[j].index)))return false;
+   const values=[];
+   for(const i of left)for(const j of right)values.push(scores[i][j]);
+   values.sort((x,y)=>y-x);
+   return values[0]>=consensusThreshold+.02&&
+    (values.length===1||values[1]>=consensusThreshold-.025);
+  };
+  const mutual=potential.filter(pair=>{
+   const left=rankings.get(pair.a),right=rankings.get(pair.b);
+   if(left[0]?.other!==pair.b||right[0]?.other!==pair.a)return false;
+   if(left[1]&&left[0].quality-left[1].quality<.042&&
+      !consistent(pair.b,left[1].other)){consensusAmbiguous++;return false}
+   if(right[1]&&right[0].quality-right[1].quality<.042&&
+      !consistent(pair.a,right[1].other)){consensusAmbiguous++;return false}
+   return true;
+  }).sort((a,b)=>b.quality-a.quality);
+  if(!mutual.length)break;
+  let changed=false;
+  for(const match of mutual){
+   if(countGroups()<=targetGroups)break;
+   const left=sets[match.a],right=sets[match.b];
+   if(!left.length||!right.length)continue;
+   if(left.some(i=>right.some(j=>samples[i].index===samples[j].index)))continue;
+   const values=[];
+   for(const i of left)for(const j of right)values.push(scores[i][j]);
+   values.sort((x,y)=>y-x);
+   const best=values[0],secondBest=values[1]??-1;
+   if(values.length===1&&best<Math.max(.84,consensusThreshold+.06))continue;
+   if(values.length>1&&!(best>=consensusThreshold+.045&&
+       secondBest>=consensusThreshold-.012&&
+       values[values.length-1]>=Math.max(.45,consensusThreshold-.31)))continue;
+   left.push(...right);sets[match.b]=[];
+   consensusMerges++;changed=true;
+  }
+  if(!changed)break;
+ }
  const unmergedGroups=countGroups();
  const nearestScoreRanges={high:0,moderate:0,weak:0,low:0,missing:0};
  for(let i=0;i<n;i++){
@@ -325,6 +406,11 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   calibratedPairs,
   calibratedAmbiguous,
   calibratedSamePhoto,
+  consensusThreshold,
+  consensusMerges,
+  consensusCandidates,
+  consensusAmbiguous,
+  consensusConflict,
   unmergedGroups
  };
  const groups=sets.filter(g=>g.length).map((faceIndexes,i)=>({
