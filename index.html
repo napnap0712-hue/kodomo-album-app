@@ -778,6 +778,20 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .assignmentPhotoDialog::backdrop{background:#11233ac9}
 .assignmentPhotoDialog .assignmentDialogTop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .assignmentPhotoDialog img{display:block;width:100%;height:auto;max-height:65dvh;object-fit:contain;background:#edf2f7}
+#approvedPhotoImportPanel,#assignmentTransferPanel{display:none!important} /* Keep old experimental data and code untouched, but exclude from normal per-album work. */
+.currentAlbumAiPanel{border:1px solid #d4e4f1;border-radius:16px;padding:15px;margin:16px 0;background:#f6faff}
+.currentAlbumAiPanel>strong{font-size:15px}
+.currentAlbumAiPanel .muted{margin:7px 0 10px;line-height:1.55;font-size:12px}
+.currentAlbumAiActions{display:flex;flex-wrap:wrap;gap:8px}
+.currentAlbumAiActions button{font-size:13px;min-height:44px}
+.currentAlbumAiGroups{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px;margin-top:13px}
+.currentAlbumAiGroup{background:#fff;border:1px solid #dbe5f1;border-radius:12px;padding:11px;min-width:0}
+.currentAlbumAiGroup header{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.currentAlbumAiGroup .facePreview{width:58px;height:58px;object-fit:contain;background:#ecf1f7;border-radius:9px;flex:none}
+.currentAlbumAiGroup .groupPhotos{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:8px 0}
+.currentAlbumAiGroup .groupPhotos img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:#eef2f8;border-radius:7px}
+.currentAlbumAiGroup .namePick{width:100%;padding:10px;border:1px solid #bdcddd;border-radius:9px;margin:6px 0}
+.currentAlbumAiGroup button{width:100%;font-size:12px}
 .assignmentTransferPanel{border:1px solid #cddff2;background:#f4f9ff;padding:12px 14px;margin:12px 0;border-radius:13px}
 .assignmentTransferPanel p{margin:0 0 8px;line-height:1.55;font-size:13px}
 .assignmentTransferPanel button{font-size:13px}
@@ -803,7 +817,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <label class="drop" for="photoInput"><strong>📷 このアルバムの新しい写真を選ぶ</strong><p>普段はこちらから。園児別の写真は、このアルバムで新しく振り分けます。以前のアルバムの写真は勝手に追加されません。</p><input id="photoInput" type="file" accept="image/*" multiple></label>
 <details id="approvedPhotoImportPanel" style="border:1px solid #dce4ef;background:#f7fbff;border-radius:14px;padding:13px;margin:16px 0">
  <summary style="cursor:pointer;font-weight:750">📂 以前に保存した写真と振り分けを開く（必要なときだけ）</summary>
- <span style="display:block;font-size:11px;color:#65758a;margin:9px 0">新規アルバム写真連携 2026-10-22 AU</span>
+ <span style="display:block;font-size:11px;color:#65758a;margin:9px 0">新規アルバム写真連携 2026-10-22 AV</span>
  <p class="muted" style="margin:6px 0 10px">以前の14枚のように、先生が確認・仮確定した<strong>元写真そのもの</strong>を再利用するときの機能です。<strong>新しい写真の自動顔認識ではありません。</strong> 保存データやアルバムは変更しません。</p>
  <button type="button" class="secondary" id="previewApprovedPhotoImport">📂 保存した振り分けを確認</button>
  <p id="approvedPhotoImportStatus" role="status" aria-live="polite" class="muted" style="overflow-wrap:anywhere;margin:8px 0"></p>
@@ -817,7 +831,17 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AU</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AV</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<section id="currentAlbumAiPanel" class="currentAlbumAiPanel">
+ <strong>🧠 このアルバムの写真だけをAIで振り分け</strong>
+ <p class="muted">前のアルバムは使いません。今選んだ写真の顔をグループ化し、先生が園児名を付けた写真だけ振り分けます。間違いは下で修正できます。</p>
+ <div class="currentAlbumAiActions">
+  <button type="button" id="analyzeCurrentAlbum" class="primary">✨ AIで顔をグループ分け</button>
+  <button type="button" id="cancelCurrentAlbumAi" class="secondary" hidden>中断</button>
+ </div>
+ <p id="currentAlbumAiStatus" role="status" aria-live="polite" class="muted">今回の写真だけを解析します。実行するまでは写真を変更しません。</p>
+ <div id="currentAlbumAiGroups" class="currentAlbumAiGroups"></div>
+</section>
 <section id="assignmentTransferPanel" class="assignmentTransferPanel">
  <p id="assignmentTransferStatus" role="status" aria-live="polite">写真の振り分けを確認中…</p>
  <button type="button" id="applySavedAssignmentsToLoaded" class="secondary" hidden>🌷 保存済みの振り分けをこの写真に適用</button>
