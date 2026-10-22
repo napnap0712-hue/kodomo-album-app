@@ -4,7 +4,7 @@ import {auditPhotoAssignments} from './final-photo-audit.mjs';
 import {createProvisionalFinalization} from './provisional-photo-finalization.mjs';
 import {
  APPROVAL_SCHEMA,fingerprintProvisionalReview,buildProvisionalApproval,
- validateProvisionalApproval,matchProvisionalApproval
+ validateProvisionalApproval,matchProvisionalApproval,matchSavedProvisionalApproval
 } from './provisional-approval-storage.mjs';
 
 function make(){
@@ -60,4 +60,32 @@ test('破損や未確認の状態は保存不可',()=>{
  assert.throws(()=>buildProvisionalApproval(null,'a'.repeat(64)),/仮確定/);
  assert.throws(()=>buildProvisionalApproval(candidate,'broken'),/照合情報/);
  assert.equal(validateProvisionalApproval({}).ok,false);
+});
+
+test('以前の仮確定は写真ごとの修正が空なら旧照合値で安全に復元',async()=>{
+ const {audit,candidate}=make();
+ const oldSignature=JSON.stringify({sources:['a','b'],audit});
+ const currentSignature=JSON.stringify({sources:['a','b'],photoCorrections:[],audit});
+ const oldDigest=await fingerprintProvisionalReview(oldSignature);
+ const legacy=buildProvisionalApproval(candidate,oldDigest);
+ const matched=await matchSavedProvisionalApproval(legacy,currentSignature,audit);
+ assert.equal(matched.ok,true);
+ assert.equal(matched.legacyFormat,true);
+});
+test('修正がある写真は古い仮確定を流用せず拒否する',async()=>{
+ const {audit,candidate}=make();
+ const oldSignature=JSON.stringify({sources:['a','b'],audit});
+ const changed=JSON.stringify({sources:['a','b'],photoCorrections:[[1,[['0:1',false]]]],audit});
+ const legacy=buildProvisionalApproval(candidate,await fingerprintProvisionalReview(oldSignature));
+ const matched=await matchSavedProvisionalApproval(legacy,changed,audit);
+ assert.equal(matched.ok,false);
+});
+test('現在の照合値は古い形式として扱わず、別写真なら拒否',async()=>{
+ const {audit,candidate}=make();
+ const current=JSON.stringify({sources:['a','b'],photoCorrections:[],audit});
+ const approved=buildProvisionalApproval(candidate,await fingerprintProvisionalReview(current));
+ const match=await matchSavedProvisionalApproval(approved,current,audit);
+ assert.equal(match.ok,true);assert.equal(match.legacyFormat,false);
+ const changed=JSON.stringify({sources:['a','c'],photoCorrections:[],audit});
+ assert.equal((await matchSavedProvisionalApproval(approved,changed,audit)).ok,false);
 });
