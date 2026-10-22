@@ -224,3 +224,35 @@ export function mergeTeacherAlbumGroups(groups,samples,sourceKey,destinationKey)
  return groups.filter(g=>g!==source).map(g=>g===destination?
   {...g,faceIndexes:[...g.faceIndexes,...source.faceIndexes]}:{...g,faceIndexes:[...g.faceIndexes]});
 }
+
+// Merge multiple teacher-checked candidate groups in one transaction. The
+// operation either succeeds entirely or leaves all temporary groups untouched.
+// A source photo cannot contain two faces assigned to the same person group.
+export function mergeTeacherAlbumGroupsBatch(groups,samples,destinationKey,sourceKeys){
+ if(!Array.isArray(groups)||!Array.isArray(samples)||
+    !Array.isArray(sourceKeys)||!sourceKeys.length)
+  throw Error('まとめるグループをチェックしてください。');
+ const destination=groups.find(g=>g.key===destinationKey);
+ if(!destination||!Array.isArray(destination.faceIndexes)||!destination.faceIndexes.length)
+  throw Error('基準となるグループが見つかりません。');
+ const unique=[...new Set(sourceKeys.map(String))];
+ if(unique.length!==sourceKeys.length||unique.includes(String(destinationKey)))
+  throw Error('同じグループを重複して選択できません。');
+ const selected=unique.map(key=>groups.find(g=>String(g.key)===key));
+ if(selected.some(g=>!g||!Array.isArray(g.faceIndexes)||!g.faceIndexes.length))
+  throw Error('移動先のグループを確認できません。');
+ const photoIndexes=new Set();
+ const all=[destination,...selected];
+ for(const group of all)for(const i of group.faceIndexes){
+  const photo=samples[i]?.index;
+  if(!Number.isSafeInteger(photo)||photo<0)
+   throw Error('顔に対応する元写真が見つかりません。');
+  if(photoIndexes.has(photo))
+   throw Error('同じ写真に写っている別の顔が含まれるため、一括統合できません。選択を見直してね。');
+  photoIndexes.add(photo);
+ }
+ const selectedKeys=new Set(unique);
+ const combined=all.flatMap(g=>g.faceIndexes);
+ return groups.filter(g=>!selectedKeys.has(String(g.key))).map(g=>g===destination?
+  {...g,faceIndexes:combined}: {...g,faceIndexes:[...g.faceIndexes]});
+}
