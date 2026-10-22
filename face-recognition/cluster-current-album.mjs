@@ -58,6 +58,36 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
    sets[candidates[0].p].push(idx);sets[k]=[];extended=true;
   }
  }
+ // A second, high-confidence pass can reunite an isolated face even when it
+ // was not the reciprocal #1 match. Never use class roster or previous albums.
+ // This deliberately keeps uncertain faces separate for teacher review.
+ const strongThreshold=Math.max(.80,threshold+.07);
+ let improved=true;
+ while(improved){
+  improved=false;
+  for(let k=0;k<sets.length;k++){
+   if(sets[k].length!==1)continue;
+   const faceIndex=sets[k][0],matches=[];
+   for(let p=0;p<sets.length;p++){
+    const target=sets[p];if(k===p||!target.length)continue;
+    if(target.some(j=>samples[faceIndex].index===samples[j].index))continue;
+    const values=target.map(j=>scores[faceIndex][j]);
+    const peak=Math.max(...values),mean=values.reduce((sum,v)=>sum+v,0)/values.length;
+    if(peak<strongThreshold)continue;
+    // For established groups, require more than a single coincidental match.
+    if(target.length>1&&(Math.min(...values)<Math.max(.64,threshold-.08)||
+       mean<Math.max(.735,threshold+.015)))continue;
+    matches.push({p,peak,mean});
+   }
+   matches.sort((a,b)=>b.mean-a.mean);
+   if(!matches.length)continue;
+   if(matches[1]&&matches[0].mean-matches[1].mean<Math.max(.055,gap))continue;
+   const destination=matches[0].p;
+   sets[destination].push(faceIndex);
+   sets[k]=[];
+   improved=true;
+  }
+ }
  const groups=sets.filter(g=>g.length).map((faceIndexes,i)=>({
   key:'current-'+i,
   faceIndexes:[...faceIndexes],
