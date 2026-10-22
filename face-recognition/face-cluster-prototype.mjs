@@ -7,8 +7,8 @@ import {composeVisibleChildFolders,validateNewPhotoFolderName} from './photo-fol
 import {FACE_DRAFT_SCHEMA,validateFaceDraft,saveFaceDraft,loadFaceDraft,faceDraftInfo,deleteFaceDraft} from './face-draft-storage.mjs?v=20261022-an';
 import {auditPhotoAssignments} from './final-photo-audit.mjs?v=20261021-aj';
 import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs?v=20261022-an';
-import {bindProvisionalApprovalUi} from './provisional-approval-ui.mjs?v=20261022-al';
-import {bindAlbumPhotoHandoffUi} from './album-photo-handoff-ui.mjs?v=20261022-an';
+import {bindProvisionalApprovalUi} from './provisional-approval-ui.mjs?v=20261022-at';
+import {bindAlbumPhotoHandoffUi} from './album-photo-handoff-ui.mjs?v=20261022-at';
 import {bindPhotoOriginalReviewUi} from './photo-original-review-ui.mjs?v=20261022-an';
 // Standalone research prototype. Writes ONLY to its isolated IndexedDB when the user explicitly chooses Save; never alters production album storage.
 const $=id=>document.getElementById(id);
