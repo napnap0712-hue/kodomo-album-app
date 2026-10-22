@@ -189,3 +189,28 @@ test('教師が統合した顔グループは直前の状態に戻せる',()=>{
  assert.match(html,/data\.groups=previous/);
  assert.match(html,/data\.mergeUndo=\[\];data\.mergeSuggestions=null/);
 });
+
+test('似ている候補の写真グループをチェックで複数選択して一括統合',()=>{
+ const start=html.indexOf('function renderCurrentAlbumAiGroups()');
+ const end=html.indexOf("$('#albumAiPendingOnly')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(view,/const checkedGroupKeys=new Set\(\)/);
+ assert.match(view,/check\.type='checkbox';check\.value=other\.key/);
+ assert.match(view,/checkedGroupKeys\.add\(other\.key\)/);
+ assert.match(view,/checkedGroupKeys\.delete\(other\.key\)/);
+ assert.match(view,/✅ 選んだ'\+checkedGroupKeys\.size\+'組をまとめる/);
+ assert.match(view,/mergeAlbumAiGroupsBatchSafely\(data,group,keys\)/);
+ assert.match(view,/チェックした'\+keys\.length\+'組/);
+ assert.match(html,/limit:12/);
+});
+test('一括統合は一度だけ履歴へ記録し、全件確認後にしか変更しない',()=>{
+ const start=html.indexOf('function mergeAlbumAiGroupsBatchSafely(');
+ const end=html.indexOf('function renderCurrentAlbumAiGroups()',start);
+ const body=html.slice(start,end);
+ assert.match(body,/const joined=data\.mergeTeacherAlbumGroupsBatch/);
+ assert.ok(body.indexOf('const joined=')<body.indexOf('data.mergeUndo.push(snapshot)'));
+ assert.match(body,/data\.mergeUndo\.push\(snapshot\)/);
+ assert.match(body,/data\.groups=joined/);
+ assert.match(body,/data\.confirmed\.has\(g\.key\)/);
+ assert.doesNotMatch(body,/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\./);
+});
