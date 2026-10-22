@@ -215,14 +215,14 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
  assert.doesNotMatch(body,/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\./);
 });
 
-test('BCは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-22 BC/);
+test('BDは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
+ assert.match(html,/PHOTO SORT · 2026-10-22 BD/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
  assert.match(html,/前の判定 /);
  assert.match(html,/改善後 /);
- assert.match(html,/v=20261022-bc/);
+ assert.match(html,/v=20261022-bd/);
 });
 
 test('BCは匿名の類似度分布と基準値を表示、アルバムを替えると閉じる',()=>{
@@ -233,4 +233,12 @@ test('BCは匿名の類似度分布と基準値を表示、アルバムを替え
  assert.match(html,/stats\.calibratedThreshold\.toFixed\(3\)/);
  assert.match(html,/顔の特徴データを送信・保存せず/);
  assert.match(html,/\$\('#currentAlbumAiDiagnosticPanel'\)\.hidden=true/);
+});
+test('BDの補助判定も現在アルバムだけで実施し、顔の生データを診断表示しない',()=>{
+ assert.match(html,/stats\.consensusMerges/);
+ assert.match(html,/stats\.consensusCandidates/);
+ assert.match(html,/stats\.consensusAmbiguous/);
+ assert.match(html,/複数顔の一致で新たに /);
+ assert.match(html,/result\.clusteringDiagnostics\.consensusMerges/);
+ assert.match(html,/写真や顔の特徴データを送信・保存せず/);
 });
