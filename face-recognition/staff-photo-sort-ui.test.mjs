@@ -85,7 +85,7 @@ test('先生が名前を選択して初めて、このアルバムの園児紐�
  assert.match(html,/assign\.addEventListener\('click'/);
  assert.match(html,/assignConfirmedAlbumCluster\(\{/);
  assert.match(html,/activeAssignmentFolder=String\(choice\.value\)/);
- assert.match(html,/photoAssignments=assignConfirmedAlbumCluster/);
+ assert.match(html,/photoAssignments=data\.assignConfirmedAlbumCluster/);
 });
 test('次のアルバム・別写真の一括取込では前のAI候補を必ず破棄',()=>{
  assert.match(html,/function clearCurrentAlbumAi\(\)/);
