@@ -50,11 +50,20 @@ test('photo changes never automatically invoke a database write',()=>{
  assert.doesNotMatch(body,/saveDraft\(|indexedDB\.|localStorage\.setItem\(/);
 });
 
-test('保存済み振り分けの入口を通常写真追加より先に表示し、誤解を防ぐ',()=>{
+test('新規アルバムでは新しい写真が先・過去14枚の流用は任意メニュー',()=>{
  const confirmed=html.indexOf('id="approvedPhotoImportPanel"');
  const manual=html.indexOf('id="photoInput"');
- assert.ok(confirmed>0&&manual>confirmed);
- assert.match(html,/こちらは手動で写真を選ぶ方法です。園児の振り分けは空から始まります/);
+ assert.ok(manual>0&&confirmed>manual);
+ assert.match(html,/以前のアルバムの写真は勝手に追加されません/);
+ assert.match(html,/<details id="approvedPhotoImportPanel"/);
+ assert.match(html,/新しい写真の自動顔認識ではありません/);
+});
+test('新しい写真は前の園児振り分けと別枠で追加',()=>{
+ assert.match(html,/id="albumAddMorePhotos"/);
+ assert.match(html,/stageAlbumPhotoAppend\(/);
+ assert.match(html,/existingFiles:beforeFiles,existingAssignments:beforeAssignments,incomingFiles:picked/);
+ assert.match(html,/assignmentSourceType='extended'/);
+ assert.match(html,/activeAssignmentFolder='unassigned'/);
 });
 test('写真ごとの振り分け元を表示し、手動追加にも復元ボタンを用意',()=>{
  assert.match(html,/id="assignmentTransferStatus"/);
