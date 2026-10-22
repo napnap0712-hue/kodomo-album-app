@@ -229,7 +229,7 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   if(Number.isFinite(value))negativePairs.push(value);
  }
  negativePairs.sort((a,b)=>a-b);
- const negativeQuantile=negativePairs.length>=3?
+ const negativeQuantile=negativePairs.length?
   negativePairs[Math.min(negativePairs.length-1,Math.floor(negativePairs.length*.9))]:null;
  const calibratedThreshold=negativeQuantile===null?.675:
   Math.max(.635,Math.min(.78,negativeQuantile+.13));
