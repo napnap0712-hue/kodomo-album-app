@@ -74,3 +74,29 @@ test('同一写真内の顔を追加パスでも同じ人物として統合し�
  const out=clusterCurrentAlbumFaces([sample(0,0),sample(1,1),sample(0,2)],{similarity:score});
  assert.ok(out.groups.every(g=>g.faceIndexes.length===new Set(g.faceIndexes.map(i=>[0,1,0][i])).size));
 });
+
+test('写真150枚を75組程度にまとめる目標、同一人物の相互一致がある場合のみ',()=>{
+ const faces=Array.from({length:150},(_,i)=>({index:i,embedding:[Math.floor(i/3)]}));
+ const out=clusterCurrentAlbumFaces(faces,{
+  similarity:(a,b)=>a[0]===b[0]?.79:.31,photoCount:150
+ });
+ assert.equal(out.targetGroups,75);
+ assert.equal(out.groups.length,75);
+ assert.ok(out.adaptiveMerges>0);
+});
+test('写真を半分のグループにするため異なる人物を強制統合しない',()=>{
+ const faces=Array.from({length:30},(_,i)=>({index:i,embedding:[i]}));
+ const out=clusterCurrentAlbumFaces(faces,{
+  similarity:(a,b)=>a[0]===b[0]?.92:.34,photoCount:30
+ });
+ assert.equal(out.targetGroups,15);
+ assert.equal(out.groups.length,30);
+});
+test('追加の人数調整でも集合写真で異なる顔を一つにしない',()=>{
+ const faces=[
+  {index:0,embedding:[1]},{index:0,embedding:[2]},
+  {index:1,embedding:[3]},{index:2,embedding:[4]}
+ ];
+ const out=clusterCurrentAlbumFaces(faces,{similarity:()=>.83,photoCount:3});
+ assert.ok(out.groups.every(g=>g.faceIndexes.length===new Set(g.faceIndexes.map(i=>faces[i].index)).size));
+});
