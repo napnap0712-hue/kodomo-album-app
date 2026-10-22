@@ -761,7 +761,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 @media(min-width:620px){.screen[data-screen="photoAssign"] .assignmentSimpleGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:950px){.screen[data-screen="photoAssign"] .assignmentSimpleGrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .assignmentSimpleCard{background:#fff;border:1px solid #e1e8f1;border-radius:13px;overflow:hidden;min-width:0;display:flex;flex-direction:column}
-.assignmentSimpleCard .assignmentSimpleImage{border:0;background:#edf2f7;padding:0;display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:4/3;cursor:pointer}
+.assignmentSimpleCard .assignmentSimpleImage{position:relative;border:0;background:#edf2f7;padding:0;display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:4/3;cursor:pointer}
 .assignmentSimpleCard .assignmentSimpleImage img{display:block;width:100%;height:100%;object-fit:contain}
 .assignmentSimpleCard .assignmentSimpleBody{padding:9px 10px 11px;flex:1;display:flex;flex-direction:column;gap:6px}
 .assignmentSimpleCard .assignmentSimpleNumber{font-size:12px;font-weight:750;color:#34445b}
@@ -1883,21 +1883,23 @@ $('#detectFacesOnDevice').addEventListener('click',async()=>{
  try{
   status.textContent='アプリ内の顔検出プログラムを読み込み中…（写真は送信しません）';
   const detector=await loadLocalFaceDetector();
-  for(let i=0;i<files.length;i++){
-   const card=$('#photoAssignGrid').children[i];if(!card)break;
+  const visibleCards=[...$('#photoAssignGrid').querySelectorAll('[data-photo-index]')];
+  for(let visibleIndex=0;visibleIndex<visibleCards.length;visibleIndex++){
+   const card=visibleCards[visibleIndex],i=Number(card.dataset.photoIndex);
+   if(!Number.isInteger(i)||!files[i])continue;
    let line=card.querySelector('.faceDetectionResult');
    if(!line){line=document.createElement('small');line.className='faceDetectionResult';line.style.cssText='display:block;padding:6px 10px;color:#526277';card.append(line)}
    let bitmap=null;
    try{
     bitmap=await createImageBitmap(files[i]);
     const result=detector.detect(bitmap);
-    const wrap=card.querySelector('.assignCard > div:first-child');
+    const wrap=card.querySelector('.assignmentSimpleImage');
     if(wrap){
      wrap.querySelector('.faceBoxOverlay')?.remove();
      const canvas=document.createElement('canvas');canvas.className='faceBoxOverlay';
      canvas.width=200;canvas.height=220;canvas.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
      const ctx=canvas.getContext('2d');
-     const scale=Math.max(canvas.width/bitmap.width,canvas.height/bitmap.height),offsetX=(canvas.width-bitmap.width*scale)/2,offsetY=(canvas.height-bitmap.height*scale)/2;
+     const scale=Math.min(canvas.width/bitmap.width,canvas.height/bitmap.height),offsetX=(canvas.width-bitmap.width*scale)/2,offsetY=(canvas.height-bitmap.height*scale)/2;
      ctx.strokeStyle='#00e5a8';ctx.lineWidth=3;ctx.fillStyle='#00e5a8';ctx.font='bold 18px sans-serif';
      (result.detections||[]).forEach((face,n)=>{const box=face.boundingBox;if(!box)return;
       const x=box.originX*scale+offsetX,y=box.originY*scale+offsetY,w=box.width*scale,h=box.height*scale;
@@ -1908,8 +1910,8 @@ $('#detectFacesOnDevice').addEventListener('click',async()=>{
     line.textContent='👤 検出した顔：'+(result.detections?.length||0)+'人（緑の枠が検出位置）';
    }catch(e){failed++;line.textContent='⚠️ この写真は検出できませんでした';console.warn('Face detection failed for image',i,e)}
    finally{bitmap?.close()}
-   done++;status.textContent='端末内で確認中 '+done+'/'+files.length+'枚';
-   if(i%3===0)await new Promise(resolve=>setTimeout(resolve,0));
+   done++;status.textContent='表示中の写真を確認中 '+done+'/'+visibleCards.length+'枚';
+   if(visibleIndex%3===0)await new Promise(resolve=>setTimeout(resolve,0));
   }
   status.textContent='✅ 顔の人数確認：'+done+'枚'+(failed?'（検出不可 '+failed+'枚）':'')+'。園児の振り分けは変更していません。';
  }catch(e){status.textContent='⚠️ '+faceDetectorLoadStage+'で失敗しました：'+(e?.message||String(e)).slice(0,160)+'。写真・振り分けは変更していません。';console.warn('FaceDetector initialization error at '+faceDetectorLoadStage,e)}
