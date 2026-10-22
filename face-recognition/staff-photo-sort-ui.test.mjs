@@ -73,3 +73,30 @@ test('写真ごとの振り分け元を表示し、手動追加にも復元ボ�
  assert.match(html,/assignmentSourceType='recovered'/);
  assert.match(html,/matchSelectedPhotosToSaved\(selectedFiles,draft\.data\.photos/);
 });
+
+test('アルバム作成では前回のAI候補を使わず、現在選択した写真だけ解析',()=>{
+ assert.match(html,/id="analyzeCurrentAlbum"/);
+ assert.match(html,/id="currentAlbumAiGroups"/);
+ assert.match(html,/const sourceFiles=\[\.\.\.files\],registered=JSON\.stringify\(getChildren\(classId\)\)/);
+ assert.match(html,/humanFacesFromBlob\(human,sourceFiles\[index\]\)/);
+ assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity\}\)/);
+});
+test('先生が名前を選択して初めて、このアルバムの園児紐づけに反映',()=>{
+ assert.match(html,/assign\.addEventListener\('click'/);
+ assert.match(html,/assignConfirmedAlbumCluster\(\{/);
+ assert.match(html,/activeAssignmentFolder=String\(choice\.value\)/);
+ assert.match(html,/photoAssignments=assignConfirmedAlbumCluster/);
+});
+test('次のアルバム・別写真の一括取込では前のAI候補を必ず破棄',()=>{
+ assert.match(html,/function clearCurrentAlbumAi\(\)/);
+ assert.match(html,/pendingProjectSlot=i;files=\[\];photoAssignments=\[\];assignmentSourceType='manual';clearCurrentAlbumAi\(\)/);
+ assert.match(html,/\$\('#createNew'\)\.addEventListener\('click',\(\)=>\{files=\[\];photoAssignments=\[\];assignmentSourceType='manual';clearCurrentAlbumAi\(\)/);
+ assert.match(html,/clearCurrentAlbumAi\(\);files=picked;photoAssignments=picked\.map/);
+ assert.match(html,/clearCurrentAlbumAi\(\);\s*files=added\.files;photoAssignments=added\.assignments/);
+});
+test('旧14枚の仮確定を標準の振り分けに使わない',()=>{
+ assert.match(html,/#approvedPhotoImportPanel,#assignmentTransferPanel\{display:none!important\}/);
+ assert.match(html,/<section id="currentAlbumAiPanel"/);
+ const aiStart=html.indexOf("\$\u0028'#analyzeCurrentAlbum'\u0029?.addEventListener"); // Find actual code separately.
+ assert.ok(html.includes("$('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{"));
+});
