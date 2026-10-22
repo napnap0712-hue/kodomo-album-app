@@ -2337,7 +2337,7 @@ function renderCurrentAlbumAiGroups(){
     }catch(e){mergeMessage.textContent='⚠️ '+String(e?.message||e)}
    });
    const mergeHelp=document.createElement('p');mergeHelp.className='muted';
-   mergeHelp.textContent='グループ数を減らしたいときに使用。別の園児を間違ってまとめないよう、顔と元写真を確認してね。';
+   mergeHelp.textContent='「似ている別グループを探す」で同じ園児の候補にチェックを付ければ、複数組を一括統合できます。別の園児を間違ってまとめないよう、顔と元写真を確認してね。';
    mergeTools.append(mergeHelp,recommendations,recommendationResults,manualDestination,mergeManual,mergeMessage);
    content.append(mergeTools);
    const edit=document.createElement('section');edit.className='groupEditPanel';
