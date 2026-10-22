@@ -708,3 +708,68 @@ export function mergeTeacherAlbumGroupsBatch(groups,samples,destinationKey,sourc
  return groups.filter(g=>!selectedKeys.has(String(g.key))).map(g=>g===destination?
   {...g,faceIndexes:combined}: {...g,faceIndexes:[...g.faceIndexes]});
 }
+
+
+// Rank singleton-face suggestions across the *current* album. These are
+// unconfirmed comparisons for the teacher, never automatic identity merges.
+// No embeddings or images are copied to the result, nor saved or transmitted.
+export function suggestSingletonGroupPairs(samples,groups,{similarity,minScore=.60,limit=24}={}){
+ if(!Array.isArray(samples)||!Array.isArray(groups)||typeof similarity!=='function')
+  throw Error('現在の顔グループがありません。');
+ const singles=groups.filter(g=>g?.faceIndexes?.length===1);
+ const choices=[];
+ for(const source of singles){
+  const face=samples[source.faceIndexes[0]];
+  if(!face?.embedding)continue;
+  const ranked=[];
+  for(const target of groups){
+   if(source.key===target.key||!target?.faceIndexes?.length)continue;
+   if(target.faceIndexes.some(i=>samples[i]?.index===face.index))continue;
+   const scores=target.faceIndexes.map(i=>similarity(face.embedding,samples[i].embedding))
+    .filter(Number.isFinite).sort((a,b)=>b-a);
+   if(!scores.length||scores[0]<minScore)continue;
+   const score=target.faceIndexes.length===1?scores[0]:
+    .75*scores[0]+.25*(scores[1]??scores[0]);
+   ranked.push({targetKey:target.key,score,top:scores[0]});
+  }
+  ranked.sort((a,b)=>b.score-a.score);
+  if(!ranked.length)continue;
+  const selected=ranked[0];
+  // The comparison must be distinctive enough for a suggestion. If not,
+  // keep it available with a warning; only the teacher can decide.
+  const gap=ranked[1]?selected.score-ranked[1].score:null;
+  choices.push({sourceKey:source.key,targetKey:selected.targetKey,
+   score:selected.score,gap,ambiguous:gap!==null&&gap<.045});
+ }
+ // Keep exactly one direction for singleton-to-singleton pairs.
+ const seen=new Set(),out=[];
+ for(const candidate of choices.sort((a,b)=>b.score-a.score)){
+  const key=[String(candidate.sourceKey),String(candidate.targetKey)].sort().join('\u0000');
+  if(seen.has(key))continue;
+  seen.add(key);out.push(candidate);
+  if(out.length>=Math.max(1,limit))break;
+ }
+ return out;
+}
+// Teacher-reviewed pairs are applied to cloned provisional groups atomically.
+// Unselected groups, registered child names, and source photographs are intact.
+export function mergeTeacherReviewedGroupPairs(groups,samples,pairs){
+ if(!Array.isArray(groups)||!Array.isArray(pairs)||!pairs.length)
+  throw Error('まとめる候補をチェックしてね。');
+ const sources=new Set(),targets=new Set();
+ for(const pair of pairs){
+  if(!pair||pair.sourceKey===pair.targetKey||sources.has(pair.sourceKey))
+   throw Error('同じグループを複数回選択できません。');
+  sources.add(pair.sourceKey);targets.add(pair.targetKey);
+ }
+ if([...sources].some(key=>targets.has(key)))
+  throw Error('候補同士の統合先が重複しています。チェックを減らしてね。');
+ let current=groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
+ for(const {sourceKey,targetKey} of pairs){
+  const source=current.find(g=>g.key===sourceKey);
+  if(!source||source.faceIndexes.length!==1)
+   throw Error('単独候補ではなくなったため、もう一度候補を開いてね。');
+  current=mergeTeacherAlbumGroups(current,samples,sourceKey,targetKey);
+ }
+ return current;
+}
