@@ -1928,7 +1928,24 @@ $('#detectFacesOnDevice').addEventListener('click',async()=>{
  }catch(e){status.textContent='⚠️ '+faceDetectorLoadStage+'で失敗しました：'+(e?.message||String(e)).slice(0,160)+'。写真・振り分けは変更していません。';console.warn('FaceDetector initialization error at '+faceDetectorLoadStage,e)}
  finally{button.disabled=false}
 });
-let activeAssignmentFolder='all',assignmentVisibleLimit=24,faceReferenceRenderedClassId='';
+let activeAssignmentFolder='all',assignmentVisibleLimit=24,faceReferenceRenderedClassId='',assignmentSourceType='manual';
+function updateAssignmentSourceUi(){
+ const status=$('#assignmentTransferStatus'),button=$('#applySavedAssignmentsToLoaded');
+ if(!status||!button)return;
+ const assigned=files.filter((_,index)=>assignmentPhotoIds(index).length).length;
+ if(assignmentSourceType==='approved'){
+  status.textContent='✅ 先生が保存・仮確定した振り分けを引き継ぎ済み：'+assigned+' / '+files.length+'枚。未分類の写真はそのまま残しています。';
+  button.hidden=true;
+ }else if(assignmentSourceType==='recovered'){
+  status.textContent='✅ 今ある写真と保存済みの元写真を照合し、園児への振り分けを反映済み：'+assigned+' / '+files.length+'枚。';
+  button.hidden=true;
+ }else{
+  status.textContent=assigned?
+   '📷 この画面で振り分け中：'+assigned+' / '+files.length+'枚。以前に保存した顔認識結果はまだ引き継いでいません。':
+   '📷 写真は読み込み済みですが、園児への振り分けはまだです。以前に先生が確認した結果がある場合は、下から適用できます。';
+  button.hidden=!files.length;
+ }
+}
 const assignPhotoView=$('#assignmentPhotoDialog');
 $('#assignmentDialogClose')?.addEventListener('click',()=>assignPhotoView?.close());
 $('#faceReferenceAdvanced')?.addEventListener('toggle',event=>{
@@ -2062,6 +2079,7 @@ function renderPhotoAssignmentPage(keepOpenIndex=-1){
   if(!more.hidden)more.textContent='＋ 続きを表示（'+current.length+' / '+indexes.length+'枚）';
  }
  updatePhotoAssignmentProgress();
+ updateAssignmentSourceUi();
 }
 function updatePhotoAssignmentProgress(){
  const done=files.filter((_,i)=>assignmentPhotoIds(i).length).length;
@@ -2074,7 +2092,7 @@ function renderClassPhotoSummary(id,used){
  const host=$('#'+id);if(!host)return;
  const kids=getChildren(selected.id),goal=Math.max(1,Number(getClassSettings()[selected.id]?.photoCount)||5);
  if(!kids.length){host.textContent='クラス管理で園児を登録すると、枚数を確認できます。';return}
- const counts=kids.map(k=>({id:k.id,name:k.name,count:used?childPhotoUsedCount(k.id):files.filter((_,i)=>(photoAssignments[i]||[]).includes(k.id)).length}));
+ const counts=kids.map(k=>({id:k.id,name:k.name,count:used?childPhotoUsedCount(k.id):files.filter((_,i)=>(photoAssignments[i]||[]).some(id=>String(id)===String(k.id))).length}));
  const complete=counts.filter(x=>x.count>=goal).length;
  const isEditor=used&&id==='photoUsageSummary',wasOpen=host.querySelector('details')?.open||false;
  host.replaceChildren();
@@ -2201,6 +2219,7 @@ approvedImportApply.addEventListener('click',async()=>{
   files=stagedFiles;
   photoAssignments=plan.assignments.map(ids=>[...ids]);
   activeAssignmentFolder=String(plan.children.find(c=>c.photoCount>0)?.id||'unassigned');
+  assignmentSourceType='approved';
   assignmentVisibleLimit=24;faceReferenceRenderedClassId='';
   $('#photoInput').value='';
   clearApprovedPhotoImport();
@@ -2219,7 +2238,7 @@ approvedImportApply.addEventListener('click',async()=>{
  }finally{approvedImportBusyState(false);}
 });
 
-$('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;photoAssignments=picked.map(()=>[]);activeAssignmentFolder='unassigned';assignmentVisibleLimit=24;faceReferenceRenderedClassId='';renderPhotoAssignmentPage();show('photoAssign');});
+$('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;photoAssignments=picked.map(()=>[]);assignmentSourceType='manual';activeAssignmentFolder='unassigned';assignmentVisibleLimit=24;faceReferenceRenderedClassId='';const notice=$('#approvedImportPhotoAssignNotice');if(notice)notice.hidden=true;renderPhotoAssignmentPage();show('photoAssign');});
 $('#continueEdit').addEventListener('click',()=>{if(!files.length)return;renderPhotoAssignmentPage();show('photoAssign');return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';$('#editorStatus').textContent='写真を自由に配置できます。タップして選択し、ドラッグして編集してください。';refreshEditor();show('editor');});
 let spreadIndex=0,designElements=[],selectedElementId=null,elementCounter=0;
 const editHistory={states:[],index:-1,restoring:false};
@@ -2246,7 +2265,7 @@ function myBgSettings(value){if(!value||!value.startsWith('my-background:'))retu
 function backgroundStyle(value){if(value&&value.startsWith('my-background:'))return '#ffffff';if(value&&value.startsWith('custom-pattern:')){try{return customBgCss(JSON.parse(decodeURIComponent(value.slice(15))))}catch(e){return '#ffffff'}}if(value==='pattern-dots')return 'radial-gradient(#d8dfe7 1px, transparent 1.5px) 0 0/12px 12px,#fff';if(value==='pattern-lines')return 'repeating-linear-gradient(135deg,#fff,#fff 10px,#f0f3f6 10px,#f0f3f6 11px)';return value||'#fff';}
 let activePhotoFolder='all';
 let photoAssignments=[];
-function childPhotoUsedCount(id){const indexes=new Set();designElements.forEach(el=>{if(el.type==='photo'&&Number.isInteger(el.fileIndex)&&(photoAssignments[el.fileIndex]||[]).includes(id))indexes.add(el.fileIndex)});return indexes.size}
+function childPhotoUsedCount(id){const indexes=new Set();designElements.forEach(el=>{if(el.type==='photo'&&Number.isInteger(el.fileIndex)&&(photoAssignments[el.fileIndex]||[]).some(childId=>String(childId)===String(id)))indexes.add(el.fileIndex)});return indexes.size}
 function renderChildPhotoFolders(){
  const host=$('#childPhotoFolders');if(!host)return;
  const kids=getChildren(selected.id),goal=Math.max(1,Number(getClassSettings()[selected.id]?.photoCount)||5);
