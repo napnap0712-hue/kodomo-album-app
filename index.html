@@ -862,7 +862,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AX</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AY</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
  <strong>🌷 園児別フォルダ</strong>
  <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
@@ -2152,7 +2152,7 @@ function renderCurrentAlbumAiGroups(){
   const visiblePhotoCount=data.showCounts.get(group.key)||12;
   const pickBoxes=[];
   for(const photoIndex of photoIndexes.slice(0,visiblePhotoCount)){
-   const label=document.createElement('label');label.className='groupPhotoPick';
+   const label=document.createElement('div');label.className='groupPhotoPick';
    if(!confirmed){
     const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=String(photoIndex);
     checkbox.checked=selected.has(photoIndex);checkbox.setAttribute('aria-label','グループ'+groupNumber+'の写真'+(photoIndex+1)+'を選ぶ');
@@ -2161,6 +2161,13 @@ function renderCurrentAlbumAiGroups(){
    }
    const image=document.createElement('img');image.src=fileUrl(data.sourceFiles[photoIndex]);
    image.alt='元写真'+(photoIndex+1);image.loading='lazy';image.decoding='async';
+   if(!confirmed){
+    image.style.cursor='pointer';
+    image.setAttribute('role','button');image.tabIndex=0;
+    const togglePick=()=>{const box=label.querySelector('input[type=checkbox]');if(box)box.click()};
+    image.addEventListener('click',togglePick);
+    image.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePick()}});
+   }
    const note=document.createElement('small');note.textContent='写真 '+(photoIndex+1);
    const enlarge=document.createElement('button');enlarge.type='button';enlarge.className='secondary enlargePhoto';
    enlarge.textContent='🔍 拡大';enlarge.addEventListener('click',e=>{e.preventDefault();openAlbumAssignedPhoto(photoIndex)});
@@ -2182,6 +2189,8 @@ function renderCurrentAlbumAiGroups(){
    selectAll.textContent='☑ このグループの写真を全選択';
    const clear=document.createElement('button');clear.type='button';clear.className='secondary';clear.textContent='選択解除';
    const count=document.createElement('span');count.className='muted';
+   const instructions=document.createElement('p');instructions.className='muted';
+   instructions.textContent='① 移動する写真をチェック → ② 移動先の園児を選ぶ → ③「移動する」を押す';
    const target=document.createElement('select');target.setAttribute('aria-label','チェックした写真の移動先（園児フォルダも選べます）');
    const empty=document.createElement('option');empty.value='';empty.textContent='移動先を選択';target.append(empty);
    const childHeading=document.createElement('option');childHeading.disabled=true;
@@ -2202,15 +2211,20 @@ function renderCurrentAlbumAiGroups(){
    for(const [value,label] of [['new','＋ 新しいグループ'],['exclude','× AI候補から外す（写真は保持）']]){
     const option=document.createElement('option');option.value=value;option.textContent=label;target.append(option);
    }
-   const move=document.createElement('button');move.type='button';move.className='secondary';move.textContent='↗ チェックした写真を園児へ移動';
+   if(kids.some(k=>String(k.id)===String(activeAssignmentFolder)))target.value='child:'+activeAssignmentFolder;
+   const move=document.createElement('button');move.type='button';move.className='primary';move.textContent='↗ チェックした写真を移動する';
    const feedback=document.createElement('p');feedback.className='muted';feedback.setAttribute('role','status');
-   function refreshSelection(){count.textContent='選択 '+selected.size+' / '+photoIndexes.length+'枚';move.disabled=!selected.size}
+   function refreshSelection(){
+    count.textContent='✅ チェック中：'+selected.size+' / '+photoIndexes.length+'枚';
+    move.textContent=selected.size?'↗ '+selected.size+'枚を移動する':'↗ チェックした写真を移動する';
+    move.disabled=false; // Leave actionable so Safari users always receive guidance.
+   }
    selectAll.addEventListener('click',()=>{photoIndexes.forEach(i=>selected.add(i));pickBoxes.forEach(b=>b.checked=true);refreshSelection()});
    clear.addEventListener('click',()=>{selected.clear();pickBoxes.forEach(b=>b.checked=false);refreshSelection()});
    move.addEventListener('click',()=>{
     if(data!==albumAiGroupsData||!data.valid()){feedback.textContent='⚠️ 写真が変わりました。解析をやり直してね。';return}
-    if(!selected.size){feedback.textContent='先に写真をチェックしてね。';return}
-    if(!target.value){feedback.textContent='移動先を選んでね。';return}
+    if(!selected.size){feedback.textContent='⚠️ 写真の左上にチェックを付けてね。';return}
+    if(!target.value){feedback.textContent='⚠️ 移動先の園児名を選んでね。';target.focus();return}
     const indexes=photoIndexes.filter(i=>selected.has(i));
     const childId=target.value.startsWith('child:')?target.value.slice(6):null;
     const validKids=getChildren(data.classId);
@@ -2250,12 +2264,24 @@ function renderCurrentAlbumAiGroups(){
     if(childId)renderPhotoAssignmentPage();
     renderCurrentAlbumAiGroups();
    });
-   buttons.append(selectAll,clear);edit.append(buttons,count,target,move,feedback);content.append(edit);refreshSelection();
+   target.addEventListener('change',()=>{
+    if(target.value.startsWith('child:')){
+     const sameChild=target.value.slice(6);
+     // The full-group confirmation below uses this same child selection.
+     const chooser=content.querySelector('.namePick');
+     if(chooser)chooser.value=sameChild;
+    }
+    feedback.textContent='';
+   });
+   buttons.append(selectAll,clear);edit.append(instructions,buttons,count,target,move,feedback);content.append(edit);refreshSelection();
    const choice=document.createElement('select');choice.className='namePick';
    choice.setAttribute('aria-label','グループ'+groupNumber+'に園児名を付ける');
    const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='園児名を選ぶ';choice.append(placeholder);
    for(const kid of kids){const opt=document.createElement('option');opt.value=String(kid.id);opt.textContent=kid.name+'さん';choice.append(opt)}
    if(kids.some(k=>String(k.id)===String(activeAssignmentFolder)))choice.value=String(activeAssignmentFolder);
+   choice.addEventListener('change',()=>{
+    if(choice.value)target.value='child:'+choice.value;
+   });
    const assign=document.createElement('button');assign.className='secondary confirmAlbumAiName';
    assign.type='button';assign.textContent='✅ このグループを園児に振り分け';
    assign.addEventListener('click',()=>{
