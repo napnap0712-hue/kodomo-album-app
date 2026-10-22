@@ -79,7 +79,7 @@ test('アルバム作成では前回のAI候補を使わず、現在選択した
  assert.match(html,/id="currentAlbumAiGroups"/);
  assert.match(html,/const sourceFiles=\[\.\.\.files\],registered=JSON\.stringify\(getChildren\(classId\)\)/);
  assert.match(html,/humanFacesFromBlob\(human,sourceFiles\[index\]\)/);
- assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity\}\)/);
+ assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
 });
 test('先生が名前を選択して初めて、このアルバムの園児紐づけに反映',()=>{
  assert.match(html,/assign\.addEventListener\('click'/);
@@ -127,4 +127,28 @@ test('元写真を削除せず異なる顔の同一写真を誤統合しない',
  assert.match(body,/元写真は消えません/);
  assert.doesNotMatch(body,/files\.splice\(|releasePhotoUrl\(|indexedDB\.|localStorage\.setItem\(/);
  assert.match(body,/!data\.valid\(\)/);
+});
+
+test('園児フォルダを最初からAI候補より上に用意する',()=>{
+ assert.ok(html.indexOf('id="albumChildFolderPanel"')<html.indexOf('id="currentAlbumAiPanel"'));
+ assert.match(html,/function renderAlbumAiChildFolders\(\)/);
+ assert.match(html,/renderAlbumAiChildFolders\(\);\s*renderAssignmentFolderBar\(\);/);
+ assert.match(html,/assignmentPhotoIds\(i\)\.includes\(id\)/);
+});
+test('チェックした写真を選んだ園児のフォルダへ直接移しAI候補から除く',()=>{
+ const from=html.indexOf('function renderCurrentAlbumAiGroups()');
+ const until=html.indexOf("$('#albumAiPendingOnly')?.addEventListener",from);
+ const body=html.slice(from,until);
+ assert.match(body,/opt\.value='child:'\+kid\.id/);
+ assert.match(body,/nextAssignments=data\.assignConfirmedAlbumCluster/);
+ assert.match(body,/photoIndexes:indexes/);
+ assert.match(body,/group\.faceIndexes=group\.faceIndexes\.filter/);
+ assert.match(body,/photoAssignments=nextAssignments/);
+ assert.match(body,/renderPhotoAssignmentPage\(\);/);
+ assert.doesNotMatch(body,/files\.splice\(|releasePhotoUrl\(|localStorage\.setItem\(/);
+});
+test('確定後の候補は初期状態では表示されない',()=>{
+ assert.match(html,/id="albumAiPendingOnly" checked/);
+ assert.match(html,/data\.confirmed\.add\(group\.key\)/);
+ assert.match(html,/data\.groups\.filter\(group=>!data\.confirmed\.has\(group\.key\)\)/);
 });
