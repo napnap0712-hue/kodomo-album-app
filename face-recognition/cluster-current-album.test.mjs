@@ -188,3 +188,41 @@ test('同じ写真にいる別の顔はコミュニティ結合でも一つに�
   group.faceIndexes.length===new Set(group.faceIndexes.map(i=>faces[i].index)).size
  ));
 });
+
+test('147枚の中程度の顔一致も保守的判定後に端末内で追加グループ化',()=>{
+ const faces=Array.from({length:147},(_,i)=>({index:i,embedding:[i%12,i]}));
+ const sim=(a,b)=>a[0]===b[0]?.68+.09*(((a[1]*67+b[1]*97)%19)/18):.32;
+ const result=clusterCurrentAlbumFaces(faces,{similarity:sim,photoCount:147});
+ assert.ok(result.clusteringDiagnostics.calibratedMerges>=0);
+ assert.ok(result.groups.length<=result.beforeCommunityGroups);
+ assert.equal(result.groups.length,74);
+ assert.ok(result.groups.every(g=>new Set(g.faceIndexes.map(i=>faces[i].embedding[0])).size===1));
+});
+test('弱めの顔一致の分布も匿名の集計だけを返す',()=>{
+ const faces=[sample(0,1),sample(1,2),sample(2,3)];
+ const result=clusterCurrentAlbumFaces(faces,{similarity:()=>.62,photoCount:3});
+ const d=result.clusteringDiagnostics;
+ assert.equal(d.negativePairs,0);
+ assert.equal(d.nearestScoreRanges.weak,3);
+ assert.equal(Object.values(d.nearestScoreRanges).reduce((x,y)=>x+y,0),3);
+ assert.equal(d.calibratedThreshold,.675);
+ assert.ok(!('embeddings' in d)&&!('photos' in d));
+});
+test('同じ写真の別人物が似る場合は結合基準を高める',()=>{
+ const faces=[
+  {index:0,embedding:[0,0]},{index:0,embedding:[1,0]},
+  {index:1,embedding:[0,1]},{index:2,embedding:[1,1]},
+  {index:3,embedding:[0,2]},{index:4,embedding:[1,2]}
+ ];
+ const sim=(a,b)=>a[0]===b[0]?.73:.70;
+ const result=clusterCurrentAlbumFaces(faces,{similarity:sim,photoCount:5});
+ assert.ok(result.clusteringDiagnostics.negativePairs>=1);
+ assert.ok(result.clusteringDiagnostics.calibratedThreshold>=.78-1e-10);
+ assert.ok(result.groups.every(g=>g.faceIndexes.length===new Set(g.faceIndexes.map(i=>faces[i].index)).size));
+});
+test('異なる園児の一致が低ければ147顔でも目標に合わせて無理に統合しない',()=>{
+ const faces=Array.from({length:147},(_,i)=>({index:i,embedding:[i]}));
+ const result=clusterCurrentAlbumFaces(faces,{similarity:()=>.28,photoCount:147});
+ assert.equal(result.groups.length,147);
+ assert.equal(result.clusteringDiagnostics.calibratedMerges,0);
+});
