@@ -30,7 +30,7 @@ test('teacher-approved import opens the first named child folder',()=>{
  assert.match(html,/activeAssignmentFolder=String\(plan\.children\.find\(c=>c\.photoCount>0\)\?\.id\|\|'unassigned'\)/);
 });
 test('manual photos default to the unassigned folder, and all photos remain accessible',()=>{
- assert.match(html,/photoAssignments=picked\.map\(\(\)=>\[\]\);activeAssignmentFolder='unassigned'/);
+ assert.match(html,/photoAssignments=picked\.map\(\(\)=>\[\]\);assignmentSourceType='manual';activeAssignmentFolder='unassigned'/);
  assert.match(html,/id:'all',name:'📷 全写真/);
  assert.match(html,/id:'unassigned',name:'🔎 未振り分け/);
 });
