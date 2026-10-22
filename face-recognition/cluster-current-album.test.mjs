@@ -226,3 +226,45 @@ test('異なる園児の一致が低ければ147顔でも目標に合わせて�
  assert.equal(result.groups.length,147);
  assert.equal(result.clusteringDiagnostics.calibratedMerges,0);
 });
+
+test('147枚に近い実運用状況で横顔が混ざる同一人物の分裂グループを複数強一致から再結合する',()=>{
+ // 36 photos, 48 faces: 12 are co-appearance photos with different children.
+ // Each child has two internally clear pairs; an extreme profile makes a
+ // cross-pair .52 even though two different cross-pairs are .82 and .78.
+ // The previous all-pairs cutoff rejected this otherwise supported match.
+ const faces=Array.from({length:48},(_,i)=>{
+  const index=i<36?i:i-36;
+  return {index,embedding:[Math.floor(i/4),i%4,index]};
+ });
+ const sim=(a,b)=>{
+  if(a[0]!==b[0])return a[2]===b[2]?.61:.3;
+  const pair=[a[1],b[1]].sort((x,y)=>x-y).join(',');
+  return {'0,1':.9,'2,3':.9,'0,2':.82,'0,3':.52,'1,2':.55,'1,3':.78}[pair]??.3;
+ };
+ const result=clusterCurrentAlbumFaces(faces,{similarity:sim,photoCount:36});
+ assert.equal(result.clusteringDiagnostics.calibratedThreshold,.74);
+ assert.equal(result.clusteringDiagnostics.calibratedMerges,0);
+ assert.ok(result.clusteringDiagnostics.consensusMerges>0);
+ assert.equal(result.groups.length,18);
+ assert.ok(result.groups.every(g=>
+  new Set(g.faceIndexes.map(i=>faces[i].embedding[0])).size===1));
+ assert.ok(result.groups.every(g=>
+  g.faceIndexes.length===new Set(g.faceIndexes.map(i=>faces[i].index)).size));
+});
+test('曖昧な一対一の一致を人数合わせで強制統合しない',()=>{
+ const faces=Array.from({length:30},(_,i)=>({index:i,embedding:[i]}));
+ const result=clusterCurrentAlbumFaces(faces,{
+  similarity:(a,b)=>a[0]===b[0]?.99:.74,photoCount:30
+ });
+ assert.equal(result.groups.length,30);
+ assert.equal(result.clusteringDiagnostics.consensusMerges,0);
+});
+test('顔特徴や写真そのものを診断結果に含めない',()=>{
+ const faces=[sample(0,1),sample(1,1),sample(2,2)];
+ const result=clusterCurrentAlbumFaces(faces,{similarity,photoCount:3});
+ const diag=result.clusteringDiagnostics;
+ assert.ok(Number.isInteger(diag.consensusCandidates));
+ assert.ok(Number.isInteger(diag.consensusAmbiguous));
+ assert.ok(Number.isInteger(diag.consensusConflict));
+ assert.ok(!('embedding' in diag)&&!('photos' in diag)&&!('samples' in diag));
+});
