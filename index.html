@@ -2238,6 +2238,65 @@ approvedImportApply.addEventListener('click',async()=>{
  }finally{approvedImportBusyState(false);}
 });
 
+
+// Restore teacher-reviewed assignments to manually selected photos ONLY after
+// byte-for-byte SHA256 verification. Never guess based on the photo filename.
+$('#applySavedAssignmentsToLoaded')?.addEventListener('click',async()=>{
+ const button=$('#applySavedAssignmentsToLoaded'),message=$('#assignmentTransferStatus');
+ if(approvedPhotoImportBusy||assignmentSourceType!=='manual'||!files.length)return;
+ const currentClass=selected.id,year=activeYear(),selectedFiles=[...files];
+ const previous=JSON.stringify(photoAssignments),rosterText=JSON.stringify(getChildren(currentClass));
+ if(!window.confirm('今表示されている写真と保存済みの元写真を端末内で照合し、完全に一致した場合だけ園児の振り分けを適用しますか？ 現在の手動の振り分けは置き換わります。'))return;
+ approvedPhotoImportBusy=true;button.disabled=true;
+ const normalPreview=$('#previewApprovedPhotoImport');if(normalPreview)normalPreview.disabled=true;
+ message.textContent='🔎 保存済みの仮確定と写真を照合しています。元写真や園児の情報は外部に送信しません。';
+ try{
+  const [{matchSelectedPhotosToSaved},{draft,plan}]=await Promise.all([
+   import('./face-recognition/match-saved-face-photos.mjs?v=20261022-as'),
+   readApprovedImportPreview()
+  ]);
+  if(!plan.verifiedByTeacher||!plan.linkedPhotoCount||plan.assignments.length!==draft.data.photos.length)
+   throw Error('先生の振り分け結果に有効な写真の紐づけがありません。');
+  if(currentClass!==selected.id||year!==activeYear()||
+     rosterText!==JSON.stringify(getChildren(currentClass))||
+     files.length!==selectedFiles.length||files.some((file,i)=>file!==selectedFiles[i])||
+     previous!==JSON.stringify(photoAssignments)||assignmentSourceType!=='manual')
+   throw Error('照合中に写真や振り分けが変わりました。もう一度操作してね。');
+  const order=await matchSelectedPhotosToSaved(selectedFiles,draft.data.photos,{
+   onProgress:(done,total)=>{
+    message.textContent='🔎 元写真の安全確認中 '+done+'/'+total+'。振り分けの上書きはまだしていません。';
+   }
+  });
+  if(currentClass!==selected.id||year!==activeYear()||
+     rosterText!==JSON.stringify(getChildren(currentClass))||
+     files.some((file,i)=>file!==selectedFiles[i])||
+     previous!==JSON.stringify(photoAssignments)||assignmentSourceType!=='manual')
+   throw Error('照合中に写真の変更がありました。振り分けは変更していません。');
+  const assigned=order.map(originalIndex=>[...plan.assignments[originalIndex]]);
+  const total=assigned.filter(ids=>ids.length).length;
+  if(!total)throw Error('保存済みの結果に園児の振り分けがありません。');
+  // Single in-memory commit only after all photos have matched.
+  photoAssignments=assigned;
+  assignmentSourceType='recovered';
+  activeAssignmentFolder=String(plan.children.find(c=>c.photoCount>0)?.id||'unassigned');
+  assignmentVisibleLimit=24;
+  renderPhotoAssignmentPage();
+  const notice=$('#approvedImportPhotoAssignNotice');
+  if(notice){
+   notice.hidden=false;
+   notice.textContent='✅ 元写真を完全照合して、先生が保存した園児別の振り分けを'+
+    total+'枚に反映しました。集合写真の複数人の紐づけも引き継いでいます。まだアルバムは保存していません。';
+  }
+ }catch(error){
+  message.textContent='⚠️ 保存済みの振り分けを適用できません：'+String(error?.message||error).slice(0,250)+
+   '。現在の写真・振り分けは変更していません。';
+ }finally{
+  approvedPhotoImportBusy=false;
+  button.disabled=false;
+  if(normalPreview)normalPreview.disabled=false;
+ }
+});
+
 $('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;photoAssignments=picked.map(()=>[]);assignmentSourceType='manual';activeAssignmentFolder='unassigned';assignmentVisibleLimit=24;faceReferenceRenderedClassId='';const notice=$('#approvedImportPhotoAssignNotice');if(notice)notice.hidden=true;renderPhotoAssignmentPage();show('photoAssign');});
 $('#continueEdit').addEventListener('click',()=>{if(!files.length)return;renderPhotoAssignmentPage();show('photoAssign');return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';$('#editorStatus').textContent='写真を自由に配置できます。タップして選択し、ドラッグして編集してください。';refreshEditor();show('editor');});
 let spreadIndex=0,designElements=[],selectedElementId=null,elementCounter=0;
