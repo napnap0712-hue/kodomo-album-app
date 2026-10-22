@@ -47,3 +47,30 @@ test('同一写真内の顔の特徴が極端に似ていても、同じグル�
  const result=clusterCurrentAlbumFaces(v,{similarity});
  assert.equal(result.groups.length,2);
 });
+
+test('相互1位ではない顔も強い一致なら慎重にグループへ追加できる',()=>{
+ const score=(a,b)=>{
+  const pair=[a[0],b[0]].sort().join('-');
+  return {'0-1':.93,'0-2':.84,'1-2':.66}[pair]??.2;
+ };
+ const out=clusterCurrentAlbumFaces([sample(0,0),sample(1,1),sample(2,2)],{similarity:score});
+ assert.equal(out.groups.length,1);
+ assert.deepEqual(out.groups[0].photoIndexes,[0,1,2]);
+});
+test('複数の園児グループに同程度に似る写真は勝手に統合しない',()=>{
+ const score=(a,b)=>{
+  const pair=[a[0],b[0]].sort().join('-');
+  return {'0-1':.93,'2-3':.93,'0-4':.85,'1-4':.66,'2-4':.84,'3-4':.67}[pair]??.2;
+ };
+ const out=clusterCurrentAlbumFaces([0,1,2,3,4].map(i=>sample(i,i)),{similarity:score});
+ assert.equal(out.groups.length,3);
+ assert.ok(out.groups.some(g=>g.photoIndexes.join(',')==='4'));
+});
+test('同一写真内の顔を追加パスでも同じ人物として統合しない',()=>{
+ const score=(a,b)=>{
+  const pair=[a[0],b[0]].sort().join('-');
+  return {'0-1':.93,'0-2':.94,'1-2':.84}[pair]??.2;
+ };
+ const out=clusterCurrentAlbumFaces([sample(0,0),sample(1,1),sample(0,2)],{similarity:score});
+ assert.ok(out.groups.every(g=>g.faceIndexes.length===new Set(g.faceIndexes.map(i=>[0,1,0][i])).size));
+});
