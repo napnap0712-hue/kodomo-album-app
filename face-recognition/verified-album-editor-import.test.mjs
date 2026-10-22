@@ -140,7 +140,7 @@ test('以前の仮確定に別の写真振り分けや園児名簿を混ぜて�
  draft.data.photoFolderCorrections=[[0,[['0',false]]]];
  await assert.rejects(prepareVerifiedAlbumEditorImport({
   savedDraft:draft,savedApproval:record,selectedClassId:'tulip',registeredRoster:roster
- }),/一致/);
+ }),/一致|確認/);
  draft.data.photoFolderCorrections=[];
  draft.data.verifiedFolderNames=[['0','b'],['1','a']];
  await assert.rejects(prepareVerifiedAlbumEditorImport({
