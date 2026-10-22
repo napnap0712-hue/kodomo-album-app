@@ -159,7 +159,7 @@ test('Safariで画像タップ・チェック操作後、移動ボタンが反�
  assert.match(html,/checkbox\.addEventListener\('change'/);
  assert.match(html,/move\.disabled=false/);
  assert.match(html,/move\.textContent=selected\.size/);
- assert.match(html,/先に写真をチェック/);
+ assert.match(html,/写真の左上にチェックを付けてね/);
 });
 test('園児名の選択と写真移動先の選択を連動させる',()=>{
  assert.match(html,/choice\.addEventListener\('change',\(\)=>\{/);
