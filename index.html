@@ -2648,6 +2648,13 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
    '複数顔の一致候補 '+stats.consensusCandidates+'件・判定が曖昧で見送り '+stats.consensusAmbiguous+'件。'+
    '相対比較の候補 '+stats.neighborhoodCandidates+'件・曖昧で見送り '+stats.neighborhoodAmbiguous+'件。'+
    '単独候補の追加検討：候補のべ'+stats.orphanCandidates+'件／曖昧で見送りのべ'+stats.orphanAmbiguous+'件／同じ元写真の顔を見送りのべ'+stats.orphanSamePhoto+'件。'+
+   '単独候補が候補条件を満たさない内訳（初回比較・顔グループ間の組み合わせ数）：'+
+   '確認した組 '+stats.orphanReviewReasons.checked+
+   '／最も似た顔の比較値が不足 '+stats.orphanReviewReasons.firstTooLow+
+   '／2番目の顔との一致が不足 '+stats.orphanReviewReasons.secondTooLow+
+   '／平均値が不足 '+stats.orphanReviewReasons.meanTooLow+
+   '／最も低い比較値が不足 '+stats.orphanReviewReasons.weakestTooLow+
+   '／候補条件を通過 '+stats.orphanReviewReasons.eligible+'組。'+
    'これは正解率を示すものではありません。写真や顔の特徴データを送信・保存せず、この端末内で集計しています。';
   $('#currentAlbumAiDiagnosticPanel').hidden=false;
   renderCurrentAlbumAiGroups();
