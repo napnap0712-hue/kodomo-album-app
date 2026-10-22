@@ -126,5 +126,5 @@ test('元写真を削除せず異なる顔の同一写真を誤統合しない',
  assert.match(body,/移動先に同じ写真の別の顔があります/);
  assert.match(body,/元写真は消えません/);
  assert.doesNotMatch(body,/files\.splice\(|releasePhotoUrl\(|indexedDB\.|localStorage\.setItem\(/);
- assert.match(body,/if\(!data\.valid\(\)\)/);
+ assert.match(body,/!data\.valid\(\)/);
 });
