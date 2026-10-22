@@ -238,7 +238,7 @@ test('BDの補助判定も現在アルバムだけで実施し、顔の生デー
  assert.match(html,/stats\.consensusMerges/);
  assert.match(html,/stats\.consensusCandidates/);
  assert.match(html,/stats\.consensusAmbiguous/);
- assert.match(html,/複数顔の一致で新たに /);
+ assert.match(html,/複数顔の一致で /);
  assert.match(html,/result\.clusteringDiagnostics\.consensusMerges/);
  assert.match(html,/写真や顔の特徴データを送信・保存せず/);
 });
