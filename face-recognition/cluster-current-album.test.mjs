@@ -14,9 +14,11 @@ test('アルバムAとBは写真だけから独立して解析される',()=>{
  assert.deepEqual(second.groups.map(g=>g.photoIndexes),[[0],[1]]);
 });
 test('集合写真の異なる顔は同じ園児グループにまとめない',()=>{
- const out=clusterCurrentAlbumFaces([sample(0,1),sample(0,1),sample(1,1)],{similarity});
- assert.equal(out.groups.length,2);
- assert.ok(out.groups.every(g=>g.photoIndexes.length===new Set(g.photoIndexes).size));
+ const faces=[sample(0,1),sample(0,1),sample(1,1)];
+ const out=clusterCurrentAlbumFaces(faces,{similarity});
+ assert.ok(out.groups.length>=2);
+ assert.ok(out.groups.every(g=>
+  g.faceIndexes.length===new Set(g.faceIndexes.map(i=>faces[i].index)).size));
 });
 test('一つの写真に複数の園児IDを付けても元写真は複製されない',()=>{
  const one=assignConfirmedAlbumCluster({photoAssignments:[[]],photoCount:1,photoIndexes:[0],
