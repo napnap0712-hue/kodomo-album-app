@@ -403,6 +403,92 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   }
   if(!changed)break;
  }
+
+ // Distinctive-neighborhood bridge: repeated photos of the same child can
+ // form 4-12 equally strong matches; ranking them #1/#2 alone cannot separate
+ // true clusters from an all-lookalikes crowd. Contrast each candidate with
+ // the group's BACKGROUND similarities and require the near-tied cohort
+ // itself to agree. No school roster/photo history or fixed person count.
+ let neighborhoodMerges=0,neighborhoodCandidates=0,neighborhoodAmbiguous=0;
+ const neighborhoodFloor=Math.max(.54,negativeQuantile===null?.54:negativeQuantile-.03);
+ const neighborhoodMean=Math.max(.69,negativeQuantile===null?.69:negativeQuantile+.075);
+ const neighborhoodPeak=Math.max(.745,negativeQuantile===null?.745:negativeQuantile+.12);
+ const neighborhoodMetric=(first,second)=>{
+  const a=sets[first],b=sets[second];
+  if(!a.length||!b.length||a.some(i=>b.some(j=>samples[i].index===samples[j].index)))return null;
+  let sum=0,count=0,peak=-1,floor=1;
+  for(const i of a)for(const j of b){
+   const v=scores[i][j];sum+=v;count++;
+   if(v>peak)peak=v;if(v<floor)floor=v;
+  }
+  return {mean:sum/count,peak,floor};
+ };
+ // A small fixed iteration budget bounds synchronous UI work on iPhones.
+ for(let round=0;round<Math.min(100,n)&&countGroups()>targetGroups;round++){
+  const live=sets.map((g,k)=>({g,k})).filter(item=>item.g.length);
+  const stats=new Map(),background=new Map();
+  for(let a=0;a<live.length;a++)for(let b=a+1;b<live.length;b++){
+   const first=live[a].k,second=live[b].k,m=neighborhoodMetric(first,second);
+   if(m)stats.set(first+'-'+second,m);
+  }
+  const metric=(a,b)=>stats.get(Math.min(a,b)+'-'+Math.max(a,b))||null;
+  for(const item of live){
+   const values=[];
+   for(const other of live){
+    if(item.k===other.k)continue;
+    const m=metric(item.k,other.k);
+    if(m)values.push(m.mean);
+   }
+   values.sort((a,b)=>a-b);
+   background.set(item.k,values.length?values[Math.floor(values.length*.55)]:1);
+  }
+  const eligible=[];
+  for(const [key,m] of stats){
+   if(m.peak<neighborhoodPeak||m.mean<neighborhoodMean||m.floor<neighborhoodFloor)continue;
+   const [a,b]=key.split('-').map(Number);
+   const contrast=m.mean-Math.max(background.get(a),background.get(b));
+   if(contrast<.12)continue;
+   eligible.push({a,b,quality:m.mean+.08*m.peak,contrast});
+  }
+  if(!eligible.length)break;
+  neighborhoodCandidates+=eligible.length;
+  const rank=new Map();
+  for(const pair of eligible)for(const [id,other] of [[pair.a,pair.b],[pair.b,pair.a]]){
+   const list=rank.get(id)||[];
+   list.push({other,quality:pair.quality});rank.set(id,list);
+  }
+  for(const items of rank.values())items.sort((a,b)=>b.quality-a.quality);
+  const coherent=(a,b)=>{
+   const m=metric(a,b);
+   return !!m&&m.mean>=neighborhoodMean-.015&&m.floor>=neighborhoodFloor-.025;
+  };
+  const cohortSafe=(id,chosen)=>{
+   const items=rank.get(id);
+   if(!items||items[0]?.other!==chosen)return false;
+   const nearby=items.filter(item=>items[0].quality-item.quality<.04);
+   if(nearby.length>16)return false;
+   // All plausible alternative groups form one mutually coherent neighborhood,
+   // not many distinct children who happen to have similar-looking faces.
+   for(let i=0;i<nearby.length;i++)for(let j=i+1;j<nearby.length;j++){
+    if(!coherent(nearby[i].other,nearby[j].other))return false;
+   }
+   return true;
+  };
+  const sorted=eligible.sort((a,b)=>b.quality-a.quality);
+  let chosen=null;
+  for(const pair of sorted){
+   if(rank.get(pair.a)?.[0]?.other!==pair.b||
+      rank.get(pair.b)?.[0]?.other!==pair.a)continue;
+   if(cohortSafe(pair.a,pair.b)&&cohortSafe(pair.b,pair.a)){chosen=pair;break}
+   neighborhoodAmbiguous++;
+  }
+  if(!chosen)break;
+  const left=sets[chosen.a],right=sets[chosen.b];
+  // Re-evaluate the cannot-link condition before editing any group.
+  if(left.some(i=>right.some(j=>samples[i].index===samples[j].index)))break;
+  left.push(...right);sets[chosen.b]=[];
+  neighborhoodMerges++;
+ }
  const unmergedGroups=countGroups();
  const nearestScoreRanges={high:0,moderate:0,weak:0,low:0,missing:0};
  for(let i=0;i<n;i++){
@@ -427,6 +513,10 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   consensusCandidates,
   consensusAmbiguous,
   consensusConflict,
+  neighborhoodMerges,
+  neighborhoodCandidates,
+  neighborhoodAmbiguous,
+  neighborhoodThreshold:neighborhoodMean,
   unmergedGroups
  };
  const groups=sets.filter(g=>g.length).map((faceIndexes,i)=>({
