@@ -177,3 +177,50 @@ export function assignConfirmedAlbumCluster({
  }
  return copy;
 }
+
+// Suggest possible group merges for the teacher; never merge automatically.
+// A score ranks candidates, and is NOT an identification confidence or accuracy.
+export function suggestCurrentAlbumGroupMerges(samples,groups,{similarity,minScore=.55,limit=3}={}){
+ if(!Array.isArray(samples)||!Array.isArray(groups)||typeof similarity!=='function')
+  throw Error('現在のアルバムの顔候補がありません。');
+ const result=new Map(groups.map(g=>[g.key,[]]));
+ for(let a=0;a<groups.length;a++)for(let b=a+1;b<groups.length;b++){
+  const left=groups[a],right=groups[b];
+  if(!left.faceIndexes.length||!right.faceIndexes.length)continue;
+  const leftPhotos=new Set(left.faceIndexes.map(i=>samples[i]?.index));
+  if(right.faceIndexes.some(i=>leftPhotos.has(samples[i]?.index)))continue;
+  const values=[];
+  for(const i of left.faceIndexes)for(const j of right.faceIndexes){
+   const first=samples[i],second=samples[j];
+   if(!first?.embedding||!second?.embedding)continue;
+   const n=similarity(first.embedding,second.embedding);
+   if(Number.isFinite(n))values.push(n);
+  }
+  if(!values.length)continue;
+  values.sort((x,y)=>y-x);
+  const best=values[0],strong=values.slice(0,Math.min(3,values.length));
+  const average=strong.reduce((sum,v)=>sum+v,0)/strong.length;
+  // A single lookalike in a large group should not drown out contradictory matches.
+  const score=(best+average)/2;
+  if(score<minScore)continue;
+  result.get(left.key).push({key:right.key,score});
+  result.get(right.key).push({key:left.key,score});
+ }
+ for(const items of result.values())items.sort((a,b)=>b.score-a.score);
+ for(const [key,items] of result)result.set(key,items.slice(0,Math.max(1,limit)));
+ return result;
+}
+// A confirmed teacher merge of two temporary groups. Reject same-photo faces
+// because one group must never represent two different faces in one photo.
+export function mergeTeacherAlbumGroups(groups,samples,sourceKey,destinationKey){
+ if(sourceKey===destinationKey)throw Error('同じグループには移動できません。');
+ const source=groups.find(g=>g.key===sourceKey);
+ const destination=groups.find(g=>g.key===destinationKey);
+ if(!source||!destination||!source.faceIndexes.length||!destination.faceIndexes.length)
+  throw Error('移動先のグループを確認できません。');
+ const seen=new Set(destination.faceIndexes.map(i=>samples[i]?.index));
+ if(source.faceIndexes.some(i=>seen.has(samples[i]?.index)))
+  throw Error('同じ写真に写っている別の顔が含まれるため統合できません。');
+ return groups.filter(g=>g!==source).map(g=>g===destination?
+  {...g,faceIndexes:[...g.faceIndexes,...source.faceIndexes]}:{...g,faceIndexes:[...g.faceIndexes]});
+}
