@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch} from './cluster-current-album.mjs';
+import {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,suggestSingletonGroupPairs,mergeTeacherReviewedGroupPairs} from './cluster-current-album.mjs';
 
 const sample=(index,id)=>({index,embedding:[id]});
 const similarity=(a,b)=>a[0]===b[0]?.91:.21;
@@ -327,4 +327,45 @@ test('単独候補を人数目標のために無理やり統合しない',()=>{
  const out=clusterCurrentAlbumFaces(faces,{similarity:()=>.35,photoCount:24});
  assert.equal(out.groups.length,24);
  assert.equal(out.clusteringDiagnostics.orphanRescues,0);
+});
+
+test('単独グループから似た候補を園児名の自動判定なしで一覧提案できる',()=>{
+ const faces=[sample(0,1),sample(1,1),sample(2,2),sample(3,3)];
+ const groups=faces.map((_,i)=>({key:'g'+i,faceIndexes:[i]}));
+ const sim=(a,b)=>a[0]===b[0]?.87:.38;
+ const proposals=suggestSingletonGroupPairs(faces,groups,{similarity:sim});
+ assert.ok(proposals.some(p=>['g0','g1'].includes(p.sourceKey)&&['g0','g1'].includes(p.targetKey)));
+ assert.ok(proposals.every(p=>!('embedding' in p)&&!('childId' in p)&&!('photo' in p)));
+ assert.deepEqual(groups.map(g=>g.faceIndexes),[[0],[1],[2],[3]]);
+});
+test('同じ写真の違う顔は単独候補の提案に出さない',()=>{
+ const faces=[sample(0,1),sample(0,1)];
+ const groups=[{key:'a',faceIndexes:[0]},{key:'b',faceIndexes:[1]}];
+ const proposed=suggestSingletonGroupPairs(faces,groups,{similarity:()=>.98});
+ assert.deepEqual(proposed,[]);
+});
+test('複数の単独候補ペアを先生が確認した後だけ一括統合できる',()=>{
+ const faces=[sample(0,1),sample(1,1),sample(2,2),sample(3,2)];
+ const groups=faces.map((_,i)=>({key:'g'+i,faceIndexes:[i]}));
+ const after=mergeTeacherReviewedGroupPairs(groups,faces,[
+  {sourceKey:'g0',targetKey:'g1'},{sourceKey:'g2',targetKey:'g3'}
+ ]);
+ assert.equal(after.length,2);
+ assert.deepEqual(groups.map(g=>g.faceIndexes),[[0],[1],[2],[3]]);
+});
+test('組の中に同じ写真の別の顔があれば一括統合を全件拒否する',()=>{
+ const faces=[sample(0,1),sample(1,1),sample(1,2),sample(2,2)];
+ const groups=faces.map((_,i)=>({key:'g'+i,faceIndexes:[i]}));
+ const prev=JSON.stringify(groups);
+ assert.throws(()=>mergeTeacherReviewedGroupPairs(groups,faces,[
+  {sourceKey:'g0',targetKey:'g1'},{sourceKey:'g2',targetKey:'g1'}
+ ]),/同じ写真/);
+ assert.equal(JSON.stringify(groups),prev);
+});
+test('単独候補の選択に循環があれば拒否して編集しない',()=>{
+ const faces=[sample(0,1),sample(1,1),sample(2,2)];
+ const groups=faces.map((_,i)=>({key:'g'+i,faceIndexes:[i]}));
+ assert.throws(()=>mergeTeacherReviewedGroupPairs(groups,faces,[
+  {sourceKey:'g0',targetKey:'g1'},{sourceKey:'g1',targetKey:'g2'}
+ ]),/重複/);
 });
