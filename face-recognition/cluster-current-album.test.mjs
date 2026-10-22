@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster} from './cluster-current-album.mjs';
+import {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups} from './cluster-current-album.mjs';
 
 const sample=(index,id)=>({index,embedding:[id]});
 const similarity=(a,b)=>a[0]===b[0]?.91:.21;
@@ -99,4 +99,31 @@ test('追加の人数調整でも集合写真で異なる顔を一つにしな�
  ];
  const out=clusterCurrentAlbumFaces(faces,{similarity:()=>.83,photoCount:3});
  assert.ok(out.groups.every(g=>g.faceIndexes.length===new Set(g.faceIndexes.map(i=>faces[i].index)).size));
+});
+
+
+test('別グループの似た顔をスコア順に候補表示し、自動統合しない',()=>{
+ const faces=[sample(0,1),sample(1,2),sample(2,3)];
+ const groups=faces.map((_,i)=>({key:'g'+i,faceIndexes:[i]}));
+ const sim=(a,b)=>a[0]===1&&b[0]===2||a[0]===2&&b[0]===1?.79:
+  a[0]===1&&b[0]===3||a[0]===3&&b[0]===1?.61:.25;
+ const out=suggestCurrentAlbumGroupMerges(faces,groups,{similarity:sim});
+ assert.equal(out.get('g0')[0].key,'g1');
+ assert.equal(out.get('g0')[1].key,'g2');
+ assert.deepEqual(groups.map(g=>g.faceIndexes),[[0],[1],[2]]);
+});
+test('同じ元写真の別の顔を候補に出さず、手動統合も拒否',()=>{
+ const faces=[sample(0,1),sample(0,1)];
+ const groups=[{key:'a',faceIndexes:[0]},{key:'b',faceIndexes:[1]}];
+ const out=suggestCurrentAlbumGroupMerges(faces,groups,{similarity:()=>.99});
+ assert.equal(out.get('a').length,0);
+ assert.throws(()=>mergeTeacherAlbumGroups(groups,faces,'a','b'),/同じ写真/);
+});
+test('先生のグループ統合は元の仮グループを変更せず元に戻せる',()=>{
+ const faces=[sample(0,1),sample(1,1)];
+ const groups=[{key:'a',faceIndexes:[0]},{key:'b',faceIndexes:[1]}];
+ const joined=mergeTeacherAlbumGroups(groups,faces,'b','a');
+ assert.equal(joined.length,1);
+ assert.deepEqual(joined[0].faceIndexes,[0,1]);
+ assert.deepEqual(groups.map(g=>g.faceIndexes),[[0],[1]]);
 });
