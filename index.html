@@ -791,7 +791,31 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .currentAlbumAiGroup .groupPhotos{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin:8px 0}
 .currentAlbumAiGroup .groupPhotos img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:#eef2f8;border-radius:7px}
 .currentAlbumAiGroup .namePick{width:100%;padding:10px;border:1px solid #bdcddd;border-radius:9px;margin:6px 0}
-.currentAlbumAiGroup button{width:100%;font-size:12px}
+.currentAlbumAiGroup>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:64px}
+.currentAlbumAiGroup>summary::-webkit-details-marker{display:none}
+.currentAlbumAiGroup>summary::after{content:"▾";margin-left:auto;color:#627388}
+.currentAlbumAiGroup[open]>summary::after{content:"▴"}
+.currentAlbumAiGroup.confirmed{background:#f7fbf9}
+.currentAlbumAiGroup .groupPhotos{grid-template-columns:repeat(3,minmax(0,1fr))}
+.currentAlbumAiGroup .groupPhotoPick{display:flex;flex-direction:column;align-items:stretch;position:relative;gap:3px;border:2px solid transparent;border-radius:9px;padding:3px;min-width:0;cursor:pointer}
+.currentAlbumAiGroup .groupPhotoPick:has(input:checked){border-color:#2585d0;background:#e8f5ff}
+.currentAlbumAiGroup .groupPhotoPick input{position:absolute;top:6px;left:6px;width:22px;height:22px;z-index:1;accent-color:#1572bd}
+.currentAlbumAiGroup .groupPhotoPick small{font-size:11px;color:#465a70}
+.currentAlbumAiGroup .groupPhotoPick img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#eef2f8;border-radius:7px}
+.currentAlbumAiGroup .groupEditPanel{display:grid;gap:8px;padding:9px;border:1px solid #dce5ee;border-radius:10px;background:#f8fbff}
+.currentAlbumAiGroup .groupEditPanel select{width:100%;min-height:44px;background:white;padding:9px;border:1px solid #bacde2;border-radius:9px}
+.currentAlbumAiGroup .groupEditPanel button{width:100%}
+.currentAlbumAiGroup button{font-size:12px}
+.currentAlbumAiGroup .groupButtons{display:flex;gap:6px;flex-wrap:wrap}
+.currentAlbumAiGroup .groupButtons button{flex:1;min-width:115px}
+.currentAlbumAiGroup .groupContent{padding-top:9px}
+.currentAlbumAiGroup .groupPhotoPick .enlargePhoto{font-size:11px;min-height:28px;padding:3px;background:white}
+.currentAlbumAiGroup .namePick{min-height:44px}
+.currentAlbumAiGroup .confirmAlbumAiName{width:100%;min-height:43px}
+.currentAlbumAiReviewBar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:11px 0 0;font-size:13px}
+.currentAlbumAiReviewBar label{display:flex;gap:6px;align-items:center}
+.currentAlbumAiReviewBar input{width:18px;height:18px}
+#albumAiMoreGroups{margin-top:12px}
 .assignmentTransferPanel{border:1px solid #cddff2;background:#f4f9ff;padding:12px 14px;margin:12px 0;border-radius:13px}
 .assignmentTransferPanel p{margin:0 0 8px;line-height:1.55;font-size:13px}
 .assignmentTransferPanel button{font-size:13px}
@@ -831,7 +855,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AV</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 AW</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
 <section id="currentAlbumAiPanel" class="currentAlbumAiPanel">
  <strong>🧠 このアルバムの写真だけをAIで振り分け</strong>
  <p class="muted">前のアルバムは使いません。今選んだ写真の顔をグループ化し、先生が園児名を付けた写真だけ振り分けます。間違いは下で修正できます。</p>
@@ -840,7 +864,13 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
   <button type="button" id="cancelCurrentAlbumAi" class="secondary" hidden>中断</button>
  </div>
  <p id="currentAlbumAiStatus" role="status" aria-live="polite" class="muted">今回の写真だけを解析します。実行するまでは写真を変更しません。</p>
+ <div class="currentAlbumAiReviewBar">
+  <label><input type="checkbox" id="albumAiPendingOnly" checked> 未確定のグループだけ表示</label>
+  <span id="albumAiWorkSummary" class="muted"></span>
+ </div>
+ <p id="currentAlbumAiFeedback" role="status" aria-live="polite" class="muted"></p>
  <div id="currentAlbumAiGroups" class="currentAlbumAiGroups"></div>
+ <button type="button" id="albumAiMoreGroups" class="secondary wide" hidden>＋ 次のグループを表示</button>
 </section>
 <section id="assignmentTransferPanel" class="assignmentTransferPanel">
  <p id="assignmentTransferStatus" role="status" aria-live="polite">写真の振り分けを確認中…</p>
@@ -1970,6 +2000,8 @@ function clearCurrentAlbumAi(){
  albumAiGeneration++;
  albumAiGroupsData=null;
  $('#currentAlbumAiGroups')?.replaceChildren();
+ if(albumAiPreviewObserver){albumAiPreviewObserver.disconnect();albumAiPreviewObserver=null}
+ $('#albumAiMoreGroups')?.setAttribute('hidden','');
  const status=$('#currentAlbumAiStatus');
  if(status)status.textContent='今回のアルバムの写真だけを解析します。前のアルバムの結果は使いません。';
  const run=$('#analyzeCurrentAlbum'),cancel=$('#cancelCurrentAlbumAi');
@@ -1980,6 +2012,8 @@ function clearCurrentAlbumAi(){
 $('#cancelCurrentAlbumAi')?.addEventListener('click',()=>{
  albumAiGeneration++;albumAiGroupsData=null;
  $('#currentAlbumAiGroups')?.replaceChildren();
+ if(albumAiPreviewObserver){albumAiPreviewObserver.disconnect();albumAiPreviewObserver=null}
+ $('#albumAiMoreGroups')?.setAttribute('hidden','');
  $('#currentAlbumAiStatus').textContent='⏹ 中断しました。振り分け・写真は変更していません。';
  $('#analyzeCurrentAlbum').disabled=false;
  $('#cancelCurrentAlbumAi').hidden=true;
@@ -2003,6 +2037,184 @@ async function currentAlbumFaceThumbnail(file,face){
   return canvas.toDataURL('image/jpeg',.8);
  }finally{bitmap.close()}
 }
+// The AI groups below are temporary for this album. Editing them never deletes
+// the original File, writes storage, or changes an already confirmed child's photos.
+let albumAiPreviewObserver=null;
+function albumAiPhotoIndexes(group,data){
+ return [...new Set(group.faceIndexes.map(faceIndex=>data.samples[faceIndex].index))].sort((a,b)=>a-b);
+}
+function renderCurrentAlbumAiGroups(){
+ const data=albumAiGroupsData,host=$('#currentAlbumAiGroups');
+ if(!host)return;
+ if(albumAiPreviewObserver){albumAiPreviewObserver.disconnect();albumAiPreviewObserver=null}
+ host.replaceChildren();
+ const more=$('#albumAiMoreGroups'),counter=$('#albumAiWorkSummary');
+ if(!data||!data.valid()){if(counter)counter.textContent='';if(more)more.hidden=true;return}
+ const remaining=data.groups.filter(group=>!data.confirmed.has(group.key));
+ const onlyPending=$('#albumAiPendingOnly')?.checked??true;
+ if(counter)counter.textContent='未確定 '+remaining.length+'組 ／ 確定 '+data.confirmed.size+'組';
+ const visibleGroups=(onlyPending?remaining:data.groups).slice(0,data.visibleLimit);
+ const total=onlyPending?remaining.length:data.groups.length;
+ if(more){more.hidden=total<=data.visibleLimit;more.textContent='＋ 次のグループを表示（'+visibleGroups.length+' / '+total+'組）'}
+ if(!remaining.length){
+  const p=document.createElement('p');p.className='muted';
+  p.textContent='✅ AI候補の確認が終わりました。下の園児フォルダで写真を確認できるよ。';
+  host.append(p);
+ }
+ const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{
+  for(const entry of entries){
+   if(!entry.isIntersecting)continue;
+   observer.unobserve(entry.target);
+   const image=entry.target,index=Number(image.dataset.aiFaceIndex);
+   if(!data.valid()||data!==albumAiGroupsData||!data.samples[index])continue;
+   const cached=data.faceThumbs.get(index);
+   if(cached){image.src=cached;continue}
+   const face=data.samples[index];
+   currentAlbumFaceThumbnail(data.sourceFiles[face.index],face).then(url=>{
+    if(data!==albumAiGroupsData||!data.valid())return;
+    data.faceThumbs.set(index,url);image.src=url;
+   }).catch(()=>{if(data===albumAiGroupsData)image.src=fileUrl(data.sourceFiles[face.index])});
+  }
+ },{rootMargin:'160px'}):null;
+ albumAiPreviewObserver=observer;
+ for(const group of visibleGroups){
+  const confirmed=data.confirmed.has(group.key),photoIndexes=albumAiPhotoIndexes(group,data);
+  const groupNumber=data.groups.indexOf(group)+1;
+  const card=document.createElement('details');card.className='currentAlbumAiGroup'+(confirmed?' confirmed':'');
+  card.open=data.expanded.has(group.key);
+  card.addEventListener('toggle',()=>{
+   if(data!==albumAiGroupsData)return;
+   if(card.open)data.expanded.add(group.key);else data.expanded.delete(group.key);
+  });
+  const summary=document.createElement('summary');
+  const face=document.createElement('img');face.className='facePreview';
+  face.alt='グループ'+groupNumber+'の顔の見本';face.loading='lazy';
+  const faceIndex=group.faceIndexes[0];
+  if(data.faceThumbs.has(faceIndex))face.src=data.faceThumbs.get(faceIndex);
+  else if(observer){face.dataset.aiFaceIndex=String(faceIndex);observer.observe(face)}
+  else if(groupNumber<=4){
+   const sample=data.samples[faceIndex];
+   currentAlbumFaceThumbnail(data.sourceFiles[sample.index],sample).then(url=>{
+    if(data===albumAiGroupsData&&data.valid())face.src=url;
+   }).catch(()=>{});
+  }
+  const title=document.createElement('div'),name=document.createElement('strong'),sub=document.createElement('p');
+  name.textContent='候補グループ '+groupNumber+(confirmed?' ✅ 確定済み':'');
+  sub.className='muted';sub.textContent=photoIndexes.length+'枚'+(group.faceIndexes.length===1?'・要確認':'');
+  title.append(name,sub);summary.append(face,title);card.append(summary);
+  const content=document.createElement('div');content.className='groupContent';
+  const guide=document.createElement('p');guide.className='muted';
+  guide.textContent=confirmed?'振り分け済み。変更は下の園児フォルダから行えます。':'写真をチェックして、別グループへ一括移動・新規グループ作成・AI候補から除外できます。元写真は消えません。';
+  content.append(guide);
+  const selected=data.selections.get(group.key)||new Set();
+  data.selections.set(group.key,selected);
+  const gallery=document.createElement('div');gallery.className='groupPhotos';
+  const visiblePhotoCount=data.showCounts.get(group.key)||12;
+  const pickBoxes=[];
+  for(const photoIndex of photoIndexes.slice(0,visiblePhotoCount)){
+   const label=document.createElement('label');label.className='groupPhotoPick';
+   if(!confirmed){
+    const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.value=String(photoIndex);
+    checkbox.checked=selected.has(photoIndex);checkbox.setAttribute('aria-label','グループ'+groupNumber+'の写真'+(photoIndex+1)+'を選ぶ');
+    checkbox.addEventListener('change',()=>{if(checkbox.checked)selected.add(photoIndex);else selected.delete(photoIndex);refreshSelection()});
+    label.append(checkbox);pickBoxes.push(checkbox);
+   }
+   const image=document.createElement('img');image.src=fileUrl(data.sourceFiles[photoIndex]);
+   image.alt='元写真'+(photoIndex+1);image.loading='lazy';image.decoding='async';
+   const note=document.createElement('small');note.textContent='写真 '+(photoIndex+1);
+   const enlarge=document.createElement('button');enlarge.type='button';enlarge.className='secondary enlargePhoto';
+   enlarge.textContent='🔍 拡大';enlarge.addEventListener('click',e=>{e.preventDefault();openAlbumAssignedPhoto(photoIndex)});
+   label.append(image,note,enlarge);gallery.append(label);
+  }
+  content.append(gallery);
+  if(photoIndexes.length>visiblePhotoCount){
+   const rest=document.createElement('button');rest.type='button';rest.className='secondary';
+   rest.textContent='＋ 残りの写真を表示（'+visiblePhotoCount+' / '+photoIndexes.length+'枚）';
+   rest.addEventListener('click',()=>{
+    data.showCounts.set(group.key,visiblePhotoCount+24);data.expanded.add(group.key);renderCurrentAlbumAiGroups();
+   });
+   content.append(rest);
+  }
+  if(!confirmed){
+   const edit=document.createElement('section');edit.className='groupEditPanel';
+   const buttons=document.createElement('div');buttons.className='groupButtons';
+   const selectAll=document.createElement('button');selectAll.type='button';selectAll.className='secondary';
+   selectAll.textContent='☑ このグループの写真を全選択';
+   const clear=document.createElement('button');clear.type='button';clear.className='secondary';clear.textContent='選択解除';
+   const count=document.createElement('span');count.className='muted';
+   const target=document.createElement('select');target.setAttribute('aria-label','チェックした写真の移動先');
+   const empty=document.createElement('option');empty.value='';empty.textContent='移動先を選択';target.append(empty);
+   for(const destination of data.groups){
+    if(destination===group||data.confirmed.has(destination.key))continue;
+    const opt=document.createElement('option');opt.value=destination.key;
+    opt.textContent='グループ '+(data.groups.indexOf(destination)+1)+'（'+albumAiPhotoIndexes(destination,data).length+'枚）';
+    target.append(opt);
+   }
+   for(const [value,label] of [['new','＋ 新しいグループ'],['exclude','× AI候補から外す（写真は保持）']]){
+    const option=document.createElement('option');option.value=value;option.textContent=label;target.append(option);
+   }
+   const move=document.createElement('button');move.type='button';move.className='secondary';move.textContent='↗ チェックした写真を移動・除外';
+   const feedback=document.createElement('p');feedback.className='muted';feedback.setAttribute('role','status');
+   function refreshSelection(){count.textContent='選択 '+selected.size+' / '+photoIndexes.length+'枚';move.disabled=!selected.size}
+   selectAll.addEventListener('click',()=>{photoIndexes.forEach(i=>selected.add(i));pickBoxes.forEach(b=>b.checked=true);refreshSelection()});
+   clear.addEventListener('click',()=>{selected.clear();pickBoxes.forEach(b=>b.checked=false);refreshSelection()});
+   move.addEventListener('click',()=>{
+    if(data!==albumAiGroupsData||!data.valid()){feedback.textContent='⚠️ 写真が変わりました。解析をやり直してね。';return}
+    if(!selected.size){feedback.textContent='先に写真をチェックしてね。';return}
+    if(!target.value){feedback.textContent='移動先を選んでね。';return}
+    const indexes=photoIndexes.filter(i=>selected.has(i));
+    const targetGroup=data.groups.find(g=>g.key===target.value);
+    if(target.value!=='new'&&target.value!=='exclude'&&(!targetGroup||data.confirmed.has(targetGroup.key))){
+     feedback.textContent='⚠️ 移動先をもう一度選んでね。';return;
+    }
+    if(targetGroup&&indexes.some(i=>albumAiPhotoIndexes(targetGroup,data).includes(i))){
+     feedback.textContent='⚠️ 移動先に同じ写真の別の顔があります。誤って1人にまとめないため移動を中止しました。';return;
+    }
+    if(target.value==='exclude'&&!window.confirm('選んだ'+indexes.length+'枚をAI候補から外しますか？ 元写真は残り、下の写真一覧でも確認できます。'))return;
+    const selectedIndexes=new Set(indexes);
+    const moving=group.faceIndexes.filter(i=>selectedIndexes.has(data.samples[i].index));
+    if(!moving.length)return;
+    group.faceIndexes=group.faceIndexes.filter(i=>!moving.includes(i));
+    if(targetGroup)targetGroup.faceIndexes.push(...moving);
+    else if(target.value==='new')data.groups.push({key:'teacher-'+(++data.nextGroupId),faceIndexes:moving});
+    if(!group.faceIndexes.length)data.groups=data.groups.filter(g=>g!==group);
+    selected.clear();data.expanded.add(group.key);
+    if(targetGroup)data.expanded.add(targetGroup.key);
+    $('#currentAlbumAiFeedback').textContent='✅ '+indexes.length+'枚のAI候補を'+(target.value==='exclude'?'除外しました':'移動しました')+'。元写真と確定済みの振り分けは変更していません。';
+    renderCurrentAlbumAiGroups();
+   });
+   buttons.append(selectAll,clear);edit.append(buttons,count,target,move,feedback);content.append(edit);refreshSelection();
+   const choice=document.createElement('select');choice.className='namePick';
+   choice.setAttribute('aria-label','グループ'+groupNumber+'に園児名を付ける');
+   const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='園児名を選ぶ';choice.append(placeholder);
+   const kids=getChildren(data.classId);
+   for(const kid of kids){const opt=document.createElement('option');opt.value=String(kid.id);opt.textContent=kid.name+'さん';choice.append(opt)}
+   const assign=document.createElement('button');assign.className='secondary confirmAlbumAiName';
+   assign.type='button';assign.textContent='✅ このグループを園児に振り分け';
+   assign.addEventListener('click',()=>{
+    if(data!==albumAiGroupsData||!data.valid()){feedback.textContent='⚠️ 写真・名簿が変わったため、再解析してね。';return}
+    if(!choice.value){feedback.textContent='園児名を選んでね。';return}
+    try{
+     const currentPhotos=albumAiPhotoIndexes(group,data);
+     photoAssignments=data.assignConfirmedAlbumCluster({
+      photoAssignments,photoCount:files.length,photoIndexes:currentPhotos,
+      childId:choice.value,validChildIds:kids.map(k=>k.id)
+     });
+     data.confirmed.add(group.key);data.expanded.delete(group.key);
+     data.selections.delete(group.key);
+     const kid=kids.find(k=>String(k.id)===choice.value);
+     $('#currentAlbumAiFeedback').textContent='✅ '+kid?.name+'さんへ'+currentPhotos.length+'枚振り分けました。同じ園児の写真は一つの園児フォルダにまとまります。';
+     activeAssignmentFolder=String(choice.value);
+     renderPhotoAssignmentPage();renderCurrentAlbumAiGroups();
+    }catch(e){feedback.textContent='⚠️ '+String(e?.message||e)}
+   });
+   content.append(choice,assign);
+  }
+  card.append(content);host.append(card);
+ }
+}
+$('#albumAiPendingOnly')?.addEventListener('change',()=>{if(albumAiGroupsData){albumAiGroupsData.visibleLimit=18;renderCurrentAlbumAiGroups()}});
+$('#albumAiMoreGroups')?.addEventListener('click',()=>{if(albumAiGroupsData){albumAiGroupsData.visibleLimit+=18;renderCurrentAlbumAiGroups()}});
 $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
  if(albumAiRunning||!files.length)return;
  const classId=selected.id,schoolYear=activeYear();
@@ -2042,73 +2254,13 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   if(!samples.length){
    status.textContent='⚠️ 今回の写真から顔の特徴を読み取れませんでした。下の写真一覧から手動で園児を選べます。';return;
   }
-  const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster}=await import('./face-recognition/cluster-current-album.mjs?v=20261022-av');
+  const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster}=await import('./face-recognition/cluster-current-album.mjs?v=20261022-aw');
   check();
   const result=clusterCurrentAlbumFaces(samples,{similarity:faceEmbeddingSimilarity});
-  albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set()};
+  albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,assignConfirmedAlbumCluster,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
   status.textContent='✅ 今回の写真'+sourceFiles.length+'枚から'+result.faceCount+'顔・'+result.groups.length+
    'グループを作りました（単独・要確認'+result.uncertainGroups+'）。下のグループに園児名を付けると写真へ振り分けます。顔が見えない写真は手動で確認してね。';
-  const kids=getChildren(classId);
-  for(let i=0;i<result.groups.length;i++){
-   check();
-   const group=result.groups[i];
-   const card=document.createElement('section');card.className='currentAlbumAiGroup';
-   const top=document.createElement('header'),face=document.createElement('img');
-   face.className='facePreview';face.alt='AIがまとめた顔の見本';
-   try{face.src=await currentAlbumFaceThumbnail(sourceFiles[samples[group.faceIndexes[0]].index],samples[group.faceIndexes[0]])}
-   catch{face.src=fileUrl(sourceFiles[group.photoIndexes[0]])}
-   check();
-   const title=document.createElement('div');
-   const titleStrong=document.createElement('strong');
-   titleStrong.textContent='候補グループ '+(i+1);
-   const titleSub=document.createElement('p');titleSub.className='muted';
-   titleSub.textContent='元写真'+group.photoIndexes.length+'枚'+(group.faceIndexes.length===1?'・要確認':'');
-   title.append(titleStrong,titleSub);top.append(face,title);card.append(top);
-   const note=document.createElement('p');note.className='muted';
-   note.textContent='顔の見本と元写真全体を見て、同じ園児か確認してね。';
-   card.append(note);
-   const gallery=document.createElement('div');gallery.className='groupPhotos';
-   for(const photoIndex of group.photoIndexes.slice(0,6)){
-    const image=document.createElement('img');image.src=fileUrl(sourceFiles[photoIndex]);
-    image.alt='元写真'+(photoIndex+1);image.loading='lazy';
-    gallery.append(image);
-   }
-   card.append(gallery);
-   if(group.photoIndexes.length>6){
-    const rest=document.createElement('p');rest.className='muted';
-    rest.textContent='ほか '+(group.photoIndexes.length-6)+'枚。この園児に振り分けたあと、下のフォルダで全写真を確認できます。';
-    card.append(rest);
-   }
-   const choice=document.createElement('select');choice.className='namePick';
-   const placeholder=document.createElement('option');placeholder.value='';
-   placeholder.textContent='園児名を選ぶ';choice.append(placeholder);
-   for(const kid of kids){
-    const opt=document.createElement('option');opt.value=String(kid.id);
-    opt.textContent=kid.name+'さん';choice.append(opt);
-   }
-   const assign=document.createElement('button');assign.className='secondary';
-   assign.type='button';assign.textContent='✅ この園児に写真を振り分ける';
-   const feedback=document.createElement('p');feedback.className='muted';
-   assign.addEventListener('click',()=>{
-    if(!valid()||albumAiGroupsData?.sourceFiles!==sourceFiles){
-     feedback.textContent='⚠️ 写真が変わったため、この候補は使えません。AI解析をやり直してね。';return;
-    }
-    if(!choice.value){feedback.textContent='園児名を選んでね。';return}
-    try{
-     photoAssignments=assignConfirmedAlbumCluster({
-      photoAssignments,photoCount:files.length,photoIndexes:group.photoIndexes,
-      childId:choice.value,validChildIds:kids.map(k=>k.id)
-     });
-     albumAiGroupsData.confirmed.add(group.key);
-     assign.disabled=true;choice.disabled=true;
-     feedback.textContent='✅ '+kids.find(k=>String(k.id)===choice.value)?.name+'さんへ'+group.photoIndexes.length+'枚を追加しました。';
-     activeAssignmentFolder=String(choice.value);
-     renderPhotoAssignmentPage();
-    }catch(e){feedback.textContent='⚠️ '+String(e.message||e)}
-   });
-   card.append(choice,assign,feedback);host.append(card);
-   if(i%4===0)await new Promise(resolve=>setTimeout(resolve,0));
-  }
+  renderCurrentAlbumAiGroups();
   check();
  }catch(error){
   if(token===albumAiGeneration){
