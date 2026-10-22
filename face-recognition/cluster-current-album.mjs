@@ -194,11 +194,17 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
    for(const i of left)for(const j of right){
     const score=scores[i][j];total+=score;num++;if(score<low)low=score;
    }
-   return low>=.60&&total/num>=.69;
+   // An all-lookalikes tie is not identity evidence. For a true triangle,
+   // the alternative pair must also show a high absolute similarity.
+   return low>=.68&&total/num>=.76;
   };
   const safe=candidates.filter(pair=>{
    const a=ranked.get(pair.a),b=ranked.get(pair.b);
    if(a[0].other!==pair.b||b[0].other!==pair.a)return false;
+   // Even when all people look alike, don't interpret a large near-tie
+   // component as a single person just to reach the suggested group count.
+   const close=(rank)=>rank.filter(x=>rank[0].quality-x.quality<.045).length;
+   if(close(a)>3||close(b)>3)return false;
    if(a[1]&&a[0].quality-a[1].quality<.045&&!compatible(pair.b,a[1].other))return false;
    if(b[1]&&b[0].quality-b[1].quality<.045&&!compatible(pair.a,b[1].other))return false;
    return true;
