@@ -220,7 +220,7 @@ test('BCは今回取り込んだ写真だけでグループ改善を比較表示
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
- assert.match(html,/従来の判定 /);
+ assert.match(html,/前の判定 /);
  assert.match(html,/改善後 /);
  assert.match(html,/v=20261022-bc/);
 });
