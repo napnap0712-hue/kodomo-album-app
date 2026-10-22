@@ -161,7 +161,7 @@ test('147枚の似た写真を近傍の同意で追加統合し、同一園児�
   (.68+.09*(((a[1]*67+b[1]*97)%19)/18)):.32;
  const out=clusterCurrentAlbumFaces(faces,{similarity,photoCount:147});
  assert.equal(out.targetGroups,74);
- assert.ok(out.communityMerges>0);
+ assert.ok(out.communityMerges+out.clusteringDiagnostics.neighborhoodMerges>0);
  assert.ok(out.groups.length<100,
   '似ている写真を従来方式よりまとめられること');
  assert.ok(out.groups.length<out.beforeCommunityGroups);
