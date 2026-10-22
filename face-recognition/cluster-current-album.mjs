@@ -307,7 +307,17 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   if(!any)break;
  }
  const unmergedGroups=countGroups();
+ const nearestScoreRanges={high:0,moderate:0,weak:0,low:0,missing:0};
+ for(let i=0;i<n;i++){
+  const best=nearest[i]?.length?scores[i][nearest[i][0]]:null;
+  if(best===null||best<=0)nearestScoreRanges.missing++;
+  else if(best>=.8)nearestScoreRanges.high++;
+  else if(best>=.7)nearestScoreRanges.moderate++;
+  else if(best>=.6)nearestScoreRanges.weak++;
+  else nearestScoreRanges.low++;
+ }
  const clusteringDiagnostics={
+  nearestScoreRanges,
   negativePairs:negativePairs.length,
   negativeReference:negativeQuantile,
   calibratedThreshold,
