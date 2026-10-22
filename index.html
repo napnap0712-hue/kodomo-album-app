@@ -1915,45 +1915,146 @@ $('#detectFacesOnDevice').addEventListener('click',async()=>{
  }catch(e){status.textContent='⚠️ '+faceDetectorLoadStage+'で失敗しました：'+(e?.message||String(e)).slice(0,160)+'。写真・振り分けは変更していません。';console.warn('FaceDetector initialization error at '+faceDetectorLoadStage,e)}
  finally{button.disabled=false}
 });
-let activeAssignmentFolder='all';
+let activeAssignmentFolder='all',assignmentVisibleLimit=24,faceReferenceRenderedClassId='';
+const assignPhotoView=$('#assignmentPhotoDialog');
+$('#assignmentDialogClose')?.addEventListener('click',()=>assignPhotoView?.close());
+$('#faceReferenceAdvanced')?.addEventListener('toggle',event=>{
+ if(!event.target.open||!files.length)return;
+ if(faceReferenceRenderedClassId===selected.id)return;
+ faceReferenceRenderedClassId=selected.id;
+ void renderFaceReferencePanel();
+});
+$('#showMoreAssignedPhotos')?.addEventListener('click',()=>{
+ assignmentVisibleLimit+=24;renderPhotoAssignmentPage();
+});
+function assignmentPhotoIds(index){
+ return (photoAssignments[index]||[]).map(String);
+}
+function folderPhotoIndexes(){
+ const current=String(activeAssignmentFolder);
+ return files.map((_,index)=>index).filter(index=>{
+  const ids=assignmentPhotoIds(index);
+  return current==='all'||(current==='unassigned'?!ids.length:ids.includes(current));
+ });
+}
 function renderAssignmentFolderBar(){
  const bar=$('#assignmentFolderBar');if(!bar)return;
- const kids=getChildren(selected.id),options=[{id:'all',name:'📷 全写真'},{id:'unassigned',name:'🔎 未振り分け'},...kids.map(k=>({id:String(k.id),name:'📁 '+k.name}))];
- if(activeAssignmentFolder!=='all'&&activeAssignmentFolder!=='unassigned'&&!kids.some(k=>String(k.id)===activeAssignmentFolder))activeAssignmentFolder='all';
- bar.replaceChildren();
- for(const folder of options){
-  const count=folder.id==='all'?files.length:folder.id==='unassigned'?files.filter((_,i)=>!(photoAssignments[i]||[]).length).length:files.filter((_,i)=>(photoAssignments[i]||[]).some(id=>String(id)===folder.id)).length;
-  const btn=document.createElement('button');btn.type='button';btn.className=folder.id===activeAssignmentFolder?'primary':'secondary';btn.style.cssText='padding:7px 10px;font-size:12px';
-  btn.textContent=folder.name+' '+count;
-  btn.onclick=()=>{activeAssignmentFolder=folder.id;renderPhotoAssignmentPage()};
-  bar.append(btn);
+ const kids=getChildren(selected.id);
+ if(!['all','unassigned'].includes(String(activeAssignmentFolder))&&
+    !kids.some(k=>String(k.id)===String(activeAssignmentFolder)))
+  activeAssignmentFolder='unassigned';
+ const counts=new Map(kids.map(k=>[String(k.id),0]));
+ for(let i=0;i<files.length;i++)for(const id of new Set(assignmentPhotoIds(i))){
+  if(counts.has(id))counts.set(id,counts.get(id)+1);
  }
- const hint=$('#assignmentFolderHint');if(hint)hint.textContent=activeAssignmentFolder==='all'?'全写真を表示中':activeAssignmentFolder==='unassigned'?'未振り分けの写真を表示中（AIの要確認候補も含みます）':'園児フォルダを表示中。名前を追加・解除すると自動的に更新します。';
+ const unassigned=files.filter((_,i)=>!assignmentPhotoIds(i).length).length;
+ const picker=document.createElement('select');picker.id='assignmentFolderPicker';
+ picker.setAttribute('aria-label','表示する園児のフォルダ');
+ const options=[
+  ...kids.map(k=>({id:String(k.id),name:'🌷 '+k.name+'さん　'+counts.get(String(k.id))+'枚'})),
+  {id:'unassigned',name:'🔎 未振り分け　'+unassigned+'枚'},
+  {id:'all',name:'📷 全写真　'+files.length+'枚'}
+ ];
+ for(const entry of options){
+  const option=document.createElement('option');option.value=entry.id;option.textContent=entry.name;
+  picker.append(option);
+ }
+ picker.value=String(activeAssignmentFolder);
+ picker.addEventListener('change',()=>{
+  activeAssignmentFolder=picker.value;assignmentVisibleLimit=24;renderPhotoAssignmentPage();
+ });
+ bar.replaceChildren(picker);
+ const count=folderPhotoIndexes().length;
+ const child=kids.find(k=>String(k.id)===String(activeAssignmentFolder));
+ const hint=$('#assignmentFolderHint');
+ if(hint)hint.textContent=child?child.name+'さんの写真：'+count+'枚。修正したい写真だけ「変更」を押してね。':
+  activeAssignmentFolder==='unassigned'?'まだ園児に紐づいていない写真：'+count+'枚。必要なら「変更」で園児を指定してね。':
+  '全写真：'+count+'枚。園児を選ぶと、その子の写真だけ表示されるよ。';
 }
-function renderPhotoAssignmentPage(){
- const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);grid.innerHTML='';renderAssignmentFolderBar();renderFaceReferencePanel();
- files.forEach((file,index)=>{
-  if(activeAssignmentFolder==='unassigned'&&(photoAssignments[index]||[]).length)return;
-  if(activeAssignmentFolder!=='all'&&activeAssignmentFolder!=='unassigned'&&!(photoAssignments[index]||[]).some(id=>String(id)===activeAssignmentFolder))return;
-  const card=document.createElement('article');card.className='assignCard';
-  const image=document.createElement('img');image.src=fileUrl(file);image.alt=file.name;image.loading='lazy';image.decoding='async';
-  const photoWrap=document.createElement('div');photoWrap.style.cssText='position:relative;flex:0 0 100px;width:100px;height:110px;overflow:hidden;border-radius:10px';image.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:10px';photoWrap.append(image);
-  const body=document.createElement('div');body.className='assignCardBody';
-  const name=document.createElement('strong');name.textContent=file.name;body.append(name);
-  const picker=document.createElement('div');picker.className='assignNativePicker';
-  const select=document.createElement('select');select.className='assignNativeSelect';select.setAttribute('aria-label',file.name+'の園児を選択');
-  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='園児を選択';select.append(placeholder);
-  kids.forEach(k=>{const option=document.createElement('option');option.value=k.id;option.textContent=k.name;select.append(option)});
-  const selectedList=document.createElement('div');selectedList.className='assignSelectedKids';
-  const renderSelected=()=>{selectedList.replaceChildren();(photoAssignments[index]||[]).forEach(id=>{const kid=kids.find(k=>k.id===id);if(!kid)return;const chip=document.createElement('button');chip.type='button';chip.className='assignKidChip';chip.textContent=kid.name+' ×';chip.setAttribute('aria-label',kid.name+'の振り分けを解除');chip.addEventListener('click',()=>{photoAssignments[index]=(photoAssignments[index]||[]).filter(v=>v!==id);renderSelected();updatePhotoAssignmentProgress();});selectedList.append(chip)})};
-  select.addEventListener('change',()=>{if(!select.value)return;const ids=new Set(photoAssignments[index]||[]);ids.add(select.value);photoAssignments[index]=[...ids];select.value='';renderSelected();updatePhotoAssignmentProgress();});
-  select.disabled=!kids.length;picker.append(select,selectedList);renderSelected();
-  body.append(picker);card.append(photoWrap,body);grid.append(card);
- });updatePhotoAssignmentProgress();
+function openAlbumAssignedPhoto(index){
+ if(!assignPhotoView)return;
+ const photo=files[index];if(!photo)return;
+ $('#assignmentDialogTitle').textContent='📷 元写真 '+(index+1);
+ $('#assignmentDialogImage').src=fileUrl(photo);
+ $('#assignmentDialogImage').alt='元写真 '+(index+1)+' の全体表示';
+ if(!assignPhotoView.open)assignPhotoView.showModal();
+}
+function renderPhotoAssignmentPage(keepOpenIndex=-1){
+ const grid=$('#photoAssignGrid'),kids=getChildren(selected.id);
+ if(!grid)return;
+ grid.replaceChildren();
+ renderAssignmentFolderBar();
+ // Experimental AI diagnostics are hidden by default, not removed.
+ if($('#faceReferenceAdvanced')?.open&&faceReferenceRenderedClassId!==selected.id){
+  faceReferenceRenderedClassId=selected.id;void renderFaceReferencePanel();
+ }
+ const indexes=folderPhotoIndexes();
+ const current=indexes.slice(0,assignmentVisibleLimit);
+ const fragment=document.createDocumentFragment();
+ for(const index of current){
+  const file=files[index];
+  const card=document.createElement('article');
+  card.className='assignmentSimpleCard';
+  card.dataset.photoIndex=String(index);
+  const imageButton=document.createElement('button');
+  imageButton.type='button';imageButton.className='assignmentSimpleImage';
+  imageButton.setAttribute('aria-label','元写真'+(index+1)+'を拡大');
+  imageButton.addEventListener('click',()=>openAlbumAssignedPhoto(index));
+  const image=document.createElement('img');
+  image.src=fileUrl(file);image.alt='写真'+(index+1);image.loading='lazy';image.decoding='async';
+  imageButton.append(image);
+  const body=document.createElement('div');body.className='assignmentSimpleBody';
+  const title=document.createElement('span');title.className='assignmentSimpleNumber';
+  title.textContent='写真 '+String(index+1).padStart(3,'0');
+  const names=document.createElement('span');names.className='assignmentSimpleNames';
+  const updateNames=()=>{
+   const ids=assignmentPhotoIds(index);
+   names.textContent=ids.length?ids.map(id=>kids.find(k=>String(k.id)===id)?.name||'未登録').join('・')+' さん':'未振り分け';
+  };
+  updateNames();
+  const details=document.createElement('details');details.className='assignmentSimpleEdit';
+  details.open=index===keepOpenIndex;
+  const summary=document.createElement('summary');summary.textContent='振り分けを変更';
+  const choices=document.createElement('div');choices.className='assignmentEditChoices';
+  for(const kid of kids){
+   const id=String(kid.id),label=document.createElement('label');
+   const check=document.createElement('input');
+   check.type='checkbox';check.value=id;check.checked=assignmentPhotoIds(index).includes(id);
+   check.setAttribute('aria-label','写真'+(index+1)+'を'+kid.name+'さんに紐づける');
+   check.addEventListener('change',()=>{
+    const next=new Set(assignmentPhotoIds(index));
+    if(check.checked)next.add(id);else next.delete(id);
+    photoAssignments[index]=[...next];
+    // Reapply the folder filter so a removed photo is no longer shown here.
+    renderPhotoAssignmentPage(index);
+   });
+   label.append(check,document.createTextNode(kid.name+'さん'));
+   choices.append(label);
+  }
+  details.append(summary,choices);
+  body.append(title,names,details);
+  card.append(imageButton,body);
+  fragment.append(card);
+ }
+ grid.append(fragment);
+ if(!indexes.length){
+  const empty=document.createElement('p');empty.className='muted';
+  empty.style.cssText='grid-column:1/-1;text-align:center;background:#f6f8fb;border-radius:12px;padding:26px 10px';
+  empty.textContent='このフォルダの写真はまだありません。上から別の園児を選んでね。';
+  grid.append(empty);
+ }
+ const more=$('#showMoreAssignedPhotos');
+ if(more){
+  more.hidden=indexes.length<=assignmentVisibleLimit;
+  if(!more.hidden)more.textContent='＋ 続きを表示（'+current.length+' / '+indexes.length+'枚）';
+ }
+ updatePhotoAssignmentProgress();
 }
 function updatePhotoAssignmentProgress(){
- const done=files.filter((_,i)=>(photoAssignments[i]||[]).length).length;
- $('#photoAssignProgress').textContent='振り分け済み '+done+' / '+files.length+'枚（未振り分けも後から編集できます）';
+ const done=files.filter((_,i)=>assignmentPhotoIds(i).length).length;
+ const unmatched=files.length-done;
+ $('#photoAssignProgress').textContent='📷 全'+files.length+'枚　✅ 振り分け済み'+done+'枚'+
+  (unmatched?'　🔎 未振り分け'+unmatched+'枚':'');
  renderClassPhotoSummary('assignClassSummary',false);
 }
 function renderClassPhotoSummary(id,used){
@@ -2086,7 +2187,8 @@ approvedImportApply.addEventListener('click',async()=>{
    throw Error('写真準備中に別のアルバムが開かれました。取り込みは行っていません。');
   files=stagedFiles;
   photoAssignments=plan.assignments.map(ids=>[...ids]);
-  activeAssignmentFolder='all';
+  activeAssignmentFolder=String(plan.children.find(c=>c.photoCount>0)?.id||'unassigned');
+  assignmentVisibleLimit=24;faceReferenceRenderedClassId='';
   $('#photoInput').value='';
   clearApprovedPhotoImport();
   renderPhotoAssignmentPage();
@@ -2104,7 +2206,7 @@ approvedImportApply.addEventListener('click',async()=>{
  }finally{approvedImportBusyState(false);}
 });
 
-$('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;photoAssignments=picked.map(()=>[]);renderPhotoAssignmentPage();show('photoAssign');});
+$('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;photoAssignments=picked.map(()=>[]);activeAssignmentFolder='unassigned';assignmentVisibleLimit=24;faceReferenceRenderedClassId='';renderPhotoAssignmentPage();show('photoAssign');});
 $('#continueEdit').addEventListener('click',()=>{if(!files.length)return;renderPhotoAssignmentPage();show('photoAssign');return;editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';$('#editorStatus').textContent='写真を自由に配置できます。タップして選択し、ドラッグして編集してください。';refreshEditor();show('editor');});
 let spreadIndex=0,designElements=[],selectedElementId=null,elementCounter=0;
 const editHistory={states:[],index:-1,restoring:false};
