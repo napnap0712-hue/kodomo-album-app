@@ -49,3 +49,18 @@ test('photo changes never automatically invoke a database write',()=>{
  assert.ok(start>0&&end>start);
  assert.doesNotMatch(body,/saveDraft\(|indexedDB\.|localStorage\.setItem\(/);
 });
+
+test('保存済み振り分けの入口を通常写真追加より先に表示し、誤解を防ぐ',()=>{
+ const confirmed=html.indexOf('id="approvedPhotoImportPanel"');
+ const manual=html.indexOf('id="photoInput"');
+ assert.ok(confirmed>0&&manual>confirmed);
+ assert.match(html,/こちらは手動で写真を選ぶ方法です。園児の振り分けは空から始まります/);
+});
+test('写真ごとの振り分け元を表示し、手動追加にも復元ボタンを用意',()=>{
+ assert.match(html,/id="assignmentTransferStatus"/);
+ assert.match(html,/id="applySavedAssignmentsToLoaded"/);
+ assert.match(html,/assignmentSourceType='approved'/);
+ assert.match(html,/assignmentSourceType='manual'/);
+ assert.match(html,/assignmentSourceType='recovered'/);
+ assert.match(html,/matchSelectedPhotosToSaved\(selectedFiles,draft\.data\.photos/);
+});
