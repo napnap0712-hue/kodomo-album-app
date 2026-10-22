@@ -7,7 +7,7 @@ import {buildNamedFolderPreview,verifiedFolderKey} from './teacher-folder-names.
 import {trimPhotoFolderCorrections,photoFolderCorrectionsAsRows} from './photo-folder-corrections.mjs';
 import {auditPhotoAssignments} from './final-photo-audit.mjs';
 import {checkFinalizationReadiness,createProvisionalFinalization} from './provisional-photo-finalization.mjs';
-import {fingerprintProvisionalReview,matchProvisionalApproval} from './provisional-approval-storage.mjs';
+import {matchSavedProvisionalApproval} from './provisional-approval-storage.mjs';
 import {buildAlbumPhotoHandoff,previewEditorPhotoAssignments} from './album-photo-handoff.mjs';
 
 const sortedRows=rows=>[...rows].sort((a,b)=>a[0].localeCompare(b[0]));
@@ -86,8 +86,7 @@ export async function prepareVerifiedAlbumEditorImport({
   throw Error('選択中のクラスが仮確定したクラスと一致しません。');
  if(!sameRoster(restored.roster,registeredRoster))
   throw Error('園児名簿が保存時と一致しません。登録園児の追加・進級・名前の変更がないか確認してね。');
- const digest=await fingerprintProvisionalReview(restored.signature);
- const match=matchProvisionalApproval(savedApproval,digest,restored.audit);
+ const match=await matchSavedProvisionalApproval(savedApproval,restored.signature,restored.audit);
  if(!match.ok)throw Error('保存した仮確定と現在の振り分けが一致しません：'+match.error);
  const candidate=createProvisionalFinalization(restored.audit,{
   rosterClass:restored.rosterClass,sourceSignature:restored.signature,
@@ -106,6 +105,7 @@ export async function prepareVerifiedAlbumEditorImport({
   sharedPhotoCount:plan.sharedPhotos.length,
   children:plan.children.map(c=>({id:c.id,name:c.name,photoCount:c.photoIndexes.length})),
   assignments,sourceSignature:restored.signature,savedAt:savedDraft.savedAt,
-  rosterClass:restored.rosterClass,verifiedByTeacher:true
+  rosterClass:restored.rosterClass,verifiedByTeacher:true,
+  legacyApprovalVerified:match.legacyFormat===true
  };
 }
