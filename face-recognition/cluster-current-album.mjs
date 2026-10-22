@@ -498,6 +498,7 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
  // group. Requiring *every* cross-pair to be high strands profile/blurred
  // photos even when two clear photographs support the same child.
  // Only the current album's scores are considered; no prior identities.
+ const orphanBefore=sets.filter(group=>group.length===1).length;
  let orphanRescues=0,orphanCandidates=0,orphanAmbiguous=0,orphanSamePhoto=0;
  const orphanThreshold=Math.max(.76,Math.min(.84,calibratedThreshold+.04));
  for(let pass=0;pass<Math.min(70,n)&&countGroups()>targetGroups;pass++){
@@ -592,6 +593,7 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   neighborhoodCandidates,
   neighborhoodAmbiguous,
   neighborhoodThreshold:neighborhoodMean,
+  orphanBefore,
   orphanRescues,
   orphanCandidates,
   orphanAmbiguous,
