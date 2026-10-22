@@ -1,0 +1,51 @@
+// Regression guard: staff must not see face-recognition research tools and a
+// huge flat list of original photos when opening a teacher-approved album.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const inline=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+test('entire album editor inline script still parses',()=>{
+ assert.equal(typeof inline,'string');
+ assert.doesNotThrow(()=>new Function(inline));
+});
+test('research face references are hidden in an accessible advanced disclosure',()=>{
+ assert.match(html,/<details id="faceReferenceAdvanced"[^>]*><summary>[^<]*詳しい設定/);
+ assert.match(html,/id="faceReferencePanel"/);
+ assert.match(html,/id="faceReferenceList"/);
+});
+test('a child-folder selector replaces the full-page grid of all photos',()=>{
+ assert.match(html,/id="assignmentFolderBar"/);
+ assert.match(html,/picker\.id='assignmentFolderPicker'/);
+ assert.match(html,/picker\.addEventListener\('change'/);
+ assert.match(html,/return current==='all'\|\|\(current==='unassigned'/);
+});
+test('only a small window of photos is rendered and more can be shown',()=>{
+ assert.match(html,/assignmentVisibleLimit=24/);
+ assert.match(html,/indexes\.slice\(0,assignmentVisibleLimit\)/);
+ assert.match(html,/id="showMoreAssignedPhotos"/);
+ assert.match(html,/assignmentVisibleLimit\+=24/);
+});
+test('teacher-approved import opens the first named child folder',()=>{
+ assert.match(html,/activeAssignmentFolder=String\(plan\.children\.find\(c=>c\.photoCount>0\)\?\.id\|\|'unassigned'\)/);
+});
+test('manual photos default to the unassigned folder, and all photos remain accessible',()=>{
+ assert.match(html,/photoAssignments=picked\.map\(\(\)=>\[\]\);activeAssignmentFolder='unassigned'/);
+ assert.match(html,/id:'all',name:'📷 全写真/);
+ assert.match(html,/id:'unassigned',name:'🔎 未振り分け/);
+});
+test('staff can see original photos, edit one photo or advance to album editor',()=>{
+ assert.match(html,/object-fit:contain/);
+ assert.match(html,/id="assignmentPhotoDialog"/);
+ assert.match(html,/id="assignmentDialogImage"/);
+ assert.match(html,/className='assignmentSimpleEdit'/);
+ assert.match(html,/photoAssignments\[index\]=\[\.\.\.next\]/);
+ assert.match(html,/id="finishPhotoAssign"/);
+});
+test('photo changes never automatically invoke a database write',()=>{
+ const start=inline.indexOf('function renderPhotoAssignmentPage(');
+ const end=inline.indexOf('function renderClassPhotoSummary(',start);
+ const body=inline.slice(start,end);
+ assert.ok(start>0&&end>start);
+ assert.doesNotMatch(body,/saveDraft\(|indexedDB\.|localStorage\.setItem\(/);
+});
