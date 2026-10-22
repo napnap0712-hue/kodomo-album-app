@@ -493,6 +493,77 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   left.push(...right);sets[chosen.b]=[];
   neighborhoodMerges++;
  }
+
+ // Rescue singleton faces using two independent matches to an established
+ // group. Requiring *every* cross-pair to be high strands profile/blurred
+ // photos even when two clear photographs support the same child.
+ // Only the current album's scores are considered; no prior identities.
+ let orphanRescues=0,orphanCandidates=0,orphanAmbiguous=0,orphanSamePhoto=0;
+ const orphanThreshold=Math.max(.76,Math.min(.84,calibratedThreshold+.04));
+ for(let pass=0;pass<Math.min(70,n)&&countGroups()>targetGroups;pass++){
+  const open=sets.map((faces,key)=>({faces,key})).filter(g=>g.faces.length);
+  const possible=[];
+  for(const {faces:single,key:source} of open){
+   if(single.length!==1)continue;
+   const idx=single[0],options=[];
+   for(const {faces:group,key:target} of open){
+    if(target===source||group.length<2)continue;
+    if(group.some(j=>samples[j].index===samples[idx].index)){
+     orphanSamePhoto++;continue;
+    }
+    const values=group.map(j=>scores[idx][j]).sort((a,b)=>b-a);
+    const high=values[0],second=values[1],low=values[values.length-1];
+    const mean=values.reduce((total,v)=>total+v,0)/values.length;
+    const requiredHigh=Math.max(.81,orphanThreshold+.045);
+    const requiredSecond=Math.max(.73,orphanThreshold-.03);
+    if(high<requiredHigh||second<requiredSecond||
+       mean<Math.max(.60,orphanThreshold-.14)||
+       low<Math.max(.40,orphanThreshold-.34))continue;
+    options.push({source,target,high,second,mean,low,
+     rank:(high+second)/2+.04*mean});
+   }
+   if(!options.length)continue;
+   orphanCandidates+=options.length;
+   options.sort((a,b)=>b.rank-a.rank||a.target-b.target);
+   const top=options[0],next=options[1];
+   // A competing group of comparable strength is an unresolved identity,
+   // not a basis for auto-labeling or forced clustering.
+   if(next&&top.rank-next.rank<.060){orphanAmbiguous++;continue}
+   // Measure distinctiveness against *other* people, rather than accepting
+   // broadly high lookalike similarities. A co-occurring face is a negative.
+   const otherGroups=open.filter(g=>g.key!==source&&g.key!==top.target);
+   const alternatives=[];
+   for(const item of otherGroups){
+    if(item.faces.some(j=>samples[j].index===samples[idx].index))continue;
+    const values=item.faces.map(j=>scores[idx][j]).sort((a,b)=>b-a);
+    alternatives.push(values.length>1?(values[0]+values[1])/2:values[0]);
+   }
+   alternatives.sort((a,b)=>a-b);
+   const background=alternatives.length?alternatives[Math.floor(alternatives.length*.6)]:0;
+   if(top.rank-background<.09){orphanAmbiguous++;continue}
+   possible.push({...top,contrast:top.rank-background});
+  }
+  if(!possible.length)break;
+  possible.sort((a,b)=>b.rank-a.rank||b.contrast-a.contrast||a.source-b.source);
+  let changed=false;
+  const touchedTargets=new Set();
+  for(const choice of possible){
+   if(countGroups()<=targetGroups)break;
+   const source=sets[choice.source],group=sets[choice.target];
+   if(source.length!==1||group.length<2||touchedTargets.has(choice.target))continue;
+   const idx=source[0];
+   if(group.some(j=>samples[j].index===samples[idx].index))continue;
+   const values=group.map(j=>scores[idx][j]).sort((a,b)=>b-a);
+   // Validate on current, possibly changed groups. We only merge one
+   // singleton into each group per round to avoid unverified chaining.
+   if(values[0]<Math.max(.81,orphanThreshold+.045)||
+      values[1]<Math.max(.73,orphanThreshold-.03)||
+      values[values.length-1]<Math.max(.40,orphanThreshold-.34))continue;
+   group.push(idx);sets[choice.source]=[];
+   touchedTargets.add(choice.target);orphanRescues++;changed=true;
+  }
+  if(!changed)break;
+ }
  const unmergedGroups=countGroups();
  const nearestScoreRanges={high:0,moderate:0,weak:0,low:0,missing:0};
  for(let i=0;i<n;i++){
@@ -521,6 +592,11 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   neighborhoodCandidates,
   neighborhoodAmbiguous,
   neighborhoodThreshold:neighborhoodMean,
+  orphanRescues,
+  orphanCandidates,
+  orphanAmbiguous,
+  orphanSamePhoto,
+  orphanThreshold,
   unmergedGroups
  };
  const groups=sets.filter(g=>g.length).map((faceIndexes,i)=>({
