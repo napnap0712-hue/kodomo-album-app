@@ -294,3 +294,37 @@ test('背景との差がない類似候補を人為的な目標数に合わせ�
  assert.equal(result.clusteringDiagnostics.neighborhoodMerges,0);
  assert.equal(result.targetGroups,74);
 });
+
+test('横顔の影響で平均値が低くても、同じ園児の2顔と強く一致した単独候補を救済',()=>{
+ const faces=Array.from({length:7},(_,i)=>({index:i,embedding:[i]}));
+ const pairs={'0-1':.98,'0-2':.91,'1-2':.92,'0-3':.90,'1-3':.78,'2-3':.43};
+ const compare=(a,b)=>pairs[[a[0],b[0]].sort((x,y)=>x-y).join('-')]??.27;
+ const out=clusterCurrentAlbumFaces(faces,{similarity:compare,photoCount:7});
+ assert.equal(out.targetGroups,4);
+ assert.equal(out.clusteringDiagnostics.orphanRescues,1);
+ assert.equal(out.groups.length,4);
+ assert.ok(out.groups.some(g=>g.faceIndexes.join(',')==='0,1,2,3'));
+});
+test('単独候補が集合写真の別の顔なら、似ていても既存グループへ追加しない',()=>{
+ const faces=Array.from({length:7},(_,i)=>({index:i===3?0:i,embedding:[i]}));
+ const pairs={'0-1':.98,'0-2':.91,'1-2':.92,'0-3':.90,'1-3':.78,'2-3':.43};
+ const compare=(a,b)=>pairs[[a[0],b[0]].sort((x,y)=>x-y).join('-')]??.27;
+ const out=clusterCurrentAlbumFaces(faces,{similarity:compare,photoCount:6});
+ assert.equal(out.clusteringDiagnostics.orphanRescues,0);
+ assert.ok(out.groups.every(g=>g.faceIndexes.length===new Set(g.faceIndexes.map(i=>faces[i].index)).size));
+});
+test('単独候補が2つの園児グループにほぼ同じ程度に似る場合は統合を見送る',()=>{
+ const faces=Array.from({length:9},(_,i)=>({index:i,embedding:[i]}));
+ const pairs={'0-1':.97,'2-4':.98,'0-3':.90,'1-3':.80,'2-3':.895,'3-4':.81};
+ const compare=(a,b)=>pairs[[a[0],b[0]].sort((x,y)=>x-y).join('-')]??.26;
+ const out=clusterCurrentAlbumFaces(faces,{similarity:compare,photoCount:9});
+ assert.equal(out.clusteringDiagnostics.orphanRescues,0);
+ assert.ok(out.clusteringDiagnostics.orphanAmbiguous>0);
+ assert.ok(out.groups.some(g=>g.faceIndexes.join(',')==='3'));
+});
+test('単独候補を人数目標のために無理やり統合しない',()=>{
+ const faces=Array.from({length:24},(_,i)=>({index:i,embedding:[i]}));
+ const out=clusterCurrentAlbumFaces(faces,{similarity:()=>.35,photoCount:24});
+ assert.equal(out.groups.length,24);
+ assert.equal(out.clusteringDiagnostics.orphanRescues,0);
+});
