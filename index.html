@@ -873,7 +873,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 BA</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-22 BB</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
  <strong>🌷 園児別フォルダ</strong>
  <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
@@ -2515,12 +2515,12 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   if(!samples.length){
    status.textContent='⚠️ 今回の写真から顔の特徴を読み取れませんでした。下の写真一覧から手動で園児を選べます。';return;
   }
-  const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch}=await import('./face-recognition/cluster-current-album.mjs?v=20261022-ba');
+  const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch}=await import('./face-recognition/cluster-current-album.mjs?v=20261022-bb');
   check();
   const result=clusterCurrentAlbumFaces(samples,{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles.length});
   albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,mergeUndo:[],mergeSuggestions:null,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
   status.textContent='✅ 今回の写真'+sourceFiles.length+'枚から'+result.faceCount+'顔・'+result.groups.length+
-   'グループを作りました（目標 約'+result.targetGroups+'組、単独・要確認'+result.uncertainGroups+'組）。安全にまとめられない候補は残しています。園児に紐づけた候補は消えていきます。';
+   'グループを作りました（従来の判定 '+result.beforeCommunityGroups+'組 → 改善後 '+result.groups.length+'組／追加で'+result.communityMerges+'組を統合）。参考目標 約'+result.targetGroups+'組・単独要確認'+result.uncertainGroups+'組。安全に結合できない顔は残します。園児名を付けた候補は消えていきます。';
   renderCurrentAlbumAiGroups();
   check();
  }catch(error){
