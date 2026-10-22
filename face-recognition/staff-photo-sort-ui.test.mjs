@@ -215,12 +215,22 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
  assert.doesNotMatch(body,/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\./);
 });
 
-test('BBは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-22 BB/);
+test('BCは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
+ assert.match(html,/PHOTO SORT · 2026-10-22 BC/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
  assert.match(html,/従来の判定 /);
  assert.match(html,/改善後 /);
- assert.match(html,/v=20261022-bb/);
+ assert.match(html,/v=20261022-bc/);
+});
+
+test('BCは匿名の類似度分布と基準値を表示、アルバムを替えると閉じる',()=>{
+ assert.match(html,/id="currentAlbumAiDiagnosticPanel"/);
+ assert.match(html,/id="currentAlbumAiDiagnostics"/);
+ assert.match(html,/result\.clusteringDiagnostics/);
+ assert.match(html,/stats\.nearestScoreRanges/);
+ assert.match(html,/stats\.calibratedThreshold\.toFixed\(3\)/);
+ assert.match(html,/顔の特徴データを送信・保存せず/);
+ assert.match(html,/\$\('#currentAlbumAiDiagnosticPanel'\)\.hidden=true/);
 });
