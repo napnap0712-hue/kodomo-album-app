@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups} from './cluster-current-album.mjs';
+import {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch} from './cluster-current-album.mjs';
 
 const sample=(index,id)=>({index,embedding:[id]});
 const similarity=(a,b)=>a[0]===b[0]?.91:.21;
@@ -126,4 +126,31 @@ test('先生のグループ統合は元の仮グループを変更せず元に�
  assert.equal(joined.length,1);
  assert.deepEqual(joined[0].faceIndexes,[0,1]);
  assert.deepEqual(groups.map(g=>g.faceIndexes),[[0],[1]]);
+});
+
+test('3つの候補にチェックして1回でまとめても元データは不変',()=>{
+ const faces=[sample(0,1),sample(1,1),sample(2,1),sample(3,1)];
+ const groups=[{key:'target',faceIndexes:[0]},{key:'a',faceIndexes:[1]},
+   {key:'b',faceIndexes:[2]},{key:'c',faceIndexes:[3]}];
+ const combined=mergeTeacherAlbumGroupsBatch(groups,faces,'target',['a','b','c']);
+ assert.equal(combined.length,1);
+ assert.deepEqual(combined[0].faceIndexes,[0,1,2,3]);
+ assert.deepEqual(groups.map(g=>g.faceIndexes),[[0],[1],[2],[3]]);
+});
+test('複数統合の途中で同じ写真の顔が重なれば全部取り消す',()=>{
+ const faces=[sample(0,1),sample(1,1),sample(1,2),sample(2,1)];
+ const groups=[{key:'target',faceIndexes:[0]},{key:'a',faceIndexes:[1]},
+   {key:'b',faceIndexes:[2]},{key:'c',faceIndexes:[3]}];
+ const original=JSON.stringify(groups);
+ assert.throws(()=>mergeTeacherAlbumGroupsBatch(groups,faces,'target',['a','b','c']),/同じ写真/);
+ assert.equal(JSON.stringify(groups),original);
+});
+test('一括統合は空選択、同グループ重複、存在しない候補を拒否',()=>{
+ const faces=[sample(0,1),sample(1,1)];
+ const groups=[{key:'target',faceIndexes:[0]},{key:'a',faceIndexes:[1]}];
+ assert.throws(()=>mergeTeacherAlbumGroupsBatch(groups,faces,'target',[]),/チェック/);
+ assert.throws(()=>mergeTeacherAlbumGroupsBatch(groups,faces,'target',['target']),/重複/);
+ assert.throws(()=>mergeTeacherAlbumGroupsBatch(groups,faces,'target',['a','a']),/重複/);
+ assert.throws(()=>mergeTeacherAlbumGroupsBatch(groups,faces,'target',['missing']),/確認/);
+ assert.deepEqual(groups[0].faceIndexes,[0]);
 });
