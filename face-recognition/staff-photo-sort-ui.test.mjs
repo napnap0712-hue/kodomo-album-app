@@ -152,3 +152,20 @@ test('確定後の候補は初期状態では表示されない',()=>{
  assert.match(html,/data\.confirmed\.add\(group\.key\)/);
  assert.match(html,/data\.groups\.filter\(group=>!data\.confirmed\.has\(group\.key\)\)/);
 });
+
+test('Safariで画像タップ・チェック操作後、移動ボタンが反応する',()=>{
+ assert.match(html,/const label=document\.createElement\('div'\);label\.className='groupPhotoPick'/);
+ assert.match(html,/image\.addEventListener\('click',togglePick\)/);
+ assert.match(html,/checkbox\.addEventListener\('change'/);
+ assert.match(html,/move\.disabled=false/);
+ assert.match(html,/move\.textContent=selected\.size/);
+ assert.match(html,/先に写真をチェック/);
+});
+test('園児名の選択と写真移動先の選択を連動させる',()=>{
+ assert.match(html,/choice\.addEventListener\('change',\(\)=>\{/);
+ assert.match(html,/target\.value='child:'\+choice\.value/);
+ assert.match(html,/target\.addEventListener\('change',\(\)=>\{/);
+ assert.match(html,/const chooser=content\.querySelector\('\.namePick'\)/);
+ assert.match(html,/chooser\.value=sameChild/);
+ assert.match(html,/nextAssignments=data\.assignConfirmedAlbumCluster/);
+});
