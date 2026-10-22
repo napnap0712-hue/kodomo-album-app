@@ -1949,6 +1949,9 @@ function updateAssignmentSourceUi(){
  }else if(assignmentSourceType==='recovered'){
   status.textContent='✅ 今ある写真と保存済みの元写真を照合し、園児への振り分けを反映済み：'+assigned+' / '+files.length+'枚。';
   button.hidden=true;
+ }else if(assignmentSourceType==='extended'){
+  status.textContent='🌷 これまでの園児別振り分けを保持しています。新しく追加した写真は未振り分けなので、園児を選んで振り分けてね（'+assigned+' / '+files.length+'枚）。';
+  button.hidden=true;
  }else{
   status.textContent=assigned?
    '📷 この画面で振り分け中：'+assigned+' / '+files.length+'枚。以前に保存した顔認識結果はまだ引き継いでいません。':
@@ -2309,6 +2312,47 @@ $('#applySavedAssignmentsToLoaded')?.addEventListener('click',async()=>{
   button.disabled=false;
   if(normalPreview)normalPreview.disabled=false;
  }
+});
+
+
+// Each new album can bring new photos without re-importing last album's originals.
+// Stage + duplicate-check first; do not rewrite existing assignments or saved albums.
+$('#albumAddMorePhotos')?.addEventListener('change',async event=>{
+ const input=event.target,picked=[...(input.files||[])];
+ if(!picked.length)return;
+ const message=$('#albumAddMoreStatus');
+ if(approvedPhotoImportBusy){message.textContent='ほかの写真処理中です。終了後にもう一度追加してね。';input.value='';return;}
+ const scopeClass=selected.id,scopeYear=activeYear();
+ const beforeFiles=[...files],beforeAssignments=photoAssignments.map(ids=>[...ids]);
+ if(!beforeFiles.length){
+  message.textContent='最初の写真は「写真を選ぶ」画面から登録してね。';input.value='';return;
+ }
+ approvedPhotoImportBusy=true;input.disabled=true;
+ message.textContent='📷 新しい写真を確認中… 今までの振り分けは変更しません。';
+ try{
+  const {stageAlbumPhotoAppend}=await import('./face-recognition/album-photo-append.mjs?v=20261022-au');
+  const added=await stageAlbumPhotoAppend({
+   existingFiles:beforeFiles,existingAssignments:beforeAssignments,incomingFiles:picked
+  });
+  // Another screen, project or classification may have changed while hashing large images.
+  if(scopeClass!==selected.id||scopeYear!==activeYear()||
+    files.length!==beforeFiles.length||files.some((file,index)=>file!==beforeFiles[index])||
+    JSON.stringify(photoAssignments)!==JSON.stringify(beforeAssignments))
+   throw Error('確認中に写真や園児の振り分けが変更されました。追加を中止したので、もう一度試してね。');
+  if(added.added){
+   files=added.files;photoAssignments=added.assignments;
+   assignmentSourceType='extended';
+   activeAssignmentFolder='unassigned';assignmentVisibleLimit=24;
+   renderPhotoAssignmentPage();
+  }
+  message.textContent=added.added?
+   '✅ 新しい写真'+added.added+'枚を追加。今までの振り分けは保持し、追加分だけ未振り分けにしました。'+
+    (added.skipped?' 重複'+added.skipped+'枚は追加しませんでした。':''):
+   '✅ 同じ写真がすでに追加されています。重複'+added.skipped+'枚を追加せず、振り分けはそのままです。';
+ }catch(error){
+  message.textContent='⚠️ 写真は追加されませんでした：'+String(error?.message||error).slice(0,240)+
+   '。写真・振り分け・保存済みアルバムは変更していません。';
+ }finally{approvedPhotoImportBusy=false;input.disabled=false;input.value='';}
 });
 
 $('#photoInput').addEventListener('change',event=>{const picked=[...event.target.files||[]];if(!picked.length)return;files=picked;photoAssignments=picked.map(()=>[]);assignmentSourceType='manual';activeAssignmentFolder='unassigned';assignmentVisibleLimit=24;faceReferenceRenderedClassId='';const notice=$('#approvedImportPhotoAssignNotice');if(notice)notice.hidden=true;renderPhotoAssignmentPage();show('photoAssign');});
