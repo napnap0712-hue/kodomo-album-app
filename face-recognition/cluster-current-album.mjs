@@ -500,6 +500,7 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
  // Only the current album's scores are considered; no prior identities.
  const orphanBefore=sets.filter(group=>group.length===1).length;
  let orphanRescues=0,orphanCandidates=0,orphanAmbiguous=0,orphanSamePhoto=0;
+ const orphanReviewReasons={checked:0,samePhoto:0,firstTooLow:0,secondTooLow:0,meanTooLow:0,weakestTooLow:0,eligible:0};
  const orphanThreshold=Math.max(.76,Math.min(.84,calibratedThreshold+.04));
  for(let pass=0;pass<Math.min(70,n)&&countGroups()>targetGroups;pass++){
   const open=sets.map((faces,key)=>({faces,key})).filter(g=>g.faces.length);
@@ -510,13 +511,23 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
    for(const {faces:group,key:target} of open){
     if(target===source||group.length<2)continue;
     if(group.some(j=>samples[j].index===samples[idx].index)){
-     orphanSamePhoto++;continue;
+     orphanSamePhoto++;if(pass===0)orphanReviewReasons.samePhoto++;continue;
     }
     const values=group.map(j=>scores[idx][j]).sort((a,b)=>b-a);
     const high=values[0],second=values[1],low=values[values.length-1];
     const mean=values.reduce((total,v)=>total+v,0)/values.length;
     const requiredHigh=Math.max(.81,orphanThreshold+.045);
     const requiredSecond=Math.max(.73,orphanThreshold-.03);
+    // Reasons are counted during the FIRST attempt only (face-group pairs,
+    // not children), so repeated rescue rounds do not inflate the report.
+    if(pass===0){
+     orphanReviewReasons.checked++;
+     if(high<requiredHigh)orphanReviewReasons.firstTooLow++;
+     else if(second<requiredSecond)orphanReviewReasons.secondTooLow++;
+     else if(mean<Math.max(.60,orphanThreshold-.14))orphanReviewReasons.meanTooLow++;
+     else if(low<Math.max(.40,orphanThreshold-.34))orphanReviewReasons.weakestTooLow++;
+     else orphanReviewReasons.eligible++;
+    }
     if(high<requiredHigh||second<requiredSecond||
        mean<Math.max(.60,orphanThreshold-.14)||
        low<Math.max(.40,orphanThreshold-.34))continue;
@@ -598,6 +609,7 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   orphanCandidates,
   orphanAmbiguous,
   orphanSamePhoto,
+  orphanReviewReasons,
   orphanThreshold,
   unmergedGroups
  };
