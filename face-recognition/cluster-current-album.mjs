@@ -149,6 +149,75 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   }
   if(!changed)break;
  }
+ // Community bridge: the old reciprocal-nearest-gap rule discards many
+ // true matches when several photos of the SAME child are similarly close.
+ // Match communities, not just one best face. This remains a soft heuristic,
+ // and never overrides faces co-occurring in one original photograph.
+ const beforeCommunityGroups=countGroups();
+ let communityMerges=0;
+ while(countGroups()>targetGroups){
+  const live=sets.map((g,k)=>({g,k})).filter(entry=>entry.g.length);
+  const candidates=[];
+  for(let a=0;a<live.length;a++)for(let b=a+1;b<live.length;b++){
+   const left=live[a],right=live[b];
+   if(left.g.some(i=>right.g.some(j=>samples[i].index===samples[j].index)))continue;
+   let min=1,max=-1,sum=0,count=0,strong=0;
+   for(const i of left.g)for(const j of right.g){
+    const score=scores[i][j];
+    if(score<min)min=score;
+    if(score>max)max=score;
+    sum+=score;count++;
+    if(score>=.72)strong++;
+   }
+   const mean=sum/count;
+   if(max<.715||min<.55||mean<.675)continue;
+   // Prefer several mutually supporting faces; a single lucky match
+   // cannot pull an otherwise contradictory group into this community.
+   if(count>=3&&strong===1&&mean<.73)continue;
+   const quality=mean+.11*max+.012*Math.min(3,strong);
+   candidates.push({a:left.k,b:right.k,quality,mean});
+  }
+  if(!candidates.length)break;
+  const ranked=new Map();
+  for(const pair of candidates){
+   for(const [key,other] of [[pair.a,pair.b],[pair.b,pair.a]]){
+    const row=ranked.get(key)||[];
+    row.push({other,quality:pair.quality});
+    ranked.set(key,row);
+   }
+  }
+  for(const row of ranked.values())row.sort((a,b)=>b.quality-a.quality);
+  const compatible=(a,b)=>{
+   const left=sets[a],right=sets[b];
+   if(left.some(i=>right.some(j=>samples[i].index===samples[j].index)))return false;
+   let total=0,num=0,low=1;
+   for(const i of left)for(const j of right){
+    const score=scores[i][j];total+=score;num++;if(score<low)low=score;
+   }
+   return low>=.60&&total/num>=.69;
+  };
+  const safe=candidates.filter(pair=>{
+   const a=ranked.get(pair.a),b=ranked.get(pair.b);
+   if(a[0].other!==pair.b||b[0].other!==pair.a)return false;
+   if(a[1]&&a[0].quality-a[1].quality<.045&&!compatible(pair.b,a[1].other))return false;
+   if(b[1]&&b[0].quality-b[1].quality<.045&&!compatible(pair.a,b[1].other))return false;
+   return true;
+  }).sort((a,b)=>b.quality-a.quality);
+  if(!safe.length)break;
+  let changed=false;
+  for(const edge of safe){
+   if(countGroups()<=targetGroups)break;
+   const left=sets[edge.a],right=sets[edge.b];
+   if(!left.length||!right.length)continue;
+   // Previously selected pairs could have altered a group earlier this round.
+   if(left.some(i=>right.some(j=>samples[i].index===samples[j].index)))continue;
+   left.push(...right);
+   sets[edge.b]=[];
+   communityMerges++;
+   changed=true;
+  }
+  if(!changed)break;
+ }
  const groups=sets.filter(g=>g.length).map((faceIndexes,i)=>({
   key:'current-'+i,
   faceIndexes:[...faceIndexes],
@@ -157,7 +226,7 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
  groups.sort((a,b)=>b.faceIndexes.length-a.faceIndexes.length||
     a.photoIndexes[0]-b.photoIndexes[0]);
  return {groups,faceCount:n,uncertainGroups:groups.filter(g=>g.faceIndexes.length===1).length,
-  preventedMerges,adaptiveMerges,targetGroups};
+  preventedMerges,adaptiveMerges,communityMerges,beforeCommunityGroups,targetGroups};
 }
 // The teacher's confirmation belongs only to the current selected album. A
 // cluster's identity is NEVER inferred from a previous album or roster photo.
