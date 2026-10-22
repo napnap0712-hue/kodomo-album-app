@@ -268,3 +268,29 @@ test('顔特徴や写真そのものを診断結果に含めない',()=>{
  assert.ok(Number.isInteger(diag.consensusConflict));
  assert.ok(!('embedding' in diag)&&!('photos' in diag)&&!('samples' in diag));
 });
+
+
+test('147枚の繰り返し撮影で類似度に多数の同点があっても人物ごとにまとまる',()=>{
+ const faces=Array.from({length:147},(_,i)=>({index:i,embedding:[i%12,i]}));
+ const sim=(a,b)=>a[0]===b[0]?.68+.09*(((a[1]*67+b[1]*97)%19)/18):.32;
+ const output=clusterCurrentAlbumFaces(faces,{similarity:sim,photoCount:147});
+ assert.equal(output.targetGroups,74);
+ assert.equal(output.groups.length,74);
+ assert.ok(output.clusteringDiagnostics.neighborhoodMerges>0);
+ assert.ok(output.groups.every(g=>new Set(g.faceIndexes.map(i=>faces[i].embedding[0])).size===1));
+});
+test('全員の類似度が一律に高くても背景との差がなければ勝手にまとめない',()=>{
+ const faces=Array.from({length:30},(_,i)=>({index:i,embedding:[i]}));
+ for(const score of [.74,.79,.82,.85]){
+  const output=clusterCurrentAlbumFaces(faces,{similarity:()=>score,photoCount:30});
+  assert.equal(output.groups.length,30);
+  assert.equal(output.clusteringDiagnostics.neighborhoodMerges,0);
+ }
+});
+test('背景との差がない類似候補を人為的な目標数に合わせて統合しない',()=>{
+ const faces=Array.from({length:147},(_,i)=>({index:i,embedding:[i]}));
+ const result=clusterCurrentAlbumFaces(faces,{similarity:()=>.72,photoCount:147});
+ assert.equal(result.groups.length,147);
+ assert.equal(result.clusteringDiagnostics.neighborhoodMerges,0);
+ assert.equal(result.targetGroups,74);
+});
