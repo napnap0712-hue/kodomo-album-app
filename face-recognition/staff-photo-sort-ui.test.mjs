@@ -100,3 +100,31 @@ test('旧14枚の仮確定を標準の振り分けに使わない',()=>{
  const aiStart=html.indexOf("\$\u0028'#analyzeCurrentAlbum'\u0029?.addEventListener"); // Find actual code separately.
  assert.ok(html.includes("$('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{"));
 });
+
+test('150枚規模でもAIグループをコンパクト表示・分割表示',()=>{
+ assert.match(html,/id="albumAiPendingOnly" checked/);
+ assert.match(html,/id="albumAiMoreGroups"/);
+ assert.match(html,/visibleLimit:18/);
+ assert.match(html,/albumAiGroupsData\.visibleLimit\+=18/);
+ assert.match(html,/card\.className='currentAlbumAiGroup'/);
+ assert.match(html,/const card=document\.createElement\('details'\)/);
+});
+test('顔グループ内で写真をチェックし、一括移動・新規・候補除外が可能',()=>{
+ assert.match(html,/className='groupPhotoPick'/);
+ assert.match(html,/selectAll\.textContent='☑ このグループの写真を全選択'/);
+ assert.match(html,/target\.value==='exclude'/);
+ assert.match(html,/target\.value==='new'/);
+ assert.match(html,/moving=group\.faceIndexes\.filter/);
+ assert.match(html,/group\.faceIndexes=group\.faceIndexes\.filter/);
+ assert.match(html,/data\.groups\.push\(\{key:'teacher-'/);
+});
+test('元写真を削除せず異なる顔の同一写真を誤統合しない',()=>{
+ const start=html.indexOf('function renderCurrentAlbumAiGroups()');
+ const end=html.indexOf("$('#albumAiPendingOnly')?.addEventListener",start);
+ const body=html.slice(start,end);
+ assert.ok(start>0&&end>start);
+ assert.match(body,/移動先に同じ写真の別の顔があります/);
+ assert.match(body,/元写真は消えません/);
+ assert.doesNotMatch(body,/files\.splice\(|releasePhotoUrl\(|indexedDB\.|localStorage\.setItem\(/);
+ assert.match(body,/if\(!data\.valid\(\)\)/);
+});
