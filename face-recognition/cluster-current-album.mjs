@@ -135,6 +135,10 @@ export function clusterCurrentAlbumFaces(samples,{similarity,threshold=.72,gap=.
   const mutual=options.filter(option=>{
    const left=preferences.get(option.a),right=preferences.get(option.b);
    if(left[0]?.other!==option.b||right[0]?.other!==option.a)return false;
+   // A huge tie among unrelated people cannot be treated as a coherent
+   // classmate cluster solely because all facial scores are uniformly high.
+   const close=items=>items.filter(item=>items[0].quality-item.quality<.035).length;
+   if(close(left)>3||close(right)>3)return false;
    if(left[1]&&left[0].quality-left[1].quality<.035&&!agree(option.b,left[1].other))return false;
    if(right[1]&&right[0].quality-right[1].quality<.035&&!agree(option.a,right[1].other))return false;
    return true;
