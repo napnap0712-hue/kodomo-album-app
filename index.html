@@ -797,16 +797,17 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </div></section>
 <section class="screen" data-screen="photoPick">
 <div class="top"><button class="back" data-back="classProjects">‹</button><div class="topText"><p class="brand">NEW ALBUM</p><h1>写真を選ぶ</h1><p class="lead">写真を選んでから、アルバムの設定や編集に進めます。</p></div></div>
-<label class="drop" for="photoInput"><strong>＋ 写真を追加</strong><p>端末から写真を選択できます。選んだ写真はこの画面でプレビューします。</p><input id="photoInput" type="file" accept="image/*" multiple></label>
 <section id="approvedPhotoImportPanel" style="border:1px solid #cddff2;background:#f7fbff;border-radius:16px;padding:15px;margin:16px 0">
  <strong style="display:block;margin-bottom:7px">🌷 確認済みの園児別写真を取り込む</strong>
- <span style="display:block;font-size:11px;color:#65758a;margin-bottom:8px">新規アルバム写真連携 2026-10-22 AQ</span>
+ <span style="display:block;font-size:11px;color:#65758a;margin-bottom:8px">新規アルバム写真連携 2026-10-22 AS</span>
  <p class="muted" style="margin:5px 0 10px">AI顔グループ検証で<strong>先生が確認・保存した写真の振り分け</strong>を、新しいアルバムに引き継ぎます。園児名とクラスが一致するときだけ取り込めます。写真や既存アルバムを勝手に変更しません。</p>
  <button type="button" class="secondary" id="previewApprovedPhotoImport">📂 保存した振り分けを確認</button>
  <p id="approvedPhotoImportStatus" role="status" aria-live="polite" class="muted" style="overflow-wrap:anywhere;margin:8px 0"></p>
  <div id="approvedPhotoImportSummary" hidden style="border-top:1px solid #dce7f5;margin-top:12px;padding-top:10px"></div>
  <button type="button" id="applyApprovedPhotoImport" class="primary wide" hidden disabled style="margin-top:10px">✅ 確認した写真を新しいアルバムに取り込む</button>
 </section>
+<label class="drop" for="photoInput"><strong>＋ 新しく写真を追加する</strong><p>こちらは手動で写真を選ぶ方法です。園児の振り分けは空から始まります。保存済みの顔振り分けを使う場合は、上の「保存した振り分けを確認」を選んでね。</p><input id="photoInput" type="file" accept="image/*" multiple></label>
+
 <div id="photoPreviews" class="previewGrid"></div><p id="photoCount" class="muted">写真はまだ選択されていません。</p>
 <button id="continueEdit" class="primary wide" disabled>写真を振り分ける ›</button>
 <p class="muted">選んだ写真を見開きに配置し、タイトルや背景を調整できます。</p>
