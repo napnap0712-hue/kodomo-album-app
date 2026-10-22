@@ -2002,6 +2002,9 @@ function clearCurrentAlbumAi(){
  $('#currentAlbumAiGroups')?.replaceChildren();
  if(albumAiPreviewObserver){albumAiPreviewObserver.disconnect();albumAiPreviewObserver=null}
  $('#albumAiMoreGroups')?.setAttribute('hidden','');
+ if($('#albumAiWorkSummary'))$('#albumAiWorkSummary').textContent='';
+ if($('#currentAlbumAiFeedback'))$('#currentAlbumAiFeedback').textContent='';
+ if($('#albumAiPendingOnly'))$('#albumAiPendingOnly').checked=true;
  const status=$('#currentAlbumAiStatus');
  if(status)status.textContent='今回のアルバムの写真だけを解析します。前のアルバムの結果は使いません。';
  const run=$('#analyzeCurrentAlbum'),cancel=$('#cancelCurrentAlbumAi');
@@ -2014,6 +2017,8 @@ $('#cancelCurrentAlbumAi')?.addEventListener('click',()=>{
  $('#currentAlbumAiGroups')?.replaceChildren();
  if(albumAiPreviewObserver){albumAiPreviewObserver.disconnect();albumAiPreviewObserver=null}
  $('#albumAiMoreGroups')?.setAttribute('hidden','');
+ if($('#albumAiWorkSummary'))$('#albumAiWorkSummary').textContent='';
+ if($('#currentAlbumAiFeedback'))$('#currentAlbumAiFeedback').textContent='';
  $('#currentAlbumAiStatus').textContent='⏹ 中断しました。振り分け・写真は変更していません。';
  $('#analyzeCurrentAlbum').disabled=false;
  $('#cancelCurrentAlbumAi').hidden=true;
@@ -2223,6 +2228,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   $('#currentAlbumAiStatus').textContent='⚠️ 一度にAI解析できるのは150枚までです。写真を分けて取り込んでね。';return;
  }
  const token=++albumAiGeneration;albumAiRunning=true;albumAiGroupsData=null;
+ if($('#currentAlbumAiFeedback'))$('#currentAlbumAiFeedback').textContent='';
  const status=$('#currentAlbumAiStatus'),host=$('#currentAlbumAiGroups');
  const button=$('#analyzeCurrentAlbum'),cancel=$('#cancelCurrentAlbumAi');
  button.disabled=true;cancel.hidden=false;host.replaceChildren();
