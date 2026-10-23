@@ -668,7 +668,7 @@ test('BRのPC版は大きな見開きと5種類の編集ツールを2カラム�
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(html,/ALBUM EDITOR · 2026-10-23 CA/);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 CB/);
  assert.match(css,/@media\(min-width:980px\)/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
  assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
@@ -947,6 +947,74 @@ test('BZは画像出力だけ元写真へ戻し、300dpi相当を目標に書き
  assert.match(inline,/const targetWidth=\(desktop\?2480:1600\)\*\(split\?2:1\)/);
  assert.match(inline,/const full=await captureEditorWithOriginalPhotos\(node,lib/);
  assert.match(html,/\.exportRendering \.photoLoadState\{display:none!important\}/);
+});
+
+test('CBの正確な図形フレームは正円・対称の花を維持し枠外に花びらが出ない',()=>{
+ const start=inline.indexOf('/* CB: Exact Canva-style frame geometry.');
+ const end=inline.indexOf('function fontStackFor(',start);
+ const code=inline.slice(start,end);
+ assert.ok(start>0&&end>start);
+ assert.match(code,/const SQUARE_PHOTO_FRAMES=new Set/);
+ assert.match(code,/applyPhotoFrameShape\(node,img,shape\)/);
+ assert.match(code,/frame\.style\.maskImage=svg/);
+ assert.match(code,/frame\.style\.webkitMaskImage=svg/);
+ const helpers=new Function(code+'return {isSquarePhotoFrame,squarePhotoFrameGeometry,framePhotoMetrics,flowerFrameMarkup,photoFrameMask};')();
+ for(const shape of ['circle','star','heart','flower','scallop','burst']){
+  assert.equal(helpers.isSquarePhotoFrame(shape),true);
+  const el={frameShape:shape,w:25,h:25,x:5,y:5};
+  helpers.squarePhotoFrameGeometry(el,{clientWidth:1414,clientHeight:1000});
+  assert.ok(Math.abs(el.w*1414-el.h*1000)<0.001);
+ }
+ const circles=[...helpers.flowerFrameMarkup().matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="(\d+)"/g)];
+ assert.equal(circles.length,9);
+ for(const match of circles){
+  const x=Number(match[1]),y=Number(match[2]),r=Number(match[3]);
+  assert.ok(x-r>=0&&x+r<=100&&y-r>=0&&y+r<=100);
+ }
+ const fit=helpers.framePhotoMetrics(250,250,4000,3000,100);
+ assert.ok(fit.drawWidth>=250&&fit.drawHeight>=250);
+ const smallZoom=helpers.framePhotoMetrics(250,250,4000,3000,50);
+ assert.ok(smallZoom.drawWidth>=250&&smallZoom.drawHeight>=250);
+ const zoomed=helpers.framePhotoMetrics(250,250,4000,3000,200);
+ assert.ok(zoomed.maxPanX>=fit.maxPanX&&zoomed.maxPanY>=fit.maxPanY);
+});
+test('CBはMac・Windows・iPhone共通の切り抜き調整と非破壊保存を行う',()=>{
+ const node=inline.slice(inline.indexOf('function renderElementNode('),inline.indexOf("$('#designCanvas').addEventListener('pointerdown'"));
+ assert.match(node,/const viewport=document\.createElement\('div'\);viewport\.className='photoCropViewport'/);
+ assert.match(node,/positionPhotoInFrame\(viewport,img,el\)/);
+ assert.match(node,/if\(el\.type==='photo'&&isSquarePhotoFrame\(el\.frameShape\)\)/);
+ const crop=inline.slice(inline.indexOf('/* Isolated photo crop range dialog.'),inline.indexOf('/* Local, nondestructive alpha brush editor.'));
+ assert.match(crop,/cropDialogOriginalAspect/);
+ assert.match(crop,/cropPreview\.style\.aspectRatio=isSquarePhotoFrame/);
+ assert.match(crop,/positionPhotoInFrame\(cropPreview,cropImage,d\)/);
+ const handlers=inline.slice(inline.indexOf("$('#openCropEditor').addEventListener"),inline.indexOf("$('#photoCropReset').addEventListener"));
+ assert.match(handlers,/cropTouches=new Map\(\)/);
+ assert.match(handlers,/Math\.hypot\(a\.x-b\.x,a\.y-b\.y\)/);
+ assert.match(handlers,/cropDialogDraft\.cropX=m\.maxPanX\?/);
+ assert.match(handlers,/el\.frameShape=cropDialogDraft\.frameShape/);
+ assert.match(handlers,/markEditorUnsaved\(\)/);
+ assert.doesNotMatch(handlers,/indexedDB|store\.delete|files\.splice/);
+ assert.match(html,/id="cropEditorZoom" min="100" max="300"/);
+});
+test('CBの高画質書き出しはフレームをPNGで描き、軽量画像へ戻す',()=>{
+ const begin=inline.indexOf('/* CB: Export photo frames as crisp transparent PNG composites');
+ const end=inline.indexOf("$('#exportImage').addEventListener('click'",begin);
+ const code=inline.slice(begin,end);
+ assert.ok(begin>0&&end>begin);
+ assert.match(code,/function traceCanvasPhotoFrame\(ctx,shape,width,height\)/);
+ assert.match(code,/FRAME_PATHS\[shape\]/);
+ assert.match(code,/new Path2D\(FRAME_PATHS\[shape\]\)/);
+ assert.match(code,/for\(let i=0;i<8;i\+\+\)/);
+ assert.match(code,/ctx\.drawImage\(img,/);
+ assert.match(code,/canvas\.toBlob\(v=>v\?resolve\(v\)/);
+ assert.match(code,/return URL\.createObjectURL\(blob\)/);
+ assert.match(code,/record\.exportUrl=await rasterizeEditorPhotoForExport/);
+ assert.match(code,/img\.style\.cssText=prev\.cssText/);
+ assert.match(code,/URL\.revokeObjectURL\(prev\.exportUrl\)/);
+ assert.match(code,/finally\{/);
+ const save=inline.slice(inline.indexOf('async function saveNewSplitAlbum()'),inline.indexOf("$('#saveDraft').addEventListener('click'"));
+ assert.match(save,/for\(const f of files\)photos\.push\(await durableSplitPhoto\(f\)\)/);
+ assert.doesNotMatch(save,/rasterizeEditorPhotoForExport|photoFrameMask/);
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
