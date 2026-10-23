@@ -897,7 +897,8 @@ test('BZは軽量プレビューを写真単位でキャッシュし、同時デ
  assert.match(src,/if\(sizes\.has\(edge\)\)return sizes\.get\(edge\)/);
  assert.match(src,/while\(editorPreviewActive<2&&editorPreviewJobs\.length\)/);
  assert.match(src,/bitmap=await createImageBitmap\(file\)/);
- assert.match(src,/edge\/Math\.max\(bitmap\.width,bitmap\.height\)/);
+ assert.match(src,/source=await new Promise\(\(resolve,reject\)=>\{/);
+ assert.match(src,/edge\/Math\.max\(sourceWidth,sourceHeight\)/);
  assert.match(src,/canvas\.toBlob\(res,format,\.82\)/);
  assert.match(src,/bitmap\?\.close\?\.\(\)/);
  assert.match(src,/root:strip,rootMargin:'250px'/);
