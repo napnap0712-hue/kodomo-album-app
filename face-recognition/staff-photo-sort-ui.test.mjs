@@ -663,6 +663,53 @@ test('BQは途中保存した空き枠を一覧で識別でき、写真本体を
  assert.match(html,/\.photoSortSlotBadge\{display:block/);
 });
 
+test('BRのPC版は大きな見開きと5種類の編集ツールを2カラムに配置する',()=>{
+ const start=html.indexOf('/* BR / desktop editor:');
+ const end=html.indexOf('</style>',start);
+ const css=html.slice(start,end);
+ assert.ok(start>=0&&end>start);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 BR/);
+ assert.match(css,/@media\(min-width:980px\)/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
+ assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
+ assert.match(css,/grid-column:1;grid-row:2 \/ span 2/);
+ assert.match(css,/\.mobileEditorTabs\{/);
+ assert.match(css,/grid-template-columns:repeat\(5,minmax\(0,1fr\)\)!important/);
+ assert.match(css,/\.editorPanel>:is\(\.desktopEditorWelcome,\.pageSettings,\.photoManager,#seasonStickerPanel,\.editorLayerPanel,\.textTabUnifiedCard\)/);
+ assert.match(css,/position:sticky;top:12px/);
+ assert.match(html,/class="desktopEditorWelcome"/);
+});
+test('BRは写真・背景・文字・スタンプの既存機能を保持し、PCのメニューだけ切り替える',()=>{
+ const start=html.indexOf('/* BR / desktop editor:');
+ const end=html.indexOf('</style>',start);
+ const css=html.slice(start,end);
+ assert.match(css,/\[data-editor-tab="background"\] \.editorPanel>\.pageSettings/);
+ assert.match(css,/\[data-editor-tab="layout"\] \.editorPanel>\.pageSettings/);
+ assert.match(css,/\[data-editor-tab="photos"\] \.editorPanel>\.photoManager/);
+ assert.match(css,/\[data-editor-tab="text"\] \.editorPanel>\.textTabUnifiedCard/);
+ assert.match(css,/\[data-editor-tab="stamps"\] \.editorPanel>#seasonStickerPanel/);
+ assert.match(html,/function setupUnifiedTextTab\(\)/);
+ assert.match(html,/function setupPhotoSectionTabs\(\)/);
+ assert.match(html,/function switchEditorTab\(tab\)/);
+ assert.match(html,/id="designCanvas"/);
+ assert.match(html,/id="saveDraft"/);
+ assert.match(html,/id="exportImage"/);
+ assert.match(html,/id="photoStrip"/);
+});
+test('BRのレイアウト変更はデスクトップ幅だけでスマホ版CSSと保存処理に触れない',()=>{
+ const start=html.indexOf('/* BR / desktop editor:');
+ const end=html.indexOf('</style>',start);
+ const css=html.slice(start,end);
+ const desktop=css.slice(css.indexOf('@media(min-width:980px)'));
+ assert.ok(css.indexOf('.desktopEditorWelcome{display:none}')>=0);
+ assert.match(css,/@media\(min-width:980px\) and \(max-height:690px\)/);
+ assert.doesNotMatch(desktop,/@media\(max-width:(?:599|700|900)px\)/);
+ assert.match(html,/\.screen\[data-screen="editor"\]\.newSplitPreparation \.editorPanel\{display:none!important\}/);
+ assert.match(html,/function startEditingWithSelectedPhotos\(\)/);
+ assert.match(html,/const PHOTO_SORT_CHECKPOINT_DB='omoide-photo-sort-progress-v1'/);
+ assert.doesNotMatch(css,/localStorage|indexedDB|photoAssignments|saveDraft\(/);
+});
+
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
  assert.match(html,/data-screen="photoAssign" data-flow-step="start"/);
  assert.match(html,/id="photoAssignFlowGuide"/);
