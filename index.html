@@ -1770,7 +1770,9 @@ async function cdPageSources(){
  return sources;
 }
 function cdPageState(manifest,source){
- const item=manifest.pages[source.key];
+ // A finished spread follows its album ID when teachers reorder the 12 cards.
+ const item=source.type==='special'?manifest.pages[source.key]:
+  Object.values(manifest.pages).find(p=>p?.sourceId===source.id&&source.id)||manifest.pages[source.key];
  if(!item)return 'editing';
  if(item.state==='updated')return 'updated';
  if(item.state!=='ready')return 'editing';
@@ -1831,7 +1833,10 @@ async function cdTogglePageReady(source,current,button){
    else if(!source.id)throw Error('このページはまだ保存されていません。');
   }
   const data=cdReadProgress();
-  data.pages[source.key]=current==='ready'?{state:'editing'}:{state:'ready',sourceId:source.id,sourceUpdatedAt:source.updatedAt,checkedAt:Date.now()};
+  if(source.type!=='special'&&source.id){
+   for(const [key,value] of Object.entries(data.pages))if(key.startsWith('slot:')&&value?.sourceId===source.id)delete data.pages[key];
+  }
+  data.pages[source.key]=current==='ready'?{state:'editing',sourceId:source.id}:{state:'ready',sourceId:source.id,sourceUpdatedAt:source.updatedAt,checkedAt:Date.now()};
   data.completedAt=null;
   cdWriteProgress(data);
  }catch(e){alert('仕上げ状態を変更できません：'+(e?.message||String(e)))}
@@ -1959,6 +1964,8 @@ async function cdCompleteClass(){
   // Recheck that the page sources still belong to this class and update only their revision markers.
   if(classId!==selected.id||year!==activeYear())throw Error('クラスが変更されました。もう一度進捗を確認してください');
   const next=cdReadProgress();
+  // Discard obsolete position-based keys only after the cleanup succeeded.
+  for(const key of Object.keys(next.pages))if(key.startsWith('slot:'))delete next.pages[key];
   for(const [i,plan] of plans.entries()){
    const source=sources[i];next.pages[source.key]={state:'ready',sourceId:plan.id,sourceUpdatedAt:plan.nextMeta.updatedAt,checkedAt:Date.now()};
   }
