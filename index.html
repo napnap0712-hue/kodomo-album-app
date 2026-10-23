@@ -4425,17 +4425,29 @@ function runEditorPreviewQueue(){
   (async()=>{
    let bitmap=null;
    try{
-    bitmap=await createImageBitmap(file);
-    if(!bitmap.width||!bitmap.height)throw Error('写真の寸法を取得できません');
+    let source;
+    try{bitmap=await createImageBitmap(file);source=bitmap;}
+    catch(decodeError){
+     // Safari sometimes opens HEIC/JPEG in an <img> even when createImageBitmap
+     // cannot decode the same Blob. Try that path before falling back.
+     source=await new Promise((resolve,reject)=>{
+      const image=new Image();
+      image.onload=()=>resolve(image);
+      image.onerror=()=>reject(decodeError);
+      image.src=fileUrl(file);
+     });
+    }
+    const sourceWidth=source.width||source.naturalWidth,sourceHeight=source.height||source.naturalHeight;
+    if(!sourceWidth||!sourceHeight)throw Error('写真の寸法を取得できません');
     // Small source images already fit the preview; no recompression needed.
-    if(Math.max(bitmap.width,bitmap.height)<=edge)return fileUrl(file);
-    const scale=Math.min(1,edge/Math.max(bitmap.width,bitmap.height));
+    if(Math.max(sourceWidth,sourceHeight)<=edge)return fileUrl(file);
+    const scale=Math.min(1,edge/Math.max(sourceWidth,sourceHeight));
     const canvas=document.createElement('canvas');
-    canvas.width=Math.max(1,Math.round(bitmap.width*scale));
-    canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    canvas.width=Math.max(1,Math.round(sourceWidth*scale));
+    canvas.height=Math.max(1,Math.round(sourceHeight*scale));
     const ctx=canvas.getContext('2d');
     if(!ctx)throw Error('画像の縮小処理を開始できません');
-    ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+    ctx.drawImage(source,0,0,canvas.width,canvas.height);
     const format=file.type==='image/png'?'image/png':'image/jpeg';
     const preview=await new Promise(res=>canvas.toBlob(res,format,.82));
     if(!preview||!preview.size)throw Error('プレビュー画像の作成に失敗');
