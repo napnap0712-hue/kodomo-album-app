@@ -2397,7 +2397,7 @@ function renderCurrentAlbumSingletonPairs(){
    const photoCount=new Set(included.map(i=>data.samples[i]?.index)).size;
    const kid=getChildren(data.classId).find(k=>String(k.id)===childSelect.value);
    assignSummary.textContent=(kid?'🌷 '+kid.name+'さん｜':'')+'振り分け予定：'+photoCount+'枚';
-   assignHint.textContent='写真をタップすると拡大できるよ。別の園児の顔は「候補から外す」を押してね。外した顔は、確定後にもう一度AI候補を探します。';
+   assignHint.textContent='写真をタップすると拡大できるよ。別の園児の顔は「候補から外す」を押してね。外した顔は未確定に戻ります。似ている相手が見つかれば、もう一度この画面に出るよ。';
    assignButton.textContent=(kid?'✓ '+kid.name+'さんのフォルダへ':'園児フォルダへ')+'振り分ける（'+photoCount+'枚）';
    assignButton.disabled=!kid||!included.length;
    for(const entry of assignPhotos.children){
@@ -2497,7 +2497,7 @@ function renderCurrentAlbumSingletonPairs(){
    skipped.delete(pairId(draft.item));seen.add(pairId(draft.item));
    activeAssignmentFolder=String(kid.id);pendingPair=null;
    const message='✅ '+kid.name+'さんのフォルダへ'+indexes.length+'枚振り分けたよ。'+
-    (excludedFaces.length?'外した'+excludedFaces.length+'顔は次のAI確認候補へ戻したよ。':'')+
+    (excludedFaces.length?'外した'+excludedFaces.length+'顔は未確定に戻したよ。':'')+
     ' 元写真は残っています。';
    $('#currentAlbumAiFeedback').textContent=message;
    $('#currentAlbumAiStatus').textContent=message;
