@@ -668,7 +668,7 @@ test('BRのPC版は大きな見開きと5種類の編集ツールを2カラム�
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(html,/ALBUM EDITOR · 2026-10-23 BY/);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 BZ/);
  assert.match(css,/@media\(min-width:980px\)/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
  assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
@@ -804,7 +804,7 @@ test('BYの写真一覧はSafariで未設定srcの「？」を生まない',()=>
  const body=inline.slice(begin,stop);
  assert.ok(begin>0&&stop>begin);
  assert.match(body,/img\.loading='lazy'/);
- assert.match(body,/displayEditorPhotoReliably\(img,file\)/);
+ assert.match(body,/img\._showPreview=\(\)=>displayEditorPhotoReliably\(img,file,null,320\)/);
  assert.match(body,/strip\.onscroll=null/);
  assert.doesNotMatch(body,/refreshVisible|scheduleRefresh|if\(img\.src\)continue/);
  assert.match(body,/item\.addEventListener\('click'/);
@@ -827,7 +827,7 @@ test('BYは画像エラー時に元Blobを残して再読込と表示失敗の�
  assert.match(helper,/写真を表示できません/);
  assert.doesNotMatch(helper,/\.splice\(|indexedDB\.|localStorage\.|store\.delete\(/);
  const node=inline.slice(inline.indexOf('function renderElementNode('),inline.indexOf("$('#designCanvas').addEventListener('pointerdown'"));
- assert.match(node,/displayEditorPhotoReliably\(img,file,el\.personCutout\)/);
+ assert.match(node,/displayEditorPhotoReliably\(img,file,el\.personCutout,1280\)/);
 });
 test('BYはPC画像サイズを縮め、iPhoneには影響させない',()=>{
  const p=html.indexOf('/* BY: Smaller desktop photographs');
@@ -886,6 +886,50 @@ test('BXはPC写真一覧の振り分けボタンのみ小さく、写真を主�
  assert.match(src,/assign\.addEventListener\('click'/);
  assert.match(src,/assign\.textContent='振り分け'/);
  assert.match(src,/item\.append\(img,remove,name,assign\)/);
+});
+
+test('BZは軽量プレビューを写真単位でキャッシュし、同時デコードを2件までに制限する',()=>{
+ const p=inline.indexOf('const editorPreviewCache=new WeakMap()');
+ const q=inline.indexOf('function displayEditorPhotoReliably(',p);
+ const src=inline.slice(p,q);
+ assert.ok(p>0&&q>p);
+ assert.match(src,/const editorPreviewCache=new WeakMap\(\)/);
+ assert.match(src,/if\(sizes\.has\(edge\)\)return sizes\.get\(edge\)/);
+ assert.match(src,/while\(editorPreviewActive<2&&editorPreviewJobs\.length\)/);
+ assert.match(src,/bitmap=await createImageBitmap\(file\)/);
+ assert.match(src,/edge\/Math\.max\(bitmap\.width,bitmap\.height\)/);
+ assert.match(src,/canvas\.toBlob\(res,format,\.82\)/);
+ assert.match(src,/bitmap\?\.close\?\.\(\)/);
+ assert.match(src,/root:strip,rootMargin:'250px'/);
+ assert.match(inline,/observeEditorPhotoThumbnails\(strip\)/);
+ assert.doesNotMatch(src,/indexedDB|localStorage|store\.put|store\.delete/);
+});
+test('BZは写真一覧320px・編集中1280pxのプレビューを使い、元画像は残す',()=>{
+ const body=inline.slice(inline.indexOf('function renderPhotoStrip()'),inline.indexOf('function elementId()'));
+ const canvas=inline.slice(inline.indexOf('function renderElementNode('),inline.indexOf("$('#designCanvas').addEventListener('pointerdown'"));
+ assert.match(body,/displayEditorPhotoReliably\(img,file,null,320\)/);
+ assert.match(canvas,/displayEditorPhotoReliably\(img,file,el\.personCutout,1280\)/);
+ assert.match(inline,/const editorPreviewCache=new WeakMap\(\)/);
+ assert.match(inline,/const photoObjectUrls=new WeakMap\(\)/);
+ const save=inline.slice(inline.indexOf('async function saveNewSplitAlbum()'),inline.indexOf("$('#saveDraft').addEventListener('click'"));
+ assert.match(save,/for\(const f of files\)photos\.push\(await durableSplitPhoto\(f\)\)/);
+ assert.doesNotMatch(save,/editorPhotoPreview|editorPreviewCache/);
+});
+test('BZは画像出力だけ元写真へ戻し、300dpi相当を目標に書き出す',()=>{
+ const start=inline.indexOf('async function captureEditorWithOriginalPhotos(');
+ const stop=inline.indexOf("$('#exportImage').addEventListener('click'",start);
+ const code=inline.slice(start,stop);
+ assert.ok(start>0&&stop>start);
+ assert.match(code,/const original=el\.personCutout\|\|fileUrl\(file\)/);
+ assert.match(code,/img\.src=original/);
+ assert.match(code,/if\(!okay\)throw Error\('元の高画質写真を読み込めません/);
+ assert.match(code,/return await lib\(node,options\)/);
+ assert.match(code,/finally\{/);
+ assert.match(code,/img\.src=prev\.src\|\|fileUrl\(prev\.file\)/);
+ assert.match(code,/delete img\.dataset\.editorExporting/);
+ assert.match(inline,/const targetWidth=\(desktop\?2480:1600\)\*\(split\?2:1\)/);
+ assert.match(inline,/const full=await captureEditorWithOriginalPhotos\(node,lib/);
+ assert.match(html,/\.exportRendering \.photoLoadState\{display:none!important\}/);
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
