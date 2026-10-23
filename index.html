@@ -2240,7 +2240,7 @@ async function refreshPhotoSortResumeAvailability(){
   if(key!==photoSortCheckpointKey()||!document.querySelector('[data-screen="photoPick"]')?.classList.contains('active'))return;
   box.hidden=!row;
   if(row)info.textContent='📷 '+row.photos.length+'枚を途中保存済み。園児の振り分けや顔の確認の続きから再開できるよ（この端末内）。';
- }catch(e){if(key===photoSortCheckpointKey())status.textContent='⚠️ 途中保存の確認ができません：'+String(e?.message||e)}
+ }catch(e){if(key===photoSortCheckpointKey()){box.hidden=false;status.textContent='⚠️ 途中保存の確認ができません：'+String(e?.message||e)}}
 }
 async function saveCurrentPhotoSortCheckpoint(){
  if(photoSortCheckpointBusy)return;
@@ -2382,6 +2382,8 @@ async function resumePhotoSortCheckpoint(){
    restoredAi={samples,methods};
   }
   check();
+  const latest=await photoSortCheckpointRead(currentKey);check();
+  if(latest?.savedAt!==row.savedAt)throw Error('別のタブで途中保存が更新されたよ。もう一度開き直してね。');
   // Commit only AFTER photo integrity, roster and every AI mapping validate.
   const token=++albumAiGeneration;
   files=savedFiles;photoAssignments=assignmentCopies;
@@ -2421,9 +2423,14 @@ async function resumePhotoSortCheckpoint(){
    };
   }
   photoSortCheckpointKnownSavedAt=row.savedAt;
+  $('#continueEdit').disabled=false;
+  $('#photoCount').textContent=savedFiles.length+'枚の保存済み写真を復元しました。';
   show('photoAssign');
   renderPhotoAssignmentPage();
-  setPhotoAssignFlowStep(albumAiGroupsData?(row.flowStep==='folders'?'folders':'review'):'folders');
+  const resumedStep=albumAiGroupsData?
+   (row.flowStep==='folders'?'folders':'review'):
+   (row.flowStep==='folders'?'folders':'start');
+  setPhotoAssignFlowStep(resumedStep);
   if(albumAiGroupsData){
    renderCurrentAlbumAiGroups();
    renderCurrentAlbumSingletonPairs();
