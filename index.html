@@ -2143,6 +2143,8 @@ async function renderSplitProjectCards(){
    btn.append(preview,label);btn.dataset.splitAlbumId=a.id;btn.addEventListener('click',()=>{if(projectDeleteMode){const key='split:'+a.id;projectDeleteSelection.has(key)?projectDeleteSelection.delete(key):projectDeleteSelection.add(key);refreshProjectDeleteUI();return}openSplitProjectFromList(a.id)});
    const wrapper=document.createElement('div');wrapper.style.cssText='display:grid;gap:5px';wrapper.append(btn);grid.append(wrapper);
   });
+  // Show class progress without waiting for all saved photo previews.
+  void renderClassProgress();
   // Build the same full-spread thumbnail as legacy drafts, reading split data only.
   if(db.objectStoreNames.contains('photos')&&db.objectStoreNames.contains('edits')){
    const read=(store,key)=>new Promise((resolve,reject)=>{const q=db.transaction(store,'readonly').objectStore(store).get(key);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)});
