@@ -850,6 +850,31 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .assignmentMorePhotos .assignmentAddLabel{display:block;text-align:center;cursor:pointer}
 .assignmentMorePhotos p{margin:0;font-size:12px;line-height:1.5}
 
+/* BJ: Single-pair review. Full original photos, no cramped multi-column list. */
+#albumAiSingletonPairs.currentAlbumAiGroups{display:block;max-width:690px;margin:10px auto}
+.pairReviewProgress{font-weight:750;font-size:13px;color:#50677e;margin:8px 0 12px}
+.albumAiReviewCard{border:1px solid #d6e4f1;border-radius:15px;background:white;padding:14px;max-width:100%}
+.pairReviewNames{text-align:center;font-size:15px;font-weight:750;margin:2px 0 12px}
+.pairReviewPhotos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pairOriginalPhoto{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;min-width:0;border:1px solid #dce6f0;background:#f8fbff;border-radius:12px;padding:7px 7px 10px;color:#344b62}
+.pairOriginalFrame{position:relative;display:block;width:100%;height:clamp(175px,33vh,340px);background:#e9f0f6;border-radius:9px;overflow:hidden}
+.pairOriginalFrame img{display:block;width:100%;height:100%;object-fit:contain}
+.pairFaceMarker{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 0 2px #29333c)}
+.pairOriginalPhoto strong{font-size:13px}
+.pairOriginalPhoto small{font-size:11px;color:#63788d}
+.pairReviewDecisions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:14px}
+.pairReviewDecisions button{min-height:49px;font-size:14px}
+.pairReviewDecisions button[aria-pressed="true"]{outline:3px solid #87b9e2;outline-offset:1px}
+.pairReviewNavigation{display:flex;justify-content:space-between;gap:8px;margin-top:10px}
+.pairReviewNavigation button{min-height:42px;flex:1;font-size:12px}
+.pairReviewDone{font-size:14px;line-height:1.7;padding:12px;background:#f3f9ff;border-radius:9px}
+#albumAiSingletonPairs>button#unusedPairButton{display:none}
+#albumAiSingletonPairs>.primary.wide{margin:10px 0 4px;min-height:48px;font-size:14px}
+.pairReviewExtra{font-size:12px;margin:10px 0;color:#54728d}
+.pairReviewExtra summary{cursor:pointer;padding:8px 0}
+.pairReviewExtra button{min-height:42px;margin:6px 0}
+@media(max-width:430px){.albumAiReviewCard{padding:9px}.pairReviewPhotos{gap:7px}.pairOriginalPhoto{padding:5px}.pairOriginalFrame{height:clamp(170px,30vh,250px)}}
+
 /* BI: Progressive photo sorting - keep existing theme and functional controls. */
 .photoAssignFlowGuide{display:flex;align-items:center;gap:5px;justify-content:space-between;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #dde6f0;font-size:12px;color:#75849a}
 .photoAssignFlowGuide span[data-flow-index]{padding:7px 8px;border-radius:10px;font-weight:650}
@@ -902,7 +927,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BI</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BJ</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="写真整理の進み具合">
  <span data-flow-index="start">① 写真を整理</span><span class="arrow">›</span>
  <span data-flow-index="review">② 顔を確認</span><span class="arrow">›</span>
@@ -925,7 +950,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  </details>
  <div id="albumAiSingletonReview" hidden>
   <button type="button" id="albumAiFindSingletonPairs" class="secondary wide">🔎 単独グループの似た候補をまとめて探す</button>
-  <p class="muted">2枚の顔を見比べて、同じ園児だと分かる組だけ選んでね。</p>
+  <p class="muted">写真全体を見比べて、同じ園児かどうか確認しよう。</p>
   <div id="albumAiSingletonPairs" class="currentAlbumAiGroups"></div>
  </div>
  <button type="button" class="primary wide" id="photoAssignFlowNext">園児フォルダへ進む ›</button>
@@ -2084,7 +2109,7 @@ function setPhotoAssignFlowStep(step,{scroll=false}={}){
  const hint=$('#photoAssignFlowHint'),details=$('#albumAiOtherGroups');
  if(hint)hint.textContent=step==='start'?
   'まずは「写真を整理する」を押してね。AIを使わずに進むこともできるよ。':
-  step==='review'?'同じ園児だと分かる候補だけチェックしてね。迷ったら飛ばして大丈夫。':
+  step==='review'?'写真全体を見比べて「同じ園児」「違う園児」を選んでね。迷ったらあとで確認できるよ。':
   '園児フォルダと未確定の写真を確認しよう。終わったら下の「見開き編集へ進む」を押してね。';
  if(details)details.open=false; // Keep the 94-group list folded until staff asks for it.
  const back=$('#photoAssignFlowBack');
@@ -2236,100 +2261,122 @@ function renderCurrentAlbumSingletonPairs(){
  const pairId=item=>String(item.sourceKey)+'→'+String(item.targetKey);
  if(!candidates.length){
   const empty=document.createElement('p');empty.className='muted';
-  empty.textContent='類似候補が見つかりませんでした。各グループの「似ている別グループを探す」も利用できます。';
+  empty.textContent='似ている候補がありません。園児フォルダへ進んで確認できるよ。';
   host.append(empty);return;
  }
+ // Show one comparison at a time. A teacher's decision is only temporary
+ // until the explicit batch confirmation; original photos never change.
+ const checked=new Map(),decisions=new Map();
+ let position=0;
  const intro=document.createElement('p');intro.className='muted';
- intro.textContent='単独グループから合計'+candidates.length+'組の確認候補が見つかりました。比較値は正解率ではありません。';
- host.append(intro);
- const progress=document.createElement('p');progress.className='muted';progress.setAttribute('role','status');
- const rows=document.createElement('div');
- const showMore=document.createElement('button');showMore.type='button';showMore.className='secondary wide';
- const restoreSkipped=document.createElement('button');restoreSkipped.type='button';restoreSkipped.className='secondary';
- restoreSkipped.textContent='↩ 違う園児として外した候補をすべて戻す';
- host.append(progress,rows,showMore,restoreSkipped);
- let shown=0;
- const checked=new Map();
- const actions=document.createElement('div');actions.className='pairActions';
- const count=document.createElement('span');count.className='muted';count.setAttribute('role','status');
- const apply=document.createElement('button');apply.type='button';apply.className='primary';
+ intro.textContent='写真全体を見比べよう。写真を押すと大きく見られるよ。迷ったら「あとで」で大丈夫。';
+ const progress=document.createElement('p');progress.className='pairReviewProgress';progress.setAttribute('role','status');
+ const card=document.createElement('section');card.className='albumAiReviewCard';
+ const names=document.createElement('p');names.className='pairReviewNames';
+ const photos=document.createElement('div');photos.className='pairReviewPhotos';
  const feedback=document.createElement('p');feedback.className='muted';feedback.setAttribute('role','status');
- const refresh=()=>{
-  count.textContent='同じ園児と確認した組：'+checked.size+'組';
-  restoreSkipped.hidden=skipped.size===0;
-  progress.textContent='確認候補 '+shown+' / '+candidates.length+'組を表示中・違う園児として除外 '+skipped.size+'組（チェックは保持）';
-  apply.textContent='✅ チェックした'+checked.size+'組をまとめる';
-  apply.disabled=checked.size===0;
- };
- const thumbnail=(group,img)=>{
-  const faceIndex=group.faceIndexes[0],sample=data.samples[faceIndex];
-  if(data.faceThumbs.has(faceIndex)){img.src=data.faceThumbs.get(faceIndex);return}
-  currentAlbumFaceThumbnail(data.sourceFiles[sample.index],sample).then(url=>{
-   if(data===albumAiGroupsData&&data.valid()){
-    data.faceThumbs.set(faceIndex,url);img.src=url;
-   }
-  }).catch(()=>{if(data===albumAiGroupsData&&data.valid())img.src=fileUrl(data.sourceFiles[sample.index])});
- };
- const showNext=()=>{
-  const next=Math.min(shown+24,candidates.length);
-  for(const item of candidates.slice(shown,next)){
-  const source=groups.find(g=>g.key===item.sourceKey);
-  const target=groups.find(g=>g.key===item.targetKey);
-  if(!source||!target)continue;
-  const row=document.createElement('div');row.className='albumAiPairRow';
-  row.hidden=skipped.has(pairId(item));
-  const check=document.createElement('input');check.type='checkbox';
-  check.setAttribute('aria-label','グループ'+(data.groups.indexOf(source)+1)+'と'+(data.groups.indexOf(target)+1)+'を統合');
-  const from=document.createElement('img'),to=document.createElement('img');
-  thumbnail(source,from);thumbnail(target,to);from.alt='単独グループの顔';to.alt='候補グループの顔';
-  const openSource=document.createElement('button');openSource.type='button';openSource.className='pairPhotoOpen';
-  openSource.setAttribute('aria-label','左の元写真を全体表示');
-  openSource.title='左の元写真を見る';openSource.append(from);
-  openSource.addEventListener('click',()=>openAlbumAssignedPhoto(data.samples[source.faceIndexes[0]].index));
-  const openTarget=document.createElement('button');openTarget.type='button';openTarget.className='pairPhotoOpen';
-  openTarget.setAttribute('aria-label','右の元写真を全体表示');
-  openTarget.title='右の元写真を見る';openTarget.append(to);
-  openTarget.addEventListener('click',()=>openAlbumAssignedPhoto(data.samples[target.faceIndexes[0]].index));
-  const caption=document.createElement('span');caption.textContent=
-   'グループ '+(data.groups.indexOf(source)+1)+' → '+(data.groups.indexOf(target)+1)+
-   '（比較値 '+item.score.toFixed(2)+'）'+(item.ambiguous?' ⚠️ 他にも似た候補あり':'');
-  check.addEventListener('change',()=>{
-   feedback.textContent='';
-   if(check.checked){
-    const selected=[...checked.values()];
-    if(selected.some(p=>p.sourceKey===item.sourceKey||
-      p.sourceKey===item.targetKey||p.targetKey===item.sourceKey)){
-     check.checked=false;feedback.textContent='⚠️ 同じグループが重複する候補は同時に統合できません。';return;
-    }
-    checked.set(item.sourceKey,item);
-   }else checked.delete(item.sourceKey);
-   refresh();
+ const actions=document.createElement('div');actions.className='pairReviewDecisions';
+ const same=document.createElement('button');same.type='button';same.className='primary';same.textContent='✓ 同じ園児';
+ const different=document.createElement('button');different.type='button';different.className='secondary';different.textContent='違う園児';
+ const navigation=document.createElement('div');navigation.className='pairReviewNavigation';
+ const previous=document.createElement('button');previous.type='button';previous.className='secondary';previous.textContent='‹ 前の候補';
+ const later=document.createElement('button');later.type='button';later.className='secondary';later.textContent='あとで確認 ›';
+ const complete=document.createElement('p');complete.className='pairReviewDone';complete.hidden=true;
+ const apply=document.createElement('button');apply.type='button';apply.className='primary wide';
+ const extra=document.createElement('details');extra.className='pairReviewExtra';
+ const extraTitle=document.createElement('summary');extraTitle.textContent='確認内容を見直す';
+ const restoreSkipped=document.createElement('button');restoreSkipped.type='button';restoreSkipped.className='secondary wide';
+ restoreSkipped.textContent='違う園児にした候補をすべて戻す';
+ extra.append(extraTitle,restoreSkipped);
+ actions.append(same,different);
+ navigation.append(previous,later);
+ card.append(names,photos,feedback,actions,navigation,complete);
+ host.append(intro,progress,card,apply,extra);
+ const originalPhoto=(group,label)=>{
+  const sample=data.samples[group.faceIndexes[0]],file=data.sourceFiles[sample?.index];
+  const button=document.createElement('button');button.type='button';button.className='pairOriginalPhoto';
+  const frame=document.createElement('span');frame.className='pairOriginalFrame';
+  const img=document.createElement('img');img.alt=label+'の元写真全体';
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('aria-hidden','true');svg.classList.add('pairFaceMarker');
+  const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  rect.setAttribute('fill','none');rect.setAttribute('stroke','#ffd55c');
+  rect.setAttribute('rx','7');svg.append(rect);
+  img.addEventListener('load',()=>{
+   const width=img.naturalWidth,height=img.naturalHeight;
+   if(!width||!height||!Array.isArray(sample.box))return;
+   const scale=Math.min(1,1200/Math.max(width,height));
+   const [x,y,w,h]=sample.box;
+   svg.setAttribute('viewBox','0 0 '+width+' '+height);
+   rect.setAttribute('x',String(x/scale));rect.setAttribute('y',String(y/scale));
+   rect.setAttribute('width',String(w/scale));rect.setAttribute('height',String(h/scale));
+   rect.setAttribute('stroke-width',String(Math.max(3,Math.max(width,height)/300)));
   });
-  const exclude=document.createElement('button');exclude.type='button';exclude.className='secondary pairSkip';
-  exclude.textContent='違う園児';
-  exclude.setAttribute('aria-label','この組は違う園児なので確認候補から外す');
-  exclude.addEventListener('click',()=>{
-   if(!data.valid()||data!==albumAiGroupsData)return;
-   skipped.add(pairId(item));checked.delete(item.sourceKey);check.checked=false;
-   row.hidden=true;feedback.textContent='候補を1組外しました。元写真やグループは変更していません。';
-   refresh();
-  });
-  row.append(check,openSource,openTarget,caption,exclude);rows.append(row);
+  if(file)img.src=fileUrl(file);
+  const title=document.createElement('strong');title.textContent=label;
+  const hint=document.createElement('small');hint.textContent='🔍 タップで拡大';
+  frame.append(img,svg);button.append(frame,title,hint);
+  button.addEventListener('click',()=>openAlbumAssignedPhoto(sample.index));
+  return button;
+ };
+ const show=()=>{
+  if(data!==albumAiGroupsData||!data.valid()){
+   host.replaceChildren();return;
   }
-  shown=next;
-  refresh();
-  showMore.hidden=shown>=candidates.length;
-  if(!showMore.hidden)showMore.textContent='＋ 次の'+Math.min(24,candidates.length-shown)+'組を表示';
+  feedback.textContent='';
+  apply.textContent='✓ 同じ園児と確認した'+checked.size+'組をまとめる';
+  apply.disabled=checked.size===0;
+  restoreSkipped.hidden=skipped.size===0;
+  progress.textContent='確認 '+Math.min(position+1,candidates.length)+' / '+candidates.length+
+   '組 ・ 同じ '+checked.size+'組 ・ 違う '+skipped.size+'組';
+  previous.disabled=position===0;
+  if(position>=candidates.length){
+   names.hidden=true;photos.hidden=true;actions.hidden=true;navigation.hidden=false;
+   previous.disabled=false;later.textContent='最初から見直す ›';
+   complete.hidden=false;
+   complete.textContent='🌷 候補を最後まで確認したよ。同じ園児と選んだ組は、下のボタンで確定できるよ。迷った組はそのままで大丈夫。';
+   return;
+  }
+  names.hidden=false;photos.hidden=false;actions.hidden=false;complete.hidden=true;
+  later.textContent='あとで確認 ›';
+  const item=candidates[position],source=groups.find(g=>g.key===item.sourceKey),target=groups.find(g=>g.key===item.targetKey);
+  if(!source||!target){position++;show();return}
+  names.textContent='この2つの写真は同じ園児かな？'+(item.ambiguous?'（ほかにも似ている候補あり）':'');
+  photos.replaceChildren(originalPhoto(source,'写真①'),originalPhoto(target,'写真②'));
+  const choice=decisions.get(pairId(item))||(skipped.has(pairId(item))?'different':'');
+  same.setAttribute('aria-pressed',String(choice==='same'));
+  different.setAttribute('aria-pressed',String(choice==='different'));
  };
- showMore.addEventListener('click',showNext);
+ const decide=choice=>{
+  if(data!==albumAiGroupsData||!data.valid())return;
+  if(position>=candidates.length){position=0;show();return}
+  const item=candidates[position],id=pairId(item);
+  if(choice==='same'){
+   const conflict=[...checked.entries()].some(([key,p])=>key!==id&&(
+    p.sourceKey===item.sourceKey||p.sourceKey===item.targetKey||p.targetKey===item.sourceKey));
+   if(conflict){
+    feedback.textContent='このグループは別の確認候補でも選ばれているよ。前の候補を見直してね。';
+    return;
+   }
+   checked.set(id,item);skipped.delete(id);
+  }else{
+   checked.delete(id);
+   if(choice==='different')skipped.add(id);else skipped.delete(id);
+  }
+  decisions.set(id,choice);
+  position++;show();
+ };
+ same.addEventListener('click',()=>decide('same'));
+ different.addEventListener('click',()=>decide('different'));
+ later.addEventListener('click',()=>decide('later'));
+ previous.addEventListener('click',()=>{position=Math.max(0,position-1);show()});
  restoreSkipped.addEventListener('click',()=>{
-  if(!data.valid()||data!==albumAiGroupsData)return;
+  if(data!==albumAiGroupsData||!data.valid())return;
   skipped.clear();
-  for(const row of rows.children)row.hidden=false;
-  feedback.textContent='↩ 違う園児として外した候補を元に戻しました。';
-  refresh();
+  for(const [key,value] of decisions)if(value==='different')decisions.delete(key);
+  position=0;show();
+  feedback.textContent='違う園児にした候補を戻したよ。元写真やグループは変更していません。';
  });
- showNext();
  apply.addEventListener('click',()=>{
   if(data!==albumAiGroupsData||!data.valid()){
    feedback.textContent='⚠️ アルバムの写真が変わりました。再解析してね。';return;
@@ -2348,7 +2395,7 @@ function renderCurrentAlbumSingletonPairs(){
    renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();
   }catch(e){feedback.textContent='⚠️ '+String(e?.message||e)}
  });
- actions.append(count,apply,feedback);host.append(actions);refresh();
+ show();
 }
 $('#albumAiFindSingletonPairs')?.addEventListener('click',()=>{
  if(albumAiGroupsData?.valid())renderCurrentAlbumSingletonPairs();
