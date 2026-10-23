@@ -849,6 +849,26 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .assignmentMorePhotos{display:grid;gap:8px;margin:16px 0;padding:12px;background:#f8fafb;border:1px solid #e3e8f0;border-radius:14px}
 .assignmentMorePhotos .assignmentAddLabel{display:block;text-align:center;cursor:pointer}
 .assignmentMorePhotos p{margin:0;font-size:12px;line-height:1.5}
+
+/* BI: Progressive photo sorting - keep existing theme and functional controls. */
+.photoAssignFlowGuide{display:flex;align-items:center;gap:5px;justify-content:space-between;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #dde6f0;font-size:12px;color:#75849a}
+.photoAssignFlowGuide span[data-flow-index]{padding:7px 8px;border-radius:10px;font-weight:650}
+.screen[data-screen="photoAssign"][data-flow-step="start"] [data-flow-index="start"],
+.screen[data-screen="photoAssign"][data-flow-step="review"] [data-flow-index="review"],
+.screen[data-screen="photoAssign"][data-flow-step="folders"] [data-flow-index="folders"]{background:#e6f2ff;color:#28609a}
+#photoAssignFlowHint{margin:10px 0 14px;font-size:13px;line-height:1.55}
+#photoAssignFlowManual{margin-top:8px;border:0;background:transparent;text-decoration:underline;color:#54728d;font-size:12px;min-height:34px}
+#photoAssignFlowNext{margin:12px 0 2px;min-height:48px}
+#photoAssignFlowBack{margin:7px 0 9px;font-size:12px;border:0;background:transparent;padding:5px 0;text-decoration:underline;color:#54728d}
+#albumAiOtherGroups{border:1px solid #dce7f2;border-radius:12px;padding:11px;margin:14px 0;background:white}
+#albumAiOtherGroups>summary{font-size:14px;cursor:pointer;font-weight:750}
+#albumAiOtherGroups>.muted{font-size:12px;margin:9px 0}
+.screen[data-screen="photoAssign"][data-flow-step="start"] :is(#albumAiSingletonReview,#photoAssignFlowNext,#photoAssignFlowBack,#albumChildFolderPanel,#albumAiOtherGroups,#assignmentTransferPanel,#photoAssignDevTools,.assignmentOverview,.assignmentMorePhotos,.assignmentSimpleFolders,#photoAssignGrid,#showMoreAssignedPhotos,.assignmentBottomActions){display:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] :is(#photoAssignFlowManual,#photoAssignFlowBack,#albumChildFolderPanel,#albumAiOtherGroups,#assignmentTransferPanel,#photoAssignDevTools,.assignmentOverview,.assignmentMorePhotos,.assignmentSimpleFolders,#photoAssignGrid,#showMoreAssignedPhotos,.assignmentBottomActions){display:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiFindSingletonPairs{display:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #currentAlbumAiPanel>.currentAlbumAiActions{display:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="folders"] :is(#currentAlbumAiPanel,#photoAssignFlowNext,#photoAssignFlowManual){display:none!important}
+.screen[data-screen="photoAssign"] [hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -880,22 +900,25 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button id="continueEdit" class="primary wide" disabled>写真を振り分ける ›</button>
 <p class="muted">選んだ写真を見開きに配置し、タイトルや背景を調整できます。</p>
 </section>
-<section class="screen" data-screen="photoAssign">
+<section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BH</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
-<section class="albumChildFolderPanel" id="albumChildFolderPanel">
- <strong>🌷 園児別フォルダ</strong>
- <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
- <div id="albumChildFolderList" class="albumChildFolderList"></div>
-</section>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BI</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="写真整理の進み具合">
+ <span data-flow-index="start">① 写真を整理</span><span class="arrow">›</span>
+ <span data-flow-index="review">② 顔を確認</span><span class="arrow">›</span>
+ <span data-flow-index="folders">③ 園児へ振り分け</span>
+</div>
+<p id="photoAssignFlowHint" class="muted" role="status">まずは写真を整理しよう。ボタンを1つ押すだけで始められるよ。</p>
+
 <section id="currentAlbumAiPanel" class="currentAlbumAiPanel">
  <strong>🧠 このアルバムの写真だけをAIで振り分け</strong>
  <p class="muted">前のアルバムは使いません。今選んだ写真の顔をグループ化し、先生が園児名を付けた写真だけ振り分けます。間違いは下で修正できます。</p>
  <div class="currentAlbumAiActions">
-  <button type="button" id="analyzeCurrentAlbum" class="primary">✨ AIで顔をグループ分け</button>
+  <button type="button" id="analyzeCurrentAlbum" class="primary">✨ 写真を整理する</button>
   <button type="button" id="cancelCurrentAlbumAi" class="secondary" hidden>中断</button>
  </div>
  <p id="currentAlbumAiStatus" role="status" aria-live="polite" class="muted">今回の写真だけを解析します。実行するまでは写真を変更しません。</p>
+ <button type="button" class="secondary wide" id="photoAssignFlowManual">AIを使わず振り分ける ›</button>
  <details id="currentAlbumAiDiagnosticPanel" class="assignmentAdvanced" hidden>
   <summary>🔎 AI判定の詳しい結果（顔データは送信しません）</summary>
   <p id="currentAlbumAiDiagnostics" class="muted"></p>
@@ -905,7 +928,18 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
   <p class="muted">同じ園児と確認できた組だけチェックして統合。AIは勝手に園児名を付けず、元写真も削除しません。</p>
   <div id="albumAiSingletonPairs" class="currentAlbumAiGroups"></div>
  </div>
- <div class="currentAlbumAiReviewBar">
+ <button type="button" class="primary wide" id="photoAssignFlowNext">園児フォルダへ進む ›</button>
+</section>
+<button type="button" class="secondary" id="photoAssignFlowBack">‹ 似ている顔の確認に戻る</button>
+<section class="albumChildFolderPanel" id="albumChildFolderPanel">
+ <strong>🌷 園児別フォルダ</strong>
+ <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
+ <div id="albumChildFolderList" class="albumChildFolderList"></div>
+</section>
+<details id="albumAiOtherGroups" class="photoAssignOtherGroups">
+ <summary>📂 残りの候補を園児に振り分ける</summary>
+ <p class="muted">園児名を付けたい候補を開いて、写真を確認しよう。細かい修正もここでできます。</p>
+  <div class="currentAlbumAiReviewBar">
   <label><input type="checkbox" id="albumAiPendingOnly" checked> 未確定のグループだけ表示</label>
   <span id="albumAiWorkSummary" class="muted"></span>
   <button type="button" class="secondary" id="albumAiUndoMerge" hidden>↩ 直前のグループ統合を戻す</button>
@@ -913,13 +947,17 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  <p id="currentAlbumAiFeedback" role="status" aria-live="polite" class="muted"></p>
  <div id="currentAlbumAiGroups" class="currentAlbumAiGroups"></div>
  <button type="button" id="albumAiMoreGroups" class="secondary wide" hidden>＋ 次のグループを表示</button>
-</section>
+
+</details>
 <section id="assignmentTransferPanel" class="assignmentTransferPanel">
  <p id="assignmentTransferStatus" role="status" aria-live="polite">写真の振り分けを確認中…</p>
  <button type="button" id="applySavedAssignmentsToLoaded" class="secondary" hidden>🌷 保存済みの振り分けをこの写真に適用</button>
 </section>
+<details id="photoAssignDevTools" class="assignmentAdvanced"><summary>その他の設定・確認（通常は使いません）</summary>
 <details id="faceReferenceAdvanced" class="assignmentAdvanced"><summary>⚙️ 顔認識の詳しい設定・基準写真（必要なときだけ）</summary><div id="faceReferencePanel" style="border:1px solid #dce4ef;border-radius:14px;padding:12px;margin:12px 0"><strong>👤 顔認識の基準写真</strong><p class="muted">管理画面で登録した園児の顔写真を使用します。「顔をチェック」で基準写真に顔が1人写っているか確認できます。園児の識別・自動振り分けはまだ行いません。</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0"><button id="testFaceRecognitionEngine" class="secondary" type="button">🧠 顔識別AIを確認</button><span id="faceRecognitionEngineStatus" class="muted" role="status">園児の自動振り分けはまだ行いません。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="testRecognitionComparison" class="secondary" type="button">🔍 最初の写真で顔照合を試す</button><span id="recognitionComparisonStatus" class="muted" role="status">候補のみ表示・振り分けは変更しません。</span></div><div id="recognitionComparisonResults" style="margin:5px 0 10px"></div><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button id="testRecognitionBatch" class="secondary" type="button">📸 まとめて顔照合</button><label style="display:inline-flex;align-items:center;gap:5px;font-size:13px">対象 <select id="recognitionBatchSize" aria-label="顔照合する写真の枚数"><option value="5">5枚</option><option value="20">20枚</option><option value="all">すべて</option></select></label><button id="cancelRecognitionBatch" class="secondary" type="button" disabled>中断</button><span id="recognitionBatchStatus" class="muted" role="status">候補のみ表示・自動確定なし。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="confirmSelectedRecognition" class="secondary" type="button" disabled>✅ 選択した園児をまとめて確定</button><span id="recognitionSelectedCount" class="muted">選択 0件</span></div><label style="display:inline-flex;align-items:center;gap:5px;font-size:13px;margin:5px 0"><input id="recognitionHideConfirmed" type="checkbox"> 未確認の顔だけ表示</label><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0"><button id="applyRecognitionDraft" class="secondary" type="button" disabled>📂 AI候補を仮振り分け</button><span id="recognitionDraftStatus" class="muted">照合結果を確認してから仮振り分けできます。</span></div><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0"><button type="button" class="secondary" id="clusterPhotoFaces">🍎 同じ顔をグループ化（全写真）</button><button type="button" class="secondary" id="stopFaceGrouping" disabled>中断</button><span id="faceGroupingStatus" class="muted" role="status">園児の名前はまだ付けず、写真も移動しません。</span></div><div style="border:1px solid #dce4ef;padding:12px;border-radius:12px;margin:12px 0"><strong>🧪 AuraFace 動作試験（写真は送信しません）</strong><p class="muted">初回は公開モデル約261MBのダウンロードが必要です。人工データによるモデル実行のみ確認します。園児の顔識別・振り分けはまだ行いません。</p><button type="button" class="secondary" id="testAuraFaceProbe">AuraFaceの実行環境を確認</button><p id="auraFaceProbeStatus" class="muted" role="status">未実行</p><div style="margin-top:12px;border-top:1px solid #e5ebf2;padding-top:12px"><strong>📷 AuraFaceで顔写真2枚を比較（試験）</strong><p class="muted">顔が1人だけ写った写真を2枚選択してください。顔の位置を補正して比較値を出します。既存の振り分け・保存データには触れません。</p><div style="display:grid;gap:8px;margin-top:8px"><label class="field">写真① <input id="auraFaceCompareFile1" type="file" accept="image/*"></label><label class="field">写真② <input id="auraFaceCompareFile2" type="file" accept="image/*"></label></div><button type="button" class="secondary" id="compareAuraFaceTwo" style="margin-top:8px">選んだ2枚を比較</button><p id="auraFaceCompareStatus" class="muted" role="status">未実行</p></div><div style="border-top:1px solid #e5ebf2;padding-top:12px;margin-top:12px"><strong>📊 AuraFaceの一括識別比較（試験）</strong><p class="muted">異なる2人の園児について、顔が1人だけ写っている写真をそれぞれ2枚以上選んでね。合計20枚まで。画像を保存・送信したり、自動振り分けしたりしません。</p><div style="display:grid;gap:8px"><label class="field">園児Aの写真を1枚ずつ追加<input id="auraBatchGroupA" type="file" accept="image/*"></label><div id="auraBatchListA" class="muted">0枚</div><label class="field">園児Bの写真を1枚ずつ追加<input id="auraBatchGroupB" type="file" accept="image/*"></label><div id="auraBatchListB" class="muted">0枚</div></div><p class="muted">写真を選ぶたびに追加されます。選んだ写真は各一覧の「×」で取り消せます。</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button id="auraBatchStart" class="secondary" type="button">一括比較を開始</button><button id="auraBatchCancel" class="secondary" type="button" disabled>中断</button></div><p id="auraBatchStatus" class="muted" role="status">未実行</p><div id="auraBatchResults"></div></div></div><div id="faceGroupingResults" style="display:grid;gap:8px"></div><div id="recognitionBatchResults"></div><div id="faceReferenceList" style="display:grid;gap:8px"></div><p id="faceReferenceStatus" class="muted" role="status"></p></div></details><section class="assignmentOverview"><p id="photoAssignProgress" class="assignmentProgress" role="status"></p><div id="assignClassSummary" class="photoUsageSummary"></div></section>
-<details class="assignmentAdvanced"><summary>🔬 写真の顔検出テスト（任意）</summary><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div></details><section class="assignmentMorePhotos">
+<details class="assignmentAdvanced"><summary>🔬 写真の顔検出テスト（任意）</summary><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0"><button type="button" class="secondary" id="detectFacesOnDevice">👤 顔の人数を確認</button><span class="muted" id="faceDetectionStatus" role="status">顔検出のみ。園児の自動判定や振り分け変更はしません。</span></div></details>
+</details>
+<section class="assignmentMorePhotos">
  <label for="albumAddMorePhotos" class="secondary assignmentAddLabel">＋ このアルバムに新しい写真を追加
   <input id="albumAddMorePhotos" type="file" accept="image/*" multiple hidden>
  </label>
