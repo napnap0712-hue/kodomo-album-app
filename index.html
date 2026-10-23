@@ -1342,6 +1342,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  pointer-events:none;overflow-wrap:anywhere;
 }
 .screen[data-screen="editor"] .photoLoadState[hidden]{display:none!important}
+.screen[data-screen="editor"] .exportRendering .photoLoadState{display:none!important}
 .screen[data-screen="editor"] .photoLoadState.isError{color:#a14f46}
 .screen[data-screen="editor"] .photoThumb>.photoLoadState{
  top:6px;left:6%;right:6%;height:94px;
@@ -6546,6 +6547,47 @@ $('#exportRightLink').addEventListener('click',()=>saveExportPage('Right'));
 function closePageExport(){ $('#pageExportModal').hidden=true; }
 $('#pageExportClose').addEventListener('click',closePageExport);
 $('#pageExportDone').addEventListener('click',closePageExport);
+
+/* BZ: High-quality exports use the original File/Blob, not a cached preview.
+   Return to the visible editor preview even if export fails. */
+async function captureEditorWithOriginalPhotos(node,lib,options){
+ const swapped=[];
+ try{
+  for(const holder of node.querySelectorAll('.designElement[data-element-id]')){
+   const el=designElements.find(item=>item.id===holder.dataset.elementId);
+   if(el?.type!=='photo')continue;
+   const file=files[el.fileIndex],img=holder.querySelector('.photoCropViewport img');
+   if(!(file instanceof Blob)||!file.size||!img)throw Error('書き出す写真の元データを確認できません');
+   const original=el.personCutout||fileUrl(file);
+   const record={img,src:img.getAttribute('src'),opacity:img.style.opacity,loading:img.loading,onload:img.onload,onerror:img.onerror,file};
+   swapped.push(record);
+   img.dataset.editorExporting='1';
+   img.onload=null;img.onerror=null;img.loading='eager';
+   const okay=await new Promise(resolve=>{
+    let done=false;
+    const finish=result=>{if(done)return;done=true;clearTimeout(timer);img.onload=null;img.onerror=null;resolve(result)};
+    const timer=setTimeout(()=>finish(false),20000);
+    img.onload=()=>finish(img.naturalWidth>0);
+    img.onerror=()=>finish(false);
+    img.src=original;
+    if(img.complete&&img.naturalWidth>0)finish(true);
+   });
+   if(!okay)throw Error('元の高画質写真を読み込めません。画質を落とした書き出しは行いません');
+   img.style.opacity='1';
+  }
+  node.classList.add('exportRendering');
+  return await lib(node,options);
+ }finally{
+  node.classList.remove('exportRendering');
+  for(const prev of swapped){
+   const img=prev.img;
+   img.onload=prev.onload;img.onerror=prev.onerror;img.loading=prev.loading;
+   img.src=prev.src||fileUrl(prev.file);
+   img.style.opacity=prev.opacity;
+   delete img.dataset.editorExporting;
+  }
+ }
+}
 $('#exportImage').addEventListener('click',async()=>{
  const button=$('#exportImage');if(button.disabled)return;
  button.disabled=true;button.textContent='画像を作成中…';
@@ -6555,16 +6597,15 @@ $('#exportImage').addEventListener('click',async()=>{
   if(document.fonts&&document.fonts.ready)await document.fonts.ready;
   await Promise.all([...node.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});})));
   const width=node.clientWidth,height=node.clientHeight;
-  // Target roughly 1800 px per individual page while limiting iPhone canvas memory.
-  const targetWidth=$('#layoutMode').value==='spread'?2200:1100;
-  const scale=Math.min(3,Math.max(1,targetWidth/width));
-  const oldSelected=selectedElementId;
-  // Temporarily hide selection outlines and handles without changing the actual layout.
-  node.classList.add('exportRendering');
-  let full;
-  try{full=await lib(node,{backgroundColor:null,scale,useCORS:true,logging:false,width,height,scrollX:0,scrollY:0});}
-  finally{node.classList.remove('exportRendering');}
+  // Desktop: A4 portrait target 2480 x 3508 px per page (~300 dpi).
+  // Keep mobile canvas lower-memory while still using original source images.
   const split=$('#layoutMode').value==='spread';
+  const desktop=window.matchMedia('(min-width:980px)').matches;
+  const targetWidth=(desktop?2480:1600)*(split?2:1);
+  const scale=Math.min(9,Math.max(1,targetWidth/width));
+  const full=await captureEditorWithOriginalPhotos(node,lib,{
+   backgroundColor:null,scale,useCORS:true,logging:false,width,height,scrollX:0,scrollY:0
+  });
   for(const [side,start,portion] of split?[['Left',0,.5],['Right',.5,.5]]:[['Left',0,1]]){
    const page=document.createElement('canvas');page.width=Math.round(full.width*portion);page.height=full.height;
    const ctx=page.getContext('2d');ctx.drawImage(full,Math.round(full.width*start),0,page.width,page.height,0,0,page.width,page.height);
