@@ -1351,6 +1351,56 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  inset:0;background:#edf2f7b8;padding:5px;box-sizing:border-box;
 }
 
+
+/* CA: Staff editor keeps only Save / Restore in the header.
+   Preserve old diagnostic listeners behind an inert, non-rendering container. */
+#editorLegacyControls,#editorLegacyControls *{display:none!important}
+.screen[data-screen="editor"]>.top>.editorActions{
+ display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:9px!important;
+}
+.screen[data-screen="editor"]>.top>.editorActions>button#saveDraft{
+ min-height:42px!important;padding:9px 15px!important;
+ background:#438cda!important;color:#fff!important;border-color:#438cda!important;
+ border-radius:11px!important;font-weight:800!important;
+}
+.screen[data-screen="editor"]>.top>.editorActions .editorRestoreWrap{
+ position:relative;flex:0 0 auto;
+}
+.screen[data-screen="editor"]>.top>.editorActions .editorRestoreWrap>#editorRestoreMenuButton{
+ display:inline-flex;align-items:center;justify-content:center;
+ min-height:42px!important;padding:9px 15px!important;white-space:nowrap!important;
+ background:#fff;color:#35536e;border:1px solid #cfdae7;border-radius:11px;
+ font-size:13px!important;font-weight:800;
+}
+.screen[data-screen="editor"] .editorRestoreChoices[hidden]{display:none!important}
+.screen[data-screen="editor"] .editorRestoreChoices{
+ position:absolute;right:0;top:calc(100% + 7px);z-index:60;
+ display:grid;gap:5px;width:min(290px,82vw);
+ padding:8px;background:#fff;border:1px solid #d9e4ee;border-radius:12px;
+ box-shadow:0 12px 30px #263f5930;
+}
+.screen[data-screen="editor"] .editorRestoreChoices>button{
+ width:100%!important;min-height:39px!important;text-align:left!important;
+ background:#f7fafe;color:#334c69;border:0;border-radius:8px;
+ font-size:12px!important;white-space:normal!important;
+}
+.screen[data-screen="editor"] .editorRestoreChoices>button:hover{background:#e9f3fe}
+.screen[data-screen="editor"]>.editorExportPanel{
+ display:flex;justify-content:flex-end;align-items:center;
+ margin:14px 0 4px;padding:0;
+}
+.screen[data-screen="editor"]>.editorExportPanel>#exportImage{
+ min-height:40px;padding:9px 15px;border-radius:11px;
+ background:#fff;border:1px solid #d1dfeb;color:#3c5671;
+ font-size:13px;font-weight:750;
+}
+@media(max-width:700px){
+ .screen[data-screen="editor"]>.top>.editorActions{
+  flex-wrap:wrap!important;justify-content:flex-start!important;
+ }
+ .screen[data-screen="editor"]>.editorExportPanel{padding:0 4px}
+}
+
 </style>
 </head>
 <body>
@@ -1461,7 +1511,49 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-23 BZ</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="viewSplitHistory" type="button" hidden>🕘 保存履歴</button><button class="secondary" id="restoreSplitBackup" type="button" hidden>🛟 バックアップから復元</button><button class="secondary" id="restorePreviousSplitBackup" type="button" hidden>🕰 前回のバックアップ</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button><button class="secondary" id="safeMigrationTrial" type="button">🛡️ 安全移行の試験（途中失敗も検証）</button><button class="secondary" id="safeSplitOpenCheck" type="button">📖 安全な分離コピーの読み込み確認</button><button class="secondary" id="fictionalNewSplitTest" type="button">🌼 架空の新規アルバムを分離保存テスト</button><button class="secondary" id="fictionalSplitPreviewButton" type="button">👀 架空アルバムを表示</button><button class="secondary" id="safeSplitEditorToggle" type="button">🧪 分離コピーを編集画面で試す</button><button class="secondary" id="safeSplitEditorSave" type="button" hidden>💾 試験コピーだけ保存</button><button class="secondary" id="recoveryGuideToggle" type="button" aria-expanded="false" aria-controls="recoveryGuidePanel">🛟 復旧リハーサルの手順</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="secondary desktopEditorMore" type="button" id="desktopEditorMore" aria-expanded="false" aria-controls="desktopEditorExtraHint">⋯ その他</button><button class="primary" id="exportImage">左右ページを書き出す</button><span id="desktopEditorExtraHint" class="srOnly">保存履歴や復元などの追加操作を表示</span></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-23 CA</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="editorActions">
+ <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
+ <button class="primary" id="saveDraft" type="button">💾 保存</button>
+ <div class="editorRestoreWrap">
+  <button class="secondary" id="editorRestoreMenuButton" type="button" aria-expanded="false" aria-controls="editorRestoreChoices">🛟 復元</button>
+  <div id="editorRestoreChoices" class="editorRestoreChoices" hidden>
+   <button type="button" id="editorRestoreLatestOption">最新のバックアップから復元</button>
+   <button type="button" id="editorRestorePreviousOption">前回のバックアップから復元</button>
+  </div>
+ </div>
+</div></div>
+<!-- Historic diagnostic controls remain non-interactive for legacy handlers.
+     They are not part of the staff UI, and no diagnostic action is accessible. -->
+<div id="editorLegacyControls" hidden inert aria-hidden="true">
+<button class="secondary" id="viewSplitHistory" type="button" hidden>🕘 保存履歴</button>
+<button class="secondary" id="restoreSplitBackup" type="button" hidden>🛟 バックアップから復元</button>
+<button class="secondary" id="restorePreviousSplitBackup" type="button" hidden>🕰 前回のバックアップ</button>
+<button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button>
+<button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button>
+<button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button>
+<button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button>
+<button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button>
+<button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button>
+<button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button>
+<button class="secondary" id="safeMigrationTrial" type="button">🛡️ 安全移行の試験（途中失敗も検証）</button>
+<button class="secondary" id="safeSplitOpenCheck" type="button">📖 安全な分離コピーの読み込み確認</button>
+<button class="secondary" id="fictionalNewSplitTest" type="button">🌼 架空の新規アルバムを分離保存テスト</button>
+<button class="secondary" id="fictionalSplitPreviewButton" type="button">👀 架空アルバムを表示</button>
+<button class="secondary" id="safeSplitEditorToggle" type="button">🧪 分離コピーを編集画面で試す</button>
+<button class="secondary" id="safeSplitEditorSave" type="button" hidden>💾 試験コピーだけ保存</button>
+<button class="secondary" id="recoveryGuideToggle" type="button" aria-expanded="false" aria-controls="recoveryGuidePanel">🛟 復旧リハーサルの手順</button>
+<button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button>
+<button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button>
+<button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button>
+<button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button>
+<button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button>
+<button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button>
+<button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button>
+<button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button>
+<input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden>
+<input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden>
+</div>
 <section id="editorStorageChoice" style="margin:12px 0;padding:12px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fbff">
 <strong style="font-size:13px">💾 このアルバムの保存方式</strong>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
@@ -1546,6 +1638,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" id="openPhotoInspector" class="openTextInspector" hidden>✎ 写真を編集</button><button type="button" id="openTextInspector" class="openTextInspector" hidden>✎ 文字を編集</button>
 
 </div>
+<div class="editorExportPanel"><button class="secondary" id="exportImage" type="button">📤 左右ページを書き出す</button></div>
 <div id="pageExportModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="ページ画像を保存"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>📸 左右ページを保存</strong><button type="button" id="pageExportClose">×</button></div><p class="cropEditorHelp">左右を別々の画像にしました。保存ボタンから共有メニューを開き、「画像を保存」または「“ファイル”に保存」を選べます。</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><strong>左ページ</strong><img id="exportLeftPreview" alt="左ページ" style="width:100%;display:block;border:1px solid #ddd"><button type="button" id="exportLeftLink" style="width:100%;padding:12px">左ページを保存</button></div><div><strong>右ページ</strong><img id="exportRightPreview" alt="右ページ" style="width:100%;display:block;border:1px solid #ddd"><button type="button" id="exportRightLink" style="width:100%;padding:12px">右ページを保存</button></div></div><button type="button" id="pageExportDone" class="primary" style="width:100%">閉じる</button></div></div>
 <div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">「写真を移動」「消しゴム」「復元ブラシ」を切り替えて手動で透過できます。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><div class="personZoomControls"><button type="button" id="personZoomOut">−</button><input id="personZoom" aria-label="表示倍率" type="range" min="100" max="500" step="25" value="100"><button type="button" id="personZoomIn">＋</button><button type="button" id="personZoomReset">100%</button><span id="personZoomLabel">100%</span></div><p class="cropEditorHelp">2本指で拡大・移動できます。「写真を移動」では1本指で移動できます。</p><div class="personEditorModes"><button type="button" id="personMove" class="active">✋ 写真を移動</button><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="50" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
 <section class="screen" data-screen="saved">
@@ -6520,6 +6613,33 @@ async function saveNewSplitAlbum(){
  }
  finally{db?.close();newAlbumSplitSaveBusy=false;button.disabled=false;button.textContent='💾 保存'}
 }
+
+function setupStaffEditorHeader(){
+ const button=document.getElementById('editorRestoreMenuButton');
+ const choices=document.getElementById('editorRestoreChoices');
+ const hide=()=>{choices.hidden=true;button.setAttribute('aria-expanded','false')};
+ button.addEventListener('click',event=>{
+  event.stopPropagation();
+  if(!newAlbumSplitSavedId){
+   hide();
+   $('#editorStatus').textContent='バックアップからの復元は保存済みアルバムで利用できます。新しいアルバムは先に保存してね。';
+   return;
+  }
+  choices.hidden=!choices.hidden;
+  button.setAttribute('aria-expanded',String(!choices.hidden));
+ });
+ document.getElementById('editorRestoreLatestOption').addEventListener('click',()=>{
+  hide();document.getElementById('restoreSplitBackup').click();
+ });
+ document.getElementById('editorRestorePreviousOption').addEventListener('click',()=>{
+  hide();document.getElementById('restorePreviousSplitBackup').click();
+ });
+ document.addEventListener('click',event=>{
+  if(!event.target.closest('.editorRestoreWrap'))hide();
+ });
+ document.addEventListener('keydown',event=>{if(event.key==='Escape')hide()});
+}
+setupStaffEditorHeader();
 $('#saveDraft').addEventListener('click',async()=>{if(newAlbumSplitSelected){await saveNewSplitAlbum();return}if(safeSplitEditorMode){$('#editorStatus').textContent='🔒 試験モードでは元アルバムへの保存は禁止です。「試験コピーだけ保存」を使ってね。';return}const button=$('#saveDraft');if(!editorPhotoIntegrityOk){setEditorSaveState('⚠ 写真を読み込めません');$('#editorStatus').textContent='写真の読み込みに問題があるため保存を停止しました。元データを保護しています。';return}if(editorSaveInProgress)return;clearTimeout(editorAutoSaveTimer);editorSaveInProgress=true;button.disabled=true;button.textContent='保存中…';const savingRevision=editorSaveRevision;setEditorSaveState('◌ 保存中…');$('#editorStatus').textContent='写真と編集内容を保存しています…';try{if(!files.length)throw new Error('保存する写真がありません。先に写真を追加してください');const photos=[];for(const file of files){const saved=await makeDurablePhoto(file);if(!saved.blob||!saved.blob.size)throw new Error('保存用の写真データが空です');let bytes;try{bytes=await saved.blob.arrayBuffer()}catch(error){if(error?.name!=='NotFoundError')throw new Error('写真の実データを読み取れません。元のアルバムは変更していません ('+(error?.name||'unknown')+')');const url=fileUrl(file);try{const response=await fetch(url);if(!response.ok)throw new Error('画像を取得できません');bytes=await response.arrayBuffer()}catch(recoveryError){throw new Error('写真の実データを復元できません。元のアルバムは変更していません (NotFoundError)')}}if(!bytes.byteLength)throw new Error('写真の実データが空です');const durableBlob=new Blob([bytes],{type:saved.type||'image/jpeg'});photos.push({name:saved.name,type:durableBlob.type,blob:durableBlob})}let thumbnail=null;try{const capture=await Promise.race([loadExportImageLibrary().then(lib=>lib($('#designCanvas'),{backgroundColor:'#ffffff',scale:1,useCORS:true,logging:false})),new Promise((_,reject)=>setTimeout(()=>reject(new Error('thumbnail timeout')),3500))]);const thumb=document.createElement('canvas');thumb.width=420;thumb.height=Math.max(180,Math.round(420*capture.height/capture.width));thumb.getContext('2d').drawImage(capture,0,0,thumb.width,thumb.height);thumbnail=thumb.toDataURL('image/jpeg',.68)}catch(e){console.warn('Thumbnail unavailable; keeping existing preview',e)}const draft={id:editingId||('draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),classId:selected.id,year:activeYear(),title:$('#albumTitle').value.trim()||'無題のアルバム',background:$('#pageBackground').value,caption:$('#pageCaption').value.trim(),layout:$('#layoutMode').value,photoGap:photoGapPercent,spreadIndex,designElements,photos,photoAssignments:photoAssignments.map(ids=>[...ids]),thumbnail,updatedAt:Date.now()};await putDraft(draft);editingId=draft.id;editRecoveryBaseline=draft.updatedAt;if(editorSaveRevision===savingRevision)clearEditRecovery(draft.id);if(pendingProjectSlot!==null){const slots=readProjectSlots();while(slots.length<=pendingProjectSlot)slots.push(null);slots[pendingProjectSlot]=draft.id;writeProjectSlots(slots)}$('#editorStatus').textContent='保存しました！クラスのページ一覧から開けます。';setEditorSaveState(editorSaveRevision===savingRevision?'✓ 保存済み':'● 保存中に変更あり');}catch(error){setEditorSaveState('⚠ 保存失敗');$('#editorStatus').textContent='保存できませんでした：'+(error&&error.message?error.message:'端末の保存領域を確認して、もう一度お試しください');}finally{editorSaveInProgress=false;button.disabled=false;button.textContent='下書きを保存';if(editorSaveRevision!==savingRevision&&$('#editorSaveState').textContent!=='⚠ 保存失敗')scheduleEditorAutoSave();}});
 let exportImageLibraryPromise=null;
 function loadExportImageLibrary(){
