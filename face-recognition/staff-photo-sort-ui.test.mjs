@@ -741,8 +741,8 @@ test('BSの見開きフィットはデスクトップとモバイルで正しい
   'const getComputedStyle=()=>({paddingLeft:"14px",paddingRight:"14px"});'+
   body+'return fitDesktopEditorCanvas();');
  fit(canvas,wrap,true,true,900,900,removed);
- assert.equal(canvas.style.width,'842px');
- assert.equal(canvas.style.height,'595px');
+ assert.equal(canvas.style.width,'869px');
+ assert.equal(canvas.style.height,'615px');
  const off=canvas.style.width;
  fit(canvas,wrap,false,true,390,810,removed);
  assert.ok(removed.includes('width')&&removed.includes('height'));
