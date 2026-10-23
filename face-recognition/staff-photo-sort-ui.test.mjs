@@ -205,7 +205,7 @@ test('似ている候補の写真グループをチェックで複数選択し�
 });
 test('一括統合は一度だけ履歴へ記録し、全件確認後にしか変更しない',()=>{
  const start=html.indexOf('function mergeAlbumAiGroupsBatchSafely(');
- const end=html.indexOf('function renderCurrentAlbumAiGroups()',start);
+ const end=html.indexOf('function clearCurrentAlbumSingletonPairs()',start);
  const body=html.slice(start,end);
  assert.match(body,/const joined=data\.mergeTeacherAlbumGroupsBatch/);
  assert.ok(body.indexOf('const joined=')<body.indexOf('data.mergeUndo.push(snapshot)'));
@@ -216,7 +216,7 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
 });
 
 test('BJでも今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BJ/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BK/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
@@ -261,7 +261,7 @@ test('BJは1組ずつ写真を確認し、職員が確定するまで統合し�
  assert.match(html,/id="albumAiSingletonPairs"/);
  assert.match(html,/function renderCurrentAlbumSingletonPairs\(\)/);
  assert.match(html,/data\.suggestSingletonGroupPairs/);
- assert.match(html,/const checked=new Map\(\),decisions=new Map\(\)/);
+ assert.match(html,/checked:new Map\(\),decisions:new Map\(\),seen:new Set\(\)/);
  assert.match(html,/decide\('same'\)/);
  assert.match(html,/decide\('different'\)/);
  assert.match(html,/decide\('later'\)/);
@@ -287,7 +287,7 @@ test('BJは全候補を対象に1組ずつ表示し、元の写真を切り抜�
  const view=html.slice(start,end);
  assert.ok(start>0&&end>start);
  assert.match(view,/limit:Math\.max\(24,groups\.length\)/);
- assert.match(view,/let position=0/);
+ assert.match(view,/let position=candidates\.findIndex\(item=>!seen\.has\(pairId\(item\)\)\)/);
  assert.match(view,/candidates\[position\]/);
  assert.match(view,/pairReviewPhotos/);
  assert.match(view,/img\.src=fileUrl\(file\)/);
