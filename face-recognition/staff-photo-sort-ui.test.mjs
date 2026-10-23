@@ -668,7 +668,7 @@ test('BRのPC版は大きな見開きと5種類の編集ツールを2カラム�
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(html,/ALBUM EDITOR · 2026-10-23 BV/);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 BW/);
  assert.match(css,/@media\(min-width:980px\)/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
  assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
@@ -814,6 +814,34 @@ test('BVの写真読み込みは内側の縦スクロール位置基準、iPhone
  assert.match(body,/remove\.addEventListener\('click'/);
  assert.match(inline,/if\(section==='add'\)requestAnimationFrame/);
  assert.match(inline,/if\(next==='photos'\)requestAnimationFrame/);
+});
+
+test('BW: Photo gallery and every desktop tool remain direct children of editorPanel',()=>{
+ const start=html.indexOf('<div class="editorPanel">');
+ const end=html.indexOf('</section><section class="screen" data-screen="classManagement"',start);
+ assert.ok(start>=0&&end>start);
+ const fragment=html.slice(start,end);
+ const stack=[],roots=new Map(),orphans=[];
+ const voids=new Set(['input','img','br','hr','meta','link','source','wbr']);
+ for(const m of fragment.matchAll(/<\/?([a-z][a-z0-9-]*)\b[^>]*>/gi)){
+  const raw=m[0],tag=m[1].toLowerCase();
+  if(raw.startsWith('</')){
+   const k=stack.findLastIndex(x=>x.tag===tag);
+   if(k<0){orphans.push(raw);continue}
+   stack.length=k;
+  }else if(!voids.has(tag)&&!raw.endsWith('/>')){
+   for(const cls of ['photoManager','pageSettings','mobileEditorTabs','desktopEditorWelcome','editorLayerPanel','designToolbar']){
+    if(raw.includes('class="'+cls+'"'))roots.set(cls,stack.at(-1)?.raw||'');
+   }
+   if(raw.includes('class="pageSettingPane" data-page-pane="layout"'))roots.set('layoutPane',stack.at(-1)?.raw||'');
+   stack.push({tag,raw});
+  }
+ }
+ for(const cls of ['photoManager','pageSettings','mobileEditorTabs','desktopEditorWelcome','editorLayerPanel','designToolbar']){
+  assert.equal(roots.get(cls),'<div class="editorPanel">',cls+' must be in the right editor grid');
+ }
+ assert.equal(roots.get('layoutPane'),'<div class="pageSettingsBody">');
+ assert.ok(!orphans.includes('</details>'),'page settings details may not be prematurely closed');
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
