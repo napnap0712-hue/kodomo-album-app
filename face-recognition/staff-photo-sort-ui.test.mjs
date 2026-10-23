@@ -216,7 +216,7 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
 });
 
 test('BJでも今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BM/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BN/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
@@ -329,7 +329,7 @@ test('BKは同じ園児の確認後に、その場で園児名を選んで振り
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(html,/PHOTO SORT · 2026-10-23 BM/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BN/);
  assert.match(view,/same\.addEventListener\('click',\(\)=>\{/);
  assert.match(view,/childSelect\.setAttribute\('aria-label','振り分け先の園児名'\)/);
  assert.match(view,/getChildren\(data\.classId\)/);
@@ -379,7 +379,7 @@ test('BLは園児名を先に選び、写真を見ながら確定予定枚数を
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(html,/PHOTO SORT · 2026-10-23 BM/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BN/);
  assert.match(view,/assignPanel\.append\(assignTitle,childSelect,assignSummary,assignHint,assignPhotos,assignButtons\)/);
  assert.match(view,/assignSummary\.textContent=\(kid\?/);
  assert.match(view,/new Set\(included\.map\(i=>data\.samples\[i\]\?\.index\)\)\.size/);
@@ -430,7 +430,7 @@ test('BMは2段階の確認をなくし、最初から両グループの全写�
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(html,/PHOTO SORT · 2026-10-23 BM/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BN/);
  assert.match(view,/for\(const \[title,sectionFaces\] of \[\['候補①',sourceFaces\],\['候補②',targetFaces\]\]\)/);
  assert.match(view,/for\(const faceIndex of sectionFaces\)/);
  assert.match(view,/const preview=originalPhoto\(\{faceIndexes:\[faceIndex\]\},'元写真'\)/);
@@ -465,6 +465,33 @@ test('BMは誤分類の顔を個別に除外でき、未確定へ戻して再候
  assert.match(view,/next\.push\(\{key:'teacher-recheck-'\+\(\+\+nextId\),faceIndexes:\[faceIndex\]\}\)/);
  assert.match(view,/data\.suggestSingletonGroupPairs\(data\.samples,groups/);
  assert.doesNotMatch(view,/files\.splice\(|indexedDB\.|localStorage\.setItem\(|fetch\(|sendBeacon\(/);
+});
+
+test('BNは園児フォルダへ振り分ける予定の元写真を個別一覧で表示する',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BN/);
+ assert.match(view,/plannedHeading\.textContent='📷 振り分け予定の写真'/);
+ assert.match(view,/plannedPhotos\.className='pairPlannedPhotos'/);
+ assert.match(view,/assignPanel\.append\(assignTitle,childSelect,assignSummary,plannedHeading,plannedPhotos,assignHint,assignPhotos,assignButtons\)/);
+ assert.match(view,/const thumb=originalPhoto\(\{faceIndexes:\[faceIndex\]\},'写真 '\+\(\+\+number\)\)/);
+ assert.match(view,/thumb\.querySelector\('img'\)\.loading='lazy'/);
+ assert.match(html,/#albumAiSingletonPairs \.pairPlannedPhotos\{display:flex/);
+ assert.match(html,/#albumAiSingletonPairs \.pairPlannedPhoto \.pairOriginalFrame/);
+});
+test('BNは候補から顔を外したら予定写真と枚数を更新し、元写真は保持する',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(view,/const included=faces\.filter\(i=>!pendingPair\.excluded\.has\(i\)\)/);
+ assert.match(view,/const photoFaces=new Map\(\)/);
+ assert.match(view,/if\(Number\.isInteger\(photoIndex\)&&!photoFaces\.has\(photoIndex\)\)photoFaces\.set\(photoIndex,faceIndex\)/);
+ assert.match(view,/plannedPhotos\.replaceChildren\(\)/);
+ assert.match(view,/const photoCount=photoFaces\.size/);
+ assert.match(view,/refreshAssignPreview\(\);feedback\.textContent=''/);
+ assert.match(view,/assignButton\.disabled=!kid\|\|!included\.length\|\|conflicting/);
+ assert.doesNotMatch(view,/files\.splice\(|releasePhotoUrl\(|localStorage\.setItem\(|indexedDB\./);
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
