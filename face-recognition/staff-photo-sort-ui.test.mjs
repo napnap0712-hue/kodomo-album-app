@@ -668,7 +668,7 @@ test('BRのPC版は大きな見開きと5種類の編集ツールを2カラム�
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(html,/ALBUM EDITOR · 2026-10-23 BW/);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 BX/);
  assert.match(css,/@media\(min-width:980px\)/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
  assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
@@ -842,6 +842,25 @@ test('BW: Photo gallery and every desktop tool remain direct children of editorP
  }
  assert.equal(roots.get('layoutPane'),'<div class="pageSettingsBody">');
  assert.ok(!orphans.includes('</details>'),'page settings details may not be prematurely closed');
+});
+
+test('BXはPC写真一覧の振り分けボタンのみ小さく、写真を主役にする',()=>{
+ const start=html.indexOf('/* BX: Photo-first desktop thumbnails');
+ const end=html.indexOf('</style>',start);
+ assert.ok(start>0&&end>start);
+ const css=html.slice(start,end);
+ assert.match(css,/@media \(min-width:980px\)/);
+ assert.match(css,/#photoStrip>\.photoThumb>\.photoAssignButton\{/);
+ assert.match(css,/width:auto!important/);
+ assert.match(css,/height:29px!important;min-height:29px!important;max-height:29px!important/);
+ assert.match(css,/align-self:flex-end!important/);
+ assert.match(css,/box-shadow:none!important/);
+ assert.match(css,/font-size:11px!important/);
+ assert.doesNotMatch(css,/@media\s*\(max-width:/);
+ const src=html.slice(html.indexOf('function renderPhotoStrip()'),html.indexOf('function elementId()'));
+ assert.match(src,/assign\.addEventListener\('click'/);
+ assert.match(src,/assign\.textContent='振り分け'/);
+ assert.match(src,/item\.append\(img,remove,name,assign\)/);
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
