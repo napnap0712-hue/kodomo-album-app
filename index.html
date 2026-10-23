@@ -1517,7 +1517,7 @@ function show(id){
   files=[];designElements=[];editingId=null;selectedElementId=null;
   setEditorSaveState('試験モードを終了');
  }
- if(id!=='editor')clearTimeout(editorAutoSaveTimer);if(id==='editor'){activeEditorTab='none';const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab='none';document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.remove('active'));document.querySelector('.pageSettings').open=false;$('#seasonStickerPanel').hidden=true;}document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.dataset.screen===id));window.scrollTo({top:0,behavior:'instant'});if(id==='saved')renderSaved();if(id==='classProjects')renderProjects();if(id==='classManagement')renderManageClasses();if(id==='classDetail')renderManageClassDetail();if(id==='yearManagement')renderYearManagement();if(id==='safetyManagement')renderSafetyManagement();if(id==='syncManagement')syncCheckHealth();}
+ if(id!=='editor')clearTimeout(editorAutoSaveTimer);if(id==='editor'){activeEditorTab='none';const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab='none';document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.remove('active'));document.querySelector('.pageSettings').open=false;$('#seasonStickerPanel').hidden=true;}document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.dataset.screen===id));window.scrollTo({top:0,behavior:'instant'});if(id==='saved')renderSaved();if(id==='classProjects')renderProjects();if(id==='classManagement')renderManageClasses();if(id==='classDetail')renderManageClassDetail();if(id==='yearManagement')renderYearManagement();if(id==='safetyManagement')renderSafetyManagement();if(id==='syncManagement')syncCheckHealth();if(id==='photoPick')void refreshPhotoSortResumeAvailability();}
 async function renderSafetyManagement(){const storage=$('#safetyStorage'),drafts=$('#safetyDrafts'),online=$('#safetyOnline'),error=$('#safetyError');if(!storage)return;storage.textContent='確認中…';drafts.textContent='確認中…';online.textContent=navigator.onLine?'オンライン（端末の通信判定）':'オフライン（端末の通信判定）';error.textContent='';try{if(navigator.storage&&navigator.storage.estimate){const v=await navigator.storage.estimate();const mb=n=>Number.isFinite(n)?(n/1024/1024).toFixed(1)+' MB':'不明';storage.textContent='推定使用量 '+mb(v.usage)+' ／ 推定上限 '+mb(v.quota); }else storage.textContent='このブラウザでは容量を取得できません';}catch(e){storage.textContent='容量を取得できません'}try{const all=await getAllDrafts();drafts.textContent='保存済みアルバム '+all.length+'件（全年度）';}catch(e){drafts.textContent='下書きの件数を確認できません';error.textContent='保存領域の読み取りに失敗しました。再確認してください。'}}
 const yearMetaKey='omoide-year-meta-v1';function initialSchoolYear(){const d=new Date();return d.getFullYear()-(d.getMonth()<3?1:0)}function yearMeta(){try{const v=JSON.parse(localStorage.getItem(yearMetaKey)||'null');return v&&Number.isInteger(v.base)&&Number.isInteger(v.active)?v:{base:initialSchoolYear(),active:initialSchoolYear()}}catch{return {base:initialSchoolYear(),active:initialSchoolYear()}}}function baseYear(){return yearMeta().base}function activeYear(){return yearMeta().active}function yearScopedKey(key){return key+(activeYear()===baseYear()?'':'-year-'+activeYear())}function draftInYear(d){return (d.year??baseYear())===activeYear()}
 const classSettingsKey='omoide-class-settings-v1';function getClassSettings(){try{return JSON.parse(localStorage.getItem(yearScopedKey(classSettingsKey))||'{}')}catch{return {}}}function displayClassName(c){return getClassSettings()[c.id]?.name||c.name}function childrenKey(id){return yearScopedKey('omoide-class-children-v1-'+id)}function getChildren(id){try{return JSON.parse(localStorage.getItem(childrenKey(id))||'[]')}catch{return []}}function saveChildren(v){localStorage.setItem(childrenKey(selected.id),JSON.stringify(v))}
@@ -2249,6 +2249,9 @@ async function saveCurrentPhotoSortCheckpoint(){
  photoSortCheckpointBusy=true;button.disabled=true;status.textContent='💾 写真と振り分けを保存中…';
  try{
   const key=photoSortCheckpointKey(),current=await photoSortCheckpointRead(key);
+  if(key!==photoSortCheckpointKey()||
+   !document.querySelector('[data-screen="photoAssign"]')?.classList.contains('active'))
+   throw Error('別のアルバムに切り替わったため途中保存を中止しました。');
   if(current&&photoSortCheckpointKnownSavedAt!==current.savedAt){
    if(!window.confirm('この枠には別の途中保存があります。上書きしますか？ 以前の途中経過は置き換わります。')){
     status.textContent='上書きを中止しました。今の写真や振り分けはそのままです。';return;
@@ -2265,6 +2268,7 @@ async function saveCurrentPhotoSortCheckpoint(){
    ai:photoSortCheckpointCaptureAI(albumAiGroupsData)
   };
   if(snapshot.photos.length!==snapshot.photoAssignments.length)throw Error('写真と振り分けの数が一致しません');
+  if(key!==photoSortCheckpointKey())throw Error('アルバムが変わりました。途中保存を中止しました。');
   await photoSortCheckpointWrite(snapshot);
   const verified=await photoSortCheckpointRead(key);
   if(!verified||verified.savedAt!==snapshot.savedAt||verified.photos.length!==snapshot.photos.length||
