@@ -1642,7 +1642,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </div>
 <div class="editorExportPanel"><button class="secondary" id="exportImage" type="button">📤 左右ページを書き出す</button></div>
 <div id="pageExportModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="ページ画像を保存"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>📸 左右ページを保存</strong><button type="button" id="pageExportClose">×</button></div><p class="cropEditorHelp">左右を別々の画像にしました。保存ボタンから共有メニューを開き、「画像を保存」または「“ファイル”に保存」を選べます。</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><strong>左ページ</strong><img id="exportLeftPreview" alt="左ページ" style="width:100%;display:block;border:1px solid #ddd"><button type="button" id="exportLeftLink" style="width:100%;padding:12px">左ページを保存</button></div><div><strong>右ページ</strong><img id="exportRightPreview" alt="右ページ" style="width:100%;display:block;border:1px solid #ddd"><button type="button" id="exportRightLink" style="width:100%;padding:12px">右ページを保存</button></div></div><button type="button" id="pageExportDone" class="primary" style="width:100%">閉じる</button></div></div>
-<div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">「写真を移動」「消しゴム」「復元ブラシ」を切り替えて手動で透過できます。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><div class="personZoomControls"><button type="button" id="personZoomOut">−</button><input id="personZoom" aria-label="表示倍率" type="range" min="100" max="500" step="25" value="100"><button type="button" id="personZoomIn">＋</button><button type="button" id="personZoomReset">100%</button><span id="personZoomLabel">100%</span></div><p class="cropEditorHelp">2本指で拡大・移動できます。「写真を移動」では1本指で移動できます。</p><div class="personEditorModes"><button type="button" id="personMove" class="active">✋ 写真を移動</button><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="50" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
+<div id="personEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="背景透過を編集"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>🪄 背景透過を編集</strong><button type="button" id="personEditorClose">×</button></div><p class="cropEditorHelp" id="personEditorInfo">「写真を移動」「消しゴム」「復元ブラシ」を切り替えて手動で透過できます。</p><div class="personEditorStage"><canvas id="personEditorCanvas"></canvas></div><div class="personZoomControls"><button type="button" id="personZoomOut">−</button><input id="personZoom" aria-label="表示倍率" type="range" min="100" max="500" step="25" value="100"><button type="button" id="personZoomIn">＋</button><button type="button" id="personZoomReset">100%</button><span id="personZoomLabel">100%</span></div><p class="cropEditorHelp">2本指で拡大・移動できます。「写真を移動」では1本指で移動できます。</p><div class="personEditorModes"><button type="button" id="personMove" class="active">✋ 写真を移動</button><button type="button" id="personErase" class="active">消しゴム</button><button type="button" id="personRestore">復元ブラシ</button></div><label>ブラシの大きさ <input id="personBrushSize" type="range" min="5" max="100" value="30"></label><div class="personEditorModes"><button type="button" id="personUndo">↶ 元に戻す</button><button type="button" id="personRedo">↷ やり直す</button></div><div class="cropEditorActions"><button type="button" id="personCancel" class="secondary">キャンセル</button><button type="button" id="personApply" class="primary">✓ 適用する</button></div></div></div><div id="cropEditorModal" class="cropEditorModal" hidden role="dialog" aria-modal="true" aria-label="切り抜き範囲を調整"><div class="cropEditorCard"><div class="cropEditorHeading"><strong>✂ 切り抜き範囲を調整</strong><button type="button" id="cropEditorClose">×</button></div><p class="cropEditorHelp">写真を指で動かして、枠に残したい部分を合わせてね。</p><div class="cropEditorPreview" id="cropEditorPreview"><div id="cropEditorPhoto" class="cropEditorPhoto"><img id="cropEditorImage" alt="切り抜きプレビュー"></div></div><label>切り抜きの形 <select id="cropEditorShape"></select></label><label>写真の拡大・縮小 <input type="range" id="cropEditorZoom" min="100" max="300" step="5" value="100"></label><button type="button" id="cropEditorReset" class="secondary">写真の位置・拡大をリセット</button><div class="cropEditorActions"><button type="button" id="cropEditorCancel" class="secondary">キャンセル</button><button type="button" id="cropEditorApply" class="primary">✓ 適用する</button></div></div></div></section>
 <section class="screen" data-screen="saved">
 <div class="top"><button class="back" data-back="classChoice">‹</button><div class="topText"><p class="brand">SAVED ALBUMS</p><h1>保存済みを見る</h1><p class="lead" id="savedClassLabel">このクラスのアルバム</p></div></div>
 <div id="savedList" class="savedList"></div><p class="muted">旧バージョンの保存データは削除せず、読み込み方法を確認してから接続します。</p>
@@ -4913,22 +4913,17 @@ let cropDialogTarget=null,cropDialogDraft=null;
 const cropModal=$('#cropEditorModal'),cropPreview=$('#cropEditorPhoto'),cropImage=$('#cropEditorImage');
 const cropShape=$('#cropEditorShape'),cropZoom=$('#cropEditorZoom');
 cropShape.innerHTML=$('#photoFrameShape').innerHTML;
+let cropDialogOriginalAspect=1;
 function previewCropDialog(){
  if(!cropDialogDraft)return;
  const d=cropDialogDraft;
- cropImage.style.objectPosition=(d.cropX??50)+'% '+(d.cropY??50)+'%';
- cropImage.style.transform='scale('+((d.zoom||100)/100)+')';
+ cropPreview.style.aspectRatio=isSquarePhotoFrame(d.frameShape)?'1':String(cropDialogOriginalAspect);
+ cropPreview.dataset.frameShape=d.frameShape||'rectangle';
  applyPhotoFrameShape(cropPreview,cropImage,d.frameShape||'rectangle');
- cropPreview.style.overflow='hidden';
- cropPreview.style.borderRadius=cropImage.style.borderRadius;
- cropPreview.style.clipPath=cropImage.style.clipPath;
- cropPreview.style.maskImage=cropImage.style.maskImage;
- cropPreview.style.webkitMaskImage=cropImage.style.webkitMaskImage;
- cropPreview.style.maskSize='100% 100%';cropPreview.style.webkitMaskSize='100% 100%';
- cropPreview.style.maskRepeat='no-repeat';cropPreview.style.webkitMaskRepeat='no-repeat';
- cropImage.style.borderRadius='0';cropImage.style.clipPath='none';cropImage.style.maskImage='none';cropImage.style.webkitMaskImage='none';
+ positionPhotoInFrame(cropPreview,cropImage,d);
 }
-function closeCropDialog(){cropModal.hidden=true;cropDialogTarget=null;cropDialogDraft=null;}
+cropImage.addEventListener('load',previewCropDialog);
+function closeCropDialog(){cropModal.hidden=true;cropDialogTarget=null;cropDialogDraft=null;cropTouches.clear();cropGesture=null;}
 
 /* Local, nondestructive alpha brush editor. Automatic subject detection is not yet enabled. */
 let personTarget=null,personMode='erase',personOriginal=null,personHistory=[],personFuture=[],personDrawing=false;
@@ -5021,9 +5016,11 @@ $('#personApply').addEventListener('click',()=>{
 
 $('#openCropEditor').addEventListener('click',()=>{
  const el=activeElement();if(!el||el.type!=='photo'||!files[el.fileIndex])return;
- cropDialogTarget=el.id;cropDialogDraft={frameShape:el.frameShape||'rectangle',zoom:el.zoom||100,cropX:el.cropX??50,cropY:el.cropY??50};
- cropImage.src=fileUrl(files[el.fileIndex]);cropShape.value=cropDialogDraft.frameShape;cropZoom.value=cropDialogDraft.zoom;
- cropModal.hidden=false;previewCropDialog();
+ cropDialogTarget=el.id;cropDialogDraft={frameShape:el.frameShape||'rectangle',zoom:Math.max(100,el.zoom||100),cropX:el.cropX??50,cropY:el.cropY??50};
+ const canvas=$('#designCanvas'),ratio=canvas?.clientWidth/Math.max(1,canvas?.clientHeight||1)||1.414;
+ cropDialogOriginalAspect=Math.max(.35,Math.min(3.5,(el.w*ratio)/Math.max(1,el.h)));
+ cropShape.value=cropDialogDraft.frameShape;cropZoom.value=cropDialogDraft.zoom;
+ cropModal.hidden=false;cropImage.src=el.personCutout||fileUrl(files[el.fileIndex]);previewCropDialog();
 });
 cropShape.addEventListener('change',()=>{if(cropDialogDraft){cropDialogDraft.frameShape=cropShape.value;previewCropDialog();}});
 cropZoom.addEventListener('input',()=>{if(cropDialogDraft){cropDialogDraft.zoom=Number(cropZoom.value);previewCropDialog();}});
@@ -5032,31 +5029,58 @@ $('#cropEditorClose').addEventListener('click',closeCropDialog);
 $('#cropEditorCancel').addEventListener('click',closeCropDialog);
 cropModal.addEventListener('click',e=>{if(e.target===cropModal)closeCropDialog();});
 let cropPointer=null;
-cropPreview.addEventListener('pointerdown',e=>{if(!cropDialogDraft)return;cropPointer={id:e.pointerId,x:e.clientX,y:e.clientY,cx:cropDialogDraft.cropX,cy:cropDialogDraft.cropY};cropPreview.setPointerCapture(e.pointerId);e.preventDefault();});
+const cropTouches=new Map();let cropGesture=null;
+cropPreview.addEventListener('pointerdown',e=>{
+ if(!cropDialogDraft)return;
+ cropTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ cropPreview.setPointerCapture(e.pointerId);
+ if(cropTouches.size===1){
+  cropPointer={id:e.pointerId,x:e.clientX,y:e.clientY,cx:cropDialogDraft.cropX,cy:cropDialogDraft.cropY};
+ }else{cropPointer=null;cropGesture=null;}
+ e.preventDefault();
+});
 cropPreview.addEventListener('pointermove',e=>{
- if(!cropPointer||e.pointerId!==cropPointer.id||!cropDialogDraft)return;
- const rect=cropPreview.getBoundingClientRect();
- cropDialogDraft.cropX=Math.max(0,Math.min(100,cropPointer.cx-(e.clientX-cropPointer.x)/rect.width*100));
- cropDialogDraft.cropY=Math.max(0,Math.min(100,cropPointer.cy-(e.clientY-cropPointer.y)/rect.height*100));
+ if(!cropDialogDraft||!cropTouches.has(e.pointerId))return;
+ cropTouches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(cropTouches.size>=2){
+  const [a,b]=[...cropTouches.values()];
+  const dist=Math.hypot(a.x-b.x,a.y-b.y);
+  if(!cropGesture){cropGesture={distance:dist,zoom:cropDialogDraft.zoom};return;}
+  cropDialogDraft.zoom=Math.max(100,Math.min(300,Math.round(cropGesture.zoom*dist/Math.max(1,cropGesture.distance))));
+  cropZoom.value=cropDialogDraft.zoom;previewCropDialog();return;
+ }
+ if(!cropPointer||cropPointer.id!==e.pointerId)return;
+ const m=framePhotoMetrics(cropPreview.clientWidth,cropPreview.clientHeight,cropImage.naturalWidth,cropImage.naturalHeight,cropDialogDraft.zoom);
+ if(!m)return;
+ cropDialogDraft.cropX=m.maxPanX?Math.max(0,Math.min(100,cropPointer.cx+(e.clientX-cropPointer.x)/m.maxPanX*50)):50;
+ cropDialogDraft.cropY=m.maxPanY?Math.max(0,Math.min(100,cropPointer.cy+(e.clientY-cropPointer.y)/m.maxPanY*50)):50;
  previewCropDialog();
 });
-['pointerup','pointercancel','lostpointercapture'].forEach(type=>cropPreview.addEventListener(type,()=>{cropPointer=null;}));
+['pointerup','pointercancel','lostpointercapture'].forEach(type=>cropPreview.addEventListener(type,e=>{
+ cropTouches.delete(e.pointerId);cropPointer=null;cropGesture=null;
+ if(cropTouches.size===1){
+  const [id,pos]=[...cropTouches.entries()][0];
+  cropPointer={id,x:pos.x,y:pos.y,cx:cropDialogDraft?.cropX??50,cy:cropDialogDraft?.cropY??50};
+ }
+}));
 $('#cropEditorApply').addEventListener('click',()=>{
  const el=designElements.find(item=>item.id===cropDialogTarget);
  if(!el||!cropDialogDraft){closeCropDialog();return;}
- const shape=cropDialogDraft.frameShape;
- el.zoom=cropDialogDraft.zoom;el.cropX=cropDialogDraft.cropX;el.cropY=cropDialogDraft.cropY;
+ el.frameShape=cropDialogDraft.frameShape;
+ el.zoom=Math.max(100,cropDialogDraft.zoom);
+ el.cropX=cropDialogDraft.cropX;el.cropY=cropDialogDraft.cropY;el.fit='cover';
+ if(isSquarePhotoFrame(el.frameShape))squarePhotoFrameGeometry(el,$('#designCanvas'));
  closeCropDialog();
- if(el.frameShape!==shape){$('#photoFrameShape').value=shape;$('#photoFrameShape').dispatchEvent(new Event('change',{bubbles:true}));}
- else{updateSelectedPhotoCrop();}
- $('#editorStatus').textContent='切り抜く範囲を適用しました。';
+ renderSpread(files);
+ markEditorUnsaved();
+ $('#editorStatus').textContent='フレームに写真をフィットしました。元写真はそのままです。';
 });
 
 $('#photoCropReset').addEventListener('click',()=>{const el=activeElement();if(!el||el.type!=='photo')return;el.zoom=100;el.cropX=50;el.cropY=50;el.fit='cover';$('#photoZoom').value='100';$('#photoCropX').value='50';$('#photoCropY').value='50';$('#photoCropMode').value='cover';updateSelectedPhotoCrop();$('#editorStatus').textContent='切り抜きの倍率と位置をリセットしました。';});
 $('#photoCropMode').addEventListener('change',()=>{} );
 $('#photoZoom').addEventListener('input',e=>{const el=activeElement();if(!el||el.type!=='photo')return;el.zoom=Number(e.target.value);const img=$('#designCanvas').querySelector('[data-element-id="'+el.id+'"] img');if(img)img.style.transform='scale('+(el.zoom/100)+')';});
 $('#photoInnerMove').addEventListener('click',()=>{const el=activeElement();if(!el||el.type!=='photo')return;photoInnerMoveMode=!photoInnerMoveMode;syncElementTools();$('#editorStatus').textContent=photoInnerMoveMode?'写真の中身をドラッグして位置を調整できます。':'写真の中身の移動を終了しました。';});
-$('#photoFrameShape').addEventListener('change',e=>{const el=activeElement();if(!el||el.type!=='photo')return;const shape=e.target.value;el.frameShape=shape;if(!['rectangle','rounded','oval'].includes(shape)){const size=Math.min(100,Math.max(8,(Number(el.w||30)+Number(el.h||30))/2));el.w=size;el.h=size;el.x=Math.max(0,Math.min(100-size,el.x));el.y=Math.max(0,Math.min(100-size,el.y));}updateSelectedPhotoCrop();renderSpread(files);$('#editorStatus').textContent=shape==='flower'?'花型を均等な丸い花びらに整えました。':'写真の形を変更しました。';});
+$('#photoFrameShape').addEventListener('change',e=>{const el=activeElement();if(!el||el.type!=='photo')return;el.frameShape=e.target.value;if(isSquarePhotoFrame(el.frameShape))squarePhotoFrameGeometry(el,$('#designCanvas'));renderSpread(files);$('#editorStatus').textContent='写真のフレームを変更しました。';});
 $('#photoCropX').addEventListener('input',e=>{const el=activeElement();if(!el||el.type!=='photo')return;el.cropX=Number(e.target.value);updateSelectedPhotoCrop();});
 $('#photoCropY').addEventListener('input',e=>{const el=activeElement();if(!el||el.type!=='photo')return;el.cropY=Number(e.target.value);updateSelectedPhotoCrop();});
 $('#designCanvas').addEventListener('pointerdown',event=>{if(event.target!==$('#designCanvas'))return;selectedElementId=null;$('#designCanvas').querySelectorAll('.designElement.selected').forEach(node=>node.classList.remove('selected'));syncElementTools();syncLayerPanel();$('#editorStatus').textContent='選択を解除しました。';});
