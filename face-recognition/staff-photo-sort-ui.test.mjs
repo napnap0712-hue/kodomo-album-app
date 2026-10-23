@@ -330,7 +330,7 @@ test('BKは同じ園児の確認後に、その場で園児名を選んで振り
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
  assert.match(html,/PHOTO SORT · 2026-10-23 BM/);
- assert.match(view,/same\.addEventListener\('click',openPairAssignment\)/);
+ assert.match(view,/same\.addEventListener\('click',\(\)=>\{/);
  assert.match(view,/childSelect\.setAttribute\('aria-label','振り分け先の園児名'\)/);
  assert.match(view,/getChildren\(data\.classId\)/);
  assert.match(view,/assignPanel\.hidden=false/);
