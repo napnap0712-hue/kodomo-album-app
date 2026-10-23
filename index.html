@@ -2163,10 +2163,21 @@ let albumAiGeneration=0,albumAiRunning=false,albumAiGroupsData=null;
 // These are photos excluded from THIS album, not deleted from the user's device.
 // File indices stay stable throughout review and are compacted only on editor entry.
 function isAlbumUnusedPhoto(index){return !!albumAiGroupsData?.unusedPhotoIndexes?.has(index)}
-function refreshAfterAlbumPhotoUseChange(data,message){
+function refreshAfterAlbumPhotoUseChange(data,message,affectedKeys=[]){
  if(data!==albumAiGroupsData||!data.valid())return;
- data.pairReviewSession=null;
- data.skippedSingletonPairs?.clear();
+ // Keep every other teacher decision; only comparisons involving altered
+ // groups must be reviewed again.
+ const keys=new Set(affectedKeys.map(String));
+ const affected=id=>id.split('→').some(key=>keys.has(key));
+ const session=data.pairReviewSession;
+ if(session){
+  for(const [id,pair] of session.checked)
+   if(keys.has(String(pair.sourceKey))||keys.has(String(pair.targetKey)))session.checked.delete(id);
+  for(const id of [...session.decisions.keys()])if(affected(id))session.decisions.delete(id);
+  for(const id of [...session.seen])if(affected(id))session.seen.delete(id);
+ }
+ for(const id of [...(data.skippedSingletonPairs||[])])
+  if(affected(id))data.skippedSingletonPairs.delete(id);
  data.mergeUndo=[];data.mergeSuggestions=null;data.selections.clear();
  $('#currentAlbumAiStatus').textContent=message;
  renderPhotoAssignmentPage();
@@ -2282,13 +2293,15 @@ function setCurrentAlbumPhotoUnused(data,photoIndex){
  if(data!==albumAiGroupsData||!data.valid()||!Number.isInteger(photoIndex)||
   photoIndex<0||photoIndex>=files.length||data.unusedPhotoIndexes.has(photoIndex))return;
  if(!window.confirm('この写真を今回のアルバムで使わないことにしますか？ 写っているすべての顔が候補から外れ、見開き編集にも追加されません。端末の元写真は削除しません。'))return;
+ const affectedKeys=data.groups.filter(group=>group.faceIndexes.some(i=>data.samples[i]?.index===photoIndex))
+  .map(group=>group.key);
  data.unusedPhotoIndexes.add(photoIndex);
  data.unusedPhotoOrder.push(photoIndex);
  data.groups=data.groups.map(group=>({
   ...group,faceIndexes:group.faceIndexes.filter(i=>data.samples[i]?.index!==photoIndex)
  })).filter(group=>group.faceIndexes.length);
  data.confirmed=new Set([...data.confirmed].filter(key=>data.groups.some(g=>g.key===key)));
- refreshAfterAlbumPhotoUseChange(data,'📷 写真1枚を「使わない」にしました。元写真は削除していません。戻すこともできるよ。');
+ refreshAfterAlbumPhotoUseChange(data,'📷 写真1枚を「使わない」にしました。元写真は削除していません。戻すこともできるよ。',affectedKeys);
 }
 function restoreLastUnusedAlbumPhoto(data){
  if(data!==albumAiGroupsData||!data.valid()||!data.unusedPhotoOrder.length)return;
