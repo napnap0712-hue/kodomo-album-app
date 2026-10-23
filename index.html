@@ -4314,10 +4314,14 @@ item.append(img,remove,name,assign);fragment.appendChild(item);});strip.replaceC
  // Loading all 101+ original photos into image decoders at once can stall Safari.
  const thumbs=[...strip.querySelectorAll('img[data-photo-index]')];
  const refreshVisible=()=>{
-  const bounds=strip.getBoundingClientRect();
+  const desktop=window.matchMedia('(min-width:980px)').matches;
+  // The grid itself can be thousands of pixels tall: use the scrollable panel
+  // (not the grid) as the viewport, so 100+ photos are not decoded together.
+  if(desktop&&strip.closest('.photoAddPane')?.hidden)return;
+  const viewport=desktop?strip.closest('.photoManager'):strip;
+  const bounds=(viewport||strip).getBoundingClientRect();
   // A closed tab has zero geometry: load thumbnails only after it becomes visible.
   if(bounds.width<=0||bounds.height<=0)return;
-  const desktop=window.matchMedia('(min-width:980px)').matches;
   const margin=desktop?Math.max(160,bounds.height/2):Math.max(bounds.width,320);
   for(const img of thumbs){
    if(img.src)continue;
