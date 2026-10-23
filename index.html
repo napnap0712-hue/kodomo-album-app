@@ -1196,6 +1196,57 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  }
 }
 
+
+/* BU: Desktop photo library stays inside the right editor settings panel.
+   All mobile/tablet gallery and save/assignment behavior remain unchanged. */
+@media (min-width:980px){
+ .screen[data-screen="editor"][data-editor-tab="photos"] .editorPanel>.photoManager{
+  grid-column:2!important;grid-row:2!important;
+  min-width:0;width:100%;box-sizing:border-box;
+  align-self:start!important;
+  margin-top:calc(var(--desktop-editor-tabs-height, 152px) + 12px)!important;
+  max-height:calc(100dvh - 255px)!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  overscroll-behavior:contain;
+ }
+ .screen[data-screen="editor"][data-editor-tab="photos"] .photoSectionTabs{
+  position:sticky;top:0;z-index:3;background:#fff;padding:0 0 4px;
+ }
+ .screen[data-screen="editor"][data-editor-tab="photos"] .photoAddPane{
+  min-width:0;
+ }
+ .screen[data-screen="editor"][data-editor-tab="photos"] .photoManager #photoStrip{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+  min-height:0!important;max-height:none!important;
+  overflow:visible!important;overscroll-behavior:auto!important;
+  scroll-snap-type:none!important;
+  scroll-padding:0!important;
+  padding:4px 0 12px!important;
+ }
+ .screen[data-screen="editor"][data-editor-tab="photos"] #photoStrip>.photoThumb{
+  box-sizing:border-box!important;
+  flex:none!important;
+  min-width:0!important;width:100%!important;
+  min-height:0!important;
+  display:flex;flex-direction:column;
+  gap:5px;
+  scroll-snap-align:none!important;scroll-snap-stop:normal!important;
+ }
+ .screen[data-screen="editor"][data-editor-tab="photos"] #photoStrip>.photoThumb>img{
+  width:100%!important;height:auto!important;
+  aspect-ratio:4/3;object-fit:cover;
+  display:block;
+ }
+ .screen[data-screen="editor"][data-editor-tab="photos"] #photoStrip>.photoThumb .photoAssignButton{
+  width:100%;min-height:32px;
+ }
+ .screen[data-screen="editor"][data-editor-tab="photos"] #photoStrip>.photoAssignPanel{
+  grid-column:1/-1;
+ }
+}
+
 </style>
 </head>
 <body>
@@ -1306,7 +1357,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-23 BT</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="viewSplitHistory" type="button" hidden>🕘 保存履歴</button><button class="secondary" id="restoreSplitBackup" type="button" hidden>🛟 バックアップから復元</button><button class="secondary" id="restorePreviousSplitBackup" type="button" hidden>🕰 前回のバックアップ</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button><button class="secondary" id="safeMigrationTrial" type="button">🛡️ 安全移行の試験（途中失敗も検証）</button><button class="secondary" id="safeSplitOpenCheck" type="button">📖 安全な分離コピーの読み込み確認</button><button class="secondary" id="fictionalNewSplitTest" type="button">🌼 架空の新規アルバムを分離保存テスト</button><button class="secondary" id="fictionalSplitPreviewButton" type="button">👀 架空アルバムを表示</button><button class="secondary" id="safeSplitEditorToggle" type="button">🧪 分離コピーを編集画面で試す</button><button class="secondary" id="safeSplitEditorSave" type="button" hidden>💾 試験コピーだけ保存</button><button class="secondary" id="recoveryGuideToggle" type="button" aria-expanded="false" aria-controls="recoveryGuidePanel">🛟 復旧リハーサルの手順</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="secondary desktopEditorMore" type="button" id="desktopEditorMore" aria-expanded="false" aria-controls="desktopEditorExtraHint">⋯ その他</button><button class="primary" id="exportImage">左右ページを書き出す</button><span id="desktopEditorExtraHint" class="srOnly">保存履歴や復元などの追加操作を表示</span></div></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-23 BU</p><h1>見開き編集</h1><p class="lead">タイトルや背景を整えて、写真を配置します。</p></div><div class="editorActions"><span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span><button class="secondary" id="saveDraft">下書きを保存</button><button class="secondary" id="viewSplitHistory" type="button" hidden>🕘 保存履歴</button><button class="secondary" id="restoreSplitBackup" type="button" hidden>🛟 バックアップから復元</button><button class="secondary" id="restorePreviousSplitBackup" type="button" hidden>🕰 前回のバックアップ</button><button class="secondary" id="trialSaveDraft" type="button">🧪 試験保存（別コピー）</button><button class="secondary" id="trialViewDraft" type="button">👀 試験コピーを表示</button><button class="secondary" id="trialStressDraft" type="button">🧪 試験コピーの更新20回</button><button class="secondary" id="trialSplitStore" type="button">🛡️ 写真を触らない分離保存20回テスト</button><button class="secondary" id="trialSplitMigration" type="button">📦 分離保存への移行コピーを検証</button><button class="secondary" id="createMigrationBackup" type="button">🛡️ 移行前バックアップを作成・検証</button><button class="secondary" id="preMigrationSafetyAudit" type="button">🔎 移行前の安全チェック</button><button class="secondary" id="safeMigrationTrial" type="button">🛡️ 安全移行の試験（途中失敗も検証）</button><button class="secondary" id="safeSplitOpenCheck" type="button">📖 安全な分離コピーの読み込み確認</button><button class="secondary" id="fictionalNewSplitTest" type="button">🌼 架空の新規アルバムを分離保存テスト</button><button class="secondary" id="fictionalSplitPreviewButton" type="button">👀 架空アルバムを表示</button><button class="secondary" id="safeSplitEditorToggle" type="button">🧪 分離コピーを編集画面で試す</button><button class="secondary" id="safeSplitEditorSave" type="button" hidden>💾 試験コピーだけ保存</button><button class="secondary" id="recoveryGuideToggle" type="button" aria-expanded="false" aria-controls="recoveryGuidePanel">🛟 復旧リハーサルの手順</button><button class="secondary" id="exportMigrationBackupFile" type="button">📦 保護バックアップをMacへ書き出す</button><button class="secondary" id="verifyPortableBackup" type="button">🔍 バックアップファイルを検証</button><button class="secondary" id="restorePortableTrial" type="button">🧪 ファイルを試験領域へ復元</button><button class="secondary" id="viewRestoredPortableTrial" type="button">👀 復元した試験アルバムを表示</button><input type="file" id="restorePortableTrialInput" accept=".json,.omoide.json,application/json" hidden><input type="file" id="portableBackupFileInput" accept=".json,.omoide.json,application/json" hidden><button class="secondary" id="trialSyncBackground" type="button">🎨 今の背景を試験コピーへ反映</button><button class="secondary" id="trialSyncLayout" type="button">📐 今の配置を試験コピーへ反映</button><button class="secondary" id="trialLayoutStress20" type="button">🧪 分離配置保存20回テスト</button><button class="secondary" id="trialSplitPreviewButton" type="button">👀 分離保存コピーのページを確認</button><button class="secondary desktopEditorMore" type="button" id="desktopEditorMore" aria-expanded="false" aria-controls="desktopEditorExtraHint">⋯ その他</button><button class="primary" id="exportImage">左右ページを書き出す</button><span id="desktopEditorExtraHint" class="srOnly">保存履歴や復元などの追加操作を表示</span></div></div>
 <section id="editorStorageChoice" style="margin:12px 0;padding:12px;border:1px solid #dbe4ef;border-radius:12px;background:#f8fbff">
 <strong style="font-size:13px">💾 このアルバムの保存方式</strong>
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:9px">
@@ -1916,6 +1967,7 @@ function setPhotoSection(section){
  const add=manager.querySelector('.photoAddPane'),edit=manager.querySelector('.photoEditPane');
  if(add)add.hidden=section!=='add';if(edit)edit.hidden=section!=='edit';
  if(section==='edit')updatePhotoEditHint(activeElement());
+ if(section==='add')requestAnimationFrame(()=>manager.querySelector('#photoStrip')?.onscroll?.());
 }
 function updatePhotoEditHint(active){
  const pane=document.querySelector('.screen[data-screen="editor"] .photoEditPane');
@@ -1937,7 +1989,7 @@ function setupUnifiedTextTab(){
 setupUnifiedTextTab();
 setupPhotoSectionTabs();
 
-function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===tab?'none':tab;activeEditorTab=next;const tools=$('#elementTools'),textCard=document.querySelector('.screen[data-screen="editor"] .textTabUnifiedCard'),photoManager=document.querySelector('.screen[data-screen="editor"] .photoManager');if(tools&&textCard&&photoManager){if(next==='photos'){(photoManager.querySelector('.photoEditPane')||photoManager).appendChild(tools);photoInspectorOpen=true;setPhotoSection(activePhotoSection);}else{textCard.appendChild(tools);}}const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab=next;document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.toggle('active',b.dataset.editorTab===next));$('#seasonStickerPanel').hidden=next!=='stamps';if(next==='stamps')renderSeasonStickerPanel();if(next==='text'||next==='photos')syncElementTools();const settings=document.querySelector('.pageSettings');settings.open=next==='background'||next==='layout';if(next==='background'||next==='layout'){const pageTab=next;document.querySelectorAll('[data-page-tab]').forEach(b=>b.classList.toggle('active',b.dataset.pageTab===pageTab));document.querySelectorAll('[data-page-pane]').forEach(p=>p.hidden=p.dataset.pagePane!==pageTab);}}
+function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===tab?'none':tab;activeEditorTab=next;const tools=$('#elementTools'),textCard=document.querySelector('.screen[data-screen="editor"] .textTabUnifiedCard'),photoManager=document.querySelector('.screen[data-screen="editor"] .photoManager');if(tools&&textCard&&photoManager){if(next==='photos'){(photoManager.querySelector('.photoEditPane')||photoManager).appendChild(tools);photoInspectorOpen=true;setPhotoSection(activePhotoSection);}else{textCard.appendChild(tools);}}const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab=next;document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.toggle('active',b.dataset.editorTab===next));$('#seasonStickerPanel').hidden=next!=='stamps';if(next==='stamps')renderSeasonStickerPanel();if(next==='text'||next==='photos')syncElementTools();if(next==='photos')requestAnimationFrame(()=>photoManager?.querySelector('#photoStrip')?.onscroll?.());const settings=document.querySelector('.pageSettings');settings.open=next==='background'||next==='layout';if(next==='background'||next==='layout'){const pageTab=next;document.querySelectorAll('[data-page-tab]').forEach(b=>b.classList.toggle('active',b.dataset.pageTab===pageTab));document.querySelectorAll('[data-page-pane]').forEach(p=>p.hidden=p.dataset.pagePane!==pageTab);}}
 
 document.querySelectorAll('[data-editor-tab]').forEach(b=>b.addEventListener('click',()=>switchEditorTab(b.dataset.editorTab)));
 function startEditingWithSelectedPhotos(){
@@ -4262,21 +4314,31 @@ item.append(img,remove,name,assign);fragment.appendChild(item);});strip.replaceC
  // Loading all 101+ original photos into image decoders at once can stall Safari.
  const thumbs=[...strip.querySelectorAll('img[data-photo-index]')];
  const refreshVisible=()=>{
-  const bounds=strip.getBoundingClientRect(),margin=Math.max(bounds.width,320);
+  const bounds=strip.getBoundingClientRect();
+  // A closed tab has zero geometry: load thumbnails only after it becomes visible.
+  if(bounds.width<=0||bounds.height<=0)return;
+  const desktop=window.matchMedia('(min-width:980px)').matches;
+  const margin=desktop?Math.max(160,bounds.height/2):Math.max(bounds.width,320);
   for(const img of thumbs){
    if(img.src)continue;
    const box=img.getBoundingClientRect();
-   if(box.right>=bounds.left-margin&&box.left<=bounds.right+margin){
+   const nearHorizontal=box.right>=bounds.left-(desktop?0:margin)&&box.left<=bounds.right+(desktop?0:margin);
+   const nearVertical=!desktop||(box.bottom>=bounds.top-margin&&box.top<=bounds.bottom+margin);
+   if(nearHorizontal&&nearVertical){
     const file=files[Number(img.dataset.photoIndex)];
     if(file)img.src=fileUrl(file);
    }
   }
  };
  let queued=false;
- strip.onscroll=()=>{
+ const scheduleRefresh=()=>{
   if(queued)return;queued=true;
   requestAnimationFrame(()=>{queued=false;refreshVisible()});
  };
+ strip.onscroll=scheduleRefresh;
+ // On desktop the photo MANAGER scrolls vertically instead of the strip horizontally.
+ const manager=strip.closest('.photoManager');
+ if(manager)manager.onscroll=scheduleRefresh;
  refreshVisible();
 }
 function elementId(){return 'el-'+Date.now().toString(36)+'-'+(++elementCounter).toString(36);}
