@@ -822,7 +822,7 @@ test('BYは画像エラー時に元Blobを残して再読込と表示失敗の�
  assert.match(helper,/img\.onerror=async/);
  assert.match(helper,/URL\.createObjectURL\(file\)/);
  assert.match(helper,/reader\.readAsDataURL\(file\)/);
- assert.match(helper,/photoDataUrlFallbacks\.set\(file,data\)/);
+ assert.match(helper,/if\(stage===3&&img\.src\.startsWith\('data:image\/'\)\)photoDataUrlFallbacks\.set\(file,img\.src\)/);
  assert.match(helper,/img\.removeAttribute\('src'\)/);
  assert.match(helper,/写真を表示できません/);
  assert.doesNotMatch(helper,/\.splice\(|indexedDB\.|localStorage\.|store\.delete\(/);
