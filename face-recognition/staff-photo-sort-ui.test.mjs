@@ -668,7 +668,7 @@ test('BRのPC版は大きな見開きと5種類の編集ツールを2カラム�
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(html,/ALBUM EDITOR · 2026-10-23 BX/);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 BY/);
  assert.match(css,/@media\(min-width:980px\)/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
  assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
@@ -798,23 +798,48 @@ test('BVのPC写真タブは右側にとどまり、写真一覧だけ2列で高
  assert.match(css,/\.photoAddPane\[hidden\]\{/);
  assert.doesNotMatch(css,/@media\s*\(max-width/);
 });
-test('BVの写真読み込みは内側の縦スクロール位置基準、iPhone横スクロールは維持する',()=>{
- const start=inline.indexOf('function renderPhotoStrip()');
- const end=inline.indexOf('function elementId()',start);
- const body=inline.slice(start,end);
- assert.ok(start>=0&&end>start);
- assert.match(body,/if\(desktop&&strip\.closest\('\.photoAddPane'\)\?\.hidden\)return/);
- assert.match(body,/const bounds=strip\.getBoundingClientRect\(\)/);
- assert.match(body,/const margin=desktop\?Math\.max\(160,bounds\.height\/2\):Math\.max\(bounds\.width,320\)/);
- assert.match(body,/nearHorizontal&&nearVertical/);
- assert.match(body,/strip\.onscroll=scheduleRefresh/);
- assert.doesNotMatch(body,/manager\.onscroll=scheduleRefresh/);
+test('BYの写真一覧はSafariで未設定srcの「？」を生まない',()=>{
+ const begin=inline.indexOf('function renderPhotoStrip()');
+ const stop=inline.indexOf('function elementId()',begin);
+ const body=inline.slice(begin,stop);
+ assert.ok(begin>0&&stop>begin);
+ assert.match(body,/img\.loading='lazy'/);
+ assert.match(body,/displayEditorPhotoReliably\(img,file\)/);
+ assert.match(body,/strip\.onscroll=null/);
+ assert.doesNotMatch(body,/refreshVisible|scheduleRefresh|if\(img\.src\)continue/);
  assert.match(body,/item\.addEventListener\('click'/);
  assert.match(body,/assign\.addEventListener\('click'/);
  assert.match(body,/remove\.addEventListener\('click'/);
- assert.match(inline,/if\(section==='add'\)requestAnimationFrame/);
- assert.match(inline,/if\(next==='photos'\)requestAnimationFrame/);
 });
+test('BYは画像エラー時に元Blobを残して再読込と表示失敗の明示をする',()=>{
+ const a=inline.indexOf('function displayEditorPhotoReliably(');
+ const b=inline.indexOf('function renderPhotoStrip()',a);
+ const helper=inline.slice(a,b);
+ assert.ok(a>0&&b>a);
+ assert.match(helper,/img\.insertAdjacentElement\('afterend',status\)/);
+ assert.match(helper,/img\.style\.opacity='0'/);
+ assert.match(helper,/img\.onload=/);
+ assert.match(helper,/img\.onerror=async/);
+ assert.match(helper,/URL\.createObjectURL\(file\)/);
+ assert.match(helper,/reader\.readAsDataURL\(file\)/);
+ assert.match(helper,/photoDataUrlFallbacks\.set\(file,data\)/);
+ assert.match(helper,/img\.removeAttribute\('src'\)/);
+ assert.match(helper,/写真を表示できません/);
+ assert.doesNotMatch(helper,/\.splice\(|indexedDB\.|localStorage\.|store\.delete\(/);
+ const node=inline.slice(inline.indexOf('function renderElementNode('),inline.indexOf("$('#designCanvas').addEventListener('pointerdown'"));
+ assert.match(node,/displayEditorPhotoReliably\(img,file,el\.personCutout\)/);
+});
+test('BYはPC画像サイズを縮め、iPhoneには影響させない',()=>{
+ const p=html.indexOf('/* BY: Smaller desktop photographs');
+ const q=html.indexOf('</style>',p);
+ const css=html.slice(p,q);
+ assert.ok(p>0&&q>p);
+ assert.match(css,/@media \(min-width:980px\)/);
+ assert.match(css,/width:90%!important;max-width:142px!important;height:94px!important/);
+ assert.match(css,/\.photoLoadState\[hidden\]\{display:none!important\}/);
+ assert.doesNotMatch(css,/@media\s*\(max-width/);
+});
+
 
 test('BW: Photo gallery and every desktop tool remain direct children of editorPanel',()=>{
  const start=html.indexOf('<div class="editorPanel">');
