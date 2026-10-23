@@ -517,7 +517,10 @@ test('BPは使わない写真を見直す際に復元可能で、複数の顔も
  assert.match(html,/data\.unusedPhotoOrder\.pop\(\)/);
  assert.match(html,/data\.unusedPhotoIndexes\.delete\(index\)/);
  assert.match(html,/data\.groups\.push\(\{key:'teacher-restored-'\+\(\+\+data\.nextGroupId\),faceIndexes:\[i\]\}\)/);
- assert.match(html,/data\.pairReviewSession=null/);
+ assert.match(html,/const session=data\.pairReviewSession/);
+ assert.match(html,/session\.checked\.delete\(id\)/);
+ assert.match(html,/session\.decisions\.delete\(id\)/);
+ assert.match(html,/session\.seen\.delete\(id\)/);
  assert.match(html,/renderCurrentAlbumAiGroups\(\)/);
  assert.match(html,/renderCurrentAlbumSingletonPairs\(\)/);
 });
@@ -531,6 +534,18 @@ test('BPは除外した写真を園児フォルダと進捗から外し、編集
  assert.match(html,/files=keep\.map\(item=>item\.file\)/);
  assert.match(html,/photoAssignments=keep\.map\(item=>photoAssignments\[item\.index\]\|\|\[\]\)/);
  assert.match(html,/clearCurrentAlbumAi\(\)/);
+});
+
+test('BPは写真1枚を外しても関係のない確認済み候補を保持する',()=>{
+ const start=html.indexOf('function refreshAfterAlbumPhotoUseChange(');
+ const end=html.indexOf('function setPhotoAssignFlowStep(',start);
+ const view=html.slice(start,end);
+ assert.match(view,/const keys=new Set\(affectedKeys\.map\(String\)\)/);
+ assert.match(view,/const affected=id=>id\.split\('→'\)\.some\(key=>keys\.has\(key\)\)/);
+ assert.match(view,/if\(affected\(id\)\)session\.seen\.delete\(id\)/);
+ assert.match(view,/if\(affected\(id\)\)data\.skippedSingletonPairs\.delete\(id\)/);
+ assert.doesNotMatch(view,/data\.pairReviewSession=null|data\.skippedSingletonPairs\?\.clear\(\)/);
+ assert.match(html,/const affectedKeys=data\.groups\.filter\(group=>group\.faceIndexes\.some\(i=>data\.samples\[i\]\?\.index===photoIndex\)\)/);
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
