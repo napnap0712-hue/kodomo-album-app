@@ -668,7 +668,7 @@ test('BRのPC版は大きな見開きと5種類の編集ツールを2カラム�
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(html,/ALBUM EDITOR · 2026-10-23 BU/);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 BV/);
  assert.match(css,/@media\(min-width:980px\)/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
  assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
@@ -781,30 +781,34 @@ test('BTはPCの編集メニュー直下に案内・設定を並べ、左キャ�
  assert.doesNotMatch(css,/@media\s*\(max-width/);
 });
 
-test('BUはPCの写真タブを右側で2列縦スクロール表示する',()=>{
- const start=html.indexOf('/* BU: Desktop photo library');
+test('BVのPC写真タブは右側にとどまり、写真一覧だけ2列で高さ制限と縦スクロールを持つ',()=>{
+ const start=html.indexOf('/* BV: A bounded desktop photo library');
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
  assert.match(css,/@media \(min-width:980px\)/);
  assert.match(css,/\.editorPanel>\.photoManager\{/);
  assert.match(css,/grid-column:2!important;grid-row:2!important/);
- assert.match(css,/overflow-x:hidden!important;overflow-y:auto!important/);
+ assert.match(css,/margin-top:calc\(var\(--desktop-editor-tabs-height, 152px\) \+ 12px\)!important/);
  assert.match(css,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/);
+ assert.match(css,/grid-auto-rows:max-content!important/);
+ assert.match(css,/height:clamp\(210px,42dvh,490px\)!important/);
+ assert.match(css,/overflow-y:auto!important;overflow-x:hidden!important/);
  assert.match(css,/scroll-snap-type:none!important/);
- assert.match(css,/\.photoAssignPanel\{\s*grid-column:1\/-1/);
- assert.doesNotMatch(css,/@media\s*\(max-width:/);
+ assert.match(css,/\.photoAddPane\[hidden\]\{/);
+ assert.doesNotMatch(css,/@media\s*\(max-width/);
 });
-test('BUはPCの写真を縦スクロールで遅延読込し従来の写真操作を残す',()=>{
+test('BVの写真読み込みは内側の縦スクロール位置基準、iPhone横スクロールは維持する',()=>{
  const start=inline.indexOf('function renderPhotoStrip()');
  const end=inline.indexOf('function elementId()',start);
  const body=inline.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(body,/const viewport=desktop\?strip\.closest\('\.photoManager'\):strip/);
- assert.match(body,/strip\.closest\('\.photoAddPane'\)\?\.hidden/);
+ assert.match(body,/if\(desktop&&strip\.closest\('\.photoAddPane'\)\?\.hidden\)return/);
+ assert.match(body,/const bounds=strip\.getBoundingClientRect\(\)/);
+ assert.match(body,/const margin=desktop\?Math\.max\(160,bounds\.height\/2\):Math\.max\(bounds\.width,320\)/);
  assert.match(body,/nearHorizontal&&nearVertical/);
- assert.match(body,/manager\.onscroll=scheduleRefresh/);
  assert.match(body,/strip\.onscroll=scheduleRefresh/);
+ assert.doesNotMatch(body,/manager\.onscroll=scheduleRefresh/);
  assert.match(body,/item\.addEventListener\('click'/);
  assert.match(body,/assign\.addEventListener\('click'/);
  assert.match(body,/remove\.addEventListener\('click'/);
