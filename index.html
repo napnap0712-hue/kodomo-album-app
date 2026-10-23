@@ -2279,6 +2279,163 @@ async function saveCurrentPhotoSortCheckpoint(){
  finally{photoSortCheckpointBusy=false;button.disabled=false}
 }
 $('#savePhotoSortProgress')?.addEventListener('click',saveCurrentPhotoSortCheckpoint);
+// Rebuild face embeddings in memory on reopening: neither embeddings nor model
+// descriptors are included in checkpoints, synced, or sent over the network.
+async function photoSortRestoreFaceSamples(saved,loadedFiles,updateStatus,check){
+ const human=await loadHumanRecognition();check();
+ const grouped=new Map();
+ saved.samples.forEach((sample,i)=>{
+  if(!Number.isInteger(sample.index)||sample.index<0||sample.index>=loadedFiles.length||
+    !Array.isArray(sample.box)||sample.box.length!==4)throw Error('保存した顔情報を照合できません。');
+  if(!grouped.has(sample.index))grouped.set(sample.index,[]);
+  grouped.get(sample.index).push({index:i,box:sample.box});
+ });
+ const restored=new Array(saved.samples.length);
+ for(let photo=0;photo<loadedFiles.length;photo++){
+  check();updateStatus('🧠 再開用に顔を確認中 '+(photo+1)+' / '+loadedFiles.length+'枚');
+  const current=await humanFacesFromBlob(human,loadedFiles[photo]);check();
+  const fresh=current.filter(face=>Array.isArray(face.embedding)&&face.embedding.length&&Array.isArray(face.box)&&face.box.length===4);
+  const expected=grouped.get(photo)||[];
+  if(fresh.length!==expected.length)throw Error('顔の検出結果が保存時と一致しません（写真'+(photo+1)+'）。写真や保存済みデータは変更していません。');
+  const remaining=new Set(fresh.map((_,i)=>i));
+  for(const item of expected){
+   const [x,y,w,h]=item.box;
+   let best=-1,bestScore=Infinity;
+   for(const j of remaining){
+    const [nx,ny,nw,nh]=fresh[j].box;
+    const score=Math.hypot((x+w/2)-(nx+nw/2),(y+h/2)-(ny+nh/2))+
+     (Math.abs(w-nw)+Math.abs(h-nh))*.4;
+    if(score<bestScore){bestScore=score;best=j}
+   }
+   const tolerance=Math.max(12,Math.max(w,h)*.25);
+   if(best<0||bestScore>tolerance)throw Error('顔の位置が保存時と一致しません（写真'+(photo+1)+'）。誤った園児への振り分けを防ぐため再開を中断しました。');
+   remaining.delete(best);
+   restored[item.index]={index:photo,box:fresh[best].box,embedding:fresh[best].embedding};
+  }
+  if(photo%3===0)await new Promise(resolve=>setTimeout(resolve,0));
+ }
+ if(restored.some(sample=>!sample?.embedding))throw Error('顔の照合に必要な情報が不足しています。');
+ return restored;
+}
+function photoSortRestoreAiData(savedAI,sourceFiles,storedRoster){
+ const groups=savedAI.groups;
+ if(!Array.isArray(groups)||!Array.isArray(savedAI.samples)||!Array.isArray(savedAI.confirmed))
+  throw Error('保存したAIの振り分け情報が不完全です。');
+ const used=new Set(),keys=new Set();
+ for(const group of groups){
+  if(typeof group.key!=='string'||keys.has(group.key)||!Array.isArray(group.faceIndexes)||!group.faceIndexes.length)
+   throw Error('保存した顔グループが不正です。');
+  keys.add(group.key);
+  for(const i of group.faceIndexes){
+   if(!Number.isInteger(i)||i<0||i>=savedAI.samples.length||used.has(i))
+    throw Error('顔のグループに重複や不整合があります。');
+   used.add(i);
+  }
+ }
+ if(savedAI.confirmed.some(key=>!keys.has(key)))throw Error('確定済みグループと写真が一致しません。');
+ if(!Array.isArray(savedAI.unusedPhotoIndexes)||!Array.isArray(savedAI.unusedPhotoOrder)||
+  savedAI.unusedPhotoIndexes.some(i=>!Number.isInteger(i)||i<0||i>=sourceFiles.length))
+  throw Error('使わない写真の記録が不正です。');
+ const unused=new Set(savedAI.unusedPhotoIndexes);
+ if(savedAI.unusedPhotoOrder.some(i=>!unused.has(i)))throw Error('使わない写真の復元順が不正です。');
+ for(const i of used)if(unused.has(savedAI.samples[i].index))throw Error('使わない写真がAIグループに含まれています。');
+ return {groups,keys,unused};
+}
+async function resumePhotoSortCheckpoint(){
+ if(photoSortCheckpointBusy)return;
+ const status=$('#photoSortResumeStatus'),button=$('#resumePhotoSortProgress');
+ photoSortCheckpointBusy=true;button.disabled=true;
+ const currentKey=photoSortCheckpointKey();
+ const check=()=>{if(currentKey!==photoSortCheckpointKey()||
+  !document.querySelector('[data-screen="photoPick"]')?.classList.contains('active'))
+  throw Error('アルバムを切り替えたため再開を中止しました。');};
+ try{
+  status.textContent='📷 保存した写真と振り分けを読み込み中…';
+  const row=await photoSortCheckpointRead(currentKey);check();
+  if(!row||row.version!==1||row.key!==currentKey||row.classId!==selected.id||
+   row.schoolYear!==activeYear()||row.slot!==pendingProjectSlot||
+   !Array.isArray(row.photos)||!row.photos.length||!Array.isArray(row.photoAssignments)||
+   row.photoAssignments.length!==row.photos.length)throw Error('このアルバムの保存済みデータを確認できません。');
+  if(row.registered!==JSON.stringify(getChildren(selected.id)))
+   throw Error('園児名簿が保存時から変わっています。誤った園児への紐づけを防ぐため再開を中断しました。');
+  const savedFiles=row.photos.map((photo,i)=>{
+   if(!(photo.blob instanceof Blob)||!photo.blob.size||photo.blob.size!==photo.size)
+    throw Error('保存した写真'+(i+1)+'を読み込めません。');
+   return new File([photo.blob],photo.name||('photo-'+i+'.jpg'),{
+    type:photo.type||photo.blob.type||'image/jpeg',lastModified:photo.lastModified||Date.now()
+   });
+  });
+  const assignmentCopies=row.photoAssignments.map(ids=>{
+   if(!Array.isArray(ids))throw Error('園児への振り分け記録が不正です。');
+   return [...ids];
+  });
+  let restoredAi=null;
+  if(row.ai){
+   photoSortRestoreAiData(row.ai,savedFiles,row.registered);
+   const samples=await photoSortRestoreFaceSamples(row.ai,savedFiles,message=>status.textContent=message,check);
+   check();
+   const methods=await import('./face-recognition/cluster-current-album.mjs?v=20261023-bf');
+   check();
+   const faceLimit=samples.length;
+   if(row.ai.groups.some(g=>g.faceIndexes.some(i=>i>=faceLimit)))
+    throw Error('写真とAIのグループが一致しません。');
+   restoredAi={samples,methods};
+  }
+  check();
+  // Commit only AFTER photo integrity, roster and every AI mapping validate.
+  const token=++albumAiGeneration;
+  files=savedFiles;photoAssignments=assignmentCopies;
+  assignmentSourceType='recovered';
+  clearCurrentAlbumSingletonPairs();
+  albumAiGroupsData=null;
+  if(restoredAi){
+   const snapshot=row.ai,classId=selected.id,schoolYear=activeYear(),registered=row.registered;
+   const sourceFiles=[...files];
+   const valid=()=>token===albumAiGeneration&&classId===selected.id&&schoolYear===activeYear()&&
+    registered===JSON.stringify(getChildren(classId))&&sourceFiles.length===files.length&&
+    sourceFiles.every((f,i)=>files[i]===f)&&
+    document.querySelector('[data-screen="photoAssign"]')?.classList.contains('active');
+   const methods=restoredAi.methods;
+   albumAiGroupsData={
+    sourceFiles,registered,classId,schoolYear,samples:restoredAi.samples,
+    groups:snapshot.groups.map(g=>({key:g.key,faceIndexes:[...g.faceIndexes]})),
+    confirmed:new Set(snapshot.confirmed),unusedPhotoIndexes:new Set(snapshot.unusedPhotoIndexes),
+    unusedPhotoOrder:[...snapshot.unusedPhotoOrder],valid,
+    assignConfirmedAlbumCluster:methods.assignConfirmedAlbumCluster,
+    suggestCurrentAlbumGroupMerges:methods.suggestCurrentAlbumGroupMerges,
+    mergeTeacherAlbumGroups:methods.mergeTeacherAlbumGroups,
+    mergeTeacherAlbumGroupsBatch:methods.mergeTeacherAlbumGroupsBatch,
+    suggestSingletonGroupPairs:methods.suggestSingletonGroupPairs,
+    mergeTeacherReviewedGroupPairs:methods.mergeTeacherReviewedGroupPairs,
+    mergeUndo:(snapshot.mergeUndo||[]).map(previous=>previous.map(g=>({key:g.key,faceIndexes:[...g.faceIndexes]}))),
+    mergeSuggestions:null,expanded:new Set(snapshot.expanded||[]),
+    selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),
+    visibleLimit:Math.max(18,Number(snapshot.visibleLimit)||18),
+    nextGroupId:Number(snapshot.nextGroupId)||0,
+    skippedSingletonPairs:new Set(snapshot.skippedSingletonPairs||[]),
+    pairReviewSession:snapshot.pairReviewSession?{
+     checked:new Map(snapshot.pairReviewSession.checked||[]),
+     decisions:new Map(snapshot.pairReviewSession.decisions||[]),
+     seen:new Set(snapshot.pairReviewSession.seen||[])
+    }:null
+   };
+  }
+  photoSortCheckpointKnownSavedAt=row.savedAt;
+  show('photoAssign');
+  renderPhotoAssignmentPage();
+  setPhotoAssignFlowStep(albumAiGroupsData?(row.flowStep==='folders'?'folders':'review'):'folders');
+  if(albumAiGroupsData){
+   renderCurrentAlbumAiGroups();
+   renderCurrentAlbumSingletonPairs();
+  }
+  $('#currentAlbumAiStatus').textContent='✅ '+savedFiles.length+'枚の途中保存を再開しました。続きから確認してね。';
+  $('#photoSortProgressSaveStatus').textContent='✅ 保存した振り分けを復元したよ。次の変更は「ここまで保存」で更新してね。';
+ }catch(e){status.textContent='⚠️ 続きを開けませんでした：'+String(e?.message||e)+
+  '。保存したデータと元のアルバムは変更していません。';console.warn('Photo sort resume safely stopped',e)}
+ finally{photoSortCheckpointBusy=false;button.disabled=false}
+}
+$('#resumePhotoSortProgress')?.addEventListener('click',resumePhotoSortCheckpoint);
+
 
 // An album is a fresh photo batch. No persisted previous photo/face-group data
 // may influence face clustering or assignment within this new album.
