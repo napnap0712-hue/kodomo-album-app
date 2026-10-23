@@ -2363,8 +2363,10 @@ function renderCurrentAlbumSingletonPairs(){
   if(!source||!target||data.confirmed.has(source.key)||data.confirmed.has(target.key)){
    feedback.textContent='候補が更新されました。もう一度確認してね。';return;
   }
-  const conflicting=[...checked.values()].some(p=>p.sourceKey!==item.sourceKey&&(
-   p.sourceKey===item.sourceKey||p.sourceKey===item.targetKey||p.targetKey===item.sourceKey));
+  // Do not silently discard another pending confirmation involving either group.
+  const conflicting=[...checked.entries()].some(([id,p])=>id!==pairId(item)&&(
+   p.sourceKey===item.sourceKey||p.sourceKey===item.targetKey||
+   p.targetKey===item.sourceKey||p.targetKey===item.targetKey));
   if(conflicting){feedback.textContent='このグループは別の候補でも選ばれているよ。前の候補を見直してね。';return}
   const faces=[...source.faceIndexes,...target.faceIndexes];
   const photoIndexes=new Set(faces.map(i=>data.samples[i]?.index));
