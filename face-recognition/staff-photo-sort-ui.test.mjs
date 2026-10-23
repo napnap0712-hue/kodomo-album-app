@@ -215,8 +215,8 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
  assert.doesNotMatch(body,/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\./);
 });
 
-test('BIは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BI/);
+test('BJでも今回取り込んだ写真だけでグループ改善を比較表示',()=>{
+ assert.match(html,/PHOTO SORT · 2026-10-23 BJ/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
@@ -256,15 +256,17 @@ test('BEでは単独候補の救済結果を診断に加え、園児名の確定
  assert.match(html,/photoAssignments=data\.assignConfirmedAlbumCluster/);
 });
 
-test('BFは単独候補の似た顔を横断的に表示し、先生のチェック後だけ統合する',()=>{
+test('BJは1組ずつ写真を確認し、職員が確定するまで統合しない',()=>{
  assert.match(html,/id="albumAiSingletonReview"/);
- assert.match(html,/id="albumAiFindSingletonPairs"/);
  assert.match(html,/id="albumAiSingletonPairs"/);
  assert.match(html,/function renderCurrentAlbumSingletonPairs\(\)/);
  assert.match(html,/data\.suggestSingletonGroupPairs/);
- assert.match(html,/data\.mergeTeacherReviewedGroupPairs/);
- assert.match(html,/check\.addEventListener\('change'/);
+ assert.match(html,/const checked=new Map\(\),decisions=new Map\(\)/);
+ assert.match(html,/decide\('same'\)/);
+ assert.match(html,/decide\('different'\)/);
+ assert.match(html,/decide\('later'\)/);
  assert.match(html,/window\.confirm\('選んだ'/);
+ assert.match(html,/data\.mergeTeacherReviewedGroupPairs/);
  assert.match(html,/data\.mergeUndo\.push\(snapshot\)/);
  assert.match(html,/renderCurrentAlbumAiGroups\(\);renderCurrentAlbumSingletonPairs\(\)/);
 });
@@ -279,46 +281,48 @@ test('写真や端末変更時に単独候補表示を破棄し、勝手に顔�
  assert.match(snippet,/if\(data!==albumAiGroupsData\|\|!data\.valid\(\)\)/);
 });
 
-test('BHは24組だけに切り詰めず全候補を24組ずつ表示する',()=>{
+test('BJは全候補を対象に1組ずつ表示し、元の写真を切り抜かず比較できる',()=>{
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
  assert.ok(start>0&&end>start);
  assert.match(view,/limit:Math\.max\(24,groups\.length\)/);
- assert.match(view,/const next=Math\.min\(shown\+24,candidates\.length\)/);
- assert.match(view,/candidates\.slice\(shown,next\)/);
- assert.match(view,/showMore\.addEventListener\('click',showNext\)/);
- assert.match(view,/showMore\.hidden=shown>=candidates\.length/);
- assert.match(view,/progress\.textContent='確認候補 '/);
- assert.match(view,/const checked=new Map\(\)/);
- assert.match(view,/rows\.append\(row\)/);
+ assert.match(view,/let position=0/);
+ assert.match(view,/candidates\[position\]/);
+ assert.match(view,/pairReviewPhotos/);
+ assert.match(view,/img\.src=fileUrl\(file\)/);
+ assert.match(view,/openAlbumAssignedPhoto\(sample\.index\)/);
+ assert.match(view,/pairFaceMarker/);
+ assert.match(view,/decisions\.set\(id,choice\)/);
  assert.match(view,/data\.mergeTeacherReviewedGroupPairs/);
+ assert.doesNotMatch(view,/currentAlbumFaceThumbnail/);
+ assert.match(html,/#albumAiSingletonPairs\.currentAlbumAiGroups\{display:block/);
+ assert.match(html,/\.pairOriginalFrame img\{display:block;width:100%;height:100%;object-fit:contain\}/);
 });
-
-test('BHは違う園児の候補だけを一覧から外し、すべて戻せる',()=>{
+test('BJは違う園児・保留・前の候補を安全に見直せる',()=>{
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
  assert.match(view,/data\.skippedSingletonPairs=new Set\(\)/);
  assert.match(view,/restoreSkipped\.addEventListener\('click'/);
- assert.match(view,/exclude\.textContent='違う園児'/);
- assert.match(view,/skipped\.add\(pairId\(item\)\)/);
- assert.match(view,/checked\.delete\(item\.sourceKey\)/);
- assert.match(view,/row\.hidden=true/);
+ assert.match(view,/different\.textContent='違う園児'/);
+ assert.match(view,/skipped\.add\(id\)/);
+ assert.match(view,/checked\.delete\(id\)/);
+ assert.match(view,/position=Math\.max\(0,position-1\)/);
  assert.match(view,/skipped\.clear\(\)/);
- assert.match(view,/for\(const row of rows\.children\)row\.hidden=false/);
  assert.match(view,/元写真やグループは変更していません/);
+ assert.doesNotMatch(view,/photoAssignments=|files\.splice\(|indexedDB\.|localStorage\.setItem\(/);
 });
-test('BHは顔だけで迷った際に元の写真全体を閲覧できる',()=>{
+test('BJは元写真全体に対象の顔位置を重ね、拡大表示も維持する',()=>{
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(view,/openSource\.addEventListener\('click',\(\)=>openAlbumAssignedPhoto/);
- assert.match(view,/openTarget\.addEventListener\('click',\(\)=>openAlbumAssignedPhoto/);
+ assert.match(view,/rect\.setAttribute\('x',String\(x\/scale\)\)/);
+ assert.match(view,/img\.naturalWidth,height=img\.naturalHeight/);
+ assert.match(view,/button\.addEventListener\('click',\(\)=>openAlbumAssignedPhoto\(sample\.index\)\)/);
  assert.match(html,/function openAlbumAssignedPhoto\(index\)/);
  assert.match(html,/id="assignmentDialogImage"/);
 });
-
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
  assert.match(html,/data-screen="photoAssign" data-flow-step="start"/);
  assert.match(html,/id="photoAssignFlowGuide"/);
