@@ -2105,14 +2105,7 @@ function requestDesktopEditorFit(){
  requestAnimationFrame(()=>{desktopEditorFitQueued=false;fitDesktopEditorCanvas();syncDesktopEditorSidebarSpacing()});
 }
 function initDesktopEditorWorkstation(){
- const extras=$('#desktopEditorMore'),actions=document.querySelector('.screen[data-screen="editor"] .editorActions');
- extras?.addEventListener('click',()=>{
-  const expanded=!actions.classList.contains('desktopExtrasOpen');
-  actions.classList.toggle('desktopExtrasOpen',expanded);
-  extras.setAttribute('aria-expanded',String(expanded));
-  extras.textContent=expanded?'✕ 閉じる':'⋯ その他';
- });
- window.addEventListener('resize',requestDesktopEditorFit,{passive:true});
+ // The staff header has no experimental or expanding menu.\n window.addEventListener('resize',requestDesktopEditorFit,{passive:true});
  if(typeof ResizeObserver==='function'){
   new ResizeObserver(()=>requestDesktopEditorFit()).observe($('#designCanvas').closest('.canvasWrap'));
   const sidebarTabs=document.querySelector('.screen[data-screen="editor"] .mobileEditorTabs');
@@ -6629,10 +6622,10 @@ function setupStaffEditorHeader(){
   button.setAttribute('aria-expanded',String(!choices.hidden));
  });
  document.getElementById('editorRestoreLatestOption').addEventListener('click',()=>{
-  hide();document.getElementById('restoreSplitBackup').click();
+  hide();void stageSplitBackupRestore('backups');
  });
  document.getElementById('editorRestorePreviousOption').addEventListener('click',()=>{
-  hide();document.getElementById('restorePreviousSplitBackup').click();
+  hide();void stageSplitBackupRestore('previousBackups');
  });
  document.addEventListener('click',event=>{
   if(!event.target.closest('.editorRestoreWrap'))hide();
