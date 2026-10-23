@@ -216,7 +216,7 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
 });
 
 test('BJでも今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BO/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BP/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
@@ -329,7 +329,7 @@ test('BKは同じ園児の確認後に、その場で園児名を選んで振り
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(html,/PHOTO SORT · 2026-10-23 BO/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BP/);
  assert.match(view,/same\.addEventListener\('click',\(\)=>\{/);
  assert.match(view,/childSelect\.setAttribute\('aria-label','振り分け先の園児名'\)/);
  assert.match(view,/getChildren\(data\.classId\)/);
@@ -379,7 +379,7 @@ test('BLは園児名を先に選び、写真を見ながら確定予定枚数を
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(html,/PHOTO SORT · 2026-10-23 BO/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BP/);
  assert.match(view,/assignPanel\.append\(assignTitle,childSelect,assignSummary,assignHint,assignPhotos,assignButtons\)/);
  assert.match(view,/assignSummary\.textContent=\(kid\?/);
  assert.match(view,/const photoCount=photoFaces\.size/);
@@ -430,7 +430,7 @@ test('BMは2段階の確認をなくし、最初から両グループの全写�
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(html,/PHOTO SORT · 2026-10-23 BO/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BP/);
  assert.match(view,/for\(const \[title,sectionFaces\] of \[\['候補①',sourceFaces\],\['候補②',targetFaces\]\]\)/);
  assert.match(view,/for\(const faceIndex of sectionFaces\)/);
  assert.match(view,/const preview=originalPhoto\(\{faceIndexes:\[faceIndex\]\},'元写真'\)/);
@@ -471,7 +471,7 @@ test('BOは重複した予定写真一覧をなくし、候補①と候補②の
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(html,/PHOTO SORT · 2026-10-23 BO/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BP/);
  assert.match(view,/assignPanel\.append\(assignTitle,childSelect,assignSummary,assignHint,assignPhotos,assignButtons\)/);
  assert.doesNotMatch(html,/pairPlannedPhotos|pairPlannedPhoto|pairPlannedHeading/);
  assert.match(view,/for\(const \[title,sectionFaces\] of \[\['候補①',sourceFaces\],\['候補②',targetFaces\]\]\)/);
@@ -493,6 +493,44 @@ test('BOは候補から顔を外しても振り分け予定枚数が正しく更
  assert.match(view,/refreshAssignPreview\(\);feedback\.textContent=''/);
  assert.match(view,/assignButton\.disabled=!kid\|\|!included\.length\|\|conflicting/);
  assert.doesNotMatch(view,/files\.splice\(|releasePhotoUrl\(|localStorage\.setItem\(|indexedDB\./);
+});
+
+test('BPは顔の候補から元写真全体を使わない扱いにできる',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const review=html.slice(start,end);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BP/);
+ assert.match(review,/discard\.textContent='🗑 この写真は使わない'/);
+ assert.match(review,/setCurrentAlbumPhotoUnused\(data,photoIndex\)/);
+ assert.match(html,/function setCurrentAlbumPhotoUnused\(data,photoIndex\)/);
+ assert.match(html,/data\.unusedPhotoIndexes\.add\(photoIndex\)/);
+ assert.match(html,/faceIndexes:group\.faceIndexes\.filter\(i=>data\.samples\[i\]\?\.index!==photoIndex\)/);
+ assert.match(html,/端末の元写真は削除しません/);
+ assert.doesNotMatch(html.slice(html.indexOf('function setCurrentAlbumPhotoUnused('),html.indexOf('function restoreLastUnusedAlbumPhoto(')),/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\.setItem\(/);
+});
+test('BPは使わない写真を見直す際に復元可能で、複数の顔も保持する',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(view,/restore\.textContent='↩ 使わない写真を1枚戻す（除外中 '/);
+ assert.match(view,/restoreLastUnusedAlbumPhoto\(data\)/);
+ assert.match(html,/data\.unusedPhotoOrder\.pop\(\)/);
+ assert.match(html,/data\.unusedPhotoIndexes\.delete\(index\)/);
+ assert.match(html,/data\.groups\.push\(\{key:'teacher-restored-'\+\(\+\+data\.nextGroupId\),faceIndexes:\[i\]\}\)/);
+ assert.match(html,/data\.pairReviewSession=null/);
+ assert.match(html,/renderCurrentAlbumAiGroups\(\)/);
+ assert.match(html,/renderCurrentAlbumSingletonPairs\(\)/);
+});
+test('BPは除外した写真を園児フォルダと進捗から外し、編集開始時にだけ削除する',()=>{
+ assert.match(html,/function isAlbumUnusedPhoto\(index\)/);
+ assert.match(html,/if\(isAlbumUnusedPhoto\(index\)\)return false/);
+ assert.match(html,/for\(let i=0;i<files\.length;i\+\+\)if\(!isAlbumUnusedPhoto\(i\)\)/);
+ assert.match(html,/const done=files\.filter\(\(_,i\)=>!isAlbumUnusedPhoto\(i\)&&assignmentPhotoIds\(i\)\.length\)\.length/);
+ assert.match(html,/const unused=albumAiGroupsData\?\.valid\(\) \? albumAiGroupsData\.unusedPhotoIndexes : null/);
+ assert.match(html,/const keep=files\.map\(\(file,index\)=>\(\{file,index\}\)\)\.filter\(item=>!unused\.has\(item\.index\)\)/);
+ assert.match(html,/files=keep\.map\(item=>item\.file\)/);
+ assert.match(html,/photoAssignments=keep\.map\(item=>photoAssignments\[item\.index\]\|\|\[\]\)/);
+ assert.match(html,/clearCurrentAlbumAi\(\)/);
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
