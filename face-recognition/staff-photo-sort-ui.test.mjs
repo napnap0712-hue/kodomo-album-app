@@ -668,7 +668,7 @@ test('BRのPC版は大きな見開きと5種類の編集ツールを2カラム�
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(html,/ALBUM EDITOR · 2026-10-23 BS/);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 BT/);
  assert.match(css,/@media\(min-width:980px\)/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
  assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
@@ -761,6 +761,24 @@ test('BSは保存・書き出し・復旧を残したままPCの追加ボタン�
  assert.match(css,/desktopExtrasOpen>button:not\(#saveDraft\):not\(#exportImage\)/);
  assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
  assert.doesNotMatch(css,/indexedDB|localStorage|photoAssignments|putDraft/);
+});
+
+test('BTはPCの編集メニュー直下に案内・設定を並べ、左キャンバスの高さによる大きな空白を防ぐ',()=>{
+ const start=html.indexOf('/* BT: Keep the desktop editor sidebar');
+ const end=html.indexOf('</style>',start);
+ const css=html.slice(start,end);
+ assert.ok(start>=0&&end>start);
+ assert.match(css,/@media \(min-width:980px\)/);
+ assert.match(css,/grid-template-rows:auto minmax\(0,auto\)!important/);
+ assert.match(css,/\.editorPanel>\.editorCanvasFirst\{\s*grid-row:2!important/);
+ assert.match(css,/\.editorPanel>\.mobileEditorTabs\{\s*grid-row:2!important/);
+ assert.match(css,/\.desktopEditorWelcome,\.pageSettings,\.photoManager,#seasonStickerPanel,\.editorLayerPanel,\.textTabUnifiedCard/);
+ assert.match(css,/grid-row:2!important;\s*margin-top:calc\(var\(--desktop-editor-tabs-height, 152px\) \+ 12px\)!important/);
+ assert.match(html,/function syncDesktopEditorSidebarSpacing\(\)/);
+ assert.match(html,/tabs\.getBoundingClientRect\(\)\.height/);
+ assert.match(html,/fitDesktopEditorCanvas\(\);syncDesktopEditorSidebarSpacing\(\)/);
+ assert.match(html,/new ResizeObserver\(\(\)=>syncDesktopEditorSidebarSpacing\(\)\)/);
+ assert.doesNotMatch(css,/@media\s*\(max-width/);
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
