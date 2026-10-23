@@ -928,6 +928,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .photoSortResumeBox{padding:14px;margin:13px 0;border:1px solid #d2e6d9;border-radius:14px;background:#f6fbf8}
 .photoSortResumeBox>.muted{margin:7px 0;font-size:12px}
 .photoSortResumeBox strong{font-size:14px}
+.photoSortSlotBadge{display:block;padding:2px 4px;border-radius:7px;background:#f3f9f5;color:#397259;font-size:10px;line-height:1.5;font-weight:750;text-align:center}
 @media(max-width:440px){.photoSortSaveBar button{width:100%}}
 /* BI: Progressive photo sorting - keep existing theme and functional controls. */
 .photoAssignFlowGuide{display:flex;align-items:center;gap:5px;justify-content:space-between;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #dde6f0;font-size:12px;color:#75849a}
@@ -1236,7 +1237,8 @@ function attachProjectDrag(btn,slots){btn.addEventListener('contextmenu',e=>e.pr
 function startProjectSlot(i){photoSortCheckpointKnownSavedAt=null;newAlbumSplitSelected=false;newAlbumSplitSavedId=null;newAlbumSplitOrigin=null;$('#saveDraft').textContent='下書きを保存';pendingProjectSlot=i;files=[];photoAssignments=[];assignmentSourceType='manual';clearCurrentAlbumAi();editingId=null;$('#photoInput').value='';$('#photoPreviews').innerHTML='';$('#photoCount').textContent='写真はまだ選択されていません。';$('#continueEdit').disabled=true;show('photoPick');void refreshPhotoSortResumeAvailability()}
 async function renderProjects(){
  $('#projectClassTitle').textContent=displayClassName(selected);const grid=$('#projectGrid');grid.innerHTML='<p class="muted">読み込み中…</p>';
- try{clearProjectPreviewUrls();const drafts=(await getAllDrafts()).filter(d=>d.classId===selected.id&&draftInYear(d)).sort((a,b)=>(a.updatedAt||0)-(b.updatedAt||0));const slots=readProjectSlots(),known=new Set(slots.filter(Boolean));drafts.forEach(d=>{if(!known.has(d.id)){const free=slots.findIndex(x=>!x);if(free>=0)slots[free]=d.id;else slots.push(d.id);known.add(d.id)}});while(slots.length<12)slots.push(null);writeProjectSlots(slots);const byId=new Map(drafts.map(d=>[d.id,d]));const specialCard=(label,icon,key)=>'<button type="button" class="projectCard fixedSpecialCard" data-special-page="'+key+'" aria-label="'+label+'"><span class="projectCardPreview">'+icon+'</span><span class="projectCardName">'+label+'</span></button>';grid.innerHTML=specialCard('表紙','🌸','cover')+slots.map((id,i)=>{const d=byId.get(id);return '<button type="button" class="projectCard '+(d?'hasProject':'')+'" data-project-slot="'+i+'"><span class="projectCardPreview">'+projectPreview(d)+'</span><span class="projectCardName">'+String(i+1).padStart(2,'0')+'</span></button>'}).join('')+specialCard('身長・体重','📏','growth')+specialCard('担任メッセージ','💌','message')+specialCard('裏表紙','📸','back');const coverCard=grid.querySelector('[data-special-page="cover"]');if(coverCard){readCoverSaved(activeYear(),selected.id).then(saved=>{if(!saved||!coverCard.isConnected)return;const preview=coverCard.querySelector('.projectCardPreview');preview.innerHTML='';preview.classList.add('coverCardThumbnail');const title=document.createElement('span');title.className='coverCardTitle';title.textContent=saved.title||'おもいでブック';const flower=document.createElement('img');flower.src='./'+selected.flower;flower.alt='';const name=document.createElement('span');name.className='coverCardName';name.textContent=saved.childName?saved.childName+'さん':displayClassName(selected);preview.append(title,flower,name)}).catch(e=>console.warn('Cover preview unavailable',e))}grid.querySelectorAll('[data-special-page]').forEach(btn=>btn.addEventListener('click',()=>{const label=btn.querySelector('.projectCardName').textContent;btn.dataset.specialPage==='cover'?openCoverEditor():btn.dataset.specialPage==='growth'?openGrowthEditor():btn.dataset.specialPage==='message'?openMessageEditor():btn.dataset.specialPage==='back'?openBackCoverEditor():alert(label+'の専用編集画面は今後追加します。')}));grid.querySelectorAll('[data-project-slot]').forEach(btn=>{btn.addEventListener('click',()=>{if(Date.now()<projectDragSuppressedUntil)return;const i=Number(btn.dataset.projectSlot),d=byId.get(slots[i]);if(projectDeleteMode){if(!d)return;projectDeleteSelection.has(i)?projectDeleteSelection.delete(i):projectDeleteSelection.add(i);refreshProjectDeleteUI();return}if(d){pendingProjectSlot=i;loadDraft(d.id)}else startProjectSlot(i)});attachProjectDrag(btn,slots)});refreshProjectDeleteUI();$('#projectStatus').textContent=slots.length+'枠 ・ 保存済み '+drafts.length+'件';hydrateProjectThumbnails(drafts);renderSplitProjectCards().catch(e=>{console.warn('Split list unavailable',e);$('#splitProjectList').hidden=true})}catch(e){grid.innerHTML='<p class="muted">読み込みに失敗しました。</p>'}}
+ try{clearProjectPreviewUrls();const drafts=(await getAllDrafts()).filter(d=>d.classId===selected.id&&draftInYear(d)).sort((a,b)=>(a.updatedAt||0)-(b.updatedAt||0));const slots=readProjectSlots(),known=new Set(slots.filter(Boolean));drafts.forEach(d=>{if(!known.has(d.id)){const free=slots.findIndex(x=>!x);if(free>=0)slots[free]=d.id;else slots.push(d.id);known.add(d.id)}});while(slots.length<12)slots.push(null);writeProjectSlots(slots);const byId=new Map(drafts.map(d=>[d.id,d]));const specialCard=(label,icon,key)=>'<button type="button" class="projectCard fixedSpecialCard" data-special-page="'+key+'" aria-label="'+label+'"><span class="projectCardPreview">'+icon+'</span><span class="projectCardName">'+label+'</span></button>';grid.innerHTML=specialCard('表紙','🌸','cover')+slots.map((id,i)=>{const d=byId.get(id);return '<button type="button" class="projectCard '+(d?'hasProject':'')+'" data-project-slot="'+i+'"><span class="projectCardPreview">'+projectPreview(d)+'</span><span class="projectCardName">'+String(i+1).padStart(2,'0')+'</span></button>'}).join('')+specialCard('身長・体重','📏','growth')+specialCard('担任メッセージ','💌','message')+specialCard('裏表紙','📸','back');const coverCard=grid.querySelector('[data-special-page="cover"]');if(coverCard){readCoverSaved(activeYear(),selected.id).then(saved=>{if(!saved||!coverCard.isConnected)return;const preview=coverCard.querySelector('.projectCardPreview');preview.innerHTML='';preview.classList.add('coverCardThumbnail');const title=document.createElement('span');title.className='coverCardTitle';title.textContent=saved.title||'おもいでブック';const flower=document.createElement('img');flower.src='./'+selected.flower;flower.alt='';const name=document.createElement('span');name.className='coverCardName';name.textContent=saved.childName?saved.childName+'さん':displayClassName(selected);preview.append(title,flower,name)}).catch(e=>console.warn('Cover preview unavailable',e))}grid.querySelectorAll('[data-special-page]').forEach(btn=>btn.addEventListener('click',()=>{const label=btn.querySelector('.projectCardName').textContent;btn.dataset.specialPage==='cover'?openCoverEditor():btn.dataset.specialPage==='growth'?openGrowthEditor():btn.dataset.specialPage==='message'?openMessageEditor():btn.dataset.specialPage==='back'?openBackCoverEditor():alert(label+'の専用編集画面は今後追加します。')}));grid.querySelectorAll('[data-project-slot]').forEach(btn=>{btn.addEventListener('click',()=>{if(Date.now()<projectDragSuppressedUntil)return;const i=Number(btn.dataset.projectSlot),d=byId.get(slots[i]);if(projectDeleteMode){if(!d)return;projectDeleteSelection.has(i)?projectDeleteSelection.delete(i):projectDeleteSelection.add(i);refreshProjectDeleteUI();return}if(d){pendingProjectSlot=i;loadDraft(d.id)}else startProjectSlot(i)});attachProjectDrag(btn,slots)});refreshProjectDeleteUI();$('#projectStatus').textContent=slots.length+'枠 ・ 保存済み '+drafts.length+'件';hydrateProjectThumbnails(drafts);renderSplitProjectCards().catch(e=>{console.warn('Split list unavailable',e);$('#splitProjectList').hidden=true})
+ .finally(()=>{void renderPhotoSortPendingSlotBadges()})}catch(e){grid.innerHTML='<p class="muted">読み込みに失敗しました。</p>'}}
 
 // The split cards are separate from legacy page slots: no legacy records or slot mappings are modified.
 // Separate placement preferences for split albums. Legacy slot mappings remain untouched.
@@ -2194,6 +2196,31 @@ function photoSortCheckpointOpen(){
   req.onerror=()=>reject(req.error||Error('途中保存の保存領域を開けません'));
   req.onblocked=()=>reject(Error('別のタブで途中保存が使用されています'));
  });
+}
+async function renderPhotoSortPendingSlotBadges(){
+ const classId=selected.id,schoolYear=activeYear();
+ try{
+  const db=await photoSortCheckpointOpen();
+  const keys=await new Promise((resolve,reject)=>{
+   const tx=db.transaction('checkpoints','readonly');
+   const q=tx.objectStore('checkpoints').getAllKeys();
+   q.onsuccess=()=>resolve(q.result||[]);
+   q.onerror=()=>reject(q.error||Error('途中保存の一覧を確認できません'));
+  }).finally(()=>db.close());
+  if(selected.id!==classId||activeYear()!==schoolYear||
+    !document.querySelector('[data-screen="classProjects"]')?.classList.contains('active'))return;
+  const available=new Set(keys.map(String));
+  const prefix=String(schoolYear)+':'+String(classId)+':slot-';
+  for(const btn of document.querySelectorAll('#projectGrid button[data-project-slot]')){
+   const slot=Number(btn.dataset.projectSlot);
+   if(!Number.isInteger(slot)||btn.classList.contains('hasProject')||
+    !available.has(prefix+slot))continue;
+   if(btn.querySelector('.photoSortSlotBadge'))continue;
+   const label=document.createElement('span');label.className='photoSortSlotBadge';
+   label.textContent='🌷 振り分け途中';
+   btn.append(label);
+  }
+ }catch(e){console.warn('途中保存のカード表示を保留',e)}
 }
 async function photoSortCheckpointRead(key){
  const db=await photoSortCheckpointOpen();
