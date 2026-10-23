@@ -1975,7 +1975,7 @@ async function cdCompleteClass(){
  }catch(error){status.textContent='⚠️ 完了できません：'+(error?.message||String(error))+'。バックアップや元データを確認してください。'}
  finally{cdCompletionBusy=false;button.disabled=false;await renderClassProgress()}
 }
-$('#cdCompleteClass').addEventListener('click',()=>void cdCompleteClass());
+document.getElementById('cdCompleteClass').addEventListener('click',()=>void cdCompleteClass());
 
 const projectPreviewUrls=[];
 function clearProjectPreviewUrls(){projectPreviewUrls.forEach(url=>URL.revokeObjectURL(url));projectPreviewUrls.length=0}
