@@ -2777,6 +2777,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
  }catch(error){
   if(token===albumAiGeneration){
    albumAiGroupsData=null;host.replaceChildren();
+   setPhotoAssignFlowStep('start');
    status.textContent='⚠️ AI解析できませんでした：'+String(error?.message||error).slice(0,170)+
     '。元の写真・振り分けは変更していません。手動でも振り分けできます。';
   }
