@@ -868,7 +868,6 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .pairReviewNavigation{display:flex;justify-content:space-between;gap:8px;margin-top:10px}
 .pairReviewNavigation button{min-height:42px;flex:1;font-size:12px}
 .pairReviewDone{font-size:14px;line-height:1.7;padding:12px;background:#f3f9ff;border-radius:9px}
-#albumAiSingletonPairs>button#unusedPairButton{display:none}
 #albumAiSingletonPairs>.primary.wide{margin:10px 0 4px;min-height:48px;font-size:14px}
 .pairReviewExtra{font-size:12px;margin:10px 0;color:#54728d}
 .pairReviewExtra summary{cursor:pointer;padding:8px 0}
@@ -2392,6 +2391,7 @@ function renderCurrentAlbumSingletonPairs(){
    data.mergeUndo.push(snapshot);if(data.mergeUndo.length>10)data.mergeUndo.shift();
    data.groups=next;data.mergeSuggestions=null;data.selections.clear();skipped.clear();
    $('#currentAlbumAiFeedback').textContent='✅ '+pairs.length+'組を一括統合しました。直前の操作は戻せます。元写真は未変更です。';
+   $('#currentAlbumAiStatus').textContent='✅ '+pairs.length+'組をまとめたよ。元写真は変更していません。';
    renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();
   }catch(e){feedback.textContent='⚠️ '+String(e?.message||e)}
  });
