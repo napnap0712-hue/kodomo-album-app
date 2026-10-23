@@ -1395,6 +1395,14 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  font-size:13px;font-weight:750;
 }
 
+
+/* CB: Exact clipped photo frames; independent photograph panning on any device. */
+.designElement .photoCropViewport{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.designElement .photoCropViewport img{display:block;max-width:none!important;max-height:none!important}
+.cropEditorPhoto{position:relative;overflow:hidden;touch-action:none}
+.cropEditorPhoto img{display:block;max-width:none!important;max-height:none!important;pointer-events:none}
+.cropEditorModal #cropEditorZoom{accent-color:#428ad0}
+
 </style>
 </head>
 <body>
@@ -1505,7 +1513,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-23 CA</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-23 CB</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -4662,36 +4670,100 @@ $('#groupDelete').addEventListener('click',()=>{const group=groupElements();if(!
 $('#groupSmaller').addEventListener('click',()=>groupChangeScale(.9));$('#groupLarger').addEventListener('click',()=>groupChangeScale(1.1));
 function activeElement(){return designElements.find(element=>element.id===selectedElementId)||null;}
 function decorateSelectedNode(node,el){node.classList.add('selected');if(!node.querySelector('.deleteElement')){const del=document.createElement('button');del.className='deleteElement';del.type='button';del.textContent='×';del.setAttribute('aria-label','要素を削除');del.addEventListener('click',event=>{event.stopPropagation();if(el.locked&&!confirm('固定中の要素を削除しますか？'))return;designElements=designElements.filter(x=>x.id!==el.id);selectedGroupIds.delete(el.id);selectedElementId=null;renderSpread(files);});node.appendChild(del);}if(!node.querySelector('.resizeHandle')){const handle=document.createElement('span');handle.className='resizeHandle';node.appendChild(handle);}}
-function applyPhotoFrameShape(node,img,shape){
-const polygons={triangle:'50% 2%, 98% 96%, 2% 96%',diamond:'50% 0%, 100% 50%, 50% 100%, 0% 50%',pentagon:'50% 0%, 98% 36%, 80% 100%, 20% 100%, 2% 36%',hexagon:'25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%',star:'50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 95%, 50% 72%, 21% 95%, 32% 57%, 2% 35%, 39% 35%',burst:'50% 0%,58% 13%,72% 4%,75% 20%,92% 17%,87% 34%,100% 44%,87% 55%,97% 70%,80% 75%,82% 93%,64% 88%,50% 100%,40% 86%,23% 96%,22% 78%,4% 73%,13% 57%,0% 45%,14% 34%,7% 18%,25% 21%,30% 4%,43% 14%'};
-const svgPaths={
-heart:'M50 96 C43 90 8 65 5 43 C1 17 28 8 50 31 C72 8 99 17 95 43 C92 65 57 90 50 96 Z',
-
-scallop:'M50 2 C58 2 61 9 68 8 C76 6 81 12 82 20 C90 21 96 27 93 35 C101 42 99 49 93 54 C98 62 94 70 86 72 C86 81 78 86 70 83 C64 93 57 96 50 91 C42 97 35 92 30 84 C21 88 14 82 15 74 C5 71 4 63 10 56 C1 49 4 41 10 36 C6 27 12 20 20 20 C21 11 29 7 36 11 C41 3 46 2 50 2 Z',
-burst:'M50 2 L57 17 L69 7 L72 23 L88 19 L85 35 L99 42 L87 52 L96 65 L80 70 L82 87 L65 83 L56 98 L47 85 L32 94 L29 78 L12 79 L18 63 L3 55 L15 44 L7 29 L24 27 L28 10 L42 18 Z'
+/* CB: Exact Canva-style frame geometry. The mask is owned by the frame,
+   never by a zoomed/moved photo. Decorative shapes have square geometry. */
+const SQUARE_PHOTO_FRAMES=new Set(['circle','triangle','diamond','pentagon','hexagon','star','heart','flower','scallop','burst']);
+function isSquarePhotoFrame(shape){return SQUARE_PHOTO_FRAMES.has(shape||'rectangle')}
+function squarePhotoFrameGeometry(el,canvas){
+ if(!isSquarePhotoFrame(el.frameShape)||!canvas)return;
+ const ratio=canvas.clientWidth/Math.max(1,canvas.clientHeight);
+ if(!Number.isFinite(ratio)||ratio<=0)return;
+ const oldW=Number(el.w)||30,oldH=Number(el.h)||30;
+ const squareWidth=Math.max(8,Math.min(100,Math.min(oldW,oldH/ratio)));
+ el.w=squareWidth;el.h=squareWidth*ratio;
+ el.x=Math.max(0,Math.min(100-el.w,Number(el.x)||0));
+ el.y=Math.max(0,Math.min(100-el.h,Number(el.y)||0));
+}
+const FRAME_POLYGONS={
+ triangle:'50% 2%, 98% 98%, 2% 98%',
+ diamond:'50% 1%, 99% 50%, 50% 99%, 1% 50%',
+ pentagon:'50% 1%, 98% 36%, 80% 99%, 20% 99%, 2% 36%',
+ hexagon:'25% 1%, 75% 1%, 99% 50%, 75% 99%, 25% 99%, 1% 50%',
+ star:'50% 2%, 61% 36%, 97% 36%, 68% 57%, 79% 96%, 50% 73%, 21% 96%, 32% 57%, 3% 36%, 39% 36%',
+ burst:'50% 2%,58% 15%,72% 5%,75% 21%,92% 18%,87% 35%,98% 44%,87% 55%,96% 70%,80% 75%,82% 92%,64% 87%,50% 98%,40% 85%,23% 95%,22% 78%,5% 73%,13% 57%,2% 45%,14% 34%,8% 18%,25% 21%,30% 5%,43% 15%'
 };
-const svgMask=svgPaths[shape];
-node.style.overflow='visible';node.style.borderRadius='0';node.style.clipPath='none';
-img.style.display='block';img.style.width='100%';img.style.height='100%';
-img.style.clipPath='none';img.style.maskImage='none';img.style.webkitMaskImage='none';
-img.style.borderRadius=shape==='circle'?'50%':shape==='rounded'?'16%':'0';
-if(svgMask||shape==='flower'){
-const flowerShape=shape==='flower';const flowerPetals='<circle cx="50" cy="15" r="18"/><circle cx="74.75" cy="25.25" r="18"/><circle cx="85" cy="50" r="18"/><circle cx="74.75" cy="74.75" r="18"/><circle cx="50" cy="85" r="18"/><circle cx="25.25" cy="74.75" r="18"/><circle cx="15" cy="50" r="18"/><circle cx="25.25" cy="25.25" r="18"/><circle cx="50" cy="50" r="24"/>';const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">'+(flowerShape?'<g fill="white">'+flowerPetals+'</g>':'<path fill="white" d="'+svgMask+'"/>')+'</svg>';
-const url='url("data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)+'")';
-img.style.maskImage=url;img.style.webkitMaskImage=url;
-img.style.maskSize='100% 100%';img.style.webkitMaskSize='100% 100%';
-img.style.maskRepeat='no-repeat';img.style.webkitMaskRepeat='no-repeat';
-}else if(polygons[shape]){img.style.clipPath='polygon('+polygons[shape]+')';}
+const FRAME_PATHS={
+ heart:'M50 96 C44 91 4 66 4 41 C4 15 30 7 50 31 C70 7 96 15 96 41 C96 66 56 91 50 96 Z',
+ scallop:'M50 3 C58 3 62 10 70 9 C78 9 84 15 85 23 C93 26 97 33 94 41 C99 47 99 54 94 60 C97 69 91 78 83 80 C80 89 71 93 64 90 C57 98 43 98 36 90 C29 93 20 89 17 80 C9 78 3 69 6 60 C1 54 1 47 6 41 C3 33 7 26 15 23 C16 15 22 9 30 9 C38 10 42 3 50 3 Z'
+};
+function flowerFrameMarkup(){
+ const petals=Array.from({length:8},(_,i)=>{
+  const rad=(i*45-90)*Math.PI/180;
+  const x=(50+25*Math.cos(rad)).toFixed(3);
+  const y=(50+25*Math.sin(rad)).toFixed(3);
+  return '<circle cx="'+x+'" cy="'+y+'" r="23"/>';
+ }).join('');
+ return '<g fill="white">'+petals+'<circle cx="50" cy="50" r="25"/></g>';
+}
+function photoFrameMask(shape){
+ if(shape!=='flower'&&!FRAME_PATHS[shape])return '';
+ const contents=shape==='flower'?flowerFrameMarkup():'<path fill="white" d="'+FRAME_PATHS[shape]+'"/>';
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">'+contents+'</svg>';
+ return 'url("data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)+'")';
+}
+function applyPhotoFrameShape(node,img,shape){
+ const viewport=node.querySelector('.photoCropViewport')||(node.id==='cropEditorPhoto'?node:null);
+ const frame=viewport||node;
+ node.style.overflow='visible';
+ frame.style.borderRadius='0';
+ frame.style.clipPath='none';frame.style.webkitClipPath='none';
+ frame.style.maskImage='none';frame.style.webkitMaskImage='none';
+ frame.style.maskRepeat='no-repeat';frame.style.webkitMaskRepeat='no-repeat';
+ frame.style.maskSize='100% 100%';frame.style.webkitMaskSize='100% 100%';
+ if(shape==='circle')frame.style.borderRadius='50%';
+ else if(shape==='oval')frame.style.borderRadius='50%';
+ else if(shape==='rounded')frame.style.borderRadius='16%';
+ else if(FRAME_POLYGONS[shape])frame.style.clipPath='polygon('+FRAME_POLYGONS[shape]+')';
+ else {
+  const svg=photoFrameMask(shape);
+  if(svg){frame.style.maskImage=svg;frame.style.webkitMaskImage=svg;}
+ }
+ img.style.borderRadius='0';img.style.clipPath='none';
+ img.style.maskImage='none';img.style.webkitMaskImage='none';
 }
 function fixPhotoCropViewport(node,img){
- const viewport=node.querySelector('.photoCropViewport');if(!viewport)return;
- viewport.style.borderRadius=img.style.borderRadius;
- viewport.style.clipPath=img.style.clipPath;
- viewport.style.maskImage=img.style.maskImage;
- viewport.style.webkitMaskImage=img.style.webkitMaskImage;
- viewport.style.maskSize='100% 100%';viewport.style.webkitMaskSize='100% 100%';
- viewport.style.maskRepeat='no-repeat';viewport.style.webkitMaskRepeat='no-repeat';
- img.style.borderRadius='0';img.style.clipPath='none';img.style.maskImage='none';img.style.webkitMaskImage='none';
+ // The image may move independently; its frame stays fixed and perfectly clipped.
+ applyPhotoFrameShape(node,img,node.dataset.frameShape||'rectangle');
+}
+function framePhotoMetrics(width,height,naturalWidth,naturalHeight,zoom=100){
+ if(!(width>0&&height>0&&naturalWidth>0&&naturalHeight>0))return null;
+ const factor=Math.max(width/naturalWidth,height/naturalHeight)*Math.max(1,Number(zoom)||100)/100;
+ const drawWidth=naturalWidth*factor,drawHeight=naturalHeight*factor;
+ return {drawWidth,drawHeight,maxPanX:Math.max(0,(drawWidth-width)/2),maxPanY:Math.max(0,(drawHeight-height)/2)};
+}
+function positionPhotoInFrame(viewport,img,settings){
+ if(!viewport||!img||!(img.naturalWidth>0))return null;
+ const width=viewport.clientWidth,height=viewport.clientHeight;
+ const metrics=framePhotoMetrics(width,height,img.naturalWidth,img.naturalHeight,settings.zoom||100);
+ if(!metrics)return null;
+ const x=Math.max(0,Math.min(100,Number(settings.cropX??50)));
+ const y=Math.max(0,Math.min(100,Number(settings.cropY??50)));
+ img.style.position='absolute';img.style.left='50%';img.style.top='50%';
+ img.style.width=metrics.drawWidth+'px';img.style.height=metrics.drawHeight+'px';
+ img.style.maxWidth='none';img.style.maxHeight='none';
+ img.style.objectFit='fill';img.style.objectPosition='center';
+ img.style.transform='translate(-50%,-50%) translate('+((x-50)/50*metrics.maxPanX)+'px,'+((y-50)/50*metrics.maxPanY)+'px)';
+ img.style.transformOrigin='center';
+ return metrics;
+}
+function refreshVisiblePhotoFramePositions(){
+ const canvas=document.getElementById('designCanvas');
+ if(!canvas)return;
+ for(const holder of canvas.querySelectorAll('.designElement[data-element-id]')){
+  const el=designElements.find(e=>e.id===holder.dataset.elementId);
+  if(el?.type!=='photo')continue;
+  positionPhotoInFrame(holder.querySelector('.photoCropViewport'),holder.querySelector('.photoCropViewport img'),el);
+ }
 }
 function fontStackFor(family){const stacks={system:'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',rounded:'ui-rounded, "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif',serif:'"Yu Mincho", "Hiragino Mincho ProN", serif',handwriting:'"Segoe Print", "Bradley Hand", "Hiragino Maru Gothic ProN", cursive',pop:'"Arial Rounded MT Bold", "Hiragino Maru Gothic ProN", sans-serif',mono:'ui-monospace, SFMono-Regular, Menlo, monospace',notoSans:'"Noto Sans JP", sans-serif',notoSerif:'"Noto Serif JP", serif',zenMaru:'"Zen Maru Gothic", sans-serif',yomogi:'"Yomogi", cursive',dela:'"Dela Gothic One", sans-serif',hachi:'"Hachi Maru Pop", cursive',rockn:'"RocknRoll One", sans-serif',reggae:'"Reggae One", sans-serif',stick:'"Stick", sans-serif',kaisei:'"Kaisei Decol", serif'};return stacks[family]||stacks.system;}
 function applyTextCurve(node,el){const curve=Number(el.curve||0);let layer=node.querySelector('.curvedLetters');if(!curve){if(layer)layer.remove();node.style.color=el.color||'#303946';return;}if(!layer){layer=document.createElement('div');layer.className='curvedLetters';layer.style.cssText='position:absolute;inset:0;pointer-events:none;overflow:visible;';node.appendChild(layer);}layer.replaceChildren();node.style.color='transparent';const letters=Array.from(el.text||'文字を入力');const n=letters.length;const spanWidth=Math.min(95,Math.max(30,n*12+Number(el.letterSpacing||0)*n*.8));letters.forEach((char,i)=>{const ch=document.createElement('span');ch.textContent=char;ch.style.cssText='position:absolute;display:block;white-space:pre;line-height:1;transform-origin:center center;';const t=n===1?0:(i/(n-1)-.5)*2;const angle=curve*t*.52;const rise=curve*(1-t*t)*.35;ch.style.left=(50+t*spanWidth/2)+'%';ch.style.top=(50-rise)+'%';ch.style.transform='translate(-50%,-50%) rotate('+angle+'deg)';ch.style.color=el.color||'#303946';ch.style.fontFamily=fontStackFor(el.fontFamily);ch.style.fontSize=(el.fontSize||24)+'px';ch.style.fontWeight=el.bold?'700':'400';ch.style.webkitTextStroke=(el.outlineWidth||0)+'px '+(el.outlineColor||'#ffffff');layer.appendChild(ch);});}
