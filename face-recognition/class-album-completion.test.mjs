@@ -45,6 +45,7 @@ test('CD counts each page once and changes status after a saved edit',()=>{
  assert.equal(pageState({pages},{key:'slot:0',type:'split',id:'saved-a',updatedAt:100}),'ready');
  assert.equal(pageState({pages},{key:'slot:0',type:'split',id:'saved-a',updatedAt:101}),'updated');
  assert.equal(pageState({pages},{key:'slot:0',type:'split',id:'saved-b',updatedAt:100}),'updated');
+ assert.equal(pageState({pages},{key:'slot:5',type:'split',id:'saved-a',updatedAt:100}),'ready'); // reordered card
  assert.equal(pageState({pages:{}},{key:'slot:0',type:'draft',id:null,updatedAt:null}),'editing');
  assert.equal((12+4)*6.25,100);
 });
