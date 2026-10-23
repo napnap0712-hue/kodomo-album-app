@@ -351,7 +351,16 @@ test('BIの画面整理で操作対象を消さず元写真・保存・園児編
  assert.match(html,/id="albumAddMorePhotos"/);
  assert.match(html,/id="assignmentTransferPanel"/);
  assert.match(html,/id="photoAssignProgress"/);
- assert.match(html,/id="assignmentFolderPicker"/);
+ assert.match(html,/for="assignmentFolderPicker"/);
  assert.match(html,/function renderCurrentAlbumAiGroups\(\)/);
  assert.match(html,/function renderAlbumAiChildFolders\(\)/);
+});
+
+test('BIは解析エラー時に最初の操作へ戻り、手動振り分けを選べる',()=>{
+ const start=html.indexOf("$('#analyzeCurrentAlbum')?.addEventListener");
+ const end=html.indexOf('function updateAssignmentSourceUi()',start);
+ const body=html.slice(start,end);
+ assert.match(body,/setPhotoAssignFlowStep\('start'\)/);
+ assert.match(body,/status\.textContent='⚠️ AI解析できませんでした/);
+ assert.match(html,/id="photoAssignFlowManual"/);
 });
