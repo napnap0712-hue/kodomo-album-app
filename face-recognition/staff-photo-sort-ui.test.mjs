@@ -129,8 +129,8 @@ test('元写真を削除せず異なる顔の同一写真を誤統合しない',
  assert.match(body,/!data\.valid\(\)/);
 });
 
-test('園児フォルダを最初からAI候補より上に用意する',()=>{
- assert.ok(html.indexOf('id="albumChildFolderPanel"')<html.indexOf('id="currentAlbumAiPanel"'));
+test('園児フォルダは解析と顔確認の後に表示し、手動振り分けでも利用できる',()=>{
+ assert.ok(html.indexOf('id="albumChildFolderPanel"')>html.indexOf('id="currentAlbumAiPanel"'));
  assert.match(html,/function renderAlbumAiChildFolders\(\)/);
  assert.match(html,/renderAlbumAiChildFolders\(\);\s*renderAssignmentFolderBar\(\);/);
  assert.match(html,/assignmentPhotoIds\(i\)\.includes\(id\)/);
@@ -215,13 +215,13 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
  assert.doesNotMatch(body,/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\./);
 });
 
-test('BGは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BH/);
+test('BIは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
+ assert.match(html,/PHOTO SORT · 2026-10-23 BI/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
- assert.match(html,/前の判定 /);
- assert.match(html,/改善後 /);
+ assert.match(html,/従来の判定 /);
+ assert.match(html,/今回 /);
  assert.match(html,/v=20261023-bf/);
 });
 
@@ -317,4 +317,41 @@ test('BHは顔だけで迷った際に元の写真全体を閲覧できる',()=>
  assert.match(view,/openTarget\.addEventListener\('click',\(\)=>openAlbumAssignedPhoto/);
  assert.match(html,/function openAlbumAssignedPhoto\(index\)/);
  assert.match(html,/id="assignmentDialogImage"/);
+});
+
+test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
+ assert.match(html,/data-screen="photoAssign" data-flow-step="start"/);
+ assert.match(html,/id="photoAssignFlowGuide"/);
+ assert.match(html,/id="photoAssignFlowManual"/);
+ assert.match(html,/id="photoAssignFlowNext"/);
+ assert.match(html,/id="photoAssignFlowBack"/);
+ assert.match(html,/function setPhotoAssignFlowStep\(step/);
+ assert.match(html,/setPhotoAssignFlowStep\('review'\)/);
+ assert.match(html,/renderCurrentAlbumSingletonPairs\(\);\s*check\(\);/);
+ assert.match(html,/setPhotoAssignFlowStep\('folders',\{scroll:true\}\)/);
+ assert.match(html,/setPhotoAssignFlowStep\('start'\);\s*albumAiGeneration\+\+/);
+ assert.match(html,/スクロール|scrollIntoView/);
+});
+test('BIは難しい顔認識設定と大量の候補を必要なときだけ開ける',()=>{
+ assert.match(html,/id="photoAssignDevTools"/);
+ assert.match(html,/id="albumAiOtherGroups"/);
+ assert.match(html,/if\(details\)details\.open=false/);
+ assert.match(html,/id="currentAlbumAiDiagnosticPanel"/);
+ assert.match(html,/data-flow-step="start"/);
+ assert.match(html,/data-flow-step="review"/);
+ assert.match(html,/data-flow-step="folders"/);
+ assert.match(html,/id="faceReferenceAdvanced"/);
+ assert.match(html,/id="finishPhotoAssign"/);
+});
+test('BIの画面整理で操作対象を消さず元写真・保存・園児編集機能を維持',()=>{
+ assert.match(html,/id="albumAiUndoMerge"/);
+ assert.match(html,/id="albumAiFindSingletonPairs"/);
+ assert.match(html,/id="albumChildFolderList"/);
+ assert.match(html,/id="photoAssignGrid"/);
+ assert.match(html,/id="albumAddMorePhotos"/);
+ assert.match(html,/id="assignmentTransferPanel"/);
+ assert.match(html,/id="photoAssignProgress"/);
+ assert.match(html,/id="assignmentFolderPicker"/);
+ assert.match(html,/function renderCurrentAlbumAiGroups\(\)/);
+ assert.match(html,/function renderAlbumAiChildFolders\(\)/);
 });
