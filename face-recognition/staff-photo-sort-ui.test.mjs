@@ -216,7 +216,7 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
 });
 
 test('BGは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BG/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BH/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
@@ -279,7 +279,7 @@ test('写真や端末変更時に単独候補表示を破棄し、勝手に顔�
  assert.match(snippet,/if\(data!==albumAiGroupsData\|\|!data\.valid\(\)\)/);
 });
 
-test('BGは24組だけに切り詰めず全候補を24組ずつ表示する',()=>{
+test('BHは24組だけに切り詰めず全候補を24組ずつ表示する',()=>{
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
@@ -293,4 +293,28 @@ test('BGは24組だけに切り詰めず全候補を24組ずつ表示する',()=
  assert.match(view,/const checked=new Map\(\)/);
  assert.match(view,/rows\.append\(row\)/);
  assert.match(view,/data\.mergeTeacherReviewedGroupPairs/);
+});
+
+test('BHは違う園児の候補だけを一覧から外し、すべて戻せる',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(view,/data\.skippedSingletonPairs=new Set\(\)/);
+ assert.match(view,/restoreSkipped\.addEventListener\('click'/);
+ assert.match(view,/exclude\.textContent='違う園児'/);
+ assert.match(view,/skipped\.add\(pairId\(item\)\)/);
+ assert.match(view,/checked\.delete\(item\.sourceKey\)/);
+ assert.match(view,/row\.hidden=true/);
+ assert.match(view,/skipped\.clear\(\)/);
+ assert.match(view,/for\(const row of rows\.children\)row\.hidden=false/);
+ assert.match(view,/元写真やグループは変更していません/);
+});
+test('BHは顔だけで迷った際に元の写真全体を閲覧できる',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(view,/openSource\.addEventListener\('click',\(\)=>openAlbumAssignedPhoto/);
+ assert.match(view,/openTarget\.addEventListener\('click',\(\)=>openAlbumAssignedPhoto/);
+ assert.match(html,/function openAlbumAssignedPhoto\(index\)/);
+ assert.match(html,/id="assignmentDialogImage"/);
 });
