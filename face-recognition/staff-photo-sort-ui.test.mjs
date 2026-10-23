@@ -603,6 +603,55 @@ test('BQの再開は写真を再解析して検証完了後にだけ元の状態
  assert.doesNotMatch(body,/localStorage\.setItem\(|fetch\(|sendBeacon\(/);
 });
 
+test('BQは顔特徴データを保存せず教師の確認状態を復元できる形にする',()=>{
+ const start=html.indexOf('function photoSortCheckpointCaptureAI(');
+ const stop=html.indexOf('async function refreshPhotoSortResumeAvailability(',start);
+ const source=html.slice(start,stop);
+ const capture=new Function('data',source+'return photoSortCheckpointCaptureAI(data)');
+ const groups=[{key:'current-1',faceIndexes:[0,1]}];
+ const data={
+  valid:()=>true,
+  samples:[{index:0,box:[10,20,30,40],embedding:[.2,.7]},{index:1,box:[20,30,40,50],embedding:[.4,.3]}],
+  groups,confirmed:new Set(['current-1']),unusedPhotoIndexes:new Set([2]),
+  unusedPhotoOrder:[2],skippedSingletonPairs:new Set(['z→y']),
+  pairReviewSession:{checked:new Map([['a→b',{sourceKey:'a',targetKey:'b'}]]),
+   decisions:new Map([['c→d','different']]),seen:new Set(['a→b','c→d'])},
+  expanded:new Set(['current-1']),visibleLimit:36,nextGroupId:7,mergeUndo:[groups]
+ };
+ const out=capture(data);
+ assert.equal(out.samples.length,2);
+ assert.deepEqual(out.samples[0],{index:0,box:[10,20,30,40]});
+ assert.deepEqual(out.pairReviewSession.checked,[['a→b',{sourceKey:'a',targetKey:'b'}]]);
+ assert.deepEqual(out.pairReviewSession.seen,['a→b','c→d']);
+ assert.deepEqual(out.unusedPhotoIndexes,[2]);
+ assert.doesNotMatch(JSON.stringify(out),/embedding/);
+});
+test('BQは写真内の顔の順番が変わっても安全に対応付けて復元する',async()=>{
+ const start=html.indexOf('async function photoSortRestoreFaceSamples(');
+ const stop=html.indexOf('async function resumePhotoSortCheckpoint(',start);
+ const helpers=html.slice(start,stop);
+ const fake=[
+  [{box:[20,10,20,20],embedding:[1,0]}],
+  [{box:[110,110,20,20],embedding:[0,1]},{box:[5,5,20,20],embedding:[1,1]}]
+ ];
+ const make=found=>new Function('found',"const loadHumanRecognition=async()=>({});\n"+
+  "const humanFacesFromBlob=async(_human,blob)=>found[blob.index];\n"+
+  helpers+"\nreturn {photoSortRestoreFaceSamples,photoSortRestoreAiData};")(found);
+ const methods=make(fake);
+ const saved={
+  samples:[{index:0,box:[20,10,20,20]},{index:1,box:[5,5,20,20]},{index:1,box:[110,110,20,20]}],
+  groups:[{key:'a',faceIndexes:[0,1]},{key:'b',faceIndexes:[2]}],
+  confirmed:['a'],unusedPhotoIndexes:[],unusedPhotoOrder:[]
+ };
+ const photos=[{index:0},{index:1}];
+ const actual=await methods.photoSortRestoreFaceSamples(saved,photos,()=>{},()=>{});
+ assert.deepEqual(actual.map(x=>x.embedding),[[1,0],[1,1],[0,1]]);
+ assert.doesNotThrow(()=>methods.photoSortRestoreAiData(saved,photos,''));
+ const broken=fake.map(x=>[...x]);broken[1]=broken[1].slice(0,1);
+ await assert.rejects(()=>make(broken).photoSortRestoreFaceSamples(saved,photos,()=>{},()=>{}),/顔の検出結果が保存時と一致しません/);
+ assert.throws(()=>methods.photoSortRestoreAiData({...saved,groups:[{key:'a',faceIndexes:[0,0]}]},photos,''),/重複や不整合/);
+});
+
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
  assert.match(html,/data-screen="photoAssign" data-flow-step="start"/);
  assert.match(html,/id="photoAssignFlowGuide"/);
