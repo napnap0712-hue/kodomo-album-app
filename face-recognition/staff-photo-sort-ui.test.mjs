@@ -446,7 +446,9 @@ test('BMは写真を確認しながら同じ／違うを直接判断し、園児
  assert.match(view,/actions\.append\(same,different\)/);
  assert.match(view,/actions\.hidden=false;navigation\.hidden=false;assignPanel\.hidden=false/);
  assert.match(view,/same\.addEventListener\('click',\(\)=>\{/);
- assert.match(view,/if\(childSelect\.value\)\{assignButton\.click\(\);return\}/);
+ assert.match(view,/if\(childSelect\.value\)\{/);
+ assert.match(view,/if\(assignButton\.disabled\)\{/);
+ assert.match(view,/assignButton\.click\(\);return;/);
  assert.match(view,/decide\('same'\)/);
  assert.match(view,/different\.addEventListener\('click'/);
  assert.match(view,/decide\('different'\)/);
