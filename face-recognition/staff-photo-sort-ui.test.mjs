@@ -215,8 +215,8 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
  assert.doesNotMatch(body,/files\.splice\(|photoAssignments=|indexedDB\.|localStorage\./);
 });
 
-test('BFは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BF/);
+test('BGは今回取り込んだ写真だけでグループ改善を比較表示',()=>{
+ assert.match(html,/PHOTO SORT · 2026-10-23 BG/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
@@ -277,4 +277,20 @@ test('写真や端末変更時に単独候補表示を破棄し、勝手に顔�
  assert.ok(stop>start);
  assert.doesNotMatch(snippet,/files\.splice\(|localStorage\.|indexedDB\.|fetch\(|sendBeacon\(/);
  assert.match(snippet,/if\(data!==albumAiGroupsData\|\|!data\.valid\(\)\)/);
+});
+
+test('BGは24組だけに切り詰めず全候補を24組ずつ表示する',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.ok(start>0&&end>start);
+ assert.match(view,/limit:Math\.max\(24,groups\.length\)/);
+ assert.match(view,/const next=Math\.min\(shown\+24,candidates\.length\)/);
+ assert.match(view,/candidates\.slice\(shown,next\)/);
+ assert.match(view,/showMore\.addEventListener\('click',showNext\)/);
+ assert.match(view,/showMore\.hidden=shown>=candidates\.length/);
+ assert.match(view,/progress\.textContent='確認候補 '/);
+ assert.match(view,/const checked=new Map\(\)/);
+ assert.match(view,/rows\.append\(row\)/);
+ assert.match(view,/data\.mergeTeacherReviewedGroupPairs/);
 });
