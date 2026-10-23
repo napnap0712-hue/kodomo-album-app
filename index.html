@@ -898,6 +898,25 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .pairReviewFaceItem .pairExcludeToggle{width:100%;min-height:40px;font-size:11px;padding:6px 4px;line-height:1.25;white-space:normal}
 .pairReviewFaceItem.pairExcludedFace .pairExcludeToggle{background:#e4f3ff;border:1px solid #a6cde8;color:#245d89}
 
+/* BM: Show both full face groups and same/different decisions together. */
+#albumAiSingletonPairs .pairReviewGroupPhotos{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-height:none;overflow:visible;border:0;background:transparent;padding:0}
+#albumAiSingletonPairs .pairReviewGroup{min-width:0;border:1px solid #dae5f1;background:#f7faff;border-radius:12px;padding:8px}
+#albumAiSingletonPairs .pairReviewGroupHeading{display:block;text-align:center;font-size:13px;padding:4px 0 9px;color:#3a5269}
+#albumAiSingletonPairs .pairReviewGroupEntries{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:9px;max-height:clamp(220px,43vh,460px);overflow-y:auto;overscroll-behavior:contain;padding:2px}
+#albumAiSingletonPairs .pairReviewGroup .pairOriginalFrame{height:clamp(135px,23vh,240px)}
+#albumAiSingletonPairs .pairReviewDecisions{margin-top:13px}
+#albumAiSingletonPairs .pairReviewDecisions button{white-space:normal;min-height:50px}
+#albumAiSingletonPairs .pairAssignPanel{padding-top:0;margin-top:4px;border-top:0}
+#albumAiSingletonPairs .pairAssignPanel>strong{display:block}
+#albumAiSingletonPairs .pairAssignPanel .pairAssignActions[hidden]{display:none!important}
+@media(max-width:430px){
+ #albumAiSingletonPairs .pairReviewGroupPhotos{gap:6px}
+ #albumAiSingletonPairs .pairReviewGroup{padding:5px}
+ #albumAiSingletonPairs .pairReviewGroupEntries{max-height:40vh}
+ #albumAiSingletonPairs .pairReviewGroup .pairOriginalFrame{height:155px}
+ #albumAiSingletonPairs .pairReviewGroup .pairOriginalPhoto{padding:4px}
+}
+
 /* BI: Progressive photo sorting - keep existing theme and functional controls. */
 .photoAssignFlowGuide{display:flex;align-items:center;gap:5px;justify-content:space-between;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #dde6f0;font-size:12px;color:#75849a}
 .photoAssignFlowGuide span[data-flow-index]{padding:7px 8px;border-radius:10px;font-weight:650}
@@ -950,7 +969,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BL</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BM</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="写真整理の進み具合">
  <span data-flow-index="start">① 写真を整理</span><span class="arrow">›</span>
  <span data-flow-index="review">② 顔を確認</span><span class="arrow">›</span>
@@ -2300,7 +2319,7 @@ function renderCurrentAlbumSingletonPairs(){
  let position=candidates.findIndex(item=>!seen.has(pairId(item)));
  if(position<0)position=candidates.length;
  const intro=document.createElement('p');intro.className='muted';
- intro.textContent='写真全体を見比べよう。写真を押すと大きく見られるよ。迷ったら「あとで」で大丈夫。';
+ intro.textContent='両方のグループの写真を確認してね。同じ園児なら園児名を選んで確定、名前はあとで付けても大丈夫。';
  const progress=document.createElement('p');progress.className='pairReviewProgress';progress.setAttribute('role','status');
  const card=document.createElement('section');card.className='albumAiReviewCard';
  const names=document.createElement('p');names.className='pairReviewNames';
@@ -2327,7 +2346,7 @@ function renderCurrentAlbumSingletonPairs(){
  const assignCancel=document.createElement('button');assignCancel.type='button';assignCancel.className='secondary';
  assignCancel.textContent='‹ 写真を見直す';
  const assignButtons=document.createElement('div');assignButtons.className='pairAssignActions';
- assignButtons.append(assignButton,assignLater,assignCancel);
+ assignButtons.append(assignButton,assignLater,assignCancel);assignButtons.hidden=true; // Use the visible decision buttons instead.
  assignPanel.append(assignTitle,childSelect,assignSummary,assignHint,assignPhotos,assignButtons);
  const apply=document.createElement('button');apply.type='button';apply.className='primary wide';
  const extra=document.createElement('details');extra.className='pairReviewExtra';
@@ -2337,7 +2356,7 @@ function renderCurrentAlbumSingletonPairs(){
  extra.append(extraTitle,restoreSkipped);
  actions.append(same,different);
  navigation.append(previous,later);
- card.append(names,photos,feedback,actions,navigation,assignPanel,complete);
+ card.append(names,photos,feedback,assignPanel,actions,navigation,complete);
  host.append(intro,progress,card,apply,extra);
  const originalPhoto=(group,label)=>{
   const sample=data.samples[group.faceIndexes[0]],file=data.sourceFiles[sample?.index];
@@ -2378,7 +2397,7 @@ function renderCurrentAlbumSingletonPairs(){
   const conflicting=[...checked.entries()].some(([id,p])=>id!==pairId(item)&&(
    p.sourceKey===item.sourceKey||p.sourceKey===item.targetKey||
    p.targetKey===item.sourceKey||p.targetKey===item.targetKey));
-  if(conflicting){feedback.textContent='このグループは別の候補でも選ばれているよ。前の候補を見直してね。';return}
+  if(conflicting)feedback.textContent='このグループは先ほど「同じ園児」にした候補と重なっているよ。必要なら前の候補を見直してね。';
   const sourceFaces=[...source.faceIndexes],targetFaces=[...target.faceIndexes];
   const faces=[...sourceFaces,...targetFaces];
   // Only the explicitly confirmed action below may edit photoAssignments or AI groups.
@@ -2397,10 +2416,12 @@ function renderCurrentAlbumSingletonPairs(){
    const photoCount=new Set(included.map(i=>data.samples[i]?.index)).size;
    const kid=getChildren(data.classId).find(k=>String(k.id)===childSelect.value);
    assignSummary.textContent=(kid?'🌷 '+kid.name+'さん｜':'')+'振り分け予定：'+photoCount+'枚';
-   assignHint.textContent='写真をタップすると拡大できるよ。別の園児の顔は「候補から外す」を押してね。外した顔は未確定に戻ります。似ている相手が見つかれば、もう一度この画面に出るよ。';
+   assignHint.textContent='写真を押すと拡大できるよ。間違って混ざった顔は「候補から外す」で調整してね。外した顔は未確定に戻るよ。';
    assignButton.textContent=(kid?'✓ '+kid.name+'さんのフォルダへ':'園児フォルダへ')+'振り分ける（'+photoCount+'枚）';
-   assignButton.disabled=!kid||!included.length;
-   for(const entry of assignPhotos.children){
+   assignButton.disabled=!kid||!included.length||conflicting;
+   same.disabled=conflicting;
+   same.textContent=kid?'✓ 同じ園児（'+kid.name+'さんへ）':'✓ 同じ園児';
+   for(const entry of assignPhotos.querySelectorAll('.pairReviewFaceItem')){
     const faceIndex=Number(entry.dataset.faceIndex);
     const excluded=pendingPair.excluded.has(faceIndex);
     entry.classList.toggle('pairExcludedFace',excluded);
@@ -2409,26 +2430,32 @@ function renderCurrentAlbumSingletonPairs(){
    }
   };
   assignPhotos.replaceChildren();
-  for(let i=0;i<faces.length;i++){
-   const faceIndex=faces[i];
-   const entry=document.createElement('div');entry.className='pairReviewFaceItem';
-   entry.dataset.faceIndex=String(faceIndex);
-   const preview=originalPhoto({faceIndexes:[faceIndex]},'写真 '+(i+1));
-   preview.querySelector('img').loading='lazy';
-   const exclude=document.createElement('button');exclude.type='button';exclude.className='secondary pairExcludeToggle';
-   exclude.setAttribute('aria-label','写真'+(i+1)+'の検出顔を候補から外す・戻す');
-   exclude.addEventListener('click',()=>{
-    if(!pendingPair)return;
-    if(pendingPair.excluded.has(faceIndex))pendingPair.excluded.delete(faceIndex);
-    else pendingPair.excluded.add(faceIndex);
-    refreshAssignPreview();feedback.textContent='';
-   });
-   entry.append(preview,exclude);assignPhotos.append(entry);
+  for(const [title,sectionFaces] of [['候補①',sourceFaces],['候補②',targetFaces]]){
+   const section=document.createElement('section');section.className='pairReviewGroup';
+   const heading=document.createElement('strong');heading.className='pairReviewGroupHeading';
+   heading.textContent=title+'（'+sectionFaces.length+'枚の顔）';
+   const gallery=document.createElement('div');gallery.className='pairReviewGroupEntries';
+   for(const faceIndex of sectionFaces){
+    const entry=document.createElement('div');entry.className='pairReviewFaceItem';
+    entry.dataset.faceIndex=String(faceIndex);
+    const preview=originalPhoto({faceIndexes:[faceIndex]},'元写真');
+    preview.querySelector('img').loading='lazy';
+    const exclude=document.createElement('button');exclude.type='button';exclude.className='secondary pairExcludeToggle';
+    exclude.setAttribute('aria-label','この顔を候補から外す・戻す');
+    exclude.addEventListener('click',()=>{
+     if(!pendingPair)return;
+     if(pendingPair.excluded.has(faceIndex))pendingPair.excluded.delete(faceIndex);
+     else pendingPair.excluded.add(faceIndex);
+     refreshAssignPreview();feedback.textContent='';
+    });
+    entry.append(preview,exclude);gallery.append(entry);
+   }
+   section.append(heading,gallery);assignPhotos.append(section);
   }
   childSelect.onchange=()=>{feedback.textContent='';refreshAssignPreview()};
   refreshAssignPreview();
   feedback.textContent='';
-  actions.hidden=true;navigation.hidden=true;assignPanel.hidden=false;
+  actions.hidden=false;navigation.hidden=false;assignPanel.hidden=false;
  };
  assignCancel.addEventListener('click',()=>{
   pendingPair=null;assignPanel.hidden=true;actions.hidden=false;navigation.hidden=false;feedback.textContent='';
@@ -2508,7 +2535,7 @@ function renderCurrentAlbumSingletonPairs(){
   if(data!==albumAiGroupsData||!data.valid()){
    host.replaceChildren();return;
   }
-  assignPanel.hidden=true;
+  assignPanel.hidden=true;same.disabled=false;same.textContent='✓ 同じ園児';
   feedback.textContent='';
   apply.textContent='✓ 同じ園児と確認した'+checked.size+'組をまとめる';
   apply.disabled=checked.size===0;apply.hidden=checked.size===0;
@@ -2528,10 +2555,11 @@ function renderCurrentAlbumSingletonPairs(){
   const item=candidates[position],source=groups.find(g=>g.key===item.sourceKey),target=groups.find(g=>g.key===item.targetKey);
   if(!source||!target){position++;show();return}
   names.textContent='この2つの写真は同じ園児かな？'+(item.ambiguous?'（ほかにも似ている候補あり）':'');
-  photos.replaceChildren(originalPhoto(source,'写真①'),originalPhoto(target,'写真②'));
+  photos.replaceChildren();photos.hidden=true; // Full source and target groups are shown below instead.
   const choice=decisions.get(pairId(item))||(skipped.has(pairId(item))?'different':'');
   same.setAttribute('aria-pressed',String(choice==='same'));
   different.setAttribute('aria-pressed',String(choice==='different'));
+  openPairAssignment(); // Start directly with the full candidate groups.
  };
  const decide=choice=>{
   if(data!==albumAiGroupsData||!data.valid())return;
@@ -2552,9 +2580,23 @@ function renderCurrentAlbumSingletonPairs(){
   decisions.set(id,choice);seen.add(id);
   position++;show();
  };
- same.addEventListener('click',openPairAssignment);
- different.addEventListener('click',()=>decide('different'));
- later.addEventListener('click',()=>decide('later'));
+ same.addEventListener('click',()=>{
+  if(!pendingPair)return;
+  if(childSelect.value){assignButton.click();return}
+  if(pendingPair.excluded.size){
+   feedback.textContent='⚠️ 顔を外した場合は先に園児名を選んで確定してね。名前を後で付けるなら外した顔を戻してね。';
+   return;
+  }
+  decide('same');
+ });
+ different.addEventListener('click',()=>{
+  if(pendingPair?.excluded.size&&!window.confirm('候補から外した顔は、この操作では反映されません。「違う園児」として次へ進みますか？'))return;
+  decide('different');
+ });
+ later.addEventListener('click',()=>{
+  if(pendingPair?.excluded.size&&!window.confirm('外した顔はまだ反映されません。この候補をあとで確認しますか？'))return;
+  decide('later');
+ });
  previous.addEventListener('click',()=>{position=Math.max(0,position-1);show()});
  restoreSkipped.addEventListener('click',()=>{
   if(data!==albumAiGroupsData||!data.valid())return;
