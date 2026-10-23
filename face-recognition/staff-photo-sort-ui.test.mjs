@@ -668,7 +668,7 @@ test('BRのPC版は大きな見開きと5種類の編集ツールを2カラム�
  const end=html.indexOf('</style>',start);
  const css=html.slice(start,end);
  assert.ok(start>=0&&end>start);
- assert.match(html,/ALBUM EDITOR · 2026-10-23 BZ/);
+ assert.match(html,/ALBUM EDITOR · 2026-10-23 CA/);
  assert.match(css,/@media\(min-width:980px\)/);
  assert.match(css,/grid-template-columns:minmax\(0,1fr\) clamp\(310px,28vw,392px\)/);
  assert.match(css,/\.editorPanel>.editorCanvasFirst\{/);
@@ -749,18 +749,34 @@ test('BSの見開きフィットはデスクトップとモバイルで正しい
  assert.equal(canvas.style.width,undefined);
  assert.ok(off!=='0px');
 });
-test('BSは保存・書き出し・復旧を残したままPCの追加ボタンのみ畳む',()=>{
- const css=html.slice(html.indexOf('/* BS: Mac / Windows editing workstation.'),html.indexOf('</style>',html.indexOf('/* BS: Mac / Windows editing workstation.')));
- assert.match(html,/id="desktopEditorMore" aria-expanded="false"/);
- assert.match(html,/id="saveDraft"/);
- assert.match(html,/id="exportImage"/);
- assert.match(html,/id="restoreSplitBackup"/);
- assert.match(html,/id="viewSplitHistory"/);
- assert.match(css,/\.desktopEditorMore\{display:none\}/);
- assert.match(css,/@media \(min-width:980px\)/);
- assert.match(css,/desktopExtrasOpen>button:not\(#saveDraft\):not\(#exportImage\)/);
- assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
- assert.doesNotMatch(css,/indexedDB|localStorage|photoAssignments|putDraft/);
+test('CAは職員の上部を戻る・保存・復元に限定し開発用ボタンを完全隔離する',()=>{
+ const screen=html.slice(html.indexOf('<section class="screen" data-screen="editor">'));
+ const top=screen.slice(screen.indexOf('<div class="top"><button class="back"'),screen.indexOf('<!-- Historic diagnostic controls remain non-interactive'));
+ assert.ok(top.length>0);
+ assert.match(top,/id="saveDraft"/);
+ assert.match(top,/id="editorRestoreMenuButton"/);
+ assert.match(top,/id="editorRestoreChoices" class="editorRestoreChoices" hidden/);
+ assert.match(top,/id="editorRestoreLatestOption"/);
+ assert.match(top,/id="editorRestorePreviousOption"/);
+ assert.doesNotMatch(top,/id="trial|id="desktopEditorMore"|id="exportImage"|id="viewSplitHistory"/);
+ const legacyStart=screen.indexOf('<div id="editorLegacyControls" hidden inert aria-hidden="true">');
+ const legacyEnd=screen.indexOf('</div>',legacyStart);
+ assert.ok(legacyStart>=0&&legacyEnd>legacyStart);
+ const legacy=screen.slice(legacyStart,legacyEnd);
+ assert.match(legacy,/id="restoreSplitBackup"/);
+ assert.match(legacy,/id="restorePreviousSplitBackup"/);
+ assert.match(legacy,/id="trialSaveDraft"/);
+ assert.match(legacy,/id="trialSplitStore"/);
+ const css=html.slice(html.indexOf('/* CA: Staff editor'),html.indexOf('</style>',html.indexOf('/* CA: Staff editor')));
+ assert.match(css,/#editorLegacyControls,#editorLegacyControls \*\{display:none!important\}/);
+ assert.match(css,/\.editorRestoreChoices\[hidden\]\{display:none!important\}/);
+ assert.match(css,/\.editorExportPanel>#exportImage/);
+ const footer=screen.indexOf('<div class="editorExportPanel"><button class="secondary" id="exportImage"');
+ assert.ok(footer>legacyEnd);
+ assert.match(inline,/void stageSplitBackupRestore\('backups'\)/);
+ assert.match(inline,/void stageSplitBackupRestore\('previousBackups'\)/);
+ assert.match(inline,/function setupStaffEditorHeader\(\)/);
+ assert.doesNotMatch(inline,/extras\?\.addEventListener\('click'/);
 });
 
 test('BTはPCの編集メニュー直下に案内・設定を並べ、左キャンバスの高さによる大きな空白を防ぐ',()=>{
