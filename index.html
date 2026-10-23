@@ -2175,6 +2175,111 @@ $('#detectFacesOnDevice').addEventListener('click',async()=>{
  finally{button.disabled=false}
 });
 let activeAssignmentFolder='all',assignmentVisibleLimit=24,faceReferenceRenderedClassId='',assignmentSourceType='manual';
+// BQ: explicit, per-album working checkpoint. Separate DB from saved album edits.
+// Save only file blobs, rectangles, group IDs and teacher decisions; NEVER face embeddings.
+const PHOTO_SORT_CHECKPOINT_DB='omoide-photo-sort-progress-v1';
+let photoSortCheckpointKnownSavedAt=null,photoSortCheckpointBusy=false;
+function photoSortCheckpointKey(){
+ return String(activeYear())+':'+String(selected.id)+':'+
+  (Number.isInteger(pendingProjectSlot)?'slot-'+pendingProjectSlot:'new-album');
+}
+function photoSortCheckpointOpen(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open(PHOTO_SORT_CHECKPOINT_DB,1);
+  req.onupgradeneeded=()=>{
+   if(!req.result.objectStoreNames.contains('checkpoints'))
+    req.result.createObjectStore('checkpoints',{keyPath:'key'});
+  };
+  req.onsuccess=()=>{req.result.onversionchange=()=>req.result.close();resolve(req.result)};
+  req.onerror=()=>reject(req.error||Error('途中保存の保存領域を開けません'));
+  req.onblocked=()=>reject(Error('別のタブで途中保存が使用されています'));
+ });
+}
+async function photoSortCheckpointRead(key){
+ const db=await photoSortCheckpointOpen();
+ try{return await new Promise((resolve,reject)=>{
+  const tx=db.transaction('checkpoints','readonly'),q=tx.objectStore('checkpoints').get(key);
+  q.onsuccess=()=>resolve(q.result||null);
+  q.onerror=()=>reject(q.error||Error('保存した途中経過を読み込めません'));
+ })}finally{db.close()}
+}
+async function photoSortCheckpointWrite(row){
+ const db=await photoSortCheckpointOpen();
+ try{await new Promise((resolve,reject)=>{
+  const tx=db.transaction('checkpoints','readwrite');
+  tx.objectStore('checkpoints').put(row);
+  tx.oncomplete=resolve;
+  tx.onerror=()=>reject(tx.error||Error('途中保存に失敗しました'));
+  tx.onabort=()=>reject(tx.error||Error('途中保存が中断されました'));
+ })}finally{db.close()}
+}
+function photoSortCheckpointCaptureAI(data){
+ if(!data)return null;
+ if(!data.valid())throw Error('写真やクラスが変わりました。AI結果を保存できません');
+ return {
+  samples:data.samples.map(sample=>({index:sample.index,box:[...sample.box]})),
+  groups:data.groups.map(g=>({key:g.key,faceIndexes:[...g.faceIndexes]})),
+  confirmed:[...data.confirmed],unusedPhotoIndexes:[...data.unusedPhotoIndexes],
+  unusedPhotoOrder:[...data.unusedPhotoOrder],
+  skippedSingletonPairs:[...(data.skippedSingletonPairs||[])],
+  pairReviewSession:data.pairReviewSession?{
+   checked:[...data.pairReviewSession.checked.entries()],
+   decisions:[...data.pairReviewSession.decisions.entries()],
+   seen:[...data.pairReviewSession.seen]
+  }:null,
+  expanded:[...data.expanded],visibleLimit:data.visibleLimit,nextGroupId:data.nextGroupId,
+  mergeUndo:(data.mergeUndo||[]).map(previous=>previous.map(g=>({key:g.key,faceIndexes:[...g.faceIndexes]})))
+ };
+}
+async function refreshPhotoSortResumeAvailability(){
+ const box=$('#photoSortResumeBox'),info=$('#photoSortResumeInfo'),status=$('#photoSortResumeStatus');
+ if(!box)return;
+ const key=photoSortCheckpointKey();box.hidden=true;if(status)status.textContent='';
+ try{
+  const row=await photoSortCheckpointRead(key);
+  if(key!==photoSortCheckpointKey()||!document.querySelector('[data-screen="photoPick"]')?.classList.contains('active'))return;
+  box.hidden=!row;
+  if(row)info.textContent='📷 '+row.photos.length+'枚を途中保存済み。園児の振り分けや顔の確認の続きから再開できるよ（この端末内）。';
+ }catch(e){if(key===photoSortCheckpointKey())status.textContent='⚠️ 途中保存の確認ができません：'+String(e?.message||e)}
+}
+async function saveCurrentPhotoSortCheckpoint(){
+ if(photoSortCheckpointBusy)return;
+ const status=$('#photoSortProgressSaveStatus'),button=$('#savePhotoSortProgress');
+ if(!files.length){status.textContent='写真を追加してから保存してね。';return}
+ photoSortCheckpointBusy=true;button.disabled=true;status.textContent='💾 写真と振り分けを保存中…';
+ try{
+  const key=photoSortCheckpointKey(),current=await photoSortCheckpointRead(key);
+  if(current&&photoSortCheckpointKnownSavedAt!==current.savedAt){
+   if(!window.confirm('この枠には別の途中保存があります。上書きしますか？ 以前の途中経過は置き換わります。')){
+    status.textContent='上書きを中止しました。今の写真や振り分けはそのままです。';return;
+   }
+  }
+  const classId=selected.id,schoolYear=activeYear(),slot=pendingProjectSlot;
+  const snapshot={
+   version:1,key,classId,schoolYear,slot,savedAt:Date.now(),
+   registered:JSON.stringify(getChildren(classId)),
+   photos:files.map(f=>({blob:f,name:f.name||'photo.jpg',type:f.type||'image/jpeg',
+    lastModified:f.lastModified||0,size:f.size})),
+   photoAssignments:photoAssignments.map(ids=>[...ids]),
+   assignmentSourceType,flowStep:document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep||'start',
+   ai:photoSortCheckpointCaptureAI(albumAiGroupsData)
+  };
+  if(snapshot.photos.length!==snapshot.photoAssignments.length)throw Error('写真と振り分けの数が一致しません');
+  await photoSortCheckpointWrite(snapshot);
+  const verified=await photoSortCheckpointRead(key);
+  if(!verified||verified.savedAt!==snapshot.savedAt||verified.photos.length!==snapshot.photos.length||
+   verified.photoAssignments.length!==snapshot.photos.length||
+   verified.photos.some((p,i)=>!(p.blob instanceof Blob)||p.blob.size!==snapshot.photos[i].size||
+    p.name!==snapshot.photos[i].name))throw Error('写真の保存後照合に失敗しました。');
+  if(classId===selected.id&&schoolYear===activeYear()&&slot===pendingProjectSlot){
+   photoSortCheckpointKnownSavedAt=snapshot.savedAt;
+   status.textContent='✅ 途中保存できたよ！この端末で同じアルバムを開けば続きから再開できるよ。';
+  }
+ }catch(e){status.textContent='⚠️ 保存できませんでした：'+String(e?.message||e)+ '。元の写真は変更していません。'}
+ finally{photoSortCheckpointBusy=false;button.disabled=false}
+}
+$('#savePhotoSortProgress')?.addEventListener('click',saveCurrentPhotoSortCheckpoint);
+
 // An album is a fresh photo batch. No persisted previous photo/face-group data
 // may influence face clustering or assignment within this new album.
 let albumAiGeneration=0,albumAiRunning=false,albumAiGroupsData=null;
