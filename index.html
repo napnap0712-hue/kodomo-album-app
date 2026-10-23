@@ -3299,9 +3299,10 @@ function renderPhotoAssignmentPage(keepOpenIndex=-1){
  updateAssignmentSourceUi();
 }
 function updatePhotoAssignmentProgress(){
- const done=files.filter((_,i)=>assignmentPhotoIds(i).length).length;
- const unmatched=files.length-done;
- $('#photoAssignProgress').textContent='📷 全'+files.length+'枚　✅ 振り分け済み'+done+'枚'+
+ const total=files.length-(albumAiGroupsData?.unusedPhotoIndexes?.size||0);
+ const done=files.filter((_,i)=>!isAlbumUnusedPhoto(i)&&assignmentPhotoIds(i).length).length;
+ const unmatched=total-done;
+ $('#photoAssignProgress').textContent='📷 全'+total+'枚　✅ 振り分け済み'+done+'枚'+
   (unmatched?'　🔎 未振り分け'+unmatched+'枚':'');
  renderClassPhotoSummary('assignClassSummary',false);
 }
@@ -3309,7 +3310,7 @@ function renderClassPhotoSummary(id,used){
  const host=$('#'+id);if(!host)return;
  const kids=getChildren(selected.id),goal=Math.max(1,Number(getClassSettings()[selected.id]?.photoCount)||5);
  if(!kids.length){host.textContent='クラス管理で園児を登録すると、枚数を確認できます。';return}
- const counts=kids.map(k=>({id:k.id,name:k.name,count:used?childPhotoUsedCount(k.id):files.filter((_,i)=>(photoAssignments[i]||[]).some(id=>String(id)===String(k.id))).length}));
+ const counts=kids.map(k=>({id:k.id,name:k.name,count:used?childPhotoUsedCount(k.id):files.filter((_,i)=>!isAlbumUnusedPhoto(i)&&(photoAssignments[i]||[]).some(id=>String(id)===String(k.id))).length}));
  const complete=counts.filter(x=>x.count>=goal).length;
  const isEditor=used&&id==='photoUsageSummary',wasOpen=host.querySelector('details')?.open||false;
  host.replaceChildren();
