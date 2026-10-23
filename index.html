@@ -879,7 +879,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BF</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BG</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
  <strong>🌷 園児別フォルダ</strong>
  <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
@@ -2163,7 +2163,7 @@ function renderCurrentAlbumSingletonPairs(){
  host.replaceChildren();
  const groups=data.groups.filter(g=>!data.confirmed.has(g.key));
  const candidates=data.suggestSingletonGroupPairs(data.samples,groups,{
-  similarity:faceEmbeddingSimilarity,minScore:.60,limit:24
+  similarity:faceEmbeddingSimilarity,minScore:.60,limit:Math.max(24,groups.length)
  });
  if(!candidates.length){
   const empty=document.createElement('p');empty.className='muted';
@@ -2171,8 +2171,13 @@ function renderCurrentAlbumSingletonPairs(){
   host.append(empty);return;
  }
  const intro=document.createElement('p');intro.className='muted';
- intro.textContent='単独グループから'+candidates.length+'組の確認候補。比較値は正解率ではありません。';
+ intro.textContent='単独グループから合計'+candidates.length+'組の確認候補が見つかりました。比較値は正解率ではありません。';
  host.append(intro);
+ const progress=document.createElement('p');progress.className='muted';progress.setAttribute('role','status');
+ const rows=document.createElement('div');
+ const showMore=document.createElement('button');showMore.type='button';showMore.className='secondary wide';
+ host.append(progress,rows,showMore);
+ let shown=0;
  const checked=new Map();
  const actions=document.createElement('div');actions.className='pairActions';
  const count=document.createElement('span');count.className='muted';count.setAttribute('role','status');
@@ -2192,7 +2197,9 @@ function renderCurrentAlbumSingletonPairs(){
    }
   }).catch(()=>{if(data===albumAiGroupsData&&data.valid())img.src=fileUrl(data.sourceFiles[sample.index])});
  };
- for(const item of candidates){
+ const showNext=()=>{
+  const next=Math.min(shown+24,candidates.length);
+  for(const item of candidates.slice(shown,next)){
   const source=groups.find(g=>g.key===item.sourceKey);
   const target=groups.find(g=>g.key===item.targetKey);
   if(!source||!target)continue;
@@ -2216,8 +2223,15 @@ function renderCurrentAlbumSingletonPairs(){
    }else checked.delete(item.sourceKey);
    refresh();
   });
-  row.append(check,from,to,caption);host.append(row);
- }
+  row.append(check,from,to,caption);rows.append(row);
+  }
+  shown=next;
+  progress.textContent='確認候補 '+shown+' / '+candidates.length+'組を表示中（チェックした組は追加表示後も保持）';
+  showMore.hidden=shown>=candidates.length;
+  if(!showMore.hidden)showMore.textContent='＋ 次の'+Math.min(24,candidates.length-shown)+'組を表示';
+ };
+ showMore.addEventListener('click',showNext);
+ showNext();
  apply.addEventListener('click',()=>{
   if(data!==albumAiGroupsData||!data.valid()){
    feedback.textContent='⚠️ アルバムの写真が変わりました。再解析してね。';return;
