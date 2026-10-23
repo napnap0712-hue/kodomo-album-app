@@ -911,8 +911,8 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <p id="photoAssignFlowHint" class="muted" role="status">まずは写真を整理しよう。ボタンを1つ押すだけで始められるよ。</p>
 
 <section id="currentAlbumAiPanel" class="currentAlbumAiPanel">
- <strong>🧠 このアルバムの写真だけをAIで振り分け</strong>
- <p class="muted">前のアルバムは使いません。今選んだ写真の顔をグループ化し、先生が園児名を付けた写真だけ振り分けます。間違いは下で修正できます。</p>
+ <strong>📷 この写真を整理しよう</strong>
+ <p class="muted">今回取り込んだ写真だけを使います。写真は勝手に移動・削除されないよ。</p>
  <div class="currentAlbumAiActions">
   <button type="button" id="analyzeCurrentAlbum" class="primary">✨ 写真を整理する</button>
   <button type="button" id="cancelCurrentAlbumAi" class="secondary" hidden>中断</button>
@@ -925,7 +925,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  </details>
  <div id="albumAiSingletonReview" hidden>
   <button type="button" id="albumAiFindSingletonPairs" class="secondary wide">🔎 単独グループの似た候補をまとめて探す</button>
-  <p class="muted">同じ園児と確認できた組だけチェックして統合。AIは勝手に園児名を付けず、元写真も削除しません。</p>
+  <p class="muted">2枚の顔を見比べて、同じ園児だと分かる組だけ選んでね。</p>
   <div id="albumAiSingletonPairs" class="currentAlbumAiGroups"></div>
  </div>
  <button type="button" class="primary wide" id="photoAssignFlowNext">園児フォルダへ進む ›</button>
@@ -933,7 +933,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <button type="button" class="secondary" id="photoAssignFlowBack">‹ 似ている顔の確認に戻る</button>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
  <strong>🌷 園児別フォルダ</strong>
- <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
+ <p class="muted">園児の名前を選ぶと、振り分けた写真を確認できるよ。</p>
  <div id="albumChildFolderList" class="albumChildFolderList"></div>
 </section>
 <details id="albumAiOtherGroups" class="photoAssignOtherGroups">
@@ -2076,7 +2076,34 @@ let activeAssignmentFolder='all',assignmentVisibleLimit=24,faceReferenceRendered
 // An album is a fresh photo batch. No persisted previous photo/face-group data
 // may influence face clustering or assignment within this new album.
 let albumAiGeneration=0,albumAiRunning=false,albumAiGroupsData=null;
+function setPhotoAssignFlowStep(step,{scroll=false}={}){
+ const screen=document.querySelector('[data-screen="photoAssign"]');
+ if(!screen||!['start','review','folders'].includes(step))return;
+ screen.dataset.flowStep=step;
+ const hint=$('#photoAssignFlowHint'),details=$('#albumAiOtherGroups');
+ if(hint)hint.textContent=step==='start'?
+  'まずは「写真を整理する」を押してね。AIを使わずに進むこともできるよ。':
+  step==='review'?'同じ園児だと分かる候補だけチェックしてね。迷ったら飛ばして大丈夫。':
+  '園児フォルダと未確定の写真を確認しよう。終わったら下の「見開き編集へ進む」を押してね。';
+ if(details){
+  if(step==='folders')details.open=!!albumAiGroupsData?.valid()&&
+   albumAiGroupsData.groups.some(g=>!albumAiGroupsData.confirmed.has(g.key));
+  else details.open=false;
+ }
+ const back=$('#photoAssignFlowBack');
+ if(back)back.hidden=!albumAiGroupsData?.valid();
+ if(scroll){
+  const target=step==='folders'?$('#albumChildFolderPanel'):$('#currentAlbumAiPanel');
+  target?.scrollIntoView?.({behavior:'smooth',block:'start'});
+ }
+}
+$('#photoAssignFlowManual')?.addEventListener('click',()=>setPhotoAssignFlowStep('folders',{scroll:true}));
+$('#photoAssignFlowNext')?.addEventListener('click',()=>setPhotoAssignFlowStep('folders',{scroll:true}));
+$('#photoAssignFlowBack')?.addEventListener('click',()=>{
+ if(albumAiGroupsData?.valid())setPhotoAssignFlowStep('review',{scroll:true});
+});
 function clearCurrentAlbumAi(){
+ setPhotoAssignFlowStep('start');
  albumAiGeneration++;
  albumAiGroupsData=null;
  $('#currentAlbumAiGroups')?.replaceChildren();
@@ -2096,6 +2123,7 @@ function clearCurrentAlbumAi(){
  albumAiRunning=false;
 }
 $('#cancelCurrentAlbumAi')?.addEventListener('click',()=>{
+ setPhotoAssignFlowStep('start');
  albumAiGeneration++;albumAiGroupsData=null;
  $('#currentAlbumAiGroups')?.replaceChildren();
  clearCurrentAlbumSingletonPairs();
@@ -2718,12 +2746,11 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   check();
   const result=clusterCurrentAlbumFaces(samples,{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles.length});
   albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,suggestSingletonGroupPairs,mergeTeacherReviewedGroupPairs,mergeUndo:[],mergeSuggestions:null,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
-  status.textContent='✅ 今回の写真'+sourceFiles.length+'枚から'+result.faceCount+'顔・'+result.groups.length+
-   'グループ。前の判定 '+result.beforeCommunityGroups+'組 → 改善後 '+result.groups.length+
-   '組（追加統合 '+(result.communityMerges+result.clusteringDiagnostics.calibratedMerges+result.clusteringDiagnostics.consensusMerges+result.clusteringDiagnostics.neighborhoodMerges+result.clusteringDiagnostics.orphanRescues)+'組）。参考目標 約'+
-   result.targetGroups+'組・単独要確認'+result.uncertainGroups+'組。別の園児を無理にまとめず、先生が確認して園児名を付けてね。';
+  status.textContent='✅ 写真'+sourceFiles.length+'枚を整理しました。顔'+result.faceCount+'個から'+result.groups.length+'組の候補ができたよ。次は顔を見比べて確認しよう。';
   const stats=result.clusteringDiagnostics,bands=stats.nearestScoreRanges;
   $('#currentAlbumAiDiagnostics').textContent=
+   '従来の判定 '+result.beforeCommunityGroups+'組 → 今回 '+result.groups.length+
+   '組（追加統合 '+(result.communityMerges+result.clusteringDiagnostics.calibratedMerges+result.clusteringDiagnostics.consensusMerges+result.clusteringDiagnostics.neighborhoodMerges+result.clusteringDiagnostics.orphanRescues)+'組）。参考目標 約'+result.targetGroups+'組。'+
    '今回の顔'+result.faceCount+'個の最も似ている別写真の顔との比較値：'+
    '0.80以上 '+bands.high+'顔／0.70〜0.79 '+bands.moderate+'顔／'+
    '0.60〜0.69 '+bands.weak+'顔／0.60未満 '+bands.low+'顔／比較候補なし '+bands.missing+'顔。'+
@@ -2745,6 +2772,10 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
    'これは正解率を示すものではありません。写真や顔の特徴データを送信・保存せず、この端末内で集計しています。';
   $('#currentAlbumAiDiagnosticPanel').hidden=false;
   renderCurrentAlbumAiGroups();
+  // Open comparison cards immediately, without asking staff to find a
+  // second similar-looking action button or rerun face detection.
+  setPhotoAssignFlowStep('review');
+  renderCurrentAlbumSingletonPairs();
   check();
  }catch(error){
   if(token===albumAiGeneration){
