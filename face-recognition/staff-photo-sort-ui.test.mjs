@@ -382,7 +382,7 @@ test('BLは園児名を先に選び、写真を見ながら確定予定枚数を
  assert.match(html,/PHOTO SORT · 2026-10-23 BN/);
  assert.match(view,/assignPanel\.append\(assignTitle,childSelect,assignSummary,plannedHeading,plannedPhotos,assignHint,assignPhotos,assignButtons\)/);
  assert.match(view,/assignSummary\.textContent=\(kid\?/);
- assert.match(view,/new Set\(included\.map\(i=>data\.samples\[i\]\?\.index\)\)\.size/);
+ assert.match(view,/const photoCount=photoFaces\.size/);
  assert.match(view,/assignButton\.disabled=!kid\|\|!included\.length/);
  assert.match(view,/childSelect\.onchange=\(\)=>\{feedback\.textContent='';refreshAssignPreview\(\)\}/);
 });
