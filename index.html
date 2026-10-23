@@ -2582,7 +2582,12 @@ function renderCurrentAlbumSingletonPairs(){
  };
  same.addEventListener('click',()=>{
   if(!pendingPair)return;
-  if(childSelect.value){assignButton.click();return}
+  if(childSelect.value){
+   if(assignButton.disabled){
+    feedback.textContent='⚠️ 振り分ける顔を1つ以上残してね。';return;
+   }
+   assignButton.click();return;
+  }
   if(pendingPair.excluded.size){
    feedback.textContent='⚠️ 顔を外した場合は先に園児名を選んで確定してね。名前を後で付けるなら外した顔を戻してね。';
    return;
