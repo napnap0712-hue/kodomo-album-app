@@ -683,6 +683,13 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .screen[data-screen="editor"] .canvasZoomBar .editorModeCompact button{white-space:nowrap!important;writing-mode:horizontal-tb!important;font-size:12px!important}
 @media(max-width:700px){.screen[data-screen="editor"] .canvasZoomBar .editorModeCompact{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important}.screen[data-screen="editor"] .canvasZoomBar .historyControls button,.screen[data-screen="editor"] .canvasZoomBar .zoomCompactControls button{width:33px!important;min-width:33px!important;height:36px!important;min-height:36px!important}.screen[data-screen="editor"] .canvasZoomBar #zoomReset{width:44px!important;min-width:44px!important}}
 /* CD: Compact per-class completion control, shared by desktop and iPhone. */
+.cdFinishDialog{width:min(92vw,460px);max-height:85dvh;border:0;border-radius:17px;padding:0;box-shadow:0 12px 45px #11182740;color:#384457}
+.cdFinishDialog::backdrop{background:#101b2b9e}
+.cdFinishCard{padding:20px;display:grid;gap:10px;max-height:85dvh;overflow:auto;box-sizing:border-box}
+.cdFinishCard h2{margin:0;font-size:19px}.cdFinishCard p{margin:0;line-height:1.65;font-size:14px;white-space:pre-line}
+.cdFinishCard #cdFinishExplanation{font-weight:750;color:#b45309}
+.cdFinishActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.cdFinishActions button{min-height:48px;padding:9px 6px;font-size:12px;white-space:normal}
 .cdProgressPanel,.cdPageChecklist{margin:10px 0;padding:13px;border:1px solid #e0e6ef;border-radius:14px;background:#fff;display:grid;gap:8px;min-width:0}
 .cdProgressTop{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .cdProgressTop strong{font-size:15px;color:#36465d}.cdProgressTop b{font-size:20px;color:#286eb3}
@@ -1435,7 +1442,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <header class="homeHeader"><p class="brand">OMOIDE BOOK</p><h1>おもいでブック</h1><p class="lead">クラスを選んで、思い出のアルバムを作ろう。</p></header>
 <div class="flowerGrid" id="flowerGrid"></div>
 </section>
-<section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><section class="cdProgressPanel" aria-label="クラスの制作進捗"><div class="cdProgressTop"><strong>🌷 クラスの完成状況</strong><b id="cdProgressPercent">0%</b></div><progress id="cdProgressBar" max="16" value="0"></progress><p id="cdProgressSummary" class="muted">仕上げ済み 0 / 16ページ</p><button id="cdCompleteClass" type="button" class="primary" disabled>✅ アルバムを完了する</button><p id="cdCompleteStatus" class="muted" role="status">各ページを仕上げ済みにすると、完了できるようになります。</p></section><div id="projectGrid" class="projectGrid"></div><section class="cdPageChecklist" aria-label="ページごとの仕上げ管理"><strong>✅ 各ページの仕上げ確認</strong><p class="muted">各ページの保存が終わったら「仕上げ済み」にしてね。あとから何度でも編集できます。</p><div id="cdPageChecklistRows" class="cdPageChecklistRows"></div></section><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><div id="splitTrashList" hidden style="margin-top:16px"><strong>🗑 分離保存アルバムのゴミ箱</strong><div id="splitTrashCards" style="display:grid;gap:8px;margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
+<section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><section class="cdProgressPanel" aria-label="クラスの制作進捗"><div class="cdProgressTop"><strong>🌷 クラスの完成状況</strong><b id="cdProgressPercent">0%</b></div><progress id="cdProgressBar" max="16" value="0"></progress><p id="cdProgressSummary" class="muted">仕上げ済み 0 / 16ページ</p><button id="cdCompleteClass" type="button" class="primary" disabled>✅ アルバムを完了する</button><p id="cdCompleteStatus" class="muted" role="status">各ページを仕上げ済みにすると、完了できるようになります。</p></section><dialog id="cdFinishDialog" class="cdFinishDialog" aria-labelledby="cdFinishTitle" aria-modal="true"><div class="cdFinishCard"><h2 id="cdFinishTitle">🌷 アルバムを完成にしますか？</h2><p id="cdFinishCounts"></p><p id="cdFinishExplanation"></p><p>使用中の元写真・編集内容・既存バックアップは保持されます。完了後も自由に編集でき、削除した写真を再利用する場合は追加アップロードが必要です。</p><div class="cdFinishActions"><button type="button" id="cdFinishCancel" class="secondary">キャンセル</button><button type="button" id="cdFinishConfirm" class="primary">未使用写真を削除して完了</button></div></div></dialog><div id="projectGrid" class="projectGrid"></div><section class="cdPageChecklist" aria-label="ページごとの仕上げ管理"><strong>✅ 各ページの仕上げ確認</strong><p class="muted">各ページの保存が終わったら「仕上げ済み」にしてね。あとから何度でも編集できます。</p><div id="cdPageChecklistRows" class="cdPageChecklistRows"></div></section><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><div id="splitTrashList" hidden style="margin-top:16px"><strong>🗑 分離保存アルバムのゴミ箱</strong><div id="splitTrashCards" style="display:grid;gap:8px;margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
 <div class="top"><button class="back" data-back="home" aria-label="戻る">‹</button><div class="topText"><p class="brand">CLASS</p><h1 id="classTitle">クラス</h1><p class="lead">何をするか選んでね。</p></div></div>
 <div class="actionList">
 <button class="action" id="createNew"><span class="actionIcon">＋</span><span><b>新しく作る</b><small>写真を選んでアルバムを作成</small></span><span class="arrow">›</span></button>
@@ -1795,10 +1802,11 @@ async function renderClassProgress(){
   $('#cdProgressPercent').textContent=percent.toLocaleString('ja-JP',{maximumFractionDigits:2})+'%';
   $('#cdProgressBar').value=finished;
   $('#cdProgressSummary').textContent='仕上げ済み '+finished+' / 16ページ（通常12＋特別4）';
-  const allReady=finished===16;
-  const button=$('#cdCompleteClass');button.disabled=!allReady||cdCompletionBusy;button.textContent=manifest.completedAt&&allReady?'✅ 完了済み・再整理する':'✅ アルバムを完了する';
+  const allReady=finished===16,legacyCount=sources.filter(s=>s.type==='draft'&&s.id).length;
+  const button=$('#cdCompleteClass');button.disabled=!allReady||cdCompletionBusy||legacyCount>0;button.textContent=manifest.completedAt&&allReady?'✅ 完了済み・再整理する':'✅ アルバムを完了する';
   if(manifest.completedAt&&!allReady)$('#cdCompleteStatus').textContent='🟠 完了後の更新があります。変更したページを再確認してね。';
   else if(manifest.completedAt)$('#cdCompleteStatus').textContent='✅ 完了済み（'+new Date(manifest.completedAt).toLocaleString('ja-JP')+'）。いつでも再編集できます。';
+  else if(legacyCount)$('#cdCompleteStatus').textContent='従来保存のページが'+legacyCount+'件あります。元データを守るため、分離保存形式へ移行してから完了できます。';
   else $('#cdCompleteStatus').textContent=allReady?'100%！「完了する」を押すと未使用写真の削除内容を確認できます。':'各ページを仕上げ済みにすると、完了できるようになります。';
  }catch(error){if(token===cdProgressRenderToken){box.textContent='進捗を読み込めません：'+(error?.message||String(error));$('#cdCompleteClass').disabled=true}}
 }
@@ -1916,6 +1924,23 @@ async function cdCommitCleanup(plans){
   }
  }finally{db.close()}
 }
+
+async function cdAskFinishConfirmation(total,unused){
+ const dialog=$('#cdFinishDialog');
+ if(typeof dialog?.showModal!=='function')return confirm('未使用の写真 '+unused+'枚を削除してアルバムを完了しますか？ 既存バックアップは保持されます。');
+ $('#cdFinishCounts').textContent='取り込んだ写真：'+total+'枚\n使用中：'+(total-unused)+'枚\n未使用：'+unused+'枚';
+ $('#cdFinishExplanation').textContent=unused?'⚠️ 完了すると、未使用の'+unused+'枚は正式保存領域から削除されます。':'未使用写真はありません。保存中の写真を削除せず完了します。';
+ $('#cdFinishConfirm').textContent=unused?'未使用写真を削除して完了':'写真を削除せず完了';
+ return new Promise(resolve=>{
+  let accepted=false;
+  const yes=$('#cdFinishConfirm'),no=$('#cdFinishCancel');
+  const onYes=()=>{accepted=true;dialog.close()};
+  const onNo=()=>dialog.close();
+  const onClose=()=>{yes.removeEventListener('click',onYes);no.removeEventListener('click',onNo);dialog.removeEventListener('close',onClose);resolve(accepted)};
+  yes.addEventListener('click',onYes);no.addEventListener('click',onNo);dialog.addEventListener('close',onClose,{once:true});
+  try{dialog.showModal()}catch(error){onClose();resolve(false)}
+ });
+}
 async function cdCompleteClass(){
  if(cdCompletionBusy)return;
  const button=$('#cdCompleteClass'),status=$('#cdCompleteStatus'),classId=selected.id,year=activeYear();
@@ -1928,8 +1953,7 @@ async function cdCompleteClass(){
   const plans=await cdPrepareCleanup(sources);
   if(classId!==selected.id||year!==activeYear())throw Error('クラスが変更されたため中止しました');
   const total=plans.reduce((sum,p)=>sum+p.photos.length,0),unused=plans.reduce((sum,p)=>sum+p.unused,0);
-  const message='🌷 アルバムを完了しますか？\n\n通常ページの取り込み写真：'+total+'枚\n使用中：'+(total-unused)+'枚\n未使用：'+unused+'枚\n\n'+(unused?'⚠️ 未使用の'+unused+'枚をアルバムの正式保存領域から削除します。\n':'未使用写真はありません。削除は行いません。\n')+'使用中の元写真・全ページの編集情報・既存バックアップは残します。\n\n完了後も自由に再編集できます。削除した写真を使う場合は再アップロードしてください。\n\n［キャンセル］／［未使用写真を整理して完了］';
-  if(!confirm(message)){status.textContent='完了処理をキャンセルしました。写真は削除していません。';return}
+  if(!await cdAskFinishConfirmation(total,unused)){status.textContent='完了処理をキャンセルしました。写真は削除していません。';return}
   status.textContent='保存領域の整合性を確認して未使用写真を整理中…';
   await cdCommitCleanup(plans);
   // Recheck that the page sources still belong to this class and update only their revision markers.
