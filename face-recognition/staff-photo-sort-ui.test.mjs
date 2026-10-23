@@ -652,6 +652,17 @@ test('BQは写真内の顔の順番が変わっても安全に対応付けて復
  assert.throws(()=>methods.photoSortRestoreAiData({...saved,groups:[{key:'a',faceIndexes:[0,0]}]},photos,''),/重複や不整合/);
 });
 
+test('BQは途中保存した空き枠を一覧で識別でき、写真本体を読み込まない',()=>{
+ assert.match(html,/function renderPhotoSortPendingSlotBadges\(\)/);
+ assert.match(html,/objectStore\('checkpoints'\)\.getAllKeys\(\)/);
+ assert.match(html,/available\.has\(prefix\+slot\)/);
+ assert.match(html,/btn\.classList\.contains\('hasProject'\)/);
+ assert.match(html,/label\.textContent='🌷 振り分け途中'/);
+ assert.match(html,/renderSplitProjectCards\(\)\.catch/);
+ assert.match(html,/\.finally\(\(\)=>\{void renderPhotoSortPendingSlotBadges\(\)\}\)/);
+ assert.match(html,/\.photoSortSlotBadge\{display:block/);
+});
+
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
  assert.match(html,/data-screen="photoAssign" data-flow-step="start"/);
  assert.match(html,/id="photoAssignFlowGuide"/);
