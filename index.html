@@ -4738,7 +4738,8 @@ function fixPhotoCropViewport(node,img){
 function framePhotoMetrics(width,height,naturalWidth,naturalHeight,zoom=100){
  if(!(width>0&&height>0&&naturalWidth>0&&naturalHeight>0))return null;
  const factor=Math.max(width/naturalWidth,height/naturalHeight)*Math.max(1,Number(zoom)||100)/100;
- const drawWidth=naturalWidth*factor,drawHeight=naturalHeight*factor;
+ // Roundoff must never leave a hairline gap at the edge of the frame.
+ const drawWidth=Math.max(width,naturalWidth*factor),drawHeight=Math.max(height,naturalHeight*factor);
  return {drawWidth,drawHeight,maxPanX:Math.max(0,(drawWidth-width)/2),maxPanY:Math.max(0,(drawHeight-height)/2)};
 }
 function positionPhotoInFrame(viewport,img,settings){
