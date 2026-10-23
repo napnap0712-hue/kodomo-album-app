@@ -216,7 +216,7 @@ test('一括統合は一度だけ履歴へ記録し、全件確認後にしか�
 });
 
 test('BJでも今回取り込んだ写真だけでグループ改善を比較表示',()=>{
- assert.match(html,/PHOTO SORT · 2026-10-23 BK/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BL/);
  assert.match(html,/clusterCurrentAlbumFaces\(samples,\{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles\.length\}\)/);
  assert.match(html,/result\.beforeCommunityGroups/);
  assert.match(html,/result\.communityMerges/);
@@ -313,7 +313,7 @@ test('BJは違う園児・保留・前の候補を安全に見直せる',()=>{
  assert.match(view,/元写真やグループは変更していません/);
  assert.doesNotMatch(view,/files\.splice\(|indexedDB\.|localStorage\.setItem\(/);
  assert.match(view,/const assignments=data\.assignConfirmedAlbumCluster/);
- assert.match(view,/data\.groups=joined;photoAssignments=assignments/);
+ assert.match(view,/data\.groups=next;data\.nextGroupId=nextId;photoAssignments=assignments/);
 });
 test('BJは元写真全体に対象の顔位置を重ね、拡大表示も維持する',()=>{
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
@@ -329,21 +329,22 @@ test('BKは同じ園児の確認後に、その場で園児名を選んで振り
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(html,/PHOTO SORT · 2026-10-23 BK/);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BL/);
  assert.match(view,/same\.addEventListener\('click',openPairAssignment\)/);
  assert.match(view,/childSelect\.setAttribute\('aria-label','振り分け先の園児名'\)/);
  assert.match(view,/getChildren\(data\.classId\)/);
  assert.match(view,/assignPanel\.hidden=false/);
  assert.match(view,/assignButton\.addEventListener\('click'/);
- assert.match(view,/assignLater\.addEventListener\('click',\(\)=>decide\('same'\)\)/);
+ assert.match(view,/assignLater\.addEventListener\('click',\(\)=>\{/);
+ assert.match(view,/pendingPair=null;decide\('same'\)/);
  assert.match(view,/assignCancel\.addEventListener\('click'/);
 });
 test('BKは元写真をすべて一覧確認し、顔の位置も見てから園児を選べる',()=>{
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- assert.match(view,/const faces=\[\.\.\.source\.faceIndexes,\.\.\.target\.faceIndexes\]/);
- assert.match(view,/const preview=originalPhoto\(\{faceIndexes:\[faces\[i\]\]\}/);
+ assert.match(view,/const faces=\[\.\.\.sourceFaces,\.\.\.targetFaces\]/);
+ assert.match(view,/const preview=originalPhoto\(\{faceIndexes:\[faceIndex\]\}/);
  assert.match(view,/openAlbumAssignedPhoto\(sample\.index\)/);
  assert.match(view,/pairFaceMarker/);
  assert.match(html,/\.pairReviewGroupPhotos\{display:grid/);
@@ -353,12 +354,12 @@ test('BKは同写真別顔の統合を拒否し、振り分け失敗時は元デ
  const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
  const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
  const view=html.slice(start,end);
- const joined=view.indexOf('const joined=data.mergeTeacherReviewedGroupPairs');
+ const joined=view.indexOf('const next=keptSource.length&&keptTarget.length?');
  const validated=view.indexOf('const assignments=data.assignConfirmedAlbumCluster',joined);
- const committed=view.indexOf('data.groups=joined;photoAssignments=assignments;',validated);
+ const committed=view.indexOf('data.groups=next;data.nextGroupId=nextId;photoAssignments=assignments;',validated);
  assert.ok(joined>=0&&validated>joined&&committed>validated);
  assert.match(view,/if\(data!==albumAiGroupsData\|\|!data\.valid\(\)\)/);
- assert.match(view,/data\.confirmed\.add\(destination\.key\)/);
+ assert.match(view,/data\.confirmed\.add\(destinationKey\)/);
  assert.match(view,/data\.mergeUndo=\[\]/);
  assert.doesNotMatch(view,/files\.splice\(|indexedDB\.|localStorage\.setItem\(|fetch\(|sendBeacon\(/);
 });
@@ -372,6 +373,57 @@ test('BKは園児への振り分け後も残りの確認候補を引き継ぐ',(
  assert.match(view,/renderPhotoAssignmentPage\(\)/);
  assert.match(view,/renderCurrentAlbumAiGroups\(\)/);
  assert.match(view,/renderCurrentAlbumSingletonPairs\(\)/);
+});
+
+test('BLは園児名を先に選び、写真を見ながら確定予定枚数を確認できる',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(html,/PHOTO SORT · 2026-10-23 BL/);
+ assert.match(view,/assignPanel\.append\(assignTitle,childSelect,assignSummary,assignHint,assignPhotos,assignButtons\)/);
+ assert.match(view,/assignSummary\.textContent=\(kid\?/);
+ assert.match(view,/new Set\(included\.map\(i=>data\.samples\[i\]\?\.index\)\)\.size/);
+ assert.match(view,/assignButton\.disabled=!kid\|\|!included\.length/);
+ assert.match(view,/childSelect\.onchange=\(\)=>\{feedback\.textContent='';refreshAssignPreview\(\)\}/);
+});
+test('BLは写真ではなく検出された顔ごとに候補から外して戻せる',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(view,/pendingPair\.excluded\.add\(faceIndex\)/);
+ assert.match(view,/pendingPair\.excluded\.delete\(faceIndex\)/);
+ assert.match(view,/pairExcludedFace/);
+ assert.match(view,/pairExcludeToggle/);
+ assert.match(view,/entry\.dataset\.faceIndex=String\(faceIndex\)/);
+ assert.match(view,/preview=originalPhoto\(\{faceIndexes:\[faceIndex\]\}/);
+ assert.match(view,/if\(!kept\.length\)throw Error/);
+ assert.match(html,/\.pairReviewFaceItem\.pairExcludedFace \.pairOriginalPhoto/);
+});
+test('BLは確定するまで園児フォルダも顔グループも変更せず、確定時だけ一括変更する',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ const validated=view.indexOf('const assignments=data.assignConfirmedAlbumCluster');
+ const moved=view.indexOf('data.groups=next;data.nextGroupId=nextId;photoAssignments=assignments',validated);
+ assert.ok(validated>=0&&moved>validated);
+ assert.match(view,/const filtered=data\.groups\.map\(group=>/);
+ assert.match(view,/data\.mergeTeacherReviewedGroupPairs\(filtered,data\.samples,\[draft\.item\]\)/);
+ assert.match(view,/const keptSource=draft\.sourceFaces\.filter\(i=>!draft\.excluded\.has\(i\)\)/);
+ assert.match(view,/const keptTarget=draft\.targetFaces\.filter\(i=>!draft\.excluded\.has\(i\)\)/);
+ assert.match(view,/photoAssignments=assignments/);
+ assert.doesNotMatch(view,/files\.splice\(|localStorage\.setItem\(|indexedDB\.|sendBeacon\(|fetch\(/);
+});
+test('BLは外した顔を未確定の一人グループへ戻し、次のAI比較候補を作れる',()=>{
+ const start=html.indexOf('function renderCurrentAlbumSingletonPairs()');
+ const end=html.indexOf("$('#albumAiFindSingletonPairs')?.addEventListener",start);
+ const view=html.slice(start,end);
+ assert.match(view,/for\(const faceIndex of excludedFaces\)/);
+ assert.match(view,/next\.push\(\{key:'teacher-recheck-'\+\(\+\+nextId\),faceIndexes:\[faceIndex\]\}\)/);
+ assert.match(view,/renderCurrentAlbumAiGroups\(\);renderCurrentAlbumSingletonPairs\(\)/);
+ assert.match(view,/data\.suggestSingletonGroupPairs\(data\.samples,groups/);
+ assert.match(view,/candidates\.findIndex\(item=>!seen\.has\(pairId\(item\)\)\)/);
+ assert.match(view,/assignLater\.addEventListener\('click'/);
+ assert.match(view,/外した顔はまだ反映されていないよ/);
 });
 
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
