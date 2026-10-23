@@ -710,6 +710,59 @@ test('BRのレイアウト変更はデスクトップ幅だけでスマホ版CSS
  assert.doesNotMatch(css,/localStorage|indexedDB|photoAssignments|saveDraft\(/);
 });
 
+test('BSはパソコン編集画面で見開きを実寸の編集領域にフィットさせる',()=>{
+ const start=html.indexOf('function fitDesktopEditorCanvas()');
+ const end=html.indexOf('let desktopEditorFitQueued=',start);
+ const body=html.slice(start,end);
+ assert.ok(start>0&&end>start);
+ assert.match(body,/window\.matchMedia\('\(min-width:980px\)'\)\.matches/);
+ assert.match(body,/wrap\.clientWidth-horizontalPadding-2/);
+ assert.match(body,/Math\.min\(measured,targetHeight\*1\.414\)/);
+ assert.match(body,/canvas\.style\.width=targetWidth\+'px'/);
+ assert.match(body,/canvas\.style\.height=Math\.round\(targetWidth\/1\.414\)\+'px'/);
+ assert.match(body,/canvas\.style\.removeProperty\('width'\)/);
+ assert.match(body,/canvas\.style\.removeProperty\('height'\)/);
+ assert.match(html,/if\(id==='editor'\)requestDesktopEditorFit\(\)/);
+ assert.match(html,/window\.addEventListener\('resize',requestDesktopEditorFit/);
+ assert.match(html,/new ResizeObserver\(\(\)=>requestDesktopEditorFit\(\)\)/);
+});
+test('BSの見開きフィットはデスクトップとモバイルで正しい大きさになる',()=>{
+ const start=html.indexOf('function fitDesktopEditorCanvas()');
+ const end=html.indexOf('let desktopEditorFitQueued=',start);
+ const body=html.slice(start,end);
+ const removed=[];
+ const canvas={style:{width:'',height:'',maxWidth:'',maxHeight:'',
+  removeProperty(name){removed.push(name);delete this[name]}},closest:()=>wrap};
+ const wrap={clientWidth:900};
+ let desktop=true,active=true;
+ const fit=new Function('canvas','wrap','desktop','active','width','height','removed',
+  'const $=()=>canvas;const window={innerHeight:height,matchMedia:()=>({matches:desktop})};'+
+  'const document={querySelector:()=>({classList:{contains:()=>active}})};'+
+  'const getComputedStyle=()=>({paddingLeft:"14px",paddingRight:"14px"});'+
+  body+'return fitDesktopEditorCanvas();');
+ fit(canvas,wrap,true,true,900,900,removed);
+ assert.equal(canvas.style.width,'842px');
+ assert.equal(canvas.style.height,'595px');
+ const off=canvas.style.width;
+ fit(canvas,wrap,false,true,390,810,removed);
+ assert.ok(removed.includes('width')&&removed.includes('height'));
+ assert.equal(canvas.style.width,undefined);
+ assert.ok(off!=='0px');
+});
+test('BSは保存・書き出し・復旧を残したままPCの追加ボタンのみ畳む',()=>{
+ const css=html.slice(html.indexOf('/* BS: Mac / Windows editing workstation.'),html.indexOf('</style>',html.indexOf('/* BS: Mac / Windows editing workstation.')));
+ assert.match(html,/id="desktopEditorMore" aria-expanded="false"/);
+ assert.match(html,/id="saveDraft"/);
+ assert.match(html,/id="exportImage"/);
+ assert.match(html,/id="restoreSplitBackup"/);
+ assert.match(html,/id="viewSplitHistory"/);
+ assert.match(css,/\.desktopEditorMore\{display:none\}/);
+ assert.match(css,/@media \(min-width:980px\)/);
+ assert.match(css,/desktopExtrasOpen>button:not\(#saveDraft\):not\(#exportImage\)/);
+ assert.match(css,/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)!important/);
+ assert.doesNotMatch(css,/indexedDB|localStorage|photoAssignments|putDraft/);
+});
+
 test('BIは操作を解析→顔の確認→園児フォルダの三段階に限定する',()=>{
  assert.match(html,/data-screen="photoAssign" data-flow-step="start"/);
  assert.match(html,/id="photoAssignFlowGuide"/);
