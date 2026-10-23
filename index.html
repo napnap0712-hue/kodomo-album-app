@@ -4414,7 +4414,7 @@ function displayEditorPhotoReliably(img,file,initialSource){
  let stage=0;
  img.onload=()=>{
   if(!img.isConnected)return;
-  if(img.naturalWidth>0){img.style.opacity='1';status.hidden=true;}
+  if(img.naturalWidth>0){if(stage===3&&img.src.startsWith('data:image/'))photoDataUrlFallbacks.set(file,img.src);img.style.opacity='1';status.hidden=true;}
   else img.onerror?.();
  };
  img.onerror=async()=>{
@@ -4443,7 +4443,7 @@ function displayEditorPhotoReliably(img,file,initialSource){
     });
     if(!img.isConnected)return;
     if(typeof data==='string'&&data.startsWith('data:image/')){
-     photoDataUrlFallbacks.set(file,data);
+     // Cache only after a successful decode, never cache an invalid image.
      img.src=data;return;
     }
    }catch(e){console.warn('写真の代替読み込みに失敗',e)}
