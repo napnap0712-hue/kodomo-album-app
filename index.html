@@ -917,6 +917,10 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
  #albumAiSingletonPairs .pairReviewGroup .pairOriginalPhoto{padding:4px}
 }
 
+/* BP: Separate unwanted whole-album photos from misplaced face candidates. */
+#albumAiSingletonPairs .pairDiscardPhoto{min-height:37px;font-size:11px;padding:6px 4px;color:#7b5151;background:#fff8f8;border:1px solid #edd9d9;white-space:normal}
+#albumAiSingletonPairs .pairRestoreUnused{width:100%;min-height:44px;margin:4px 0 12px}
+#albumAiSingletonPairs .pairReviewFaceItem .pairExcludeToggle{margin-top:3px}
 /* BI: Progressive photo sorting - keep existing theme and functional controls. */
 .photoAssignFlowGuide{display:flex;align-items:center;gap:5px;justify-content:space-between;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #dde6f0;font-size:12px;color:#75849a}
 .photoAssignFlowGuide span[data-flow-index]{padding:7px 8px;border-radius:10px;font-weight:650}
@@ -969,7 +973,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BO</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BP</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="写真整理の進み具合">
  <span data-flow-index="start">① 写真を整理</span><span class="arrow">›</span>
  <span data-flow-index="review">② 顔を確認</span><span class="arrow">›</span>
@@ -1606,7 +1610,19 @@ setupPhotoSectionTabs();
 function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===tab?'none':tab;activeEditorTab=next;const tools=$('#elementTools'),textCard=document.querySelector('.screen[data-screen="editor"] .textTabUnifiedCard'),photoManager=document.querySelector('.screen[data-screen="editor"] .photoManager');if(tools&&textCard&&photoManager){if(next==='photos'){(photoManager.querySelector('.photoEditPane')||photoManager).appendChild(tools);photoInspectorOpen=true;setPhotoSection(activePhotoSection);}else{textCard.appendChild(tools);}}const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab=next;document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.toggle('active',b.dataset.editorTab===next));$('#seasonStickerPanel').hidden=next!=='stamps';if(next==='stamps')renderSeasonStickerPanel();if(next==='text'||next==='photos')syncElementTools();const settings=document.querySelector('.pageSettings');settings.open=next==='background'||next==='layout';if(next==='background'||next==='layout'){const pageTab=next;document.querySelectorAll('[data-page-tab]').forEach(b=>b.classList.toggle('active',b.dataset.pageTab===pageTab));document.querySelectorAll('[data-page-pane]').forEach(p=>p.hidden=p.dataset.pagePane!==pageTab);}}
 
 document.querySelectorAll('[data-editor-tab]').forEach(b=>b.addEventListener('click',()=>switchEditorTab(b.dataset.editorTab)));
-function startEditingWithSelectedPhotos(){if(!files.length)return;newAlbumSplitSelected=true;newAlbumSplitSavedId=null;$('#saveDraft').disabled=false;$('#saveDraft').textContent='💾 保存';editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;resetEditHistory();resetEditHistory();$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';syncPageSettingsChoices();$('#editorStatus').textContent=files.length+'枚の写真を編集中です。「保存」で写真と編集情報を分けて端末に保存します。';refreshEditor();show('editor');syncStorageChoiceUi();switchEditorTab('none');}
+function startEditingWithSelectedPhotos(){
+ if(!files.length)return;
+ const unused=albumAiGroupsData?.valid() ? albumAiGroupsData.unusedPhotoIndexes : null;
+ if(unused?.size){
+  const keep=files.map((file,index)=>({file,index})).filter(item=>!unused.has(item.index));
+  if(!keep.length){
+   $('#currentAlbumAiStatus').textContent='⚠️ 全写真を「使わない」にしています。少なくとも1枚は戻してね。';return;
+  }
+  files=keep.map(item=>item.file);
+  photoAssignments=keep.map(item=>photoAssignments[item.index]||[]);
+  clearCurrentAlbumAi();
+ }
+ newAlbumSplitSelected=true;newAlbumSplitSavedId=null;$('#saveDraft').disabled=false;$('#saveDraft').textContent='💾 保存';editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;resetEditHistory();resetEditHistory();$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';syncPageSettingsChoices();$('#editorStatus').textContent=files.length+'枚の写真を編集中です。「保存」で写真と編集情報を分けて端末に保存します。';refreshEditor();show('editor');syncStorageChoiceUi();switchEditorTab('none');}
 // Reference photographs are stored in their own on-device IndexedDB, never in localStorage.
 function faceReferenceKey(childId){return String(activeYear())+':'+selected.id+':'+childId}
 function openFaceReferenceDB(){return new Promise((resolve,reject)=>{const request=indexedDB.open('omoide-face-references-v1',1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('references'))request.result.createObjectStore('references')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||Error('基準写真の保存領域を開けません'))})}
@@ -2144,6 +2160,19 @@ let activeAssignmentFolder='all',assignmentVisibleLimit=24,faceReferenceRendered
 // An album is a fresh photo batch. No persisted previous photo/face-group data
 // may influence face clustering or assignment within this new album.
 let albumAiGeneration=0,albumAiRunning=false,albumAiGroupsData=null;
+// These are photos excluded from THIS album, not deleted from the user's device.
+// File indices stay stable throughout review and are compacted only on editor entry.
+function isAlbumUnusedPhoto(index){return !!albumAiGroupsData?.unusedPhotoIndexes?.has(index)}
+function refreshAfterAlbumPhotoUseChange(data,message){
+ if(data!==albumAiGroupsData||!data.valid())return;
+ data.pairReviewSession=null;
+ data.skippedSingletonPairs?.clear();
+ data.mergeUndo=[];data.mergeSuggestions=null;data.selections.clear();
+ $('#currentAlbumAiStatus').textContent=message;
+ renderPhotoAssignmentPage();
+ renderCurrentAlbumAiGroups();
+ renderCurrentAlbumSingletonPairs();
+}
 function setPhotoAssignFlowStep(step,{scroll=false}={}){
  const screen=document.querySelector('[data-screen="photoAssign"]');
  if(!screen||!['start','review','folders'].includes(step))return;
@@ -2234,7 +2263,7 @@ function renderAlbumAiChildFolders(){
   host.append(hint);return;
  }
  for(const kid of kids){
-  const id=String(kid.id),count=files.reduce((n,_,i)=>n+(assignmentPhotoIds(i).includes(id)?1:0),0);
+  const id=String(kid.id),count=files.reduce((n,_,i)=>n+(!isAlbumUnusedPhoto(i)&&assignmentPhotoIds(i).includes(id)?1:0),0);
   const button=document.createElement('button');button.type='button';
   button.className='albumChildFolder';button.setAttribute('aria-pressed',String(activeAssignmentFolder===id));
   button.textContent='📁 '+kid.name+'さん';
@@ -2248,6 +2277,30 @@ function renderAlbumAiChildFolders(){
 }
 function albumAiPhotoIndexes(group,data){
  return [...new Set(group.faceIndexes.map(faceIndex=>data.samples[faceIndex].index))].sort((a,b)=>a-b);
+}
+function setCurrentAlbumPhotoUnused(data,photoIndex){
+ if(data!==albumAiGroupsData||!data.valid()||!Number.isInteger(photoIndex)||
+  photoIndex<0||photoIndex>=files.length||data.unusedPhotoIndexes.has(photoIndex))return;
+ if(!window.confirm('この写真を今回のアルバムで使わないことにしますか？ 写っているすべての顔が候補から外れ、見開き編集にも追加されません。端末の元写真は削除しません。'))return;
+ data.unusedPhotoIndexes.add(photoIndex);
+ data.unusedPhotoOrder.push(photoIndex);
+ data.groups=data.groups.map(group=>({
+  ...group,faceIndexes:group.faceIndexes.filter(i=>data.samples[i]?.index!==photoIndex)
+ })).filter(group=>group.faceIndexes.length);
+ data.confirmed=new Set([...data.confirmed].filter(key=>data.groups.some(g=>g.key===key)));
+ refreshAfterAlbumPhotoUseChange(data,'📷 写真1枚を「使わない」にしました。元写真は削除していません。戻すこともできるよ。');
+}
+function restoreLastUnusedAlbumPhoto(data){
+ if(data!==albumAiGroupsData||!data.valid()||!data.unusedPhotoOrder.length)return;
+ const index=data.unusedPhotoOrder.pop();
+ data.unusedPhotoIndexes.delete(index);
+ // Restore each face as its own unconfirmed group to avoid mistakenly
+ // restoring it into a group that a teacher might since have confirmed.
+ for(let i=0;i<data.samples.length;i++){
+  if(data.samples[i]?.index===index&&!data.groups.some(g=>g.faceIndexes.includes(i)))
+   data.groups.push({key:'teacher-restored-'+(++data.nextGroupId),faceIndexes:[i]});
+ }
+ refreshAfterAlbumPhotoUseChange(data,'↩ 使わない写真を1枚戻しました。写真と園児フォルダは消していません。');
 }
 
 function mergeAlbumAiGroupsSafely(data,currentGroup,otherGroup){
@@ -2295,6 +2348,14 @@ function renderCurrentAlbumSingletonPairs(){
  if(!data?.valid()||!host)return;
  host.replaceChildren();
  const groups=data.groups.filter(g=>!data.confirmed.has(g.key));
+ const unusedCount=data.unusedPhotoIndexes?.size||0;
+ if(unusedCount){
+  const restore=document.createElement('button');restore.type='button';
+  restore.className='secondary pairRestoreUnused';
+  restore.textContent='↩ 使わない写真を1枚戻す（除外中 '+unusedCount+'枚）';
+  restore.addEventListener('click',()=>restoreLastUnusedAlbumPhoto(data));
+  host.append(restore);
+ }
  const candidates=data.suggestSingletonGroupPairs(data.samples,groups,{
   similarity:faceEmbeddingSimilarity,minScore:.60,limit:Math.max(24,groups.length)
  });
@@ -2453,7 +2514,15 @@ function renderCurrentAlbumSingletonPairs(){
      else pendingPair.excluded.add(faceIndex);
      refreshAssignPreview();feedback.textContent='';
     });
-    entry.append(preview,exclude);gallery.append(entry);
+    const discard=document.createElement('button');discard.type='button';
+    discard.className='secondary pairDiscardPhoto';
+    discard.textContent='🗑 この写真は使わない';
+    discard.setAttribute('aria-label','この元写真を今回のアルバムで使わない');
+    discard.addEventListener('click',()=>{
+     const photoIndex=data.samples[faceIndex]?.index;
+     setCurrentAlbumPhotoUnused(data,photoIndex);
+    });
+    entry.append(preview,exclude,discard);gallery.append(entry);
    }
    section.append(heading,gallery);assignPhotos.append(section);
   }
@@ -3028,7 +3097,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   const {clusterCurrentAlbumFaces,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,suggestSingletonGroupPairs,mergeTeacherReviewedGroupPairs}=await import('./face-recognition/cluster-current-album.mjs?v=20261023-bf');
   check();
   const result=clusterCurrentAlbumFaces(samples,{similarity:faceEmbeddingSimilarity,photoCount:sourceFiles.length});
-  albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,suggestSingletonGroupPairs,mergeTeacherReviewedGroupPairs,mergeUndo:[],mergeSuggestions:null,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
+  albumAiGroupsData={sourceFiles,registered,classId,schoolYear,samples,groups:result.groups,confirmed:new Set(),valid,unusedPhotoIndexes:new Set(),unusedPhotoOrder:[],assignConfirmedAlbumCluster,suggestCurrentAlbumGroupMerges,mergeTeacherAlbumGroups,mergeTeacherAlbumGroupsBatch,suggestSingletonGroupPairs,mergeTeacherReviewedGroupPairs,mergeUndo:[],mergeSuggestions:null,expanded:new Set(result.groups.slice(0,2).map(g=>g.key)),selections:new Map(),showCounts:new Map(),faceThumbs:new Map(),visibleLimit:18,nextGroupId:0};
   status.textContent='✅ 写真'+sourceFiles.length+'枚を整理しました。顔'+result.faceCount+'個から'+result.groups.length+'組の候補ができたよ。次は顔を見比べて確認しよう。';
   const stats=result.clusteringDiagnostics,bands=stats.nearestScoreRanges;
   $('#currentAlbumAiDiagnostics').textContent=
@@ -3109,6 +3178,7 @@ function assignmentPhotoIds(index){
 function folderPhotoIndexes(){
  const current=String(activeAssignmentFolder);
  return files.map((_,index)=>index).filter(index=>{
+  if(isAlbumUnusedPhoto(index))return false;
   const ids=assignmentPhotoIds(index);
   return current==='all'||(current==='unassigned'?!ids.length:ids.includes(current));
  });
@@ -3120,16 +3190,16 @@ function renderAssignmentFolderBar(){
     !kids.some(k=>String(k.id)===String(activeAssignmentFolder)))
   activeAssignmentFolder='unassigned';
  const counts=new Map(kids.map(k=>[String(k.id),0]));
- for(let i=0;i<files.length;i++)for(const id of new Set(assignmentPhotoIds(i))){
+ for(let i=0;i<files.length;i++)if(!isAlbumUnusedPhoto(i))for(const id of new Set(assignmentPhotoIds(i))){
   if(counts.has(id))counts.set(id,counts.get(id)+1);
  }
- const unassigned=files.filter((_,i)=>!assignmentPhotoIds(i).length).length;
+ const unassigned=files.filter((_,i)=>!isAlbumUnusedPhoto(i)&&!assignmentPhotoIds(i).length).length;
  const picker=document.createElement('select');picker.id='assignmentFolderPicker';
  picker.setAttribute('aria-label','表示する園児のフォルダ');
  const options=[
   ...kids.map(k=>({id:String(k.id),name:'🌷 '+k.name+'さん　'+counts.get(String(k.id))+'枚'})),
   {id:'unassigned',name:'🔎 未振り分け　'+unassigned+'枚'},
-  {id:'all',name:'📷 全写真　'+files.length+'枚'}
+  {id:'all',name:'📷 全写真　'+(files.length-(albumAiGroupsData?.unusedPhotoIndexes?.size||0))+'枚'}
  ];
  for(const entry of options){
   const option=document.createElement('option');option.value=entry.id;option.textContent=entry.name;
