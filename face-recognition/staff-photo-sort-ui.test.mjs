@@ -592,7 +592,8 @@ test('BQの再開は写真を再解析して検証完了後にだけ元の状態
  assert.match(html,/bestScore>tolerance/);
  assert.match(html,/row\.registered!==JSON\.stringify\(getChildren\(selected\.id\)\)/);
  const start=html.indexOf('async function resumePhotoSortCheckpoint(');
- const body=html.slice(start);
+ const stop=html.indexOf("$('#resumePhotoSortProgress')?.addEventListener",start);
+ const body=html.slice(start,stop);
  const verify=body.indexOf('const samples=await photoSortRestoreFaceSamples');
  const commit=body.indexOf('files=savedFiles;photoAssignments=assignmentCopies;');
  assert.ok(verify>=0&&commit>verify);
