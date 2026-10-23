@@ -818,7 +818,10 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .currentAlbumAiGroup .groupContent{padding-top:9px}
 .currentAlbumAiGroup .mergeSuggestionBox{border:1px solid #e0e7f3;background:#f8fafc;border-radius:10px;padding:9px;margin:10px 0;display:grid;gap:7px}
 .currentAlbumAiGroup .mergeSuggestionRow{display:flex;align-items:center;gap:8px;padding:7px;border:1px solid #e5eaf1;border-radius:9px;background:white}
-.albumAiPairRow{display:flex;align-items:center;gap:7px;border:1px solid #d8e3ee;background:white;padding:8px;border-radius:10px;margin:7px 0}
+.albumAiPairRow{display:flex;align-items:center;flex-wrap:wrap;gap:7px;border:1px solid #d8e3ee;background:white;padding:8px;border-radius:10px;margin:7px 0}
+.albumAiPairRow[hidden]{display:none!important}
+.albumAiPairRow .pairPhotoOpen{padding:0;border:0;background:transparent;line-height:0;min-width:52px;min-height:52px}
+.albumAiPairRow .pairSkip{font-size:12px;min-height:36px;padding:6px 9px;white-space:nowrap}
 .albumAiPairRow img{height:52px;width:52px;object-fit:cover;border-radius:8px;background:#edf3f8}
 .albumAiPairRow input{width:22px;height:22px;flex:none;accent-color:#2772bf}
 .albumAiPairRow span{flex:1;min-width:0;font-size:12px}
@@ -879,7 +882,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 </section>
 <section class="screen" data-screen="photoAssign">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BG</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-23 BH</p><h1>園児別の写真を確認</h1><p class="lead">園児を選ぶと、その子の写真が表示されます。修正したい写真だけ「変更」を押してね。</p></div></div>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
  <strong>🌷 園児別フォルダ</strong>
  <p class="muted">フォルダは最初から用意しています。AI候補を園児に振り分けると、ここに写真が追加されて候補は一覧から消えていきます。</p>
@@ -2165,6 +2168,9 @@ function renderCurrentAlbumSingletonPairs(){
  const candidates=data.suggestSingletonGroupPairs(data.samples,groups,{
   similarity:faceEmbeddingSimilarity,minScore:.60,limit:Math.max(24,groups.length)
  });
+ if(!data.skippedSingletonPairs)data.skippedSingletonPairs=new Set();
+ const skipped=data.skippedSingletonPairs;
+ const pairId=item=>String(item.sourceKey)+'→'+String(item.targetKey);
  if(!candidates.length){
   const empty=document.createElement('p');empty.className='muted';
   empty.textContent='類似候補が見つかりませんでした。各グループの「似ている別グループを探す」も利用できます。';
@@ -2176,7 +2182,9 @@ function renderCurrentAlbumSingletonPairs(){
  const progress=document.createElement('p');progress.className='muted';progress.setAttribute('role','status');
  const rows=document.createElement('div');
  const showMore=document.createElement('button');showMore.type='button';showMore.className='secondary wide';
- host.append(progress,rows,showMore);
+ const restoreSkipped=document.createElement('button');restoreSkipped.type='button';restoreSkipped.className='secondary';
+ restoreSkipped.textContent='↩ 違う園児として外した候補をすべて戻す';
+ host.append(progress,rows,showMore,restoreSkipped);
  let shown=0;
  const checked=new Map();
  const actions=document.createElement('div');actions.className='pairActions';
@@ -2185,6 +2193,8 @@ function renderCurrentAlbumSingletonPairs(){
  const feedback=document.createElement('p');feedback.className='muted';feedback.setAttribute('role','status');
  const refresh=()=>{
   count.textContent='同じ園児と確認した組：'+checked.size+'組';
+  restoreSkipped.hidden=skipped.size===0;
+  progress.textContent='確認候補 '+shown+' / '+candidates.length+'組を表示中・違う園児として除外 '+skipped.size+'組（チェックは保持）';
   apply.textContent='✅ チェックした'+checked.size+'組をまとめる';
   apply.disabled=checked.size===0;
  };
@@ -2203,11 +2213,20 @@ function renderCurrentAlbumSingletonPairs(){
   const source=groups.find(g=>g.key===item.sourceKey);
   const target=groups.find(g=>g.key===item.targetKey);
   if(!source||!target)continue;
-  const row=document.createElement('label');row.className='albumAiPairRow';
+  const row=document.createElement('div');row.className='albumAiPairRow';
+  row.hidden=skipped.has(pairId(item));
   const check=document.createElement('input');check.type='checkbox';
   check.setAttribute('aria-label','グループ'+(data.groups.indexOf(source)+1)+'と'+(data.groups.indexOf(target)+1)+'を統合');
   const from=document.createElement('img'),to=document.createElement('img');
   thumbnail(source,from);thumbnail(target,to);from.alt='単独グループの顔';to.alt='候補グループの顔';
+  const openSource=document.createElement('button');openSource.type='button';openSource.className='pairPhotoOpen';
+  openSource.setAttribute('aria-label','左の元写真を全体表示');
+  openSource.title='左の元写真を見る';openSource.append(from);
+  openSource.addEventListener('click',()=>openAlbumAssignedPhoto(data.samples[source.faceIndexes[0]].index));
+  const openTarget=document.createElement('button');openTarget.type='button';openTarget.className='pairPhotoOpen';
+  openTarget.setAttribute('aria-label','右の元写真を全体表示');
+  openTarget.title='右の元写真を見る';openTarget.append(to);
+  openTarget.addEventListener('click',()=>openAlbumAssignedPhoto(data.samples[target.faceIndexes[0]].index));
   const caption=document.createElement('span');caption.textContent=
    'グループ '+(data.groups.indexOf(source)+1)+' → '+(data.groups.indexOf(target)+1)+
    '（比較値 '+item.score.toFixed(2)+'）'+(item.ambiguous?' ⚠️ 他にも似た候補あり':'');
@@ -2223,14 +2242,30 @@ function renderCurrentAlbumSingletonPairs(){
    }else checked.delete(item.sourceKey);
    refresh();
   });
-  row.append(check,from,to,caption);rows.append(row);
+  const exclude=document.createElement('button');exclude.type='button';exclude.className='secondary pairSkip';
+  exclude.textContent='違う園児';
+  exclude.setAttribute('aria-label','この組は違う園児なので確認候補から外す');
+  exclude.addEventListener('click',()=>{
+   if(!data.valid()||data!==albumAiGroupsData)return;
+   skipped.add(pairId(item));checked.delete(item.sourceKey);check.checked=false;
+   row.hidden=true;feedback.textContent='候補を1組外しました。元写真やグループは変更していません。';
+   refresh();
+  });
+  row.append(check,openSource,openTarget,caption,exclude);rows.append(row);
   }
   shown=next;
-  progress.textContent='確認候補 '+shown+' / '+candidates.length+'組を表示中（チェックした組は追加表示後も保持）';
+  refresh();
   showMore.hidden=shown>=candidates.length;
   if(!showMore.hidden)showMore.textContent='＋ 次の'+Math.min(24,candidates.length-shown)+'組を表示';
  };
  showMore.addEventListener('click',showNext);
+ restoreSkipped.addEventListener('click',()=>{
+  if(!data.valid()||data!==albumAiGroupsData)return;
+  skipped.clear();
+  for(const row of rows.children)row.hidden=false;
+  feedback.textContent='↩ 違う園児として外した候補を元に戻しました。';
+  refresh();
+ });
  showNext();
  apply.addEventListener('click',()=>{
   if(data!==albumAiGroupsData||!data.valid()){
@@ -2245,7 +2280,7 @@ function renderCurrentAlbumSingletonPairs(){
    const next=data.mergeTeacherReviewedGroupPairs(data.groups,data.samples,pairs);
    const snapshot=data.groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
    data.mergeUndo.push(snapshot);if(data.mergeUndo.length>10)data.mergeUndo.shift();
-   data.groups=next;data.mergeSuggestions=null;data.selections.clear();
+   data.groups=next;data.mergeSuggestions=null;data.selections.clear();skipped.clear();
    $('#currentAlbumAiFeedback').textContent='✅ '+pairs.length+'組を一括統合しました。直前の操作は戻せます。元写真は未変更です。';
    renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();
   }catch(e){feedback.textContent='⚠️ '+String(e?.message||e)}
