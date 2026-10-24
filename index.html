@@ -2837,6 +2837,162 @@ body:has(.screen[data-screen="home"].active){background:#edf5f8}
  .screen[data-screen="home"] .tile{transition:none}
 }
 
+
+/* CV: Visually unify new-photo selection and photo sorting with the CE class
+   overview. CRITICAL: this block does not alter display/visibility, UI steps,
+   photo-import actions, saved checkpoints, or individual photo controls. */
+body:has(>.app>.screen[data-screen="photoPick"].active),
+body:has(>.app>.screen[data-screen="photoAssign"].active){
+ background:#edf5f8;
+}
+.app:has(>.screen[data-screen="photoPick"].active),
+.app:has(>.screen[data-screen="photoAssign"].active){
+ box-sizing:border-box;
+ width:100%;max-width:1170px;
+ padding:calc(20px + env(safe-area-inset-top)) 18px
+   calc(26px + env(safe-area-inset-bottom));
+}
+.screen[data-screen="photoPick"],
+.screen[data-screen="photoAssign"]{
+ box-sizing:border-box;min-width:0;
+ background:#fff;border:1px solid #e2edf2;
+ border-radius:26px;padding:22px 20px 25px;
+ box-shadow:0 10px 34px #405a7410;
+}
+.screen[data-screen="photoPick"]>.top,
+.screen[data-screen="photoAssign"]>.top{
+ align-items:center;gap:13px;margin:0 0 17px;
+}
+.screen[data-screen="photoPick"]>.top>.back,
+.screen[data-screen="photoAssign"]>.top>.back{
+ width:42px;height:42px;min-height:42px;
+ border:1px solid #e4edf3;border-radius:50%;
+ background:#f2f8fa;color:#547184;
+}
+.screen[data-screen="photoPick"]>.top .topText,
+.screen[data-screen="photoAssign"]>.top .topText{
+ min-width:0;
+}
+.screen[data-screen="photoPick"]>.top .brand,
+.screen[data-screen="photoAssign"]>.top .brand{
+ color:#a2b9c5;letter-spacing:.16em;
+ font-size:10px;margin:0 0 3px;
+}
+.screen[data-screen="photoPick"]>.top h1,
+.screen[data-screen="photoAssign"]>.top h1{
+ font-size:clamp(22px,2.8vw,32px);
+ line-height:1.32;letter-spacing:.015em;
+ color:#324357;margin:0;
+}
+.screen[data-screen="photoPick"]>.top .lead,
+.screen[data-screen="photoAssign"]>.top .lead{
+ color:#83929f;font-size:12px;
+ line-height:1.55;margin:3px 0 0;
+}
+/* The photo input remains the existing native multi-file input. */
+.screen[data-screen="photoPick"]>.drop{
+ border-color:#bed4df;border-radius:19px;
+ background:#f9fcfd;
+}
+.screen[data-screen="photoPick"]>.drop strong{
+ color:#455b6a;font-size:15px;
+}
+.screen[data-screen="photoPick"]>.drop p{
+ color:#82929f;font-size:12px;
+}
+.screen[data-screen="photoPick"] #photoInput{
+ font-size:13px;max-width:100%;
+ color:#51677a;
+}
+.screen[data-screen="photoPick"] #photoInput::file-selector-button{
+ border:1px solid #d9e6ec;border-radius:9px;
+ padding:8px 12px;margin-right:9px;
+ background:#fff;color:#455b6a;
+ font:inherit;font-weight:800;
+ cursor:pointer;
+}
+.screen[data-screen="photoPick"] #photoCount,
+.screen[data-screen="photoPick"]>p.muted:last-child{
+ color:#82929f;font-size:12px;
+}
+.screen[data-screen="photoPick"] #continueEdit{
+ border-radius:13px;
+}
+.screen[data-screen="photoPick"] .photoSortResumeBox{
+ border-color:#d9e8df;border-radius:16px;
+ background:#f6fbf8;
+}
+/* Only color, border, radius and type are changed in the sorting steps.
+   Their display rules and runtime transitions are fully retained. */
+.screen[data-screen="photoAssign"] .photoSortSaveBar{
+ border-color:#e1edf2;border-radius:17px;
+ background:#f9fcfd;
+}
+.screen[data-screen="photoAssign"] .photoSortSaveBar button{
+ border-radius:12px;
+}
+.screen[data-screen="photoAssign"] .photoSortSaveBar .muted{
+ color:#82929f;
+}
+.screen[data-screen="photoAssign"] #photoAssignFlowGuide{
+ border-color:#e8eff3;border-radius:15px;
+ background:#f9fbfc;
+}
+.screen[data-screen="photoAssign"] #photoAssignFlowGuide span[data-flow-index]{
+ border-radius:10px;
+}
+.screen[data-screen="photoAssign"][data-flow-step="start"] [data-flow-index="start"],
+.screen[data-screen="photoAssign"][data-flow-step="review"] [data-flow-index="review"],
+.screen[data-screen="photoAssign"][data-flow-step="folders"] [data-flow-index="folders"]{
+ background:#e6f4fa;color:#346e8d;
+}
+.screen[data-screen="photoAssign"] #photoAssignFlowHint{
+ color:#82929f;
+}
+.screen[data-screen="photoAssign"] #currentAlbumAiPanel{
+ border-color:#e1edf2;border-radius:19px;
+ background:#f9fcfd;
+}
+.screen[data-screen="photoAssign"] #currentAlbumAiPanel>strong{
+ color:#455b6a;
+}
+.screen[data-screen="photoAssign"] #currentAlbumAiPanel .muted{
+ color:#82929f;
+}
+.screen[data-screen="photoAssign"] .albumChildFolderPanel,
+.screen[data-screen="photoAssign"] .assignmentSimpleFolders,
+.screen[data-screen="photoAssign"] .assignmentMorePhotos,
+.screen[data-screen="photoAssign"] #albumAiOtherGroups{
+ border-color:#e1edf2;border-radius:17px;
+ background:#f9fcfd;
+}
+@media(max-width:749px){
+ .app:has(>.screen[data-screen="photoPick"].active),
+ .app:has(>.screen[data-screen="photoAssign"].active){
+  padding:calc(10px + env(safe-area-inset-top)) 10px
+    calc(18px + env(safe-area-inset-bottom));
+ }
+ .screen[data-screen="photoPick"],
+ .screen[data-screen="photoAssign"]{
+  border-radius:20px;padding:14px 10px 17px;
+ }
+ .screen[data-screen="photoPick"]>.top,
+ .screen[data-screen="photoAssign"]>.top{
+  gap:9px;margin-bottom:13px;
+ }
+ .screen[data-screen="photoPick"]>.top>.back,
+ .screen[data-screen="photoAssign"]>.top>.back{
+  width:38px;height:38px;min-height:38px;
+ }
+ .screen[data-screen="photoPick"]>.top h1,
+ .screen[data-screen="photoAssign"]>.top h1{
+  font-size:clamp(18px,5vw,25px);
+ }
+ .screen[data-screen="photoPick"]>.drop{
+  border-radius:15px;
+ }
+}
+
 </style>
 </head>
 <body>
@@ -2951,7 +3107,7 @@ body:has(.screen[data-screen="home"].active){background:#edf5f8}
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CU</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CV</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
