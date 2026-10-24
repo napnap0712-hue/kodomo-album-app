@@ -2552,6 +2552,102 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
  font-size:clamp(11px,2.8vw,14px);font-weight:700;
 }
 
+
+/* CO: Back-cover workspace only. Align settings and preview with other A4 editors.
+   Photo placement, shape, saving, restoring and export remain unchanged. */
+.screen[data-screen="backCoverEditor"] .topText .eyebrow{
+ font-size:10px;font-weight:750;letter-spacing:.12em;color:#9aacbd;
+}
+.screen[data-screen="backCoverEditor"] .backCoverControls{
+ box-sizing:border-box;align-content:start;
+ border:1px solid #dceaf0;background:#fff;border-radius:18px;
+ box-shadow:0 4px 18px #527e9a0d;
+}
+.screen[data-screen="backCoverEditor"] .bcControlsHead{
+ display:flex;flex-direction:column;gap:4px;
+ border-bottom:1px solid #e9f1f5;padding:0 0 12px;
+}
+.screen[data-screen="backCoverEditor"] .bcControlsHead strong{
+ color:#3e6378;font-size:15px;font-weight:850;line-height:1.4;
+}
+.screen[data-screen="backCoverEditor"] .bcControlsHead span{
+ color:#8198a8;font-size:12px;line-height:1.5;
+}
+.screen[data-screen="backCoverEditor"] .backCoverControls .specialFieldSection{
+ box-sizing:border-box;min-width:0;gap:12px;padding:0;
+}
+.screen[data-screen="backCoverEditor"] .bcSectionTitle{
+ margin:0;color:#587c90;font-size:13px;font-weight:850;line-height:1.5;
+}
+.screen[data-screen="backCoverEditor"] .backCoverControls .bcFieldHint{
+ margin:0;color:#8195a1;font-size:12px;line-height:1.55;
+}
+.screen[data-screen="backCoverEditor"] .backCoverControls .bcZoomLabel>span{
+ display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.screen[data-screen="backCoverEditor"] #bcZoomValue{
+ color:#249baf;background:#eafaf9;border:1px solid #ccefeb;
+ border-radius:8px;padding:3px 8px;font-size:12px;font-weight:850;
+}
+.screen[data-screen="backCoverEditor"] #bcZoom{
+ margin:10px 0 0;display:block;cursor:pointer;
+}
+.screen[data-screen="backCoverEditor"] .bcAdjustActions{
+ display:grid;grid-template-columns:1fr 1fr;gap:9px;
+}
+.screen[data-screen="backCoverEditor"] .bcAdjustActions>button{
+ box-sizing:border-box;min-width:0;min-height:44px;
+ border:1px solid #cfe6eb;border-radius:11px;
+ background:#f1fafb;color:#3a8291;font-weight:800;font-size:13px;
+}
+.screen[data-screen="backCoverEditor"] .bcAdjustActions>button:focus-visible{
+ outline:3px solid #52c5d0;outline-offset:2px;
+}
+.screen[data-screen="backCoverEditor"] .bcPageHint{
+ box-sizing:border-box;margin:0!important;padding:11px 13px;
+ border:1px solid #dceaf0;border-radius:12px;
+ background:#f5fbfd;color:#678399;font-size:12px;line-height:1.6;
+}
+.screen[data-screen="backCoverEditor"] #bcPaper{
+ box-sizing:border-box;background:#fffefa;border:1px solid #e8e6e0;
+ box-shadow:0 8px 24px #31516b1b;
+}
+.screen[data-screen="backCoverEditor"] #bcHint{
+ box-sizing:border-box;align-items:center;justify-content:center;
+ width:100%;height:100%;min-height:0;padding:18px;
+ background:#f7fbf9;border:2px dashed #bfded7;border-radius:15px;
+ color:#779a91;font-size:clamp(11px,2.8vw,15px);
+ font-weight:800;text-align:center;line-height:1.5;
+}
+@media(min-width:980px){
+ .screen[data-screen="backCoverEditor"]>.backCoverControls{
+  padding:17px!important;gap:15px!important;
+ }
+ .screen[data-screen="backCoverEditor"]>.backCoverControls>.specialFieldSection{
+  display:grid!important;
+ }
+ .screen[data-screen="backCoverEditor"] .backCoverControls .bcSectionTitle{
+  padding-bottom:5px;border-bottom:1px solid #edf2f4;
+ }
+}
+@media(max-width:979px){
+ .screen[data-screen="backCoverEditor"]>.backCoverControls{
+  padding:13px!important;gap:12px!important;
+ }
+ .screen[data-screen="backCoverEditor"] .bcControlsHead{
+  padding-bottom:9px;
+ }
+ .screen[data-screen="backCoverEditor"] .bcSectionTitle{
+  font-size:13px;
+ }
+ .screen[data-screen="backCoverEditor"] .bcAdjustActions{
+  grid-template-columns:1fr 1fr;
+ }
+ .screen[data-screen="backCoverEditor"] #bcHint{
+  padding:12px;
+ }
+}
+
 </style>
 </head>
 <body>
@@ -2662,7 +2758,7 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CN</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CO</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -2846,7 +2942,7 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
 <p class="notice" style="margin-top:14px">🔒 この画面は接続先アドレスだけを扱います。アルバム・園児情報・写真・認証トークンは送信しません。まだ自動同期はできません。</p>
 </section><section class="screen" data-screen="photoManagement"><div class="top"><button class="back" data-back="settings">‹</button><div class="topText"><h1>📷 写真管理</h1><p class="lead">写真・保存容量</p></div></div><div class="empty">この管理機能は次の段階で実装します。保存データは変更しません。</div></section><section class="screen" data-screen="assetManagement"><div class="top"><button class="back" data-back="settings">‹</button><div class="topText"><h1>🎨 素材・テンプレート管理</h1><p class="lead">自作素材・お気に入り</p></div></div><div class="empty">この管理機能は次の段階で実装します。保存データは変更しません。</div></section><section class="screen" data-screen="safetyManagement"><div class="top"><button class="back" data-back="settings">‹</button><div class="topText"><h1>🛡️ データ・安全管理</h1><p class="lead">保存状態・データ保護</p></div></div><div class="settingsMenu"><div class="settingsRow"><b>📦 端末の保存容量</b><small id="safetyStorage">確認中…</small></div><div class="settingsRow"><b>💾 アルバムの保存状況</b><small id="safetyDrafts">確認中…</small><small>下書きはこのブラウザの端末内に保存されます。編集内容が常に自動保存されるとは限りません。</small></div><div class="settingsRow"><b>🔒 写真のプライバシー</b><small>この画面の確認処理では写真を外部送信しません。保存済みデータはこのブラウザ内で確認します。</small><small>ブラウザのデータ消去や端末の故障に備え、年度管理からバックアップを保存してください。</small></div><div class="settingsRow"><b>📱 オフライン利用</b><small id="safetyOnline">確認中…</small><small>通信状態の表示です。オフラインでの全機能の動作を保証するものではありません。</small></div></div><button type="button" class="secondary wide" id="refreshSafety">🔄 保存状況を再確認</button><p id="safetyError" class="muted" role="status"></p></section>
 <section class="screen" data-screen="coverEditor"><div class="top"><button class="back" type="button" id="coverBack">‹</button><div class="topText"><div class="eyebrow">SINGLE PAGE EDITOR</div><h1>🌸 表紙</h1><p class="lead">A4縦・1ページの専用編集</p></div><div class="coverActions"><button class="secondary" type="button" id="coverSave">下書きを保存</button><button class="primary" type="button" id="coverExport">ページを書き出す</button></div></div><div class="coverEditorPanel"><div class="coverFields"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="basic" aria-selected="false"><span aria-hidden="true">✏️</span>基本情報</button><button type="button" role="tab" data-special-tab="child" aria-selected="false"><span aria-hidden="true">🌷</span>園児名</button></div><div class="specialFieldSection" data-special-section="basic"><label>アルバムタイトル<input id="coverTitleInput" value="おもいでブック"></label><label>年度<input id="coverYearInput" value=""></label><label>クラス名<input id="coverClassInput" readonly aria-readonly="true"></label></div><div class="specialFieldSection" data-special-section="child"><label>園児名<select id="coverNameInput"><option value="">園児を選択</option></select></label></div></div><div class="coverPaper" id="coverPaper"><div><div class="coverSubtitle" id="coverYearView"></div><div class="coverTitle" id="coverTitleView"></div></div><img class="coverPhoto coverFlower" id="coverPhotoView" alt="クラスの花"><div><div class="coverSubtitle" id="coverClassView"></div><div class="coverName" id="coverNameView"></div></div></div><p class="muted" id="coverStatus">この表紙は01〜12とは別に端末内へ保存されます。</p></div></section>
-<section class="screen" data-screen="growthEditor"><div class="top"><button class="back" id="growthBack" type="button">‹</button><div class="topText"><h1>📏 身長・体重</h1><p class="lead">A4縦・成長記録</p></div><div class="growthActions"><button class="secondary" id="growthSave" type="button">下書きを保存</button><button class="primary" id="growthExport" type="button">ページを書き出す</button></div></div><p class="muted" id="growthStatus" role="status">園児を選んで成長記録を入力してください。</p><div class="growthFields"><label>園児名<select id="growthChild"><option value="">園児を選択</option></select></label><div class="growthMonthControls"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="april" aria-selected="false"><span aria-hidden="true">🌱</span>4月</button><button type="button" role="tab" data-special-tab="march" aria-selected="false"><span aria-hidden="true">🌸</span>3月</button></div><div class="specialFieldSection" data-special-section="april"><h3>🌱 4月</h3><label>顔写真<input id="growthPhoto4" type="file" accept="image/*"></label><label>写真の形<select id="growthShape4"><option value="circle">丸</option><option value="rounded">角丸四角</option><option value="square">四角</option></select></label><label>身長（cm）必須<input id="growthHeight4" type="number" min="0" max="250" step="0.1" inputmode="decimal" required></label><label>体重（kg）必須<input id="growthWeight4" type="number" min="0" max="200" step="0.1" inputmode="decimal" required></label></div><div class="specialFieldSection" data-special-section="march"><h3>🌸 3月</h3><label>顔写真<input id="growthPhoto3" type="file" accept="image/*"></label><label>写真の形<select id="growthShape3"><option value="circle">丸</option><option value="rounded">角丸四角</option><option value="square">四角</option></select></label><label>身長（cm）必須<input id="growthHeight3" type="number" min="0" max="250" step="0.1" inputmode="decimal" required></label><label>体重（kg）必須<input id="growthWeight3" type="number" min="0" max="200" step="0.1" inputmode="decimal" required></label></div></div><div class="growthPaper growthBDesign" id="growthPaper"><div class="growthTitle"><div class="growthNameBand"><div class="growthTitleName" id="growthPaperName"></div></div><h2 id="growthPaperTitle">成長記録</h2></div><div class="growthHalf growthApril"><h3>🌱 4月</h3><div class="growthPhotoFrame"><img class="growthFace circle" id="growthViewPhoto4" alt="4月の写真"><span class="growthPhotoPlaceholder" aria-hidden="true">📷 写真を選択</span></div><div class="growthNumbers" id="growthViewNumbers4"></div></div><div class="growthHalf growthMarch"><h3>🌸 3月</h3><div class="growthPhotoFrame"><img class="growthFace circle" id="growthViewPhoto3" alt="3月の写真"><span class="growthPhotoPlaceholder" aria-hidden="true">📷 写真を選択</span></div><div class="growthNumbers" id="growthViewNumbers3"></div></div><div class="growthSummary"><div class="growthSummaryTitle">✨ こんなに大きくなったよ！ ✨</div><div class="growthSummaryStats"><div class="growthHeightDelta"><small>📏 身長</small><strong id="growthDeltaHeight">— cm</strong></div><div class="growthWeightDelta"><small>⚖️ 体重</small><strong id="growthDeltaWeight">— kg</strong></div></div></div></div></div></section><section class="screen" data-screen="messageEditor"><div class="top"><button class="back" id="messageBack" type="button">‹</button><div class="topText"><h1>💌 担任メッセージ</h1><p class="lead">A4縦・先生ごとのカード</p></div><div class="messageActions"><button class="secondary" type="button" id="messageSave">下書きを保存</button><button class="primary" type="button" id="messageExport">ページを書き出す</button></div></div><p class="muted" id="messageStatus" role="status">園児を選んでください。</p><div class="messageFields"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="child" aria-selected="false"><span aria-hidden="true">🌷</span>園児</button><button type="button" role="tab" data-special-tab="message" aria-selected="false"><span aria-hidden="true">💌</span>メッセージ</button></div><div class="specialFieldSection" data-special-section="child"><label>園児名<select id="messageChild"><option value="">園児を選択</option></select></label></div><div class="specialFieldSection" data-special-section="message"><div id="messageEditCards"></div><button class="secondary" id="messageAdd" type="button">＋ 先生のメッセージを追加</button></div><div class="messagePaper" id="messagePaper"><div class="messagePaperHeader"><h2>せんせいたちからのメッセージ</h2><p id="messageTo">〇〇さんへ</p></div><div class="messagePaperCards" id="messagePaperCards"></div></div></div></section><section class="screen" data-screen="backCoverEditor"><div class="top backCoverToolbar"><button class="back" id="bcBack" type="button">‹</button><div class="topText"><h1>📖 裏表紙</h1><p class="lead">A4縦・クラス共通</p></div><div class="backCoverActions"><button class="secondary" id="bcSave" type="button">下書きを保存</button><button class="primary" id="bcExport" type="button">ページを書き出す</button></div></div><p id="bcStatus" role="status">集合写真を選択してください。</p><div class="backCoverControls"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="photo" aria-selected="false"><span aria-hidden="true">📷</span>写真</button><button type="button" role="tab" data-special-tab="adjust" aria-selected="false"><span aria-hidden="true">🎛️</span>調整</button></div><div class="specialFieldSection" data-special-section="photo"><label>集合写真<input id="bcFile" type="file" accept="image/*"></label></div><div class="specialFieldSection" data-special-section="adjust"><label>写真の形<select id="bcShape"><option value="square">四角</option><option value="rounded">角丸四角</option><option value="circle">丸</option></select></label><label>拡大縮小<input id="bcZoom" type="range" min="50" max="250" value="100"></label><button id="bcRotate">↻ 90°回転</button><button id="bcCenter">位置を中央に戻す</button></div></div><p class="muted">写真を指で動かして位置を調整できます。</p><div class="backCoverPaper" id="bcPaper"><div id="bcFrame" class="backCoverPhotoFrame"><img id="bcImg" style="display:none"><span id="bcHint">📸 集合写真を選択してください</span></div></div></section></main>
+<section class="screen" data-screen="growthEditor"><div class="top"><button class="back" id="growthBack" type="button">‹</button><div class="topText"><h1>📏 身長・体重</h1><p class="lead">A4縦・成長記録</p></div><div class="growthActions"><button class="secondary" id="growthSave" type="button">下書きを保存</button><button class="primary" id="growthExport" type="button">ページを書き出す</button></div></div><p class="muted" id="growthStatus" role="status">園児を選んで成長記録を入力してください。</p><div class="growthFields"><label>園児名<select id="growthChild"><option value="">園児を選択</option></select></label><div class="growthMonthControls"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="april" aria-selected="false"><span aria-hidden="true">🌱</span>4月</button><button type="button" role="tab" data-special-tab="march" aria-selected="false"><span aria-hidden="true">🌸</span>3月</button></div><div class="specialFieldSection" data-special-section="april"><h3>🌱 4月</h3><label>顔写真<input id="growthPhoto4" type="file" accept="image/*"></label><label>写真の形<select id="growthShape4"><option value="circle">丸</option><option value="rounded">角丸四角</option><option value="square">四角</option></select></label><label>身長（cm）必須<input id="growthHeight4" type="number" min="0" max="250" step="0.1" inputmode="decimal" required></label><label>体重（kg）必須<input id="growthWeight4" type="number" min="0" max="200" step="0.1" inputmode="decimal" required></label></div><div class="specialFieldSection" data-special-section="march"><h3>🌸 3月</h3><label>顔写真<input id="growthPhoto3" type="file" accept="image/*"></label><label>写真の形<select id="growthShape3"><option value="circle">丸</option><option value="rounded">角丸四角</option><option value="square">四角</option></select></label><label>身長（cm）必須<input id="growthHeight3" type="number" min="0" max="250" step="0.1" inputmode="decimal" required></label><label>体重（kg）必須<input id="growthWeight3" type="number" min="0" max="200" step="0.1" inputmode="decimal" required></label></div></div><div class="growthPaper growthBDesign" id="growthPaper"><div class="growthTitle"><div class="growthNameBand"><div class="growthTitleName" id="growthPaperName"></div></div><h2 id="growthPaperTitle">成長記録</h2></div><div class="growthHalf growthApril"><h3>🌱 4月</h3><div class="growthPhotoFrame"><img class="growthFace circle" id="growthViewPhoto4" alt="4月の写真"><span class="growthPhotoPlaceholder" aria-hidden="true">📷 写真を選択</span></div><div class="growthNumbers" id="growthViewNumbers4"></div></div><div class="growthHalf growthMarch"><h3>🌸 3月</h3><div class="growthPhotoFrame"><img class="growthFace circle" id="growthViewPhoto3" alt="3月の写真"><span class="growthPhotoPlaceholder" aria-hidden="true">📷 写真を選択</span></div><div class="growthNumbers" id="growthViewNumbers3"></div></div><div class="growthSummary"><div class="growthSummaryTitle">✨ こんなに大きくなったよ！ ✨</div><div class="growthSummaryStats"><div class="growthHeightDelta"><small>📏 身長</small><strong id="growthDeltaHeight">— cm</strong></div><div class="growthWeightDelta"><small>⚖️ 体重</small><strong id="growthDeltaWeight">— kg</strong></div></div></div></div></div></section><section class="screen" data-screen="messageEditor"><div class="top"><button class="back" id="messageBack" type="button">‹</button><div class="topText"><h1>💌 担任メッセージ</h1><p class="lead">A4縦・先生ごとのカード</p></div><div class="messageActions"><button class="secondary" type="button" id="messageSave">下書きを保存</button><button class="primary" type="button" id="messageExport">ページを書き出す</button></div></div><p class="muted" id="messageStatus" role="status">園児を選んでください。</p><div class="messageFields"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="child" aria-selected="false"><span aria-hidden="true">🌷</span>園児</button><button type="button" role="tab" data-special-tab="message" aria-selected="false"><span aria-hidden="true">💌</span>メッセージ</button></div><div class="specialFieldSection" data-special-section="child"><label>園児名<select id="messageChild"><option value="">園児を選択</option></select></label></div><div class="specialFieldSection" data-special-section="message"><div id="messageEditCards"></div><button class="secondary" id="messageAdd" type="button">＋ 先生のメッセージを追加</button></div><div class="messagePaper" id="messagePaper"><div class="messagePaperHeader"><h2>せんせいたちからのメッセージ</h2><p id="messageTo">〇〇さんへ</p></div><div class="messagePaperCards" id="messagePaperCards"></div></div></div></section><section class="screen" data-screen="backCoverEditor"><div class="top backCoverToolbar"><button class="back" id="bcBack" type="button">‹</button><div class="topText"><div class="eyebrow">SINGLE PAGE EDITOR</div><h1>📖 裏表紙</h1><p class="lead">A4縦・クラス共通のページ</p></div><div class="backCoverActions"><button class="secondary" id="bcSave" type="button">下書きを保存</button><button class="primary" id="bcExport" type="button">ページを書き出す</button></div></div><p id="bcStatus" role="status" aria-live="polite">集合写真を選択してください。</p><div class="backCoverControls"><div class="bcControlsHead"><strong>🌷 裏表紙の編集</strong><span>集合写真を選んで、仕上がりを調整しよう</span></div><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="photo" aria-selected="false"><span aria-hidden="true">📷</span>写真</button><button type="button" role="tab" data-special-tab="adjust" aria-selected="false"><span aria-hidden="true">🎛️</span>調整</button></div><div class="specialFieldSection" data-special-section="photo"><h3 class="bcSectionTitle">📷 集合写真</h3><label>写真を選択<input id="bcFile" type="file" accept="image/*"></label><p class="bcFieldHint">写真はA4ページの枠いっぱいに配置されるよ。</p></div><div class="specialFieldSection" data-special-section="adjust"><h3 class="bcSectionTitle">🎛️ 写真の形・位置</h3><label>写真の形<select id="bcShape"><option value="square">四角</option><option value="rounded">角丸四角</option><option value="circle">丸</option></select></label><label class="bcZoomLabel"><span>拡大縮小 <output id="bcZoomValue" for="bcZoom">100%</output></span><input id="bcZoom" type="range" min="50" max="250" value="100"></label><div class="bcAdjustActions"><button id="bcRotate" type="button">↻ 90°回転</button><button id="bcCenter" type="button">◎ 中央に戻す</button></div><p class="bcFieldHint">写真を指やマウスで動かして、写る位置を調整できるよ。</p></div></div><p class="muted bcPageHint">💡 写真の形や位置を調整したら、「下書きを保存」を押してね。</p><div class="backCoverPaper" id="bcPaper"><div id="bcFrame" class="backCoverPhotoFrame"><img id="bcImg" style="display:none"><span id="bcHint">📸 集合写真を選択してください</span></div></div></section></main>
 <script>
 (()=>{
 
@@ -8568,7 +8664,7 @@ try {
 }
 let bc={shape:'square',fit:'cover',zoom:100,rotation:0,x:0,y:0},bcPhoto=null,bcUrl=null,bcToken=0;
 const bcEl=id=>document.getElementById(id),bcKey=()=> 'omoide-back-cover-v1-year-'+activeYear()+'-'+selected.id;
-function bcRender(){bcEl('bcFrame').className='backCoverPhotoFrame '+bc.shape;const im=bcEl('bcImg');im.style.display=bcUrl?'block':'none';bcEl('bcHint').style.display=bcUrl?'none':'';if(bcUrl)im.src=bcUrl;im.style.objectFit='cover';im.style.transform='translate(calc(-50% + '+bc.x+'px),calc(-50% + '+bc.y+'px)) rotate('+bc.rotation+'deg) scale('+(bc.zoom/100)+')'}
+function bcRender(){bcEl('bcFrame').className='backCoverPhotoFrame '+bc.shape;const im=bcEl('bcImg');im.style.display=bcUrl?'block':'none';bcEl('bcHint').style.display=bcUrl?'none':'';if(bcUrl)im.src=bcUrl;im.style.objectFit='cover';im.style.transform='translate(calc(-50% + '+bc.x+'px),calc(-50% + '+bc.y+'px)) rotate('+bc.rotation+'deg) scale('+(bc.zoom/100)+')';const zoomLabel=bcEl('bcZoomValue');if(zoomLabel)zoomLabel.textContent=bc.zoom+'%'}
 function bcSetPhoto(blob){if(bcUrl)URL.revokeObjectURL(bcUrl);bcPhoto=blob;bcUrl=blob?URL.createObjectURL(blob):null;bcRender()}
 function bcSync(){for(const [id,key] of [['bcShape','shape'],['bcZoom','zoom']])bcEl(id).value=bc[key];bcRender()}
 async function openBackCoverEditor(){show('backCoverEditor');const token=++bcToken;bc={shape:'square',fit:'cover',zoom:100,rotation:0,x:0,y:0,title:'おもいでいっぱい！',titleOn:'yes',footerOn:'yes'};bcSetPhoto(null);bcSync();try{const db=await coverStore();const data=await new Promise((ok,no)=>{const req=db.transaction('covers','readonly').objectStore('covers').get(bcKey());req.onsuccess=()=>ok(req.result);req.onerror=()=>no(req.error)});db.close();if(token!==bcToken)return;if(data){bc={...bc,...data.settings};bcSetPhoto(data.photo);bcEl('bcStatus').textContent='保存済みの裏表紙を読み込みました。'}else bcEl('bcStatus').textContent='新しい裏表紙を編集中です。';bcSync()}catch(e){bcEl('bcStatus').textContent='読み込みエラー：'+e.message}}
