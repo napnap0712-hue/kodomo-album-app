@@ -1440,6 +1440,88 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .cropEditorPhoto img{display:block;max-width:none!important;max-height:none!important;pointer-events:none}
 .cropEditorModal #cropEditorZoom{accent-color:#428ad0}
 
+
+
+/* CE: Pastel album overview. All changes here are scoped to the class page. */
+body:has(.screen[data-screen="classProjects"].active){background:#edf5f8}
+.app:has(>.screen[data-screen="classProjects"].active){max-width:1170px;width:100%;padding:calc(20px + env(safe-area-inset-top)) 18px calc(26px + env(safe-area-inset-bottom))}
+.screen[data-screen="classProjects"]{background:#fff;border:1px solid #e2edf2;border-radius:26px;padding:22px 20px 25px;box-shadow:0 10px 34px #405a7410}
+.screen[data-screen="classProjects"]>.top{position:relative!important;top:auto!important;z-index:auto!important;display:flex;align-items:center;gap:13px;flex-wrap:wrap;background:transparent!important;margin:0 0 15px!important;padding:0!important}
+.screen[data-screen="classProjects"] .topText{flex:1 1 230px;min-width:0;padding-top:0}
+.screen[data-screen="classProjects"] .topText h1{display:flex;align-items:center;gap:8px;margin:0;font-size:clamp(22px,2.8vw,32px);color:#324357;letter-spacing:.015em;line-height:1.32}
+.screen[data-screen="classProjects"] .topText .lead{margin:3px 0 0!important;color:#83929f!important;font-size:12px!important;line-height:1.5}
+.screen[data-screen="classProjects"] .topText .brand{letter-spacing:.16em;color:#a2b9c5;margin:0 0 3px;font-size:10px}
+.screen[data-screen="classProjects"] .cdClassFlower{width:36px;height:36px;object-fit:contain;flex-shrink:0}
+.screen[data-screen="classProjects"]>.top>.back{background:#f2f8fa;border:1px solid #e4edf3;color:#547184;width:42px;height:42px;border-radius:50%;font-size:25px}
+.screen[data-screen="classProjects"] .projectDeleteActions{gap:8px}
+.screen[data-screen="classProjects"] .projectDeleteActions button{min-height:41px;border-radius:12px;padding:9px 13px;border:1px solid #e2eaf0;background:#f8fafc;color:#52677a;font-weight:700}
+.screen[data-screen="classProjects"] #projectDeleteButton{color:#b8697c;background:#fff7f9;border-color:#f3d9e0}
+.screen[data-screen="classProjects"] .cdProgressPanel{margin:0 0 17px;padding:15px 18px;border:1px solid #e1edf2;border-radius:19px;background:#f9fcfd;box-shadow:none;display:grid;grid-template-columns:minmax(0,1fr) minmax(165px,215px);grid-template-areas:"top action" "bar action" "summary action" "status status";column-gap:20px;row-gap:5px;align-items:center}
+.screen[data-screen="classProjects"] .cdProgressTop{grid-area:top;gap:12px}
+.screen[data-screen="classProjects"] .cdProgressTop strong{color:#455b6a;font-size:13px}
+.screen[data-screen="classProjects"] .cdProgressTop b{font-size:23px;color:#28aab6;font-weight:800;font-variant-numeric:tabular-nums}
+.screen[data-screen="classProjects"] #cdProgressBar{grid-area:bar;width:100%;height:10px;accent-color:#54cbb9;border-radius:50px;overflow:hidden;border:0;background:#e6ecf0}
+.screen[data-screen="classProjects"] #cdProgressBar::-webkit-progress-bar{background:#e6ecf0;border-radius:30px}
+.screen[data-screen="classProjects"] #cdProgressBar::-webkit-progress-value{background:linear-gradient(90deg,#63d5c1,#38bcb7);border-radius:30px}
+.screen[data-screen="classProjects"] #cdProgressBar::-moz-progress-bar{background:#38bcb7;border-radius:30px}
+.screen[data-screen="classProjects"] #cdProgressSummary{grid-area:summary;font-size:11px;color:#82929f;line-height:1.6}
+.screen[data-screen="classProjects"] #cdCompleteClass{grid-area:action;min-width:0;min-height:48px;width:100%;margin:0;border-radius:13px;background:#43c6c4;color:white;font-size:12px;box-shadow:0 4px 11px #3ec6c42c;white-space:normal}
+.screen[data-screen="classProjects"] #cdCompleteClass:disabled{background:#e6edf2;color:#8a9daa;box-shadow:none;cursor:default}
+.screen[data-screen="classProjects"] #cdCompleteStatus{grid-area:status;margin-top:0;font-size:11px;color:#8997a4;line-height:1.5}
+.screen[data-screen="classProjects"] #projectGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;gap:10px;margin:0 0 14px!important}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap{--cd-tone-bg:#edf9ff;--cd-tone-main:#73b9de;position:relative;min-width:0;align-self:stretch}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap[data-tone="pink"]{--cd-tone-bg:#fff0f6;--cd-tone-main:#efa3be}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap[data-tone="aqua"]{--cd-tone-bg:#eaf8fd;--cd-tone-main:#78bce0}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap[data-tone="yellow"]{--cd-tone-bg:#fff8df;--cd-tone-main:#eac36c}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap[data-tone="lavender"]{--cd-tone-bg:#f3efff;--cd-tone-main:#baaadf}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap[data-tone="mint"]{--cd-tone-bg:#e8f8f2;--cd-tone-main:#6bc9a7}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.projectCard{display:flex;flex-direction:column;align-items:stretch;width:100%!important;height:100%;padding:7px 7px 10px;gap:5px;min-height:0;border:1px solid #e3eaf0;border-radius:17px;background:white;box-shadow:0 2px 8px #6683970e;text-align:center;color:#425a6f;transition:box-shadow .15s,border-color .15s,transform .15s}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.projectCard:focus-visible{outline:3px solid #58c4c9;outline-offset:2px}
+@media(hover:hover){.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.projectCard:hover{border-color:#9dd8de;box-shadow:0 7px 16px #66839725;transform:translateY(-2px)}}
+.screen[data-screen="classProjects"] #projectGrid .projectCardPreview{position:relative;overflow:hidden;display:grid;place-items:center;min-width:0;width:100%;aspect-ratio:1.03;min-height:0;border-radius:12px;border:0!important;background:var(--cd-tone-bg)!important;color:var(--cd-tone-main);font-size:27px}
+.screen[data-screen="classProjects"] #projectGrid .projectCard.hasProject .projectCardPreview{background:#f8fbfd!important}
+.screen[data-screen="classProjects"] #projectGrid .projectCard.fixedSpecialCard[data-special-page="cover"] .projectCardPreview{background:#fff!important}
+.screen[data-screen="classProjects"] #projectGrid .projectCardName{font-size:12px;line-height:1.35;font-weight:800;text-align:center;color:#42556a;margin-top:1px}
+.screen[data-screen="classProjects"] #projectGrid .projectThumbnail{width:100%;height:100%;inset:0;object-fit:contain;border-radius:11px;max-width:100%;max-height:100%}
+.screen[data-screen="classProjects"] #projectGrid .projectCardPreview .cdUiPlusIcon{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:#ffffffa8;border:1px solid color-mix(in srgb,var(--cd-tone-main) 55%,white);font-size:29px;font-weight:400;color:var(--cd-tone-main);line-height:1}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.cdUiFinishBtn{position:absolute;z-index:4;top:12px;right:11px;display:grid;place-items:center;width:30px;height:30px;min-height:30px;padding:0;border:2px solid #b6c7d4;border-radius:50%;background:#ffffffea;color:#9daebe;box-shadow:0 1px 5px #34485d1c;font-size:16px;font-weight:850;line-height:1;touch-action:manipulation;cursor:pointer}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.cdUiFinishBtn[data-state="ready"]{background:#31bf81;border-color:#31bf81;color:white}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.cdUiFinishBtn[data-state="updated"]{background:#ffc848;border-color:#ffc848;color:#865e13}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.cdUiFinishBtn:disabled{opacity:.6;cursor:default}
+.screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.cdUiFinishBtn:focus-visible{outline:3px solid #268bac;outline-offset:2px}
+.screen[data-screen="classProjects"] #projectGrid.deleteMode .cdUiFinishBtn{visibility:hidden;pointer-events:none}
+.screen[data-screen="classProjects"] #projectGrid .projectCard.deleteSelected{outline:3px solid #e05b68;outline-offset:-3px}
+.screen[data-screen="classProjects"] .cdPageChecklist{display:none!important}
+.screen[data-screen="classProjects"] .cdStatusLegend{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px 22px;padding:12px 14px;margin:4px 0 14px;background:#f9fbfc;border:1px solid #e9eff3;border-radius:15px}
+.screen[data-screen="classProjects"] .cdStatusLegend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:11px;color:#718293}
+.screen[data-screen="classProjects"] .cdLegendDot{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:50%;border:1.5px solid #aebfca;background:white;color:#9cacb8;font-size:12px;line-height:1}
+.screen[data-screen="classProjects"] .cdLegendDot.ready{background:#31bf81;border-color:#31bf81;color:white}
+.screen[data-screen="classProjects"] .cdLegendDot.updated{background:#ffc848;border-color:#ffc848;color:#865e13}
+.screen[data-screen="classProjects"] .projectAdd{border:1px dashed #bed4df;border-radius:15px;background:#f6fafc;color:#557487;font-size:13px;font-weight:750;min-height:49px}
+.screen[data-screen="classProjects"] #projectStatus{font-size:11px;color:#92a0ad;text-align:center;margin:10px 0 0}
+.screen[data-screen="classProjects"] #splitProjectList,.screen[data-screen="classProjects"] #splitTrashList{border-top:1px solid #ecf1f5;padding-top:10px}
+@media(min-width:750px){.screen[data-screen="classProjects"] #projectGrid{grid-template-columns:repeat(6,minmax(0,1fr));gap:13px}}
+@media(max-width:749px){
+ .app:has(>.screen[data-screen="classProjects"].active){padding:calc(10px + env(safe-area-inset-top)) 10px calc(18px + env(safe-area-inset-bottom))}
+ .screen[data-screen="classProjects"]{padding:14px 10px 17px;border-radius:20px}
+ .screen[data-screen="classProjects"]>.top{gap:9px;margin-bottom:12px!important}
+ .screen[data-screen="classProjects"] .topText{flex:1 1 185px}
+ .screen[data-screen="classProjects"] .topText h1{font-size:clamp(18px,5vw,25px)}
+ .screen[data-screen="classProjects"] .cdClassFlower{width:29px;height:29px}
+ .screen[data-screen="classProjects"] .projectDeleteActions{margin-left:auto}
+ .screen[data-screen="classProjects"] .projectDeleteActions button{min-height:36px;padding:6px 9px;font-size:11px}
+ .screen[data-screen="classProjects"] .cdProgressPanel{display:grid;grid-template-columns:minmax(0,1fr);grid-template-areas:"top" "bar" "summary" "action" "status";padding:12px 13px;gap:7px;border-radius:16px;margin-bottom:12px}
+ .screen[data-screen="classProjects"] #cdCompleteClass{min-height:39px}
+ .screen[data-screen="classProjects"] #projectGrid{gap:7px}
+ .screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.projectCard{padding:5px 5px 8px;border-radius:13px;gap:4px}
+ .screen[data-screen="classProjects"] #projectGrid .projectCardPreview{border-radius:9px;font-size:22px}
+ .screen[data-screen="classProjects"] #projectGrid .projectCardName{font-size:11px}
+ .screen[data-screen="classProjects"] #projectGrid .cdUiPageWrap>.cdUiFinishBtn{top:7px;right:7px;width:25px;height:25px;min-height:25px;border-width:1.5px;font-size:14px}
+ .screen[data-screen="classProjects"] #projectGrid .projectCardPreview .cdUiPlusIcon{width:33px;height:33px;font-size:24px}
+ .screen[data-screen="classProjects"] .cdStatusLegend{gap:8px 12px;padding:11px 5px}
+ .screen[data-screen="classProjects"] .cdStatusLegend span{font-size:10px}
+}
+
 </style>
 </head>
 <body>
@@ -1448,7 +1530,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 <header class="homeHeader"><p class="brand">OMOIDE BOOK</p><h1>おもいでブック</h1><p class="lead">クラスを選んで、思い出のアルバムを作ろう。</p></header>
 <div class="flowerGrid" id="flowerGrid"></div>
 </section>
-<section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><section class="cdProgressPanel" aria-label="クラスの制作進捗"><div class="cdProgressTop"><strong>🌷 クラスの完成状況</strong><b id="cdProgressPercent">0%</b></div><progress id="cdProgressBar" max="16" value="0"></progress><p id="cdProgressSummary" class="muted">仕上げ済み 0 / 16ページ</p><button id="cdCompleteClass" type="button" class="primary" disabled>✅ アルバムを完了する</button><p id="cdCompleteStatus" class="muted" role="status">各ページを仕上げ済みにすると、完了できるようになります。</p></section><dialog id="cdFinishDialog" class="cdFinishDialog" aria-labelledby="cdFinishTitle" aria-modal="true"><div class="cdFinishCard"><h2 id="cdFinishTitle">🌷 アルバムを完成にしますか？</h2><p id="cdFinishCounts"></p><p id="cdFinishExplanation"></p><p>使用中の元写真・編集内容・既存バックアップは保持されます。完了後も自由に編集でき、削除した写真を再利用する場合は追加アップロードが必要です。</p><div class="cdFinishActions"><button type="button" id="cdFinishCancel" class="secondary">キャンセル</button><button type="button" id="cdFinishConfirm" class="primary">未使用写真を削除して完了</button></div></div></dialog><div id="projectGrid" class="projectGrid"></div><section class="cdPageChecklist" aria-label="ページごとの仕上げ管理"><strong>✅ 各ページの仕上げ確認</strong><p class="muted">各ページの保存が終わったら「仕上げ済み」にしてね。あとから何度でも編集できます。</p><div id="cdPageChecklistRows" class="cdPageChecklistRows"></div></section><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><div id="splitTrashList" hidden style="margin-top:16px"><strong>🗑 分離保存アルバムのゴミ箱</strong><div id="splitTrashCards" style="display:grid;gap:8px;margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
+<section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><section class="cdProgressPanel" aria-label="クラスの制作進捗"><div class="cdProgressTop"><strong>🌷 クラスの完成状況</strong><b id="cdProgressPercent">0%</b></div><progress id="cdProgressBar" max="16" value="0"></progress><p id="cdProgressSummary" class="muted">仕上げ済み 0 / 16ページ</p><button id="cdCompleteClass" type="button" class="primary" disabled>✅ アルバムを完了する</button><p id="cdCompleteStatus" class="muted" role="status">各ページを仕上げ済みにすると、完了できるようになります。</p></section><dialog id="cdFinishDialog" class="cdFinishDialog" aria-labelledby="cdFinishTitle" aria-modal="true"><div class="cdFinishCard"><h2 id="cdFinishTitle">🌷 アルバムを完成にしますか？</h2><p id="cdFinishCounts"></p><p id="cdFinishExplanation"></p><p>使用中の元写真・編集内容・既存バックアップは保持されます。完了後も自由に編集でき、削除した写真を再利用する場合は追加アップロードが必要です。</p><div class="cdFinishActions"><button type="button" id="cdFinishCancel" class="secondary">キャンセル</button><button type="button" id="cdFinishConfirm" class="primary">未使用写真を削除して完了</button></div></div></dialog><div id="projectGrid" class="projectGrid"></div><div class="cdStatusLegend" aria-label="仕上げ状態の見方"><span><i class="cdLegendDot ready" aria-hidden="true">✓</i>仕上げ済み</span><span><i class="cdLegendDot updated" aria-hidden="true">!</i>更新あり</span><span><i class="cdLegendDot" aria-hidden="true"></i>編集中</span><span><i class="cdLegendDot" aria-hidden="true">＋</i>未作成</span></div><section class="cdPageChecklist" aria-label="ページごとの仕上げ管理"><strong>✅ 各ページの仕上げ確認</strong><p class="muted">各ページの保存が終わったら「仕上げ済み」にしてね。あとから何度でも編集できます。</p><div id="cdPageChecklistRows" class="cdPageChecklistRows"></div></section><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><div id="splitTrashList" hidden style="margin-top:16px"><strong>🗑 分離保存アルバムのゴミ箱</strong><div id="splitTrashCards" style="display:grid;gap:8px;margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
 <div class="top"><button class="back" data-back="home" aria-label="戻る">‹</button><div class="topText"><p class="brand">CLASS</p><h1 id="classTitle">クラス</h1><p class="lead">何をするか選んでね。</p></div></div>
 <div class="actionList">
 <button class="action" id="createNew"><span class="actionIcon">＋</span><span><b>新しく作る</b><small>写真を選んでアルバムを作成</small></span><span class="arrow">›</span></button>
@@ -1785,6 +1867,56 @@ function cdPageState(manifest,source){
  if(source.type==='special')return 'ready';
  return source.id&&item.sourceId===source.id&&item.sourceUpdatedAt===source.updatedAt?'ready':'updated';
 }
+
+/* CE: Presentation-only status controls. Reuse the CD validation/save logic verbatim. */
+function ceSyncPageCards(sources,manifest){
+ const grid=document.getElementById('projectGrid');
+ if(!grid)return;
+ const tones=['pink','aqua','yellow','lavender','mint'];
+ for(const source of sources){
+  const card=source.type==='special'
+   ?grid.querySelector('.projectCard[data-special-page="'+source.key.slice(8)+'"]')
+   :grid.querySelector('.projectCard[data-project-slot="'+source.key.slice(5)+'"]');
+  if(!card)continue;
+  let wrap=card.parentElement;
+  if(wrap===grid){
+   wrap=document.createElement('div');wrap.className='cdUiPageWrap';
+   grid.insertBefore(wrap,card);wrap.appendChild(card);
+  }else wrap.classList.add('cdUiPageWrap');
+  const slot=source.type==='special'?source.key.slice(8):Number(source.key.slice(5));
+  wrap.dataset.tone=source.type==='special'
+   ?({cover:'pink',growth:'yellow',message:'lavender',back:'mint'}[slot]||'aqua')
+   :tones[slot%tones.length];
+  const state=cdPageState(manifest,source);
+  wrap.dataset.cdState=state;
+  if(!source.id&&source.type!=='special'){
+   const preview=card.querySelector('.projectCardPreview');
+   if(preview&&preview.textContent.trim()==='＋'&&!preview.querySelector('.cdUiPlusIcon')){
+    const plus=document.createElement('span');plus.className='cdUiPlusIcon';plus.textContent='＋';
+    preview.replaceChildren(plus);
+   }
+  }
+  let check=wrap.querySelector(':scope > .cdUiFinishBtn');
+  if(!check){
+   check=document.createElement('button');check.type='button';check.className='cdUiFinishBtn';
+   wrap.append(check);
+  }
+  const isReady=state==='ready';
+  check.dataset.state=state;
+  check.textContent=isReady?'✓':state==='updated'?'!':'';
+  check.setAttribute('aria-pressed',String(isReady));
+  check.disabled=cdCompletionBusy||(!source.id&&source.type!=='special');
+  const label=isReady?'仕上げを解除':state==='updated'?'更新したページを仕上げ済みにする':'仕上げ済みにする';
+  check.setAttribute('aria-label',source.label+'：'+(check.disabled?'ページを保存すると仕上げを設定できます':label));
+  check.title=source.label+'：'+(check.disabled?'未作成':label);
+  check.onclick=event=>{
+   event.preventDefault();event.stopPropagation();
+   if(projectDeleteMode||check.disabled)return;
+   void cdTogglePageReady(source,state,check);
+  };
+ }
+}
+
 let cdProgressRenderToken=0,cdCompletionBusy=false;
 async function renderClassProgress(){
  const token=++cdProgressRenderToken,classId=selected.id,year=activeYear(),box=$('#cdPageChecklistRows');
@@ -1793,6 +1925,9 @@ async function renderClassProgress(){
   const sources=await cdPageSources();
   if(token!==cdProgressRenderToken||selected.id!==classId||activeYear()!==year)return;
   const manifest=cdReadProgress();box.replaceChildren();
+  // CE: visual completion buttons live beside the existing card buttons,
+  // never nested inside them (important for iOS Safari taps and drag).
+  ceSyncPageCards(sources,manifest);
   let finished=0;
   for(const source of sources){
    const state=cdPageState(manifest,source),special=source.type==='special';
@@ -2003,7 +2138,7 @@ function stopProjectDelete(){projectDeleteMode=false;projectDeleteSelection.clea
 function attachProjectDrag(btn,slots){btn.addEventListener('contextmenu',e=>e.preventDefault());btn.addEventListener('dragstart',e=>e.preventDefault());btn.querySelectorAll('img').forEach(img=>{img.draggable=false;img.addEventListener('contextmenu',e=>e.preventDefault());img.addEventListener('dragstart',e=>e.preventDefault())});let timer=null,startX=0,startY=0,dragging=false,ghost=null,target=null,pointer=null;const clear=()=>{clearTimeout(timer);timer=null;ghost?.remove();ghost=null;btn.classList.remove('projectDragging');document.querySelectorAll('.projectDropTarget').forEach(el=>el.classList.remove('projectDropTarget'))};btn.addEventListener('pointerdown',e=>{if(projectDeleteMode||e.button!==0||!slots[Number(btn.dataset.projectSlot)])return;pointer=e.pointerId;startX=e.clientX;startY=e.clientY;dragging=false;target=null;clearTimeout(timer);timer=setTimeout(()=>{dragging=true;projectDragSuppressedUntil=Date.now()+900;btn.classList.add('projectDragging');ghost=btn.cloneNode(true);ghost.classList.add('projectDragGhost');ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';document.body.appendChild(ghost);try{btn.setPointerCapture(pointer)}catch{}},320)});btn.addEventListener('pointermove',e=>{if(e.pointerId!==pointer)return;if(!dragging){if(Math.hypot(e.clientX-startX,e.clientY-startY)>12)clearTimeout(timer);return}e.preventDefault();ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';const hit=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-project-slot]');document.querySelectorAll('.projectDropTarget').forEach(el=>el.classList.remove('projectDropTarget'));if(hit){target=Number(hit.dataset.projectSlot);hit.classList.add('projectDropTarget')}});const finish=async e=>{if(e.pointerId!==pointer)return;clearTimeout(timer);if(dragging){projectDragSuppressedUntil=Date.now()+900;const from=Number(btn.dataset.projectSlot),to=target;clear();dragging=false;if(Number.isInteger(to)&&to!==from){const next=readProjectSlots();const moved=next.splice(from,1)[0];next.splice(to,0,moved);writeProjectSlots(next);await renderProjects()}}else clear()};btn.addEventListener('pointerup',finish);btn.addEventListener('pointercancel',()=>{clear();dragging=false})}
 function startProjectSlot(i){photoSortCheckpointKnownSavedAt=null;newAlbumSplitSelected=false;newAlbumSplitSavedId=null;newAlbumSplitOrigin=null;$('#saveDraft').textContent='下書きを保存';pendingProjectSlot=i;files=[];photoAssignments=[];assignmentSourceType='manual';clearCurrentAlbumAi();editingId=null;$('#photoInput').value='';$('#photoPreviews').innerHTML='';$('#photoCount').textContent='写真はまだ選択されていません。';$('#continueEdit').disabled=true;show('photoPick');void refreshPhotoSortResumeAvailability()}
 async function renderProjects(){
- $('#projectClassTitle').textContent=displayClassName(selected);const grid=$('#projectGrid');grid.innerHTML='<p class="muted">読み込み中…</p>';
+ const classHeading=$('#projectClassTitle');classHeading.textContent=displayClassName(selected);const classFlower=document.createElement('img');classFlower.src='./'+selected.flower;classFlower.alt='';classFlower.className='cdClassFlower';classHeading.prepend(classFlower);const grid=$('#projectGrid');grid.innerHTML='<p class="muted">読み込み中…</p>';
  try{clearProjectPreviewUrls();const drafts=(await getAllDrafts()).filter(d=>d.classId===selected.id&&draftInYear(d)).sort((a,b)=>(a.updatedAt||0)-(b.updatedAt||0));const slots=readProjectSlots(),known=new Set(slots.filter(Boolean));drafts.forEach(d=>{if(!known.has(d.id)){const free=slots.findIndex(x=>!x);if(free>=0)slots[free]=d.id;else slots.push(d.id);known.add(d.id)}});while(slots.length<12)slots.push(null);writeProjectSlots(slots);const byId=new Map(drafts.map(d=>[d.id,d]));const specialCard=(label,icon,key)=>'<button type="button" class="projectCard fixedSpecialCard" data-special-page="'+key+'" aria-label="'+label+'"><span class="projectCardPreview">'+icon+'</span><span class="projectCardName">'+label+'</span></button>';grid.innerHTML=specialCard('表紙','🌸','cover')+slots.map((id,i)=>{const d=byId.get(id);return '<button type="button" class="projectCard '+(d?'hasProject':'')+'" data-project-slot="'+i+'"><span class="projectCardPreview">'+projectPreview(d)+'</span><span class="projectCardName">'+String(i+1).padStart(2,'0')+'</span></button>'}).join('')+specialCard('身長・体重','📏','growth')+specialCard('担任メッセージ','💌','message')+specialCard('裏表紙','📸','back');const coverCard=grid.querySelector('[data-special-page="cover"]');if(coverCard){readCoverSaved(activeYear(),selected.id).then(saved=>{if(!saved||!coverCard.isConnected)return;const preview=coverCard.querySelector('.projectCardPreview');preview.innerHTML='';preview.classList.add('coverCardThumbnail');const title=document.createElement('span');title.className='coverCardTitle';title.textContent=saved.title||'おもいでブック';const flower=document.createElement('img');flower.src='./'+selected.flower;flower.alt='';const name=document.createElement('span');name.className='coverCardName';name.textContent=saved.childName?saved.childName+'さん':displayClassName(selected);preview.append(title,flower,name)}).catch(e=>console.warn('Cover preview unavailable',e))}grid.querySelectorAll('[data-special-page]').forEach(btn=>btn.addEventListener('click',()=>{const label=btn.querySelector('.projectCardName').textContent;btn.dataset.specialPage==='cover'?openCoverEditor():btn.dataset.specialPage==='growth'?openGrowthEditor():btn.dataset.specialPage==='message'?openMessageEditor():btn.dataset.specialPage==='back'?openBackCoverEditor():alert(label+'の専用編集画面は今後追加します。')}));grid.querySelectorAll('[data-project-slot]').forEach(btn=>{btn.addEventListener('click',()=>{if(Date.now()<projectDragSuppressedUntil)return;const i=Number(btn.dataset.projectSlot),d=byId.get(slots[i]);if(projectDeleteMode){if(!d)return;projectDeleteSelection.has(i)?projectDeleteSelection.delete(i):projectDeleteSelection.add(i);refreshProjectDeleteUI();return}if(d){pendingProjectSlot=i;loadDraft(d.id)}else startProjectSlot(i)});attachProjectDrag(btn,slots)});refreshProjectDeleteUI();$('#projectStatus').textContent=slots.length+'枠 ・ 保存済み '+drafts.length+'件';hydrateProjectThumbnails(drafts);renderSplitProjectCards().catch(e=>{console.warn('Split list unavailable',e);$('#splitProjectList').hidden=true})
   .finally(()=>{void renderPhotoSortPendingSlotBadges();void renderClassProgress()})}catch(e){grid.innerHTML='<p class="muted">読み込みに失敗しました。</p>';void renderClassProgress()}}
 
