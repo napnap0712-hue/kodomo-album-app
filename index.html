@@ -3107,7 +3107,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CW</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CX</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -6415,26 +6415,17 @@ function renderChildPhotoFolders(){
 
 /* BZ: Short-lived render-only previews. Originals remain in files[] and IndexedDB.
    A small concurrency-limited queue avoids decoding 100+ full-size frames at once. */
-/* CW: Keep a ready URL beside the in-flight promise so repeated editor renders
-   can paint a previously generated lightweight preview immediately. */
 const editorPreviewCache=new WeakMap();
 const editorPreviewJobs=[];
 let editorPreviewActive=0;
-function editorReadyPhotoPreview(file,edge){
- return editorPreviewCache.get(file)?.get(edge)?.url||'';
-}
 function editorPhotoPreview(file,edge){
  if(!(file instanceof Blob)||!file.size)return Promise.reject(Error('写真の実データがありません'));
  let sizes=editorPreviewCache.get(file);
  if(!sizes){sizes=new Map();editorPreviewCache.set(file,sizes)}
- const existing=sizes.get(edge);
- if(existing)return existing.promise;
- const entry={url:'',promise:null};
- // The queue is unchanged: at most two source images decode at a time.
- entry.promise=new Promise(resolve=>{editorPreviewJobs.push({file,edge,resolve});runEditorPreviewQueue()})
-  .then(url=>{entry.url=url;return url});
- sizes.set(edge,entry);
- return entry.promise;
+ if(sizes.has(edge))return sizes.get(edge);
+ const promise=new Promise(resolve=>{editorPreviewJobs.push({file,edge,resolve});runEditorPreviewQueue()});
+ sizes.set(edge,promise);
+ return promise;
 }
 function runEditorPreviewQueue(){
  while(editorPreviewActive<2&&editorPreviewJobs.length){
@@ -6501,27 +6492,19 @@ function displayEditorPhotoReliably(img,file,initialSource,previewEdge=0){
  status.className='photoLoadState';
  status.textContent='写真を読み込み中…';
  status.setAttribute('aria-hidden','true');
- // Fast repeat paints should not flash a loading label on each canvas redraw.
- status.hidden=true;
  img.insertAdjacentElement('afterend',status);
  img.style.opacity='0';
  const cached=fileUrl(file);
  let first=initialSource||cached;
  let stage=0;
- const waitLabel=setTimeout(()=>{
-  if(img.isConnected&&img.style.opacity==='0'&&!status.classList.contains('isError'))status.hidden=false;
- },230);
  img.onload=()=>{
-  clearTimeout(waitLabel);
   if(!img.isConnected)return;
   if(img.naturalWidth>0){if(stage===3&&img.src.startsWith('data:image/'))photoDataUrlFallbacks.set(file,img.src);img.style.opacity='1';status.hidden=true;}
   else img.onerror?.();
  };
  img.onerror=async()=>{
-  clearTimeout(waitLabel);
   if(!img.isConnected)return;
   img.style.opacity='0';
-  status.hidden=false;
   if(stage===0&&first!==cached){
    stage=1;img.src=cached;return;
   }
@@ -6557,18 +6540,13 @@ function displayEditorPhotoReliably(img,file,initialSource,previewEdge=0){
   // The source Blob is preserved for recovery or manual inspection.
  };
  if(previewEdge&&!(initialSource&&initialSource!==cached)){
-  // When this File has a decoded light preview, use that URL synchronously.
-  // A pending preview still follows the original safe retry/fallback path.
-  const ready=editorReadyPhotoPreview(file,previewEdge);
-  if(ready){
-   first=ready;img.src=ready;
-  }else{
-   void editorPhotoPreview(file,previewEdge).then(url=>{
-    if(!img.isConnected||img.dataset.editorExporting==='1')return;
-    first=url;
-    img.src=url;
-   }).catch(()=>{if(img.isConnected&&img.dataset.editorExporting!=='1')img.src=cached});
-  }
+  // Every thumbnail/editor image uses the SAME original File identity, but
+  // only the compressed rendering is placed on screen.
+  void editorPhotoPreview(file,previewEdge).then(url=>{
+   if(!img.isConnected||img.dataset.editorExporting==='1')return;
+   first=url;
+   img.src=url;
+  }).catch(()=>{if(img.isConnected&&img.dataset.editorExporting!=='1')img.src=cached});
  }else img.src=first;
 }
 function renderPhotoStrip(){renderChildPhotoFolders();const strip=$('#photoStrip'),fragment=document.createDocumentFragment(),previousScrollLeft=strip.scrollLeft;$('#photoManagerCount').textContent=files.length+'枚';files.forEach((file,index)=>{if(activePhotoFolder==='unassigned'&&(photoAssignments[index]||[]).length)return;if(activePhotoFolder!=='all'&&activePhotoFolder!=='unassigned'&&!(photoAssignments[index]||[]).includes(activePhotoFolder))return;const item=document.createElement('div');item.className='photoThumb';item.tabIndex=0;item.setAttribute('role','button');item.setAttribute('aria-label',file.name+'をページに追加');const img=document.createElement('img');img.alt=file.name;img.loading='lazy';img.decoding='async';img.style.cursor='pointer';img.dataset.photoIndex=String(index);const remove=document.createElement('button');remove.type='button';remove.className='photoRemove';remove.textContent='×';remove.setAttribute('aria-label',file.name+'を写真一覧から削除');remove.addEventListener('click',event=>{event.stopPropagation();releasePhotoUrl(files[index]);files.splice(index,1);photoAssignments.splice(index,1);designElements=designElements.filter(el=>el.type!=='photo'||el.fileIndex!==index);designElements.forEach(el=>{if(el.type==='photo'&&el.fileIndex>index)el.fileIndex--;});selectedElementId=null;renderPhotoStrip();renderSpread(files);});const name=document.createElement('small');name.textContent=file.name;item.addEventListener('click',event=>{if(event.target.closest('button'))return;placePhotoOnPage(index);});item.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();placePhotoOnPage(index);}});const assign=document.createElement('button');assign.type='button';assign.textContent='振り分け';assign.className='photoAssignButton';
@@ -6748,7 +6726,7 @@ function renderSeasonStickerPanel(){
 }
 function renderSpread(photos){const canvas=$('#designCanvas');if(!canvas)return;canvas.innerHTML='';canvas.classList.toggle('spreadCanvas',$('#layoutMode').value==='spread');canvas.classList.toggle('singleCanvas',$('#layoutMode').value==='single');canvas.classList.toggle('gridCanvas',$('#layoutMode').value==='grid');updateMyBgCanvas();const maxPage=Math.max(0,Math.ceil(photos.length/2)-1,...designElements.map(el=>el.page||0));spreadIndex=Math.max(0,Math.min(spreadIndex,maxPage));$('#pageIndicator').textContent=(spreadIndex+1)+' / '+(maxPage+1);$('#prevSpread').disabled=spreadIndex===0;$('#nextSpread').disabled=spreadIndex>=maxPage;designElements.filter(el=>(el.page||0)===spreadIndex&&el.type==='photo').forEach(el=>renderElementNode(el,canvas,photos));designElements.filter(el=>(el.page||0)===spreadIndex&&(el.type==='text'||el.type==='sticker')).forEach(el=>renderElementNode(el,canvas,photos));syncElementTools();syncLayerPanel();updateGroupButtons();renderChildPhotoFolders();recordEditHistory();}
 function layerElementName(el){if(el.type==='text')return (el.text||'文字').slice(0,12);if(el.type==='sticker')return '🌸 スタンプ';const file=files[el.fileIndex];return file?(file.name||'写真').slice(0,16):'写真';}
-function syncLayerPanel(){const list=$('#layerOrderList');if(!list)return;list.innerHTML='';const items=designElements.filter(el=>(el.page||0)===spreadIndex);if(!items.length){const empty=document.createElement('small');empty.className='layerEmpty';empty.textContent='ページに写真や文字を追加すると、ここに順番が表示されます。';list.appendChild(empty);return;}[...items].reverse().forEach((el,index)=>{const row=document.createElement('div');row.className='layerOrderItem'+(el.id===selectedElementId?' isSelected':'');row.dataset.elementId=el.id;row.tabIndex=0;row.setAttribute('role','button');row.addEventListener('click',event=>{if(event.target.closest('.layerDragHandle'))return;selectedElementId=el.id;const canvas=$('#designCanvas');canvas?.querySelectorAll('.designElement.selected').forEach(node=>node.classList.remove('selected'));const node=canvas?.querySelector('[data-element-id="'+el.id+'"]');if(node)decorateSelectedNode(node,el);syncElementTools();syncLayerPanel();});row.addEventListener('keydown',event=>{if(event.target===row&&(event.key==='Enter'||event.key===' ')){event.preventDefault();selectedElementId=el.id;syncElementTools();syncLayerPanel();}});const rank=document.createElement('span');rank.className='layerRank';rank.textContent=index===0?'最前面':index===items.length-1?'最背面':'中間';const thumb=document.createElement('span');thumb.className='layerThumb';if(el.type==='photo'&&files[el.fileIndex]){const img=document.createElement('img');const file=files[el.fileIndex];img.alt='';img.decoding='async';img.loading='lazy';const ready=editorReadyPhotoPreview(file,320);if(ready)img.src=ready;else void editorPhotoPreview(file,320).then(url=>{if(img.isConnected)img.src=url});thumb.appendChild(img);}else{thumb.textContent='T';}const name=document.createElement('span');name.className='layerName';name.textContent=layerElementName(el);const handle=document.createElement('button');handle.type='button';handle.className='layerDragHandle';handle.textContent='☰';handle.setAttribute('aria-label',layerElementName(el)+'の重なり順をドラッグで変更');handle.title='ドラッグして重なり順を変更';handle.addEventListener('pointerdown',event=>startLayerDrag(event,el.id));row.append(rank,thumb,name,handle);list.appendChild(row);});}
+function syncLayerPanel(){const list=$('#layerOrderList');if(!list)return;list.innerHTML='';const items=designElements.filter(el=>(el.page||0)===spreadIndex);if(!items.length){const empty=document.createElement('small');empty.className='layerEmpty';empty.textContent='ページに写真や文字を追加すると、ここに順番が表示されます。';list.appendChild(empty);return;}[...items].reverse().forEach((el,index)=>{const row=document.createElement('div');row.className='layerOrderItem'+(el.id===selectedElementId?' isSelected':'');row.dataset.elementId=el.id;row.tabIndex=0;row.setAttribute('role','button');row.addEventListener('click',event=>{if(event.target.closest('.layerDragHandle'))return;selectedElementId=el.id;const canvas=$('#designCanvas');canvas?.querySelectorAll('.designElement.selected').forEach(node=>node.classList.remove('selected'));const node=canvas?.querySelector('[data-element-id="'+el.id+'"]');if(node)decorateSelectedNode(node,el);syncElementTools();syncLayerPanel();});row.addEventListener('keydown',event=>{if(event.target===row&&(event.key==='Enter'||event.key===' ')){event.preventDefault();selectedElementId=el.id;syncElementTools();syncLayerPanel();}});const rank=document.createElement('span');rank.className='layerRank';rank.textContent=index===0?'最前面':index===items.length-1?'最背面':'中間';const thumb=document.createElement('span');thumb.className='layerThumb';if(el.type==='photo'&&files[el.fileIndex]){const img=document.createElement('img');img.src=fileUrl(files[el.fileIndex]);img.alt='';thumb.appendChild(img);}else{thumb.textContent='T';}const name=document.createElement('span');name.className='layerName';name.textContent=layerElementName(el);const handle=document.createElement('button');handle.type='button';handle.className='layerDragHandle';handle.textContent='☰';handle.setAttribute('aria-label',layerElementName(el)+'の重なり順をドラッグで変更');handle.title='ドラッグして重なり順を変更';handle.addEventListener('pointerdown',event=>startLayerDrag(event,el.id));row.append(rank,thumb,name,handle);list.appendChild(row);});}
 function startLayerDrag(event,elementId){if(event.button!==undefined&&event.button!==0)return;const list=$('#layerOrderList');const source=list?.querySelector('[data-element-id="'+elementId+'"]');if(!list||!source)return;event.preventDefault();selectedElementId=elementId;const startY=event.clientY;let moved=false;source.classList.add('isDragging');const move=e=>{if(Math.abs(e.clientY-startY)>4)moved=true;if(!moved)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('.layerOrderItem');list.querySelectorAll('.layerOrderItem.dropBefore,.layerOrderItem.dropAfter').forEach(row=>row.classList.remove('dropBefore','dropAfter'));if(!target||target===source||target.parentElement!==list)return;const rect=target.getBoundingClientRect();const before=e.clientY<rect.top+rect.height/2;target.classList.add(before?'dropBefore':'dropAfter');if(before)list.insertBefore(source,target);else list.insertBefore(source,target.nextSibling);};const end=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);window.removeEventListener('pointercancel',end);source.classList.remove('isDragging');list.querySelectorAll('.layerOrderItem.dropBefore,.layerOrderItem.dropAfter').forEach(row=>row.classList.remove('dropBefore','dropAfter'));if(moved){const ids=[...list.querySelectorAll('.layerOrderItem')].map(row=>row.dataset.elementId);const order=ids.reverse().map(id=>designElements.find(el=>el.id===id)).filter(Boolean);let cursor=0;designElements=designElements.map(el=>(el.page||0)===spreadIndex?order[cursor++]:el);const canvas=$('#designCanvas');if(canvas)order.forEach(el=>{const node=canvas.querySelector('[data-element-id="'+el.id+'"]');if(node)canvas.appendChild(node);});syncLayerPanel();$('#editorStatus').textContent='レイヤーの順番を変更しました。上にある写真ほど手前に表示されます。';}else{selectedElementId=elementId;syncLayerPanel();}};window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end);}
 let activeTextToolTab='文字';document.querySelectorAll('.textToolTab').forEach(button=>button.addEventListener('click',()=>{activeTextToolTab=button.dataset.textTab;document.querySelectorAll('.textToolTab').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});syncElementTools();}));
 let photoInspectorOpen=false,activePhotoTab='形',photoArrangeSnapshot=null;let textInspectorOpen=true;$('#closeTextInspector').addEventListener('click',()=>{textInspectorOpen=false;syncElementTools();});$('#closePhotoInspector').addEventListener('click',()=>{photoInspectorOpen=false;syncElementTools();});$('#openPhotoInspector').addEventListener('click',()=>{photoInspectorOpen=true;syncElementTools();});document.querySelectorAll('[data-photo-tab]').forEach(b=>b.addEventListener('click',()=>{activePhotoTab=b.dataset.photoTab;syncElementTools();}));
