@@ -2664,13 +2664,166 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
  object-fit:contain;
 }
 
+
+/* CR - Figma home UI only: pastel blobs, six original flowers, responsive cards. */
+.app:has(> .screen[data-screen="home"].active){max-width:1320px;min-height:100dvh;padding:0;background:#fff}
+.screen[data-screen="home"]{
+ position:relative;isolation:isolate;min-height:100dvh;overflow:hidden;
+ padding:clamp(30px,5.5vw,72px) clamp(20px,5.5vw,72px) 66px;
+ background:#fff;
+}
+.screen[data-screen="home"] .homePopBlob{position:absolute;z-index:-1;pointer-events:none;opacity:1}
+.screen[data-screen="home"] .homePopPink{
+ left:-12%;top:17%;width:38%;height:60%;background:#ffe2ed;
+ border-radius:44% 56% 40% 60%/50% 33% 67% 50%;transform:rotate(-14deg);
+}
+.screen[data-screen="home"] .homePopYellow{
+ right:7%;top:-20%;width:30%;height:57%;background:#fff1d1;
+ border-radius:48% 52% 60% 40%/46% 44% 56% 54%;transform:rotate(-12deg);
+}
+.screen[data-screen="home"] .homePopMint{
+ right:-8%;bottom:-21%;width:66%;height:49%;background:#dff8ed;
+ border-radius:58% 42% 48% 52%/45% 55% 45% 55%;transform:rotate(-11deg);
+}
+.screen[data-screen="home"] .homeHeader{
+ position:relative;z-index:1;display:flex;justify-content:space-between;
+ align-items:flex-start;gap:24px;margin:0;
+}
+.screen[data-screen="home"] .homeTitleBlock{min-width:0}
+.screen[data-screen="home"] .brand{
+ margin:0 0 17px;font-size:clamp(11px,1.4vw,15px);
+ letter-spacing:.14em;font-weight:850;color:#9aaab9;
+}
+.screen[data-screen="home"] .homeTitleBlock h1{
+ margin:0 0 13px;font-size:clamp(29px,3.9vw,46px);
+ line-height:1.35;letter-spacing:.01em;font-weight:850;color:#28394d;
+}
+.screen[data-screen="home"] .homeTitleBlock .lead{
+ margin:0;font-size:clamp(12px,1.6vw,18px);line-height:1.65;color:#708497;
+}
+.screen[data-screen="home"] .homeTopActions{
+ display:flex;gap:11px;align-items:center;justify-content:flex-end;
+ flex:none;padding-top:6px;
+}
+.screen[data-screen="home"] .homeTopActions button{
+ display:inline-flex;align-items:center;justify-content:center;gap:10px;
+ min-height:47px;border:1px solid #edf1f4;background:#fff;
+ box-shadow:0 5px 20px #283c4e14;color:#263a52;
+ font-weight:850;transition:transform .15s ease,box-shadow .15s ease;
+}
+.screen[data-screen="home"] .homeTopActions button:hover,
+.screen[data-screen="home"] #flowerGrid>.tile:hover{
+ transform:translateY(-2px);box-shadow:0 12px 30px #344b621b;
+}
+.screen[data-screen="home"] .homeYearButton{
+ border-radius:100px;min-width:153px;padding:11px 18px;font-size:15px;
+}
+.screen[data-screen="home"] .homeSettingsButton{
+ border-radius:50%;width:47px;padding:0;font-size:25px;
+}
+.screen[data-screen="home"] #flowerGrid{
+ position:relative;z-index:1;display:grid;
+ grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:24px;max-width:1110px;margin:60px auto 0;
+}
+.screen[data-screen="home"] #flowerGrid>.tile{
+ position:relative;box-sizing:border-box;display:flex;
+ flex-direction:column;align-items:center;justify-content:center;
+ gap:13px;min-width:0;min-height:225px;padding:24px 22px 27px;
+ border:1px solid #eff1f5;border-radius:26px;background:#fff;
+ color:#293b50;box-shadow:0 10px 25px #283c4e12;
+ transition:transform .15s ease,box-shadow .15s ease;
+}
+.screen[data-screen="home"] #flowerGrid>.tile .flower{
+ flex:none;width:114px;height:114px;display:grid;place-items:center;
+ padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;
+}
+.screen[data-screen="home"] #flowerGrid>.tile .flower img{
+ width:100px;height:100px;max-width:100%;object-fit:contain;
+}
+.screen[data-screen="home"] #flowerGrid>.tile .homeClassLabel{
+ text-align:center;font-size:clamp(15px,1.8vw,19px);
+ line-height:1.45;font-weight:850;overflow-wrap:anywhere;
+}
+.screen[data-screen="home"] #flowerGrid>.tile::after{
+ content:"›";position:absolute;right:19px;bottom:19px;
+ color:#8294a9;font-size:24px;font-weight:700;line-height:1;
+}
+.screen[data-screen="home"] .tile:focus-visible,
+.screen[data-screen="home"] .homeTopActions button:focus-visible{
+ outline:3px solid #509dd8;outline-offset:3px;
+}
+@media(min-width:681px) and (max-width:940px){
+ .screen[data-screen="home"]{padding:36px 30px 52px}
+ .screen[data-screen="home"] #flowerGrid{margin-top:42px;gap:17px}
+ .screen[data-screen="home"] #flowerGrid>.tile{min-height:200px;padding:17px 12px}
+ .screen[data-screen="home"] #flowerGrid>.tile .flower{width:95px;height:95px}
+ .screen[data-screen="home"] #flowerGrid>.tile .flower img{width:86px;height:86px}
+}
+@media(max-width:680px){
+ .screen[data-screen="home"]{
+  padding:calc(30px + env(safe-area-inset-top)) 17px
+   calc(38px + env(safe-area-inset-bottom));
+ }
+ .screen[data-screen="home"] .homePopPink{
+  left:-22%;top:-10%;width:73%;height:42%;
+ }
+ .screen[data-screen="home"] .homePopYellow{
+  right:-21%;top:-12%;width:54%;height:37%;
+ }
+ .screen[data-screen="home"] .homePopMint{
+  right:-24%;bottom:3%;width:86%;height:44%;
+ }
+ .screen[data-screen="home"] .homeHeader{
+  flex-direction:column;align-items:stretch;gap:12px;
+ }
+ .screen[data-screen="home"] .brand{font-size:11px;margin-bottom:14px}
+ .screen[data-screen="home"] .homeTitleBlock h1{font-size:30px;margin-bottom:12px}
+ .screen[data-screen="home"] .homeTitleBlock .lead{font-size:12.5px}
+ .screen[data-screen="home"] .homeTopActions{
+  align-self:flex-end;padding:0;margin:10px 0 0;gap:9px;
+ }
+ .screen[data-screen="home"] .homeYearButton{
+  min-width:146px;min-height:44px;padding:9px 16px;font-size:14px;
+ }
+ .screen[data-screen="home"] .homeSettingsButton{min-height:44px;width:44px;font-size:24px}
+ .screen[data-screen="home"] #flowerGrid{
+  grid-template-columns:repeat(2,minmax(0,1fr));gap:15px 13px;
+  max-width:none;margin-top:25px;
+ }
+ .screen[data-screen="home"] #flowerGrid>.tile{
+  min-height:176px;gap:10px;padding:17px 9px 24px;border-radius:22px;
+ }
+ .screen[data-screen="home"] #flowerGrid>.tile .flower{width:96px;height:96px}
+ .screen[data-screen="home"] #flowerGrid>.tile .flower img{width:83px;height:83px}
+ .screen[data-screen="home"] #flowerGrid>.tile .homeClassLabel{font-size:13.5px}
+ .screen[data-screen="home"] #flowerGrid>.tile::after{right:11px;bottom:10px;font-size:17px}
+}
+@media(max-width:355px){
+ .screen[data-screen="home"]{padding-left:11px;padding-right:11px}
+ .screen[data-screen="home"] #flowerGrid{gap:11px 9px}
+ .screen[data-screen="home"] #flowerGrid>.tile{min-height:166px}
+ .screen[data-screen="home"] #flowerGrid>.tile .flower{width:83px;height:83px}
+ .screen[data-screen="home"] #flowerGrid>.tile .flower img{width:74px;height:74px}
+ .screen[data-screen="home"] #flowerGrid>.tile .homeClassLabel{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .screen[data-screen="home"] .tile,
+ .screen[data-screen="home"] .homeTopActions button{transition:none}
+}
 </style>
 </head>
 <body>
 <main class="app">
 <section class="screen active" data-screen="home">
-<header class="homeHeader"><p class="brand">OMOIDE BOOK</p><h1>おもいでブック</h1><p class="lead">クラスを選んで、思い出のアルバムを作ろう。</p></header>
-<div class="flowerGrid" id="flowerGrid"></div>
+<div class="homePopBlob homePopPink" aria-hidden="true"></div>
+<div class="homePopBlob homePopYellow" aria-hidden="true"></div>
+<div class="homePopBlob homePopMint" aria-hidden="true"></div>
+<header class="homeHeader">
+ <div class="homeTitleBlock"><p class="brand">OMOIDE BOOK</p><h1>おもいでブック</h1><p class="lead">クラスを選んで、思い出のアルバムを作ろう。</p></div>
+ <div class="homeTopActions"><button type="button" id="homeYearButton" class="homeYearButton" aria-label="年度管理を開く"><span id="homeActiveYear"></span><span aria-hidden="true">⌄</span></button><button type="button" class="homeSettingsButton" id="settingsButton" aria-label="設定を開く" title="設定">⚙</button></div>
+</header>
+<div class="flowerGrid" id="flowerGrid" aria-label="クラスを選択"></div>
 </section>
 <section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS · CE</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><section class="cdProgressPanel" aria-label="クラスの制作進捗"><div class="cdProgressTop"><strong>🌷 クラスの完成状況</strong><b id="cdProgressPercent">0%</b></div><progress id="cdProgressBar" max="16" value="0"></progress><p id="cdProgressSummary" class="muted">仕上げ済み 0 / 16ページ</p><button id="cdCompleteClass" type="button" class="primary" disabled>✅ アルバムを完了する</button><p id="cdCompleteStatus" class="muted" role="status">各ページを仕上げ済みにすると、完了できるようになります。</p></section><dialog id="cdFinishDialog" class="cdFinishDialog" aria-labelledby="cdFinishTitle" aria-modal="true"><div class="cdFinishCard"><h2 id="cdFinishTitle">🌷 アルバムを完成にしますか？</h2><p id="cdFinishCounts"></p><p id="cdFinishExplanation"></p><p>使用中の元写真・編集内容・既存バックアップは保持されます。完了後も自由に編集でき、削除した写真を再利用する場合は追加アップロードが必要です。</p><div class="cdFinishActions"><button type="button" id="cdFinishCancel" class="secondary">キャンセル</button><button type="button" id="cdFinishConfirm" class="primary">未使用写真を削除して完了</button></div></div></dialog><div id="projectGrid" class="projectGrid"></div><div class="cdStatusLegend" aria-label="仕上げ状態の見方"><span><i class="cdLegendDot ready" aria-hidden="true">✓</i>仕上げ済み</span><span><i class="cdLegendDot updated" aria-hidden="true">!</i>更新あり</span><span><i class="cdLegendDot" aria-hidden="true"></i>編集中</span><span><i class="cdLegendDot" aria-hidden="true">＋</i>未作成</span></div><section class="cdPageChecklist" aria-label="ページごとの仕上げ管理"><strong>✅ 各ページの仕上げ確認</strong><p class="muted">各ページの保存が終わったら「仕上げ済み」にしてね。あとから何度でも編集できます。</p><div id="cdPageChecklistRows" class="cdPageChecklistRows"></div></section><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><div id="splitTrashList" hidden style="margin-top:16px"><strong>🗑 分離保存アルバムのゴミ箱</strong><div id="splitTrashCards" style="display:grid;gap:8px;margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
 <div class="top"><button class="back" data-back="home" aria-label="戻る">‹</button><div class="topText"><p class="brand">CLASS</p><h1 id="classTitle">クラス</h1><p class="lead">何をするか選んでね。</p></div></div>
@@ -2774,7 +2927,7 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CQ</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CR</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -3596,7 +3749,7 @@ function show(id){
   files=[];designElements=[];editingId=null;selectedElementId=null;
   setEditorSaveState('試験モードを終了');
  }
- if(id!=='editor')clearTimeout(editorAutoSaveTimer);if(id==='editor'){activeEditorTab='none';const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab='none';document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.remove('active'));document.querySelector('.pageSettings').open=false;$('#seasonStickerPanel').hidden=true;}document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.dataset.screen===id));window.scrollTo({top:0,behavior:'instant'});if(id==='saved')renderSaved();if(id==='classProjects')renderProjects();if(id==='classManagement')renderManageClasses();if(id==='classDetail')renderManageClassDetail();if(id==='yearManagement')renderYearManagement();if(id==='safetyManagement')renderSafetyManagement();if(id==='syncManagement')syncCheckHealth();if(id==='photoPick')void refreshPhotoSortResumeAvailability();if(id==='editor')requestDesktopEditorFit();}
+ if(id!=='editor')clearTimeout(editorAutoSaveTimer);if(id==='editor'){activeEditorTab='none';const panel=document.querySelector('.screen[data-screen="editor"]');panel.dataset.editorTab='none';document.querySelectorAll('.mobileEditorTabs [data-editor-tab]').forEach(b=>b.classList.remove('active'));document.querySelector('.pageSettings').open=false;$('#seasonStickerPanel').hidden=true;}document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.dataset.screen===id));window.scrollTo({top:0,behavior:'instant'});if(id==='home')renderHome();if(id==='saved')renderSaved();if(id==='classProjects')renderProjects();if(id==='classManagement')renderManageClasses();if(id==='classDetail')renderManageClassDetail();if(id==='yearManagement')renderYearManagement();if(id==='safetyManagement')renderSafetyManagement();if(id==='syncManagement')syncCheckHealth();if(id==='photoPick')void refreshPhotoSortResumeAvailability();if(id==='editor')requestDesktopEditorFit();}
 async function renderSafetyManagement(){const storage=$('#safetyStorage'),drafts=$('#safetyDrafts'),online=$('#safetyOnline'),error=$('#safetyError');if(!storage)return;storage.textContent='確認中…';drafts.textContent='確認中…';online.textContent=navigator.onLine?'オンライン（端末の通信判定）':'オフライン（端末の通信判定）';error.textContent='';try{if(navigator.storage&&navigator.storage.estimate){const v=await navigator.storage.estimate();const mb=n=>Number.isFinite(n)?(n/1024/1024).toFixed(1)+' MB':'不明';storage.textContent='推定使用量 '+mb(v.usage)+' ／ 推定上限 '+mb(v.quota); }else storage.textContent='このブラウザでは容量を取得できません';}catch(e){storage.textContent='容量を取得できません'}try{const all=await getAllDrafts();drafts.textContent='保存済みアルバム '+all.length+'件（全年度）';}catch(e){drafts.textContent='下書きの件数を確認できません';error.textContent='保存領域の読み取りに失敗しました。再確認してください。'}}
 const yearMetaKey='omoide-year-meta-v1';function initialSchoolYear(){const d=new Date();return d.getFullYear()-(d.getMonth()<3?1:0)}function yearMeta(){try{const v=JSON.parse(localStorage.getItem(yearMetaKey)||'null');return v&&Number.isInteger(v.base)&&Number.isInteger(v.active)?v:{base:initialSchoolYear(),active:initialSchoolYear()}}catch{return {base:initialSchoolYear(),active:initialSchoolYear()}}}function baseYear(){return yearMeta().base}function activeYear(){return yearMeta().active}function yearScopedKey(key){return key+(activeYear()===baseYear()?'':'-year-'+activeYear())}function draftInYear(d){return (d.year??baseYear())===activeYear()}
 const classSettingsKey='omoide-class-settings-v1';function getClassSettings(){try{return JSON.parse(localStorage.getItem(yearScopedKey(classSettingsKey))||'{}')}catch{return {}}}function displayClassName(c){return getClassSettings()[c.id]?.name||c.name}function childrenKey(id){return yearScopedKey('omoide-class-children-v1-'+id)}function getChildren(id){try{return JSON.parse(localStorage.getItem(childrenKey(id))||'[]')}catch{return []}}function saveChildren(v){localStorage.setItem(childrenKey(selected.id),JSON.stringify(v))}
@@ -3616,9 +3769,17 @@ async function encodeBackup(v){if(v instanceof Blob){const bytes=new Uint8Array(
 async function exportYearBackup(year,button){button.disabled=true;const status=$('#yearBackupStatus');status.textContent='バックアップを準備しています…';try{const suffix=year===baseYear()?'':'-year-'+year;const keys=[classSettingsKey+suffix,...classes.map(c=>'omoide-class-children-v1-'+c.id+suffix),...classes.map(c=>coverLocalKey(year,c.id))];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('omoide-')&&k.includes('year-'+year)&&!keys.includes(k))keys.push(k)}const data={};for(const k of keys){const value=localStorage.getItem(k);if(value!==null)data[k]=value}const drafts=await encodeBackup((await getAllDrafts()).filter(d=>(d.year??baseYear())===year));const file=new File([JSON.stringify({format:'omoide-year-backup',version:1,year,createdAt:new Date().toISOString(),localStorage:data,drafts})],'omoide-'+year+'-backup.json',{type:'application/json'});if(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]})){await navigator.share({files:[file]});status.textContent='共有先に保存したファイルを確認してください。元データはそのままです。'}else{const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='ファイルの保存先を確認してください。元データはそのままです。'}}catch(e){status.textContent=e.name==='AbortError'?'保存をキャンセルしました。':'保存できませんでした：'+e.message}finally{button.disabled=false}}
 function prepareYearPromotion(){const next=activeYear()+1;$('#yearPromotionRows').innerHTML=classes.map((c,i)=>{const kids=getChildren(c.id);return kids.length?'<details class="yearClassGroup"><summary><span>'+escapeText(displayClassName(c))+'</span><small>'+kids.length+'名</small><span class="yearExpandIcon">⌄</span></summary><div class="yearClassKids">'+kids.map(k=>'<div class="yearPromotionRow"><span>'+escapeText(k.name)+'<small>'+escapeText(displayClassName(c))+' →</small></span><select data-promote-id="'+escapeText(k.id)+'" data-from-class="'+c.id+'">'+classes.map((dest,j)=>'<option value="'+dest.id+'" '+(j===Math.min(i+1,classes.length-1)?'selected':'')+'>'+escapeText(displayClassName(dest))+'</option>').join('')+'<option value="graduated">卒園</option><option value="left">退園</option><option value="stay">進級しない</option></select></div>').join('')+'</div></details>':''}).join('');$('#yearPromotionPanel').hidden=false;$('#yearStatus').textContent=next+'年度への進級先を確認してください。'}
 function renderHome(){
-$('#flowerGrid').innerHTML=classes.map(c=>'<button type="button" class="tile" data-class="'+c.id+'"><span class="flower"><img src="./'+c.flower+'" alt=""></span><span>'+c.name+'</span></button>').join('')+'<button type="button" class="tile" id="settingsButton"><span class="flower settingsMark" aria-hidden="true">⚙</span><span>設定</span></button>';
-document.querySelectorAll('[data-class]').forEach(btn=>btn.addEventListener('click',()=>{selected=classes.find(c=>c.id===btn.dataset.class)||classes[1];$('#classTitle').textContent=selected.name;$('#savedClassLabel').textContent=selected.name+'のアルバム';show('classProjects')}));
-$('#settingsButton').addEventListener('click',()=>show('settings'));
+ const grid=$('#flowerGrid');if(!grid)return;
+ $('#homeActiveYear').textContent=activeYear()+'年度';
+ grid.innerHTML=classes.map(c=>'<button type="button" class="tile" data-class="'+c.id+'" aria-label="'+escapeText(displayClassName(c))+'を開く"><span class="flower"><img src="./'+c.flower+'" alt="" loading="eager"></span><span class="homeClassLabel">'+escapeText(displayClassName(c))+'</span></button>').join('');
+ grid.querySelectorAll('[data-class]').forEach(btn=>btn.addEventListener('click',()=>{
+  selected=classes.find(c=>c.id===btn.dataset.class)||classes[1];
+  $('#classTitle').textContent=displayClassName(selected);
+  $('#savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
+  show('classProjects');
+ }));
+ $('#settingsButton').onclick=()=>show('settings');
+ $('#homeYearButton').onclick=()=>show('yearManagement');
 }
 async function renderSaved(){try{const items=(await getAllDrafts()).filter(item=>item.classId===selected.id&&draftInYear(item));$('#savedList').innerHTML=items.length?items.map(item=>'<article class="savedItem"><span><b>'+escapeText(item.title||'無題のアルバム')+'</b><br><small class="muted">'+new Date(item.updatedAt).toLocaleDateString('ja-JP')+' ・ '+item.photos.length+'枚</small></span><button class="secondary" data-open-draft="'+escapeText(item.id)+'">開く</button></article>').join(''):'<div class="empty">このクラスの保存済みアルバムはまだありません。</div>';document.querySelectorAll('[data-open-draft]').forEach(btn=>btn.addEventListener('click',()=>loadDraft(btn.dataset.openDraft)));}catch(error){$('#savedList').innerHTML='<div class="empty">保存済み一覧を読み込めませんでした。このブラウザの保存機能を確認してください。</div>';}}
 function escapeText(value){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
