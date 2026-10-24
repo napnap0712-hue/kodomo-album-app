@@ -3034,6 +3034,16 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
   <p class="muted" style="font-size:12px;margin:8px 0">写真・振り分けの保存領域には書き込みません。最初に記録だけ控えておくこともできます。</p>
   <button type="button" class="secondary" id="photoSortExportRecord" style="margin:4px">振り分け記録を控える（写真なし）</button>
   <button type="button" class="secondary" id="photoSortReadOnlyAudit" style="margin:4px">147枚の写真データを診断</button>
+  <section style="margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0">
+   <strong style="font-size:13px">📷 元写真から安全に復元</strong>
+   <p class="muted" style="font-size:12px">MacBookなどに残っている元のJPEG写真を選び、保存済みの写真名とサイズで照合します。保存できていた写真はさらに中身も比較します。元の147枚の記録は上書きしません。</p>
+   <input id="photoSortRescueFiles" type="file" accept="image/*,.jpg,.jpeg" multiple hidden>
+   <input id="photoSortRescueDirectory" type="file" webkitdirectory multiple hidden>
+   <button id="photoSortRescuePick" type="button" class="secondary" style="margin:4px">元写真をまとめて選ぶ</button>
+   <button id="photoSortRescuePickDirectory" type="button" class="secondary" style="margin:4px">フォルダから探す</button>
+   <button id="photoSortRescueTry" type="button" class="primary" style="margin:4px" disabled>🔍 照合して続きから再開</button>
+   <p id="photoSortRescueTryStatus" class="muted" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere">元写真を選ぶまでは何も変更しません。</p>
+  </section>
   <p id="photoSortReadOnlyAuditStatus" class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere" role="status" aria-live="polite"></p>
  </details>
 </div>
@@ -3114,7 +3124,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 CZ</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DA</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -4758,6 +4768,8 @@ async function photoSortCheckpointRead(key){
 // CZ: Read-only checkpoint rescue. Never put/delete/upgrade, rewrite photos,
 // change children's assignments, or decode faces merely to diagnose storage.
 let photoSortRescueBusy=false;
+let photoSortSelectedOriginals=[];
+let photoSortRecoveredKey=null;
 async function readSavedPhotoByteEdges(blob){
  if(!(blob instanceof Blob)||!blob.size)throw Error('Blobなし、またはサイズ0');
  const first=blob.slice(0,Math.min(32,blob.size));
@@ -4894,6 +4906,10 @@ async function refreshPhotoSortResumeAvailability(){
 }
 async function saveCurrentPhotoSortCheckpoint(){
  if(photoSortCheckpointBusy)return;
+ if(photoSortRecoveredKey===photoSortCheckpointKey()){
+  $('#photoSortProgressSaveStatus').textContent='🛟 元の途中保存を保護中です。この復元では元データの上書きを禁止しています。続きは見開きへ進み、新しい分離アルバムとして保存してください。';
+  return;
+ }
  const status=$('#photoSortProgressSaveStatus'),button=$('#savePhotoSortProgress');
  if(!files.length){status.textContent='写真を追加してから保存してね。';return}
  photoSortCheckpointBusy=true;button.disabled=true;status.textContent='💾 写真と振り分けを保存中…';
@@ -5008,7 +5024,7 @@ function photoSortRestoreAiData(savedAI,sourceFiles,storedRoster){
  for(const i of used)if(unused.has(savedAI.samples[i].index))throw Error('使わない写真がAIグループに含まれています。');
  return {groups,keys,unused};
 }
-async function resumePhotoSortCheckpoint(){
+async function resumePhotoSortCheckpoint(replacementFiles=null){
  if(photoSortCheckpointBusy)return;
  const status=$('#photoSortResumeStatus'),button=$('#resumePhotoSortProgress');
  photoSortCheckpointBusy=true;button.disabled=true;
@@ -5026,24 +5042,46 @@ async function resumePhotoSortCheckpoint(){
   if(row.registered!==JSON.stringify(getChildren(selected.id)))
    throw Error('園児名簿が保存時から変わっています。誤った園児への紐づけを防ぐため再開を中断しました。');
   const savedFiles=[];
-  // Read-only checkpoint integrity probe. No put/delete/version upgrades.
+  const candidates=replacementFiles?photoSortSourceCandidates(replacementFiles):null;
+  let sourcedFromDevice=0,sourcedFromSaved=0,unverifiable=0;
+  // Read-only source checkpoint. Rebuilt File objects exist in memory only.
   for(let i=0;i<row.photos.length;i++){
    const photo=row.photos[i];
    if(!(photo?.blob instanceof Blob)||!photo.blob.size||photo.blob.size!==photo.size)
-    throw Error('保存した写真'+(i+1)+'のBlobまたはサイズが一致しません。');
-   try{
-    const head=await photo.blob.slice(0,24).arrayBuffer();
-    const tail=await photo.blob.slice(Math.max(0,photo.blob.size-16)).arrayBuffer();
-    if(!head.byteLength||!tail.byteLength)throw Error('画像の先頭または末尾が空です');
-   }catch(e){throw Error('保存した写真'+(i+1)+'の実データを読めません：'+String(e?.message||e))}
+    throw Error('保存した写真'+(i+1)+'のBlobと記録が一致しません');
+   const name=photo.name||('photo-'+i+'.jpg');
+   const chosen=candidates?.get(photoSortSourceIdentity(name,photo.size));
+   let chosenBytes=null;
+   if(chosen){
+    try{chosenBytes=await chosen.arrayBuffer()}
+    catch(e){throw Error('選択した写真'+(i+1)+'を読み取れません：'+String(e?.message||e))}
+    if(chosenBytes.byteLength!==photo.size)throw Error('写真'+(i+1)+'のサイズが違います');
+    sourcedFromDevice++;
+   }
+   let savedBytes=null;
+   try{savedBytes=await photo.blob.arrayBuffer()}
+   catch(e){
+    if(!chosen)throw Error('元写真が不足しています。写真'+(i+1)+'（'+name+'、'+photo.size+'バイト）を選択してください。保存Blob：'+String(e?.message||e));
+    unverifiable++;
+   }
+   if(savedBytes&&savedBytes.byteLength!==photo.size)throw Error('写真'+(i+1)+'の保存データの長さが不正です');
+   if(chosen&&savedBytes){
+    const existing=new Uint8Array(savedBytes),other=new Uint8Array(chosenBytes);
+    if(existing.some((byte,pos)=>byte!==other[pos]))
+     throw Error('写真'+(i+1)+'は名前・サイズが同じでも内容が異なります。間違った写真を適用せず中止しました');
+   }
+   const bytes=chosenBytes||savedBytes;
+   if(!bytes?.byteLength)throw Error('写真'+(i+1)+'の実データがありません');
+   const header=new Uint8Array(bytes,0,Math.min(4,bytes.byteLength));
+   if((photo.type||'image/jpeg').includes('jpeg')&&!(header[0]===255&&header[1]===216&&header[2]===255))
+    throw Error('写真'+(i+1)+'はJPEGの内容ではありません');
+   savedFiles.push(new File([bytes],name,{type:photo.type||'image/jpeg',lastModified:photo.lastModified||Date.now()}));
+   if(!chosen)sourcedFromSaved++;
    check();
-   savedFiles.push(new File([photo.blob],photo.name||('photo-'+i+'.jpg'),{
-    type:photo.type||photo.blob.type||'image/jpeg',lastModified:photo.lastModified||Date.now()
-   }));
-   if(i%12===0){status.textContent='🔍 保存写真を読み取り専用で照合中 '+(i+1)+' / '+row.photos.length+'枚';await new Promise(resolve=>setTimeout(resolve,0))}
+   if(i%7===0){status.textContent='🔍 写真本体を安全に照合中 '+(i+1)+' / '+row.photos.length+'枚';await new Promise(resolve=>setTimeout(resolve,0))}
   }
-  
-const assignmentCopies=row.photoAssignments.map(ids=>{
+  if(unverifiable&&!window.confirm('⚠️ 保存Blobが読めない'+unverifiable+'枚は、元写真の「ファイル名・サイズ」で照合しました。画像本体の完全一致は証明できません。ご自身の元写真であることを確認した場合だけ再開してください。\\n元の保存データは一切変更しません。'))throw Error('内容を確認できない写真の復元を中止しました');
+  const assignmentCopies=row.photoAssignments.map(ids=>{
    if(!Array.isArray(ids))throw Error('園児への振り分け記録が不正です。');
    return [...ids];
   });
@@ -5101,6 +5139,7 @@ const assignmentCopies=row.photoAssignments.map(ids=>{
    };
   }
   photoSortCheckpointKnownSavedAt=row.savedAt;
+  photoSortRecoveredKey=replacementFiles?currentKey:null;
   $('#continueEdit').disabled=false;
   $('#photoCount').textContent=savedFiles.length+'枚の保存済み写真を復元しました。';
   show('photoAssign');
@@ -5113,13 +5152,60 @@ const assignmentCopies=row.photoAssignments.map(ids=>{
    renderCurrentAlbumAiGroups();
    renderCurrentAlbumSingletonPairs();
   }
-  $('#currentAlbumAiStatus').textContent='✅ '+savedFiles.length+'枚の途中保存を再開しました。続きから確認してね。';
-  $('#photoSortProgressSaveStatus').textContent='✅ 保存した振り分けを復元したよ。次の変更は「ここまで保存」で更新してね。';
+  $('#currentAlbumAiStatus').textContent='✅ '+savedFiles.length+'枚の途中保存を再開しました。'+(replacementFiles?'先生の振り分けを元写真に復元しました。':'続きから確認してね。');
+  $('#photoSortProgressSaveStatus').textContent=replacementFiles?
+   '🛟 元の記録は上書き禁止：元写真から'+sourcedFromDevice+'枚を再取得し、保存済みから'+sourcedFromSaved+'枚を読み出しました。見開きへ進んだら新しい分離アルバムとして保存してね。':
+   '✅ 保存した振り分けを復元したよ。次の変更は「ここまで保存」で更新してね。';
  }catch(e){status.textContent='⚠️ 続きを開けませんでした：'+String(e?.message||e)+
   '。保存したデータと元のアルバムは変更していません。';console.warn('Photo sort resume safely stopped',e)}
  finally{photoSortCheckpointBusy=false;button.disabled=false}
 }
-$('#resumePhotoSortProgress')?.addEventListener('click',resumePhotoSortCheckpoint);
+$('#resumePhotoSortProgress')?.addEventListener('click',()=>resumePhotoSortCheckpoint());
+// DA: select original photo files from the user's device; never transmit them.
+function photoSortSourceIdentity(name,size){return JSON.stringify([String(name),Number(size)])}
+function photoSortSourceCandidates(inputs){
+ const results=new Map();
+ for(const file of inputs){
+  if(!(file instanceof File)||!file.size)continue;
+  const key=photoSortSourceIdentity(file.name,file.size);
+  if(results.has(key)&&results.get(key)!==file)throw Error('同名・同サイズの元写真が複数あります。重複分を除いて選択してね');
+  results.set(key,file);
+ }
+ return results;
+}
+function refreshPhotoSortOriginals(){
+ $('#photoSortRescueTry').disabled=!photoSortSelectedOriginals.length;
+ $('#photoSortRescueTryStatus').textContent=photoSortSelectedOriginals.length?
+  '📷 元写真の候補 '+photoSortSelectedOriginals.length+'枚を選びました。まだ保存データは変更していません。':
+  '元写真を選ぶまでは何も変更しません。';
+}
+function pickPhotoSortOriginals(input){
+ const seen=new Map(photoSortSelectedOriginals.map(file=>[photoSortSourceIdentity(file.name,file.size),file]));
+ for(const file of Array.from(input.files||[]))seen.set(photoSortSourceIdentity(file.name,file.size),file);
+ photoSortSelectedOriginals=[...seen.values()];
+ refreshPhotoSortOriginals();
+}
+$('#photoSortRescuePick')?.addEventListener('click',()=>$('#photoSortRescueFiles').click());
+$('#photoSortRescuePickDirectory')?.addEventListener('click',()=>$('#photoSortRescueDirectory').click());
+$('#photoSortRescueFiles')?.addEventListener('change',e=>pickPhotoSortOriginals(e.target));
+$('#photoSortRescueDirectory')?.addEventListener('change',e=>pickPhotoSortOriginals(e.target));
+$('#photoSortRescueTry')?.addEventListener('click',async()=>{
+ const button=$('#photoSortRescueTry'),status=$('#photoSortRescueTryStatus');
+ button.disabled=true;
+ try{
+  const row=await photoSortCheckpointRead(photoSortCheckpointKey());
+  if(!row?.photos?.length)throw Error('途中保存を確認できません');
+  const selected=photoSortSourceCandidates(photoSortSelectedOriginals);
+  const matched=row.photos.filter(p=>selected.has(photoSortSourceIdentity(p.name,p.size))).length;
+  if(!matched)throw Error('保存記録に名前とサイズが一致する写真がありません。元のJPEG写真を選んでね');
+  status.textContent='📷 '+row.photos.length+'枚中'+matched+'枚が名前・サイズ一致。残りは読み取れる保存データがあるか確認します。';
+  await resumePhotoSortCheckpoint([...selected.values()]);
+  status.textContent=document.querySelector('[data-screen="photoAssign"]')?.classList.contains('active')?
+   '✅ 安全に復元できました。元の途中保存は上書きしていません。':
+   $('#photoSortResumeStatus').textContent;
+ }catch(e){status.textContent='⚠️ '+String(e?.message||e)+'。元データは変更していません。'}
+ finally{button.disabled=!photoSortSelectedOriginals.length}
+});
 
 
 // An album is a fresh photo batch. No persisted previous photo/face-group data
