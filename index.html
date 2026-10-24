@@ -2479,6 +2479,79 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
  background:#fffdfa;overflow:hidden;
 }
 
+
+/* CN: Picture-book-style teacher letters. Printable message page only. */
+#messagePaper{
+ box-sizing:border-box;position:relative;
+ padding:7% 7.5% 8%;gap:4%;
+ background:#fffefa;border:1px solid #f1e5e2;
+ color:#43546a;
+}
+#messagePaper .messagePaperHeader{
+ position:relative;flex:0 0 auto;text-align:center;
+ padding:0 0 5%;border-bottom:1px solid #f1dfe4;
+}
+#messagePaper .messagePaperHeader::after{
+ content:"";position:absolute;left:42%;right:42%;bottom:-3px;
+ height:5px;background:#f6cbd7;border-radius:999px;
+}
+#messagePaper .messagePaperHeader h2{
+ margin:0 0 9px;font-size:clamp(16px,4.1vw,22px);
+ line-height:1.38;letter-spacing:.035em;color:#896478;
+ overflow-wrap:anywhere;
+}
+#messagePaper .messagePaperHeader p{
+ margin:0;font-size:clamp(13px,3.15vw,17px);
+ line-height:1.5;font-weight:850;color:#667585;
+ overflow-wrap:anywhere;
+}
+#messagePaper .messagePaperCards{
+ flex:1;min-height:0;display:flex;
+ flex-direction:column;justify-content:flex-start;
+ align-items:stretch;gap:11px;overflow:hidden;
+}
+#messagePaper .messagePaperCard{
+ box-sizing:border-box;flex:0 0 auto;min-width:0;min-height:0;
+ display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+ gap:9px;padding:4% 5%;overflow:visible;
+ border-radius:17px;border:1px solid #f5ccd9;
+ background:#fff1f5;box-shadow:0 1px 3px #86658508;
+}
+#messagePaper .messagePaperCard:nth-child(3n+2){
+ background:#fff8e9;border-color:#f1dfb6;
+}
+#messagePaper .messagePaperCard:nth-child(3n){
+ background:#f2f9ee;border-color:#d8e9cc;
+}
+#messagePaper .messagePaperCard strong{
+ flex:0 0 auto;font-size:clamp(12px,3.2vw,17px);
+ line-height:1.35;font-weight:850;color:#6a5664;
+ overflow-wrap:anywhere;
+}
+#messagePaper .messagePaperCard p{
+ flex:0 0 auto;margin:0!important;padding:0;
+ white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;
+ line-height:1.55;overflow:visible;
+}
+#messagePaper .messagePaperCards[data-count="1"] .messagePaperCard{
+ min-height:34%;
+}
+#messagePaper .messagePaperCards[data-count="2"] .messagePaperCard{
+ min-height:22%;
+}
+#messagePaper .messagePaperCards[data-count="3"] .messagePaperCard{
+ padding:3.2% 4%;gap:7px;
+}
+#messagePaper .messagePaperCards[data-count="4"] .messagePaperCard,
+#messagePaper .messagePaperCards[data-count="5"] .messagePaperCard{
+ padding:2.6% 3.5%;gap:5px;
+}
+#messagePaper .messagePaperCard.empty{
+ min-height:25%;align-items:center;justify-content:center;
+ background:#fff8fa;border:2px dashed #efcfda;color:#a28d98;
+ font-size:clamp(11px,2.8vw,14px);font-weight:700;
+}
+
 </style>
 </head>
 <body>
@@ -2589,7 +2662,7 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CM</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CN</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -8416,16 +8489,71 @@ document.getElementById('growthExport').addEventListener('click',async()=>{const
 
 let messageCards=[],messageLoadToken=0;
 const messageKey=child=>'omoide-message-v1-year-'+activeYear()+'-'+selected.id+'-'+encodeURIComponent(child);
-function messagePreview(){document.getElementById('messageTo').textContent=(document.getElementById('messageChild').value||'〇〇')+'さんへ';const area=document.getElementById('messagePaperCards');area.replaceChildren();const count=messageCards.length;const size=Math.max(9,Math.min(18,22-count*2));for(const card of messageCards){const box=document.createElement('div');box.className='messagePaperCard';const title=document.createElement('strong');title.textContent=(card.teacher?card.teacher.replace(/(?:先生|せんせい)\s*$/,'')+'せんせい':'せんせい')+'から';const body=document.createElement('p');body.textContent=card.text||'ここにメッセージが表示されます';body.style.fontSize=(card.size||size)+'px';body.style.color=card.color||'#344054';box.append(title,body);area.append(box)}if(!count){const empty=document.createElement('div');empty.className='messagePaperCard empty';empty.textContent='先生のメッセージを追加してください';area.append(empty)}}
+/* CN: Keep all saved message-card objects intact. Only completed cards are printed. */
+function messageCompleteCards(){
+ return messageCards.filter(c=>String(c?.teacher??'').trim()&&String(c?.text??'').trim());
+}
+function messageFitCards(){
+ const area=document.getElementById('messagePaperCards');
+ if(!area||!area.getClientRects().length)return true;
+ const bodies=[...area.querySelectorAll('.messagePaperCard:not(.empty) p')];
+ if(!bodies.length)return true;
+ const fits=()=>area.scrollHeight<=area.clientHeight+2&&
+  bodies.every(p=>p.scrollHeight<=p.clientHeight+2);
+ for(let step=0;step<=16;step++){
+  bodies.forEach(p=>{
+   const preferred=Number(p.dataset.preferredSize)||14;
+   p.style.fontSize=Math.max(12,preferred-step)+'px';
+  });
+  if(fits())return true;
+ }
+ return fits();
+}
+function messagePreview(){
+ document.getElementById('messageTo').textContent=(document.getElementById('messageChild').value||'〇〇')+'さんへ';
+ const area=document.getElementById('messagePaperCards');
+ area.replaceChildren();
+ const complete=messageCompleteCards();
+ area.dataset.count=String(complete.length);
+ for(const card of complete){
+  const box=document.createElement('div');box.className='messagePaperCard';
+  const title=document.createElement('strong');
+  const teacher=String(card.teacher).trim().replace(/(?:先生|せんせい)\s*$/,'');
+  title.textContent=(teacher||'せんせい')+(teacher?'せんせい':'')+' から';
+  const body=document.createElement('p');
+  body.textContent=card.text;
+  body.dataset.preferredSize=String(Math.max(12,Math.min(24,Number(card.size)||14)));
+  body.style.color=card.color||'#344054';
+  box.append(title,body);area.append(box);
+ }
+ if(!complete.length){
+  const empty=document.createElement('div');empty.className='messagePaperCard empty';
+  empty.textContent='ここに先生からのおてがみが入ります';
+  area.append(empty);
+ }
+ const fit=messageFitCards();
+ const status=document.getElementById('messageStatus');
+ if(!fit){
+  status.textContent='⚠️ メッセージがA4に収まっていません。文章を短くするか、カードの数を調整してください。';
+ }else if(status.dataset.messageOverflow==='1'){
+  status.textContent='メッセージがA4に収まるようになりました。';
+ }
+ status.dataset.messageOverflow=fit?'0':'1';
+}
 function renderMessageEditor(){const root=document.getElementById('messageEditCards');root.replaceChildren();messageCards.forEach((card,index)=>{const wrap=document.createElement('div');wrap.className='messageEditCard';const heading=document.createElement('h3');heading.textContent='先生 '+(index+1);const nameLabel=document.createElement('label');nameLabel.textContent='先生の名前';const name=document.createElement('input');name.placeholder='';name.value=card.teacher||'';name.addEventListener('input',()=>{card.teacher=name.value;messagePreview()});nameLabel.append(name);const textLabel=document.createElement('label');textLabel.textContent='メッセージ';const textarea=document.createElement('textarea');textarea.value=card.text||'';textarea.placeholder='園児へのメッセージを入力';textarea.addEventListener('input',()=>{card.text=textarea.value;messagePreview()});textLabel.append(textarea);const style=document.createElement('div');style.className='messageCardTools';const size=document.createElement('select');for(const n of [10,12,14,16,18,20,22,24])size.add(new Option('文字 '+n+'px',String(n)));size.value=String(card.size||14);size.addEventListener('change',()=>{card.size=Number(size.value);messagePreview()});const color=document.createElement('input');color.type='color';color.value=card.color||'#344054';color.setAttribute('aria-label','文字色');color.style.width='65px';color.addEventListener('input',()=>{card.color=color.value;messagePreview()});const up=document.createElement('button');up.type='button';up.className='secondary';up.textContent='↑';up.disabled=index===0;up.addEventListener('click',()=>{[messageCards[index-1],messageCards[index]]=[messageCards[index],messageCards[index-1]];renderMessageEditor()});const down=document.createElement('button');down.type='button';down.className='secondary';down.textContent='↓';down.disabled=index===messageCards.length-1;down.addEventListener('click',()=>{[messageCards[index+1],messageCards[index]]=[messageCards[index],messageCards[index+1]];renderMessageEditor()});const del=document.createElement('button');del.type='button';del.className='secondary';del.textContent='削除';del.addEventListener('click',()=>{if(confirm('この先生のメッセージを削除しますか？')){messageCards.splice(index,1);renderMessageEditor()}});style.append(size,color,up,down,del);wrap.append(heading,nameLabel,textLabel,style);root.append(wrap)});messagePreview()}
 async function messageSelectChild(){const token=++messageLoadToken,child=document.getElementById('messageChild').value;messageCards=[];if(child){try{const raw=localStorage.getItem(messageKey(child));if(token!==messageLoadToken)return;if(raw){const parsed=JSON.parse(raw);messageCards=Array.isArray(parsed.cards)?parsed.cards:[];document.getElementById('messageStatus').textContent='保存済みのメッセージを読み込みました。'}else{messageCards=[{teacher:'',text:'',size:14,color:'#344054'}];document.getElementById('messageStatus').textContent='新しいメッセージを編集中です。'}}catch(e){document.getElementById('messageStatus').textContent='読み込みに失敗しました：'+e.message}}renderMessageEditor()}
 function openMessageEditor(){const dropdown=document.getElementById('messageChild');dropdown.replaceChildren(new Option('園児を選択',''));getChildren(selected.id).forEach(k=>{if(k.name)dropdown.add(new Option(k.name,k.name))});dropdown.value='';messageSelectChild();show('messageEditor')}
 document.getElementById('messageBack').addEventListener('click',()=>show('classProjects'));
 document.getElementById('messageChild').addEventListener('change',messageSelectChild);
 document.getElementById('messageAdd').addEventListener('click',()=>{messageCards.push({teacher:'',text:'',size:14,color:'#344054'});renderMessageEditor()});
-function messageValidate(){if(!document.getElementById('messageChild').value)throw Error('園児名を選択してください');if(!messageCards.length)throw Error('先生のメッセージを追加してください');if(messageCards.some(c=>!c.teacher.trim()||!c.text.trim()))throw Error('先生の名前とメッセージを入力してください')}
+function messageValidate(){
+ if(!document.getElementById('messageChild').value)throw Error('園児名を選択してください');
+ if(!messageCompleteCards().length)throw Error('先生の名前とメッセージを1件以上入力してください');
+ if(messageCards.some(c=>(!!String(c?.teacher??'').trim())!==(!!String(c?.text??'').trim())))
+  throw Error('入力途中の先生カードがあります。名前とメッセージの両方を入力するか、両方を空欄にしてください');
+}
 document.getElementById('messageSave').addEventListener('click',()=>{try{messageValidate();localStorage.setItem(messageKey(document.getElementById('messageChild').value),JSON.stringify({cards:messageCards}));cdMarkSpecialEdited('message');document.getElementById('messageStatus').textContent='✅ 園児別メッセージを保存しました。'}catch(e){document.getElementById('messageStatus').textContent='⚠️ '+e.message}});
-document.getElementById('messageExport').addEventListener('click',async()=>{const btn=document.getElementById('messageExport');btn.disabled=true;try{messageValidate();const node=document.getElementById('messagePaper'),lib=await loadExportImageLibrary();if(document.fonts?.ready)await document.fonts.ready;const canvas=await lib(node,{backgroundColor:'#ffffff',scale:Math.min(4,Math.max(1,1800/node.clientWidth)),useCORS:true,logging:false});const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('画像を作成できません');const child=document.getElementById('messageChild').value,filename='omoide-message-'+activeYear()+'-'+selected.id+'-'+child+'.png',file=new File([blob],filename,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file]});else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}document.getElementById('messageStatus').textContent='メッセージ画像を書き出しました。'}catch(e){document.getElementById('messageStatus').textContent=e.name==='AbortError'?'書き出しをキャンセルしました。':'⚠️ '+e.message}finally{btn.disabled=false}});
+document.getElementById('messageExport').addEventListener('click',async()=>{const btn=document.getElementById('messageExport');btn.disabled=true;try{messageValidate();const node=document.getElementById('messagePaper'),lib=await loadExportImageLibrary();if(document.fonts?.ready)await document.fonts.ready;if(!messageFitCards())throw Error('文章がA4に収まらないため書き出しを中止しました。文章量を調整してください');const canvas=await lib(node,{backgroundColor:'#ffffff',scale:Math.min(4,Math.max(1,1800/node.clientWidth)),useCORS:true,logging:false});const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('画像を作成できません');const child=document.getElementById('messageChild').value,filename='omoide-message-'+activeYear()+'-'+selected.id+'-'+child+'.png',file=new File([blob],filename,{type:'image/png'});if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file]});else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}document.getElementById('messageStatus').textContent='メッセージ画像を書き出しました。'}catch(e){document.getElementById('messageStatus').textContent=e.name==='AbortError'?'書き出しをキャンセルしました。':'⚠️ '+e.message}finally{btn.disabled=false}});
 
 try {
   renderHome();
