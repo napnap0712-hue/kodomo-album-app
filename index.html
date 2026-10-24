@@ -2085,6 +2085,162 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
  .screen[data-screen="messageEditor"] #messageStatus{margin:0 0 8px}
 }
 
+
+/* CJ: Growth record B design, using the user's original twelve SVG artworks.
+   Every overlay is limited to the printable growth paper; paper data is untouched. */
+.growthPaper.growthBDesign{
+ position:relative;isolation:isolate;
+ padding:3.2% 4.4%;gap:1.35%;background:#fffdfb;
+ border:1px solid #f3e8e5;box-shadow:0 7px 22px #556e831a;
+ color:#65524e;
+}
+.growthBDesign .growthDecor{
+ display:block;position:absolute;pointer-events:none;user-select:none;
+ max-width:none;object-fit:contain;margin:0;z-index:1;
+}
+.growthBDesign .growthTitle{
+ position:relative;display:flex;flex-direction:column;justify-content:center;
+ min-height:0;flex:0 0 16%;padding:5.5% 8% 1%;
+}
+.growthBDesign .growthRainbow{
+ left:-7%;top:-25%;width:26%;height:100%;transform:rotate(-8deg);opacity:.94;
+}
+.growthBDesign .growthRibbonPink{
+ left:17%;top:-8%;width:67%;height:77%;z-index:0;
+}
+.growthBDesign .growthTopStars{
+ right:-1%;top:-7%;height:59%;width:17%;opacity:.77;
+}
+.growthBDesign .growthTitleName{
+ position:relative;z-index:2;display:block;width:100%;max-width:100%;
+ font-size:clamp(12px,2.6vw,18px);font-weight:900;color:#9b5861;
+ white-space:normal;line-height:1.15;overflow-wrap:anywhere;
+ text-shadow:0 1px #fff5;
+}
+.growthBDesign .growthTitleName:empty{display:none}
+.growthBDesign .growthTitle h2{
+ position:relative;z-index:2;font-size:clamp(19px,5.3vw,31px);
+ color:#8e6655;line-height:1.15;letter-spacing:.09em;
+ text-shadow:0 1px 0 white;
+}
+.growthBDesign .growthHalf{
+ position:relative;min-width:0;min-height:0;
+ flex:1 1 0;grid-template-columns:49% minmax(0,51%);
+ grid-template-rows:auto minmax(0,1fr);
+ gap:0;border-width:1px;border-radius:20px;
+ padding:2.2% 3%;overflow:hidden;
+ box-shadow:inset 0 0 0 3px #ffffffa1;
+}
+.growthBDesign .growthApril{
+ background:linear-gradient(125deg,#f2fbe6,#f7fdf1);
+ border-color:#dbecc9;
+}
+.growthBDesign .growthMarch{
+ background:linear-gradient(125deg,#fff0f5,#fff8f9);
+ border-color:#f8d6e3;
+}
+.growthBDesign .growthHalf h3{
+ position:relative;z-index:3;grid-column:1/-1;grid-row:1;
+ justify-self:start;min-height:31px;padding:4px 12px;
+ border-radius:30px;font-size:clamp(14px,3.4vw,20px);
+ line-height:1.16;color:#43884d;
+}
+.growthBDesign .growthMarch h3{color:#ca597b}
+.growthBDesign .growthBadge{
+ right:2%;top:-13%;width:22%;height:48%;opacity:.91;
+}
+.growthBDesign .growthSideGiraffe{
+ right:-1%;bottom:-9%;height:49%;width:14%;opacity:.73;
+}
+.growthBDesign .growthSakura{
+ right:-3%;bottom:-7%;height:48%;width:17%;opacity:.77;
+}
+.growthBDesign .growthFace{
+ position:relative;z-index:2;grid-column:1;grid-row:2;
+ width:84%!important;height:auto!important;max-width:100%;max-height:92%!important;
+ aspect-ratio:1!important;justify-self:center;align-self:center!important;
+ border:4px solid white;border-radius:18px;box-shadow:0 3px 10px #91745d24;
+ object-fit:cover;
+}
+.growthBDesign .growthFace.circle{width:84%!important;border-radius:50%}
+.growthBDesign .growthFace.rounded{border-radius:18px}
+.growthBDesign .growthFace.square{border-radius:0}
+.growthBDesign .growthNumbers{
+ position:relative;z-index:2;grid-column:2;grid-row:2;min-width:0;
+ display:flex;flex-direction:column;justify-content:center;gap:5%;padding:2% 0;
+}
+.growthBDesign .growthNumbers .growthMeasure{
+ position:relative;z-index:1;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;min-height:0;flex:1;
+ padding:3px 2px 3px 19%;border:1px solid #e6e6d7;
+ border-radius:23px;background:#ffffffdf;color:#6d695a;
+ box-shadow:0 2px 5px #8666590d;
+ font-size:clamp(10px,2.35vw,14px);font-weight:800;white-space:nowrap;
+}
+.growthBDesign .growthNumbers .growthMeasure::before{
+ content:"";display:block;position:absolute;left:1%;top:10%;bottom:10%;width:23%;
+ background:url("./assets/growth/giraffe_height.svg") center/contain no-repeat;
+}
+.growthBDesign .growthNumbers .growthMeasure:nth-child(2)::before{
+ background-image:url("./assets/growth/bear_weight.svg");
+}
+.growthBDesign .growthNumbers .growthMeasure b{
+ font-size:clamp(14px,3.8vw,23px);font-weight:900;color:#7b5042;line-height:1.25;
+ font-variant-numeric:tabular-nums;
+}
+.growthBDesign .growthSummary{
+ position:relative;flex:0 0 19.5%;min-height:0;
+ display:flex;flex-direction:column;justify-content:space-between;
+ border:0;border-radius:20px;padding:5% 3% 2.5%;
+ background:linear-gradient(135deg,#fff9de,#fff7e9);
+ overflow:hidden;
+}
+.growthBDesign .growthRibbonYellow{
+ width:76%;height:53%;left:12%;top:-19%;z-index:1;
+}
+.growthBDesign .growthBalloons{
+ width:18%;height:68%;right:-1%;top:-10%;opacity:.76;
+}
+.growthBDesign .growthSummaryTitle{
+ position:relative;z-index:2;flex:0 0 auto;
+ font-size:clamp(11px,3.05vw,17px);color:#8b5a3d;
+ font-weight:900;margin:0 0 1.5%;text-shadow:0 1px #fff7;
+}
+.growthBDesign .growthSummaryStats{
+ position:relative;z-index:2;min-height:0;flex:1;
+ display:grid;grid-template-columns:1fr 1fr;gap:3%;
+}
+.growthBDesign .growthSummaryStats>div{
+ position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+ background:transparent;border:0;box-shadow:none;padding:1% 6% 0 19%;
+ gap:0;min-height:0;overflow:visible;
+}
+.growthBDesign .growthSummaryStats .growthResultFrame{
+ position:absolute;inset:0;width:100%;height:100%;z-index:0;
+}
+.growthBDesign .growthSummaryStats .growthResultAnimal{
+ position:absolute;left:2%;top:27%;width:25%;height:56%;z-index:1;
+}
+.growthBDesign .growthSummaryStats small,
+.growthBDesign .growthSummaryStats strong{
+ position:relative;z-index:2;line-height:1.15;
+}
+.growthBDesign .growthSummaryStats small{
+ font-size:clamp(9px,2.2vw,13px);font-weight:900;color:#577d4b;
+}
+.growthBDesign .growthWeightDelta small{color:#b2667f}
+.growthBDesign .growthSummaryStats strong{
+ font-size:clamp(16px,4.4vw,27px);
+ color:#4b9a61;font-weight:900;letter-spacing:-.035em;
+ white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+.growthBDesign .growthWeightDelta strong{color:#db6389}
+@media(max-width:400px){
+ .growthBDesign .growthNumbers .growthMeasure{font-size:9px;border-radius:15px}
+ .growthBDesign .growthFace{border-width:2px}
+ .growthBDesign .growthHalf h3{min-height:21px}
+}
+
 </style>
 </head>
 <body>
@@ -2195,7 +2351,7 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CI</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CJ</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -2379,7 +2535,7 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
 <p class="notice" style="margin-top:14px">🔒 この画面は接続先アドレスだけを扱います。アルバム・園児情報・写真・認証トークンは送信しません。まだ自動同期はできません。</p>
 </section><section class="screen" data-screen="photoManagement"><div class="top"><button class="back" data-back="settings">‹</button><div class="topText"><h1>📷 写真管理</h1><p class="lead">写真・保存容量</p></div></div><div class="empty">この管理機能は次の段階で実装します。保存データは変更しません。</div></section><section class="screen" data-screen="assetManagement"><div class="top"><button class="back" data-back="settings">‹</button><div class="topText"><h1>🎨 素材・テンプレート管理</h1><p class="lead">自作素材・お気に入り</p></div></div><div class="empty">この管理機能は次の段階で実装します。保存データは変更しません。</div></section><section class="screen" data-screen="safetyManagement"><div class="top"><button class="back" data-back="settings">‹</button><div class="topText"><h1>🛡️ データ・安全管理</h1><p class="lead">保存状態・データ保護</p></div></div><div class="settingsMenu"><div class="settingsRow"><b>📦 端末の保存容量</b><small id="safetyStorage">確認中…</small></div><div class="settingsRow"><b>💾 アルバムの保存状況</b><small id="safetyDrafts">確認中…</small><small>下書きはこのブラウザの端末内に保存されます。編集内容が常に自動保存されるとは限りません。</small></div><div class="settingsRow"><b>🔒 写真のプライバシー</b><small>この画面の確認処理では写真を外部送信しません。保存済みデータはこのブラウザ内で確認します。</small><small>ブラウザのデータ消去や端末の故障に備え、年度管理からバックアップを保存してください。</small></div><div class="settingsRow"><b>📱 オフライン利用</b><small id="safetyOnline">確認中…</small><small>通信状態の表示です。オフラインでの全機能の動作を保証するものではありません。</small></div></div><button type="button" class="secondary wide" id="refreshSafety">🔄 保存状況を再確認</button><p id="safetyError" class="muted" role="status"></p></section>
 <section class="screen" data-screen="coverEditor"><div class="top"><button class="back" type="button" id="coverBack">‹</button><div class="topText"><div class="eyebrow">SINGLE PAGE EDITOR</div><h1>🌸 表紙</h1><p class="lead">A4縦・1ページの専用編集</p></div><div class="coverActions"><button class="secondary" type="button" id="coverSave">下書きを保存</button><button class="primary" type="button" id="coverExport">ページを書き出す</button></div></div><div class="coverEditorPanel"><div class="coverFields"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="basic" aria-selected="false"><span aria-hidden="true">✏️</span>基本情報</button><button type="button" role="tab" data-special-tab="child" aria-selected="false"><span aria-hidden="true">🌷</span>園児名</button></div><div class="specialFieldSection" data-special-section="basic"><label>アルバムタイトル<input id="coverTitleInput" value="おもいでブック"></label><label>年度<input id="coverYearInput" value=""></label><label>クラス名<input id="coverClassInput" readonly aria-readonly="true"></label></div><div class="specialFieldSection" data-special-section="child"><label>園児名<select id="coverNameInput"><option value="">園児を選択</option></select></label></div></div><div class="coverPaper" id="coverPaper"><div><div class="coverSubtitle" id="coverYearView"></div><div class="coverTitle" id="coverTitleView"></div></div><img class="coverPhoto coverFlower" id="coverPhotoView" alt="クラスの花"><div><div class="coverSubtitle" id="coverClassView"></div><div class="coverName" id="coverNameView"></div></div></div><p class="muted" id="coverStatus">この表紙は01〜12とは別に端末内へ保存されます。</p></div></section>
-<section class="screen" data-screen="growthEditor"><div class="top"><button class="back" id="growthBack" type="button">‹</button><div class="topText"><h1>📏 身長・体重</h1><p class="lead">A4縦・成長記録</p></div><div class="growthActions"><button class="secondary" id="growthSave" type="button">下書きを保存</button><button class="primary" id="growthExport" type="button">ページを書き出す</button></div></div><p class="muted" id="growthStatus" role="status">園児を選んで成長記録を入力してください。</p><div class="growthFields"><label>園児名<select id="growthChild"><option value="">園児を選択</option></select></label><div class="growthMonthControls"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="april" aria-selected="false"><span aria-hidden="true">🌱</span>4月</button><button type="button" role="tab" data-special-tab="march" aria-selected="false"><span aria-hidden="true">🌸</span>3月</button></div><div class="specialFieldSection" data-special-section="april"><h3>🌱 4月</h3><label>顔写真<input id="growthPhoto4" type="file" accept="image/*"></label><label>写真の形<select id="growthShape4"><option value="circle">丸</option><option value="rounded">角丸四角</option><option value="square">四角</option></select></label><label>身長（cm）必須<input id="growthHeight4" type="number" min="0" max="250" step="0.1" inputmode="decimal" required></label><label>体重（kg）必須<input id="growthWeight4" type="number" min="0" max="200" step="0.1" inputmode="decimal" required></label></div><div class="specialFieldSection" data-special-section="march"><h3>🌸 3月</h3><label>顔写真<input id="growthPhoto3" type="file" accept="image/*"></label><label>写真の形<select id="growthShape3"><option value="circle">丸</option><option value="rounded">角丸四角</option><option value="square">四角</option></select></label><label>身長（cm）必須<input id="growthHeight3" type="number" min="0" max="250" step="0.1" inputmode="decimal" required></label><label>体重（kg）必須<input id="growthWeight3" type="number" min="0" max="200" step="0.1" inputmode="decimal" required></label></div></div><div class="growthPaper" id="growthPaper"><div class="growthTitle"><div class="growthTitleName" id="growthPaperName"></div><h2 id="growthPaperTitle">成長記録</h2></div><div class="growthHalf growthApril"><h3>🌱 4月</h3><img class="growthFace circle" id="growthViewPhoto4" alt="4月の写真"><div class="growthNumbers" id="growthViewNumbers4"></div></div><div class="growthHalf growthMarch"><h3>🌸 3月</h3><img class="growthFace circle" id="growthViewPhoto3" alt="3月の写真"><div class="growthNumbers" id="growthViewNumbers3"></div></div><div class="growthSummary"><div class="growthSummaryTitle">✨ こんなに大きくなったよ！ ✨</div><div class="growthSummaryStats"><div><small>📏 身長</small><strong id="growthDeltaHeight">— cm</strong></div><div><small>⚖️ 体重</small><strong id="growthDeltaWeight">— kg</strong></div></div></div></div></div></section><section class="screen" data-screen="messageEditor"><div class="top"><button class="back" id="messageBack" type="button">‹</button><div class="topText"><h1>💌 担任メッセージ</h1><p class="lead">A4縦・先生ごとのカード</p></div><div class="messageActions"><button class="secondary" type="button" id="messageSave">下書きを保存</button><button class="primary" type="button" id="messageExport">ページを書き出す</button></div></div><p class="muted" id="messageStatus" role="status">園児を選んでください。</p><div class="messageFields"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="child" aria-selected="false"><span aria-hidden="true">🌷</span>園児</button><button type="button" role="tab" data-special-tab="message" aria-selected="false"><span aria-hidden="true">💌</span>メッセージ</button></div><div class="specialFieldSection" data-special-section="child"><label>園児名<select id="messageChild"><option value="">園児を選択</option></select></label></div><div class="specialFieldSection" data-special-section="message"><div id="messageEditCards"></div><button class="secondary" id="messageAdd" type="button">＋ 先生のメッセージを追加</button></div><div class="messagePaper" id="messagePaper"><div class="messagePaperHeader"><h2>せんせいたちからのメッセージ</h2><p id="messageTo">〇〇さんへ</p></div><div class="messagePaperCards" id="messagePaperCards"></div></div></div></section><section class="screen" data-screen="backCoverEditor"><div class="top backCoverToolbar"><button class="back" id="bcBack" type="button">‹</button><div class="topText"><h1>📖 裏表紙</h1><p class="lead">A4縦・クラス共通</p></div><div class="backCoverActions"><button class="secondary" id="bcSave" type="button">下書きを保存</button><button class="primary" id="bcExport" type="button">ページを書き出す</button></div></div><p id="bcStatus" role="status">集合写真を選択してください。</p><div class="backCoverControls"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="photo" aria-selected="false"><span aria-hidden="true">📷</span>写真</button><button type="button" role="tab" data-special-tab="adjust" aria-selected="false"><span aria-hidden="true">🎛️</span>調整</button></div><div class="specialFieldSection" data-special-section="photo"><label>集合写真<input id="bcFile" type="file" accept="image/*"></label></div><div class="specialFieldSection" data-special-section="adjust"><label>写真の形<select id="bcShape"><option value="square">四角</option><option value="rounded">角丸四角</option><option value="circle">丸</option></select></label><label>拡大縮小<input id="bcZoom" type="range" min="50" max="250" value="100"></label><button id="bcRotate">↻ 90°回転</button><button id="bcCenter">位置を中央に戻す</button></div></div><p class="muted">写真を指で動かして位置を調整できます。</p><div class="backCoverPaper" id="bcPaper"><div id="bcFrame" class="backCoverPhotoFrame"><img id="bcImg" style="display:none"><span id="bcHint">📸 集合写真を選択してください</span></div></div></section></main>
+<section class="screen" data-screen="growthEditor"><div class="top"><button class="back" id="growthBack" type="button">‹</button><div class="topText"><h1>📏 身長・体重</h1><p class="lead">A4縦・成長記録</p></div><div class="growthActions"><button class="secondary" id="growthSave" type="button">下書きを保存</button><button class="primary" id="growthExport" type="button">ページを書き出す</button></div></div><p class="muted" id="growthStatus" role="status">園児を選んで成長記録を入力してください。</p><div class="growthFields"><label>園児名<select id="growthChild"><option value="">園児を選択</option></select></label><div class="growthMonthControls"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="april" aria-selected="false"><span aria-hidden="true">🌱</span>4月</button><button type="button" role="tab" data-special-tab="march" aria-selected="false"><span aria-hidden="true">🌸</span>3月</button></div><div class="specialFieldSection" data-special-section="april"><h3>🌱 4月</h3><label>顔写真<input id="growthPhoto4" type="file" accept="image/*"></label><label>写真の形<select id="growthShape4"><option value="circle">丸</option><option value="rounded">角丸四角</option><option value="square">四角</option></select></label><label>身長（cm）必須<input id="growthHeight4" type="number" min="0" max="250" step="0.1" inputmode="decimal" required></label><label>体重（kg）必須<input id="growthWeight4" type="number" min="0" max="200" step="0.1" inputmode="decimal" required></label></div><div class="specialFieldSection" data-special-section="march"><h3>🌸 3月</h3><label>顔写真<input id="growthPhoto3" type="file" accept="image/*"></label><label>写真の形<select id="growthShape3"><option value="circle">丸</option><option value="rounded">角丸四角</option><option value="square">四角</option></select></label><label>身長（cm）必須<input id="growthHeight3" type="number" min="0" max="250" step="0.1" inputmode="decimal" required></label><label>体重（kg）必須<input id="growthWeight3" type="number" min="0" max="200" step="0.1" inputmode="decimal" required></label></div></div><div class="growthPaper growthBDesign" id="growthPaper"><div class="growthTitle"><img class="growthDecor growthRainbow" src="./assets/growth/rainbow_soft.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><img class="growthDecor growthRibbonPink" src="./assets/growth/ribbon_title_pink.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><img class="growthDecor growthTopStars" src="./assets/growth/stars_sparkle.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><div class="growthTitleName" id="growthPaperName"></div><h2 id="growthPaperTitle">成長記録</h2></div><div class="growthHalf growthApril"><img class="growthDecor growthBadge" src="./assets/growth/badge_april.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><img class="growthDecor growthSideGiraffe" src="./assets/growth/giraffe_height.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><h3>🌱 4月</h3><img class="growthFace circle" id="growthViewPhoto4" alt="4月の写真"><div class="growthNumbers" id="growthViewNumbers4"></div></div><div class="growthHalf growthMarch"><img class="growthDecor growthBadge" src="./assets/growth/badge_march.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><img class="growthDecor growthSakura" src="./assets/growth/sakura_march.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><h3>🌸 3月</h3><img class="growthFace circle" id="growthViewPhoto3" alt="3月の写真"><div class="growthNumbers" id="growthViewNumbers3"></div></div><div class="growthSummary"><img class="growthDecor growthBalloons" src="./assets/growth/balloons_soft.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><img class="growthDecor growthRibbonYellow" src="./assets/growth/ribbon_result_yellow.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><div class="growthSummaryTitle">✨ こんなに大きくなったよ！ ✨</div><div class="growthSummaryStats"><div class="growthHeightDelta"><img class="growthDecor growthResultFrame" src="./assets/growth/frame_height_mint.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><img class="growthDecor growthResultAnimal" src="./assets/growth/giraffe_height.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><small>📏 身長</small><strong id="growthDeltaHeight">— cm</strong></div><div class="growthWeightDelta"><img class="growthDecor growthResultFrame" src="./assets/growth/frame_weightpink.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><img class="growthDecor growthResultAnimal" src="./assets/growth/bear_weight.svg" alt="" aria-hidden="true" draggable="false" decoding="async"><small>⚖️ 体重</small><strong id="growthDeltaWeight">— kg</strong></div></div></div></div></div></section><section class="screen" data-screen="messageEditor"><div class="top"><button class="back" id="messageBack" type="button">‹</button><div class="topText"><h1>💌 担任メッセージ</h1><p class="lead">A4縦・先生ごとのカード</p></div><div class="messageActions"><button class="secondary" type="button" id="messageSave">下書きを保存</button><button class="primary" type="button" id="messageExport">ページを書き出す</button></div></div><p class="muted" id="messageStatus" role="status">園児を選んでください。</p><div class="messageFields"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="child" aria-selected="false"><span aria-hidden="true">🌷</span>園児</button><button type="button" role="tab" data-special-tab="message" aria-selected="false"><span aria-hidden="true">💌</span>メッセージ</button></div><div class="specialFieldSection" data-special-section="child"><label>園児名<select id="messageChild"><option value="">園児を選択</option></select></label></div><div class="specialFieldSection" data-special-section="message"><div id="messageEditCards"></div><button class="secondary" id="messageAdd" type="button">＋ 先生のメッセージを追加</button></div><div class="messagePaper" id="messagePaper"><div class="messagePaperHeader"><h2>せんせいたちからのメッセージ</h2><p id="messageTo">〇〇さんへ</p></div><div class="messagePaperCards" id="messagePaperCards"></div></div></div></section><section class="screen" data-screen="backCoverEditor"><div class="top backCoverToolbar"><button class="back" id="bcBack" type="button">‹</button><div class="topText"><h1>📖 裏表紙</h1><p class="lead">A4縦・クラス共通</p></div><div class="backCoverActions"><button class="secondary" id="bcSave" type="button">下書きを保存</button><button class="primary" id="bcExport" type="button">ページを書き出す</button></div></div><p id="bcStatus" role="status">集合写真を選択してください。</p><div class="backCoverControls"><div class="specialSectionTabs" role="tablist" aria-label="編集する項目"><button type="button" role="tab" data-special-tab="photo" aria-selected="false"><span aria-hidden="true">📷</span>写真</button><button type="button" role="tab" data-special-tab="adjust" aria-selected="false"><span aria-hidden="true">🎛️</span>調整</button></div><div class="specialFieldSection" data-special-section="photo"><label>集合写真<input id="bcFile" type="file" accept="image/*"></label></div><div class="specialFieldSection" data-special-section="adjust"><label>写真の形<select id="bcShape"><option value="square">四角</option><option value="rounded">角丸四角</option><option value="circle">丸</option></select></label><label>拡大縮小<input id="bcZoom" type="range" min="50" max="250" value="100"></label><button id="bcRotate">↻ 90°回転</button><button id="bcCenter">位置を中央に戻す</button></div></div><p class="muted">写真を指で動かして位置を調整できます。</p><div class="backCoverPaper" id="bcPaper"><div id="bcFrame" class="backCoverPhotoFrame"><img id="bcImg" style="display:none"><span id="bcHint">📸 集合写真を選択してください</span></div></div></section></main>
 <script>
 (()=>{
 
