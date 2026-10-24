@@ -6557,13 +6557,18 @@ function displayEditorPhotoReliably(img,file,initialSource,previewEdge=0){
  img.style.opacity='0';
  const cached=fileUrl(file);
  let first=initialSource||cached;
- let stage=0;
+ let stage=0,recoveryPreviewUrl=null;
  img.onload=()=>{
   if(!img.isConnected)return;
-  if(img.naturalWidth>0){if(stage===3&&img.src.startsWith('data:image/'))photoDataUrlFallbacks.set(file,img.src);img.style.opacity='1';status.hidden=true;}
+  if(img.naturalWidth>0){
+   if(stage===3&&img.src.startsWith('data:image/'))photoDataUrlFallbacks.set(file,img.src);
+   if(recoveryPreviewUrl){URL.revokeObjectURL(recoveryPreviewUrl);recoveryPreviewUrl=null}
+   img.style.opacity='1';status.hidden=true;
+  }
   else img.onerror?.();
  };
  img.onerror=async()=>{
+  if(recoveryPreviewUrl){URL.revokeObjectURL(recoveryPreviewUrl);recoveryPreviewUrl=null}
   if(!img.isConnected)return;
   img.style.opacity='0';
   if(stage===0&&first!==cached){
@@ -6593,6 +6598,28 @@ function displayEditorPhotoReliably(img,file,initialSource,previewEdge=0){
      img.src=data;return;
     }
    }catch(e){console.warn('写真の代替読み込みに失敗',e)}
+  }
+  if(stage<4){
+   stage=4;
+   try{
+    // Last-resort render-only image from the ORIGINAL readable bytes.
+    // This never replaces the source File or changes export quality.
+    const decoded=await openPhotoForCanvas(file);
+    let preview;
+    try{
+     const edge=1600,scale=Math.min(1,edge/Math.max(decoded.width,decoded.height));
+     const canvas=document.createElement('canvas');
+     canvas.width=Math.max(1,Math.round(decoded.width*scale));
+     canvas.height=Math.max(1,Math.round(decoded.height*scale));
+     canvas.getContext('2d').drawImage(decoded.image,0,0,canvas.width,canvas.height);
+     const format=file.type==='image/png'?'image/png':'image/jpeg';
+     preview=await new Promise(resolve=>canvas.toBlob(resolve,format,.9));
+    }finally{decoded.close()}
+    if(!preview?.size)throw Error('表示用画像を作れません');
+    if(!img.isConnected)return;
+    recoveryPreviewUrl=URL.createObjectURL(preview);
+    img.src=recoveryPreviewUrl;return;
+   }catch(e){console.warn('最後の表示用画像の生成にも失敗',e)}
   }
   img.removeAttribute('src');
   status.hidden=false;
