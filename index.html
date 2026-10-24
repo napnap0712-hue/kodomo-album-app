@@ -4840,8 +4840,15 @@ async function photoSortRestoreFaceSamples(saved,loadedFiles,updateStatus,check)
   grouped.get(sample.index).push({index:i,box:sample.box});
  });
  const restored=new Array(saved.samples.length);
+ // No saved face samples means no embeddings to recover for that photo.
+ // Keep its original Blob and teacher assignments; never reanalyse needlessly.
+ const facePhotoCount=grouped.size;
+ let checkedFacePhotos=0;
  for(let photo=0;photo<loadedFiles.length;photo++){
-  check();updateStatus('🧠 再開用に顔を確認中 '+(photo+1)+' / '+loadedFiles.length+'枚');
+  check();
+  if(!grouped.has(photo))continue;
+  checkedFacePhotos++;
+  updateStatus('🧠 保存した顔を照合中 '+checkedFacePhotos+' / '+facePhotoCount+'枚（全写真'+loadedFiles.length+'枚）');
   let current;
   try{current=await humanFacesFromBlob(human,loadedFiles[photo]);}
   catch(error){
