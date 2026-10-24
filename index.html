@@ -2774,7 +2774,7 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CP</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CQ</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -8685,19 +8685,36 @@ function bcRender(){
  const frame=bcEl('bcFrame'),im=bcEl('bcImg');
  if(bcUrl && im.getAttribute('src')!==bcUrl)im.src=bcUrl;
  const ready=!!(bcUrl&&im.complete&&im.naturalWidth>0&&im.naturalHeight>0);
- const landscape=ready&&im.naturalWidth>im.naturalHeight;
+ const rotation=((Number(bc.rotation)||0)%360+360)%360;
+ const quarterTurn=rotation===90||rotation===270;
+ // Base the frame on the orientation AFTER rotation, not on the source alone.
+ const shownWidth=ready?(quarterTurn?im.naturalHeight:im.naturalWidth):0;
+ const shownHeight=ready?(quarterTurn?im.naturalWidth:im.naturalHeight):0;
+ const landscape=ready&&shownWidth>shownHeight&&bc.shape!=='circle';
  frame.className='backCoverPhotoFrame '+bc.shape+(landscape?' landscape':'');
- frame.style.aspectRatio=landscape&&bc.shape!=='circle'
-  ? im.naturalWidth+' / '+im.naturalHeight : '';
+ frame.style.aspectRatio=landscape?shownWidth+' / '+shownHeight:'';
  im.style.display=bcUrl?'block':'none';
  bcEl('bcHint').style.display=bcUrl?'none':'';
- im.style.objectFit=landscape&&bc.shape!=='circle'?'contain':'cover';
+ // A quarter-turn swaps the image's displayed width and height. Swap the
+ // unrotated element dimensions too, so the rotated image fills the A4 frame.
+ if(ready&&quarterTurn){
+  im.style.width=frame.clientHeight+'px';
+  im.style.height=frame.clientWidth+'px';
+ }else{
+  im.style.width='100%';
+  im.style.height='100%';
+ }
+ im.style.objectFit=landscape?'contain':'cover';
  im.style.transform='translate(calc(-50% + '+bc.x+'px),calc(-50% + '+bc.y+'px)) rotate('+bc.rotation+'deg) scale('+(bc.zoom/100)+')';
  const zoomLabel=bcEl('bcZoomValue');if(zoomLabel)zoomLabel.textContent=bc.zoom+'%';
 }
 /* Source images can finish loading after the preview has appeared. */
 bcEl('bcImg').addEventListener('load',()=>{
  if(bcUrl&&bcEl('bcImg').getAttribute('src')===bcUrl)bcRender();
+});
+/* Keep the fitted rotated image sized to the frame after viewport changes. */
+window.addEventListener('resize',()=>{
+ if(bcUrl&&document.querySelector('.screen[data-screen="backCoverEditor"].active'))bcRender();
 });
 
 function bcSetPhoto(blob){if(bcUrl)URL.revokeObjectURL(bcUrl);bcPhoto=blob;bcUrl=blob?URL.createObjectURL(blob):null;bcRender()}
