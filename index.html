@@ -1946,6 +1946,35 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
  height:auto;aspect-ratio:210/297;margin:0 auto;
  box-shadow:0 8px 24px #31516b1b;
 }
+
+/* Keep field panels readable without adding a border around the printable sheet. */
+.screen[data-screen="messageEditor"] .messageFields{
+ border:0!important;box-shadow:none!important;background:transparent!important;
+ padding:0!important;
+}
+.screen[data-screen="growthEditor"] .growthFields>label{
+ display:block;padding:14px;border:1px solid #dceaf0;background:white;
+ border-radius:16px;box-shadow:0 3px 12px #527e9a0b;
+}
+.screen[data-screen="messageEditor"] .messageFields>.specialFieldSection{
+ min-width:0;
+}
+.screen[data-screen="messageEditor"] .messageFields #messageAdd{
+ width:100%;min-height:42px;border:1px solid #cce9e9;
+ border-radius:11px;background:#eefafa;color:#2d8f97;font-size:13px;
+}
+.screen[data-screen="backCoverEditor"] .backCoverControls .specialFieldSection>button{
+ min-height:42px;border-radius:11px;border:1px solid #d9e9f1;
+ background:#f6fbfd;color:#456e84;font-weight:700;
+}
+.screen[data-screen="growthEditor"] #growthStatus,
+.screen[data-screen="messageEditor"] #messageStatus,
+.screen[data-screen="coverEditor"] #coverStatus,
+.screen[data-screen="backCoverEditor"] #bcStatus{
+ padding:10px 12px;border:1px solid #dceaf0;border-radius:12px;
+ background:#f5fbfd;color:#52758b;font-size:12px;line-height:1.6;
+}
+
 /* Desktop: same preview-left / settings-right workstation as the regular editor. */
 @media(min-width:980px){
  .screen[data-screen="coverEditor"] .coverEditorPanel{
@@ -2166,7 +2195,7 @@ body:has(.screen.active:is([data-screen="coverEditor"],[data-screen="growthEdito
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CH</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-24 CI</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
