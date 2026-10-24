@@ -1737,6 +1737,8 @@ body:has(.screen[data-screen="editor"].active){background:#eef7fa}
    overflow-y:visible!important;margin:0!important;
  }
  .screen[data-screen="editor"] .editorPanel>.desktopEditorWelcome{display:none!important}
+ /* A visible photo/text inspector scrolls in flow; don't reserve an empty 46dvh overlay gap. */
+ .screen[data-screen="editor"] .editorPanel:has(.mobileTextInspector){padding-bottom:0!important}
  .screen[data-screen="editor"] .editorPanel>.field:first-child{display:none!important}
  .screen[data-screen="editor"]>.editorExportPanel{margin:10px 0 0!important;padding:0!important}
  .screen[data-screen="editor"]>.editorExportPanel>#exportImage{
