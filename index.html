@@ -3781,7 +3781,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EJ</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EK</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -5692,6 +5692,7 @@ function photoSortCheckpointCaptureAI(data){
   photoMatchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
   photoMatchFolderChild:{...(data.photoMatchFolderChild||{})},
   photoMergeSlots:[...(data.photoMergeSlots||[])],
+  photoMergeChildIds:[...(data.photoMergeChildIds||[])],
   photoMatchFocus:data.photoMatchFocus||null,
   photoMatchCandidateKey:data.photoMatchCandidateKey||null,
   photoMatchOriginalCount:data.photoMatchOriginalCount||data.groups.length,
@@ -5990,6 +5991,7 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
     photoMatchDifferent:Array.isArray(snapshot.photoMatchDifferent)?snapshot.photoMatchDifferent.map(pair=>({...pair})):[],
     photoMatchFolderChild:{...(snapshot.photoMatchFolderChild||{})},
     photoMergeSlots:Array.isArray(snapshot.photoMergeSlots)?[...snapshot.photoMergeSlots]:[],
+    photoMergeChildIds:Array.isArray(snapshot.photoMergeChildIds)?[...snapshot.photoMergeChildIds]:[],
     photoMatchFocus:snapshot.photoMatchFocus||null,
     photoMatchCandidateKey:snapshot.photoMatchCandidateKey||null,
     photoMatchOriginalCount:Number(snapshot.photoMatchOriginalCount)||snapshot.groups.length,
@@ -7106,6 +7108,7 @@ function photoFolderSnapshot(data){
   matchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
   matchFolderChild:{...(data.photoMatchFolderChild||{})},
   mergeSlots:[...(data.photoMergeSlots||[])],
+  mergeChildIds:[...(data.photoMergeChildIds||[])],
   matchFocus:data.photoMatchFocus||null,matchCandidate:data.photoMatchCandidateKey||null,
   matchFinal:!!data.photoMatchFinalReviewed};
 }
@@ -7118,6 +7121,7 @@ function photoFolderRestoreSnapshot(data,snapshot){
  data.photoMatchDifferent=(snapshot.matchDifferent||[]).map(pair=>({...pair}));
  data.photoMatchFolderChild={...(snapshot.matchFolderChild||{})};
  data.photoMergeSlots=[...(snapshot.mergeSlots||[])];
+ data.photoMergeChildIds=[...(snapshot.mergeChildIds||[])];
  data.photoMatchFocus=snapshot.matchFocus||null;
  data.photoMatchCandidateKey=snapshot.matchCandidate||null;
  data.photoMatchFinalReviewed=!!snapshot.matchFinal;
@@ -7902,8 +7906,8 @@ function renderPhotoMatching(data,host){
  });
 }
 
-function photoMergeRosterCount(){return getChildren(selected.id).length}
 function renderPhotoFolders(data,host){
+ const roster=getChildren(data.classId).map(k=>({id:String(k.id),name:String(k.name||'').trim()}));
  return window.omoideMergeRender?window.omoideMergeRender(data,host,{
   valid:()=>data===albumAiGroupsData&&data.valid(),current:()=>albumAiGroupsData,
   ensure:photoFoldersEnsure,indexes:photoFolderIndexes,snapshot:photoFolderSnapshot,
@@ -7911,7 +7915,7 @@ function renderPhotoFolders(data,host){
   move:photoMatchMovePhotos,add:photoMatchAddPhotos,split:photoMatchSplitPhotos,
   url:fileUrl,openPhoto:openAlbumAssignedPhoto,progress:renderPhotoSortGameProgress,
   next:setPhotoAssignFlowStep,faces:photoMatchFaceSamples,score:photoMatchScore,
-  signature:photoMatchSignature,boxCount:photoMergeRosterCount()
+  signature:photoMatchSignature,boxCount:roster.length,children:roster
  }):renderPhotoMatching(data,host);
  host.replaceChildren();renderPhotoSortGameProgress();
  let folders;
