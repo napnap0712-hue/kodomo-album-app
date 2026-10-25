@@ -9,10 +9,28 @@ window.omoideMergeRender=function(data,host,api){
  catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
  data.photoMatchActive=true;
  const keys=new Set(folders.map(f=>f.key));
+ const roster=Array.isArray(api.children)?api.children.filter(k=>k&&k.id&&k.name):[];
+ const namesById=new Map(roster.map(k=>[String(k.id),String(k.name)]));
  const requested=Math.max(1,Math.min(60,Number(api.boxCount)||12));
  const existing=Array.isArray(data.photoMergeSlots)?data.photoMergeSlots:[];
- const slots=Array.from({length:Math.max(requested,existing.length)},(_,i)=>keys.has(existing[i])?existing[i]:null);
+ const savedChildIds=Array.isArray(data.photoMergeChildIds)?data.photoMergeChildIds:[];
+ const count=Math.max(requested,existing.length,savedChildIds.length);
+ const slots=Array.from({length:count},(_,i)=>keys.has(existing[i])?existing[i]:null);
+ // Pin each box to the child's stable ID, not the roster display order.
+ // An older EJ checkpoint has no IDs, so its existing positions inherit the current roster once.
+ const slotChildIds=Array.from({length:count},(_,i)=>
+  typeof savedChildIds[i]==='string'?savedChildIds[i]:String(roster[i]?.id||''));
+ const assignedChildIds=new Set(slotChildIds.filter(Boolean));
+ for(const kid of roster){
+  const id=String(kid.id);
+  if(assignedChildIds.has(id))continue;
+  const empty=slotChildIds.findIndex((childId,i)=>!childId&&!slots[i]);
+  if(empty>=0)slotChildIds[empty]=id;
+  else{slots.push(null);slotChildIds.push(id)}
+  assignedChildIds.add(id);
+ }
  data.photoMergeSlots=slots;
+ data.photoMergeChildIds=slotChildIds;
  const indexed=new Map(folders.map(f=>[f.key,f]));
  const occupied=new Set(slots.filter(Boolean));
  const inbox=folders.filter(f=>!occupied.has(f.key));
@@ -38,7 +56,10 @@ window.omoideMergeRender=function(data,host,api){
   img.draggable=false;return img;
  }
  function photos(folder){return api.indexes(data,folder)}
- function boxLabel(slot){return 'なかま '+(slot+1)}
+ function boxLabel(slot){
+  const id=slotChildIds[slot];
+  return id?(namesById.get(id)||'⚠️ 名簿にいない園児'):'なかま '+(slot+1);
+ }
  function adopt(slot,names){
   if(!names.length){writeNotice('下のAIカードを選んでから、なかまボックスをタップしてね。');redraw();return}
   const initial=api.snapshot(data),oldUndo=data.photoFolderUndo.slice();
@@ -143,7 +164,7 @@ window.omoideMergeRender=function(data,host,api){
   });
   box.dataset.mergeSlot=String(i);
   const thumb=el('div','mergeBoxPhoto');
-  if(ids.length)thumb.append(image(ids[0],'なかま'+(i+1)+'の写真'));
+  if(ids.length)thumb.append(image(ids[0],boxLabel(i)+'の写真'));
   else thumb.textContent='＋';
   box.append(thumb,el('b','',boxLabel(i)),el('small','',ids.length+'枚'+(f&&reviewed.has(f.key)?' · ✅':'')));
   box.addEventListener('dragover',event=>{
