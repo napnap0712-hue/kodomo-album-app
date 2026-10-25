@@ -14,11 +14,11 @@ window.omoideMergeRender=function(data,host,api){
  const requested=Math.max(1,Math.min(60,Number(api.boxCount)||12));
  const existing=Array.isArray(data.photoMergeSlots)?data.photoMergeSlots:[];
  const savedChildIds=Array.isArray(data.photoMergeChildIds)?data.photoMergeChildIds:[];
- const count=Math.max(requested,existing.length,savedChildIds.length);
- const slots=Array.from({length:count},(_,i)=>keys.has(existing[i])?existing[i]:null);
+ const slotTotal=Math.max(requested,existing.length,savedChildIds.length);
+ const slots=Array.from({length:slotTotal},(_,i)=>keys.has(existing[i])?existing[i]:null);
  // Pin each box to the child's stable ID, not the roster display order.
  // An older EJ checkpoint has no IDs, so its existing positions inherit the current roster once.
- const slotChildIds=Array.from({length:count},(_,i)=>
+ const slotChildIds=Array.from({length:slotTotal},(_,i)=>
   typeof savedChildIds[i]==='string'?savedChildIds[i]:String(roster[i]?.id||''));
  const assignedChildIds=new Set(slotChildIds.filter(Boolean));
  for(const kid of roster){
