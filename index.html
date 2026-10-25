@@ -6268,7 +6268,7 @@ function renderGroupedFaceReview(data,host){
  title.innerHTML='<strong>🎮 おもいで顔あわせ！</strong><p>基準の顔を見て、同じ子だと思う顔をまとめて選ぼう！</p>';
  host.append(title);
  const info=document.createElement('p');info.className='faceBatchProgress';
- info.textContent='🔎 確認する組み合わせ：残り '+edges.length+'組';host.append(info);
+ info.textContent='🔎 確認する組み合わせ：残り '+edges.length+'組 · 結果は上部の「途中保存」で保存できるよ';host.append(info);
  const utility=document.createElement('div');utility.className='faceBatchUtilities';
  const details=document.createElement('button');details.type='button';details.className='secondary';
  details.textContent='🧩 顔を個別に移動・はずす';
@@ -6292,7 +6292,9 @@ function renderGroupedFaceReview(data,host){
   });
   utility.append(undo);
  }
- const laterIds=[...session.decisions].filter(([k,v])=>v==='later').map(([k])=>k);
+ const activeGroupKeys=new Set(groups.map(g=>String(g.key)));
+ const laterIds=[...session.decisions].filter(([k,v])=>
+  v==='later'&&k.split('→').length===2&&k.split('→').every(id=>activeGroupKeys.has(id))).map(([k])=>k);
  if(laterIds.length){
   const retry=document.createElement('button');retry.type='button';retry.className='secondary';
   retry.textContent='🕒 あとでの候補を見直す（'+laterIds.length+'組）';
