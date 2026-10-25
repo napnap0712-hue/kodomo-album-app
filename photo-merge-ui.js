@@ -18,6 +18,8 @@ window.omoideMergeRender=function(data,host,api){
  const inbox=folders.filter(f=>!occupied.has(f.key));
  const selected=new Set((data.photoMergeSelected||[]).filter(k=>inbox.some(f=>f.key===k)));
  const reviewed=data.photoFolderReviewed;
+ // A restored EH comparison result must not bypass the new merge-board review.
+ if(inbox.length||folders.some(f=>!reviewed.has(f.key)))data.photoMatchFinalReviewed=false;
  const btn=(label,cls,action)=>{
   const b=document.createElement('button');b.type='button';b.className=cls;b.textContent=label;
   b.addEventListener('click',action);return b;
@@ -319,7 +321,7 @@ window.omoideMergeRender=function(data,host,api){
  api.progress();
  requestAnimationFrame(()=>{
   if(host.isConnected){
-   host.querySelector('.mergeSlots')?.scrollTo({left:oldScroll,behavior:'instant'});
+   const strip=host.querySelector('.mergeSlots');if(strip)strip.scrollLeft=oldScroll;
    if(data.photoMergeScrollInspector){
     data.photoMergeScrollInspector=false;
     host.querySelector('#mergeInspector')?.scrollIntoView({behavior:'smooth',block:'start'});
