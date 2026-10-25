@@ -50,6 +50,7 @@ window.omoideMergeRender=function(data,host,api){
    data.photoFolderUndo.push(initial);
    if(data.photoFolderUndo.length>10)data.photoFolderUndo.shift();
    reviewed.delete(key);data.photoFolderMistakeReviewed?.delete(key);
+   data.photoMergeFocusBoxKey=key;
    data.photoMatchFinalReviewed=false;
    selected.clear();data.photoMergeInspectorKey=null;
    writeNotice('💕 '+boxLabel(slot)+'にまとめたよ！ '+photos(api.ensure(data).find(f=>f.key===key)).length+'枚。');
@@ -135,7 +136,7 @@ window.omoideMergeRender=function(data,host,api){
   const f=indexed.get(key),ids=f?photos(f):[];
   const box=btn('', 'mergeBox mergeDrop'+(f?' mergeFilled':' mergeEmpty'),()=>{
    if(selected.size){adopt(i,[...selected]);return}
-   if(f){data.photoMergeInspectorKey=f.key;redraw();return}
+   if(f){data.photoMergeFocusBoxKey=f.key;data.photoMergeInspectorKey=f.key;data.photoMergeScrollInspector=true;redraw();return}
    writeNotice('下のカードを選んで、このボックスに入れよう！');redraw();
   });
   box.dataset.mergeSlot=String(i);
@@ -160,7 +161,20 @@ window.omoideMergeRender=function(data,host,api){
  const sortBtn=btn(data.photoMergeSort==='similar'?'↩ 枚数順':'✨ AI候補順','secondary',()=>{
   data.photoMergeSort=data.photoMergeSort==='similar'?'size':'similar';redraw();
  });
- actions.append(sortBtn);host.append(actions);
+ actions.append(sortBtn);
+ const quick=document.createElement('select');quick.className='mergeQuickDestination';
+ quick.setAttribute('aria-label','選んだAIカードの入れ先');
+ slots.forEach((key,i)=>{
+  const option=document.createElement('option');option.value=String(i);
+  option.textContent=boxLabel(i)+(key?' · '+photos(indexed.get(key)).length+'枚':' · 空き');
+  quick.append(option);
+ });
+ const firstEmpty=slots.findIndex(k=>!k);
+ if(firstEmpty>=0)quick.value=String(firstEmpty);
+ actions.append(quick,btn('💕 選んだカードを入れる','primary mergeQuickAdd',()=>{
+  adopt(Number(quick.value),[...selected]);
+ }));
+ host.append(actions);
  const targetKey=slots.find(Boolean);
  const target=indexed.get(data.photoMergeFocusBoxKey)||indexed.get(targetKey);
  let ordered=[...inbox];
@@ -191,7 +205,7 @@ window.omoideMergeRender=function(data,host,api){
   longPressCard(card,f.key);
   const cover=btn('','mergeCover',()=>{
    if(card.dataset.mergeSkipClick==='yes'){delete card.dataset.mergeSkipClick;return}
-   data.photoMergeInspectorKey=f.key;redraw();
+   data.photoMergeInspectorKey=f.key;data.photoMergeScrollInspector=true;redraw();
   });
   cover.append(image(ids[0],'AIフォルダの代表写真'));
   const tag=el('span','mergeCardBadge',ids.length+'枚');cover.append(tag);
@@ -290,7 +304,7 @@ window.omoideMergeRender=function(data,host,api){
    (remaining.length?' 未確認：'+remaining.length+'組':' 全ボックス確認済み！')));
   if(remaining.length){
    final.append(btn('🔎 未確認のボックスを見る','secondary wide',()=>{
-    data.photoMergeInspectorKey=remaining[0].key;redraw();
+    data.photoMergeInspectorKey=remaining[0].key;data.photoMergeScrollInspector=true;redraw();
    }));
   }else{
    final.append(btn('✅ 次は写真の最終チェックへ ›','primary wide',()=>{
@@ -306,6 +320,10 @@ window.omoideMergeRender=function(data,host,api){
  requestAnimationFrame(()=>{
   if(host.isConnected){
    host.querySelector('.mergeSlots')?.scrollTo({left:oldScroll,behavior:'instant'});
+   if(data.photoMergeScrollInspector){
+    data.photoMergeScrollInspector=false;
+    host.querySelector('#mergeInspector')?.scrollIntoView({behavior:'smooth',block:'start'});
+   }
   }
  });
 };
