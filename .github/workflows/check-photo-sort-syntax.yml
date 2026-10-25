@@ -1,0 +1,30 @@
+name: Check photo-sort JavaScript
+on:
+  push:
+    branches:
+      - prototype-multiselect-lock-20261017
+    paths:
+      - index.html
+      - photo-merge-ui.js
+      - .github/workflows/check-photo-sort-syntax.yml
+  workflow_dispatch:
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check merge script
+        run: node --check photo-merge-ui.js
+      - name: Extract and check inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          s = Path('index.html').read_text(encoding='utf-8')
+          start = s.index('<script>') + len('<script>')
+          end = s.index('</script>', start)
+          Path('/tmp/omoide-inline.js').write_text(s[start:end], encoding='utf-8')
+          PY
+          node --check /tmp/omoide-inline.js
