@@ -4931,8 +4931,7 @@ function startEditingWithSelectedPhotos(){
    '枚に、マッチングで作ったフォルダとは別の園児への登録があるよ。'+
    '集合写真として意図的に追加したものなら続行できるけれど、間違いがないか園児別フォルダで確認した？'))
    return;
-  // Only the explicit bottom completion action can mark the full review done.
-  data.photoMatchFinalReviewed=true;
+  // Final approval is recorded after the all-unused-photo safety check below.
  }
  const unused=albumAiGroupsData?.valid() ? albumAiGroupsData.unusedPhotoIndexes : null;
  if(unused?.size){
@@ -4944,6 +4943,9 @@ function startEditingWithSelectedPhotos(){
   photoAssignments=keep.map(item=>photoAssignments[item.index]||[]);
   clearCurrentAlbumAi();
  }
+ // Do not claim success if every photo was excluded or the editor handoff aborted.
+ if(albumAiGroupsData?.valid()&&albumAiGroupsData.photoMatchActive)
+  albumAiGroupsData.photoMatchFinalReviewed=true;
  newAlbumSplitSelected=true;newAlbumSplitSavedId=null;$('#saveDraft').disabled=false;$('#saveDraft').textContent='💾 保存';editingId=null;spreadIndex=0;designElements=[];selectedElementId=null;resetEditHistory();resetEditHistory();$('#albumTitle').value='';$('#pageCaption').value='';$('#layoutMode').value='spread';$('#photoFit').value='cover';$('#pageBackground').value='#ffffff';syncPageSettingsChoices();$('#editorStatus').textContent=files.length+'枚の写真を編集中です。「保存」で写真と編集情報を分けて端末に保存します。';refreshEditor();show('editor');syncStorageChoiceUi();switchEditorTab('none');}
 // Reference photographs are stored in their own on-device IndexedDB, never in localStorage.
 function faceReferenceKey(childId){return String(activeYear())+':'+selected.id+':'+childId}
