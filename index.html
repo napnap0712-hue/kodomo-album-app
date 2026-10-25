@@ -3766,7 +3766,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 EA</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 EB</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -6922,9 +6922,10 @@ function photoFoldersEnsure(data){
  if(!Array.isArray(data.photoFolders))data.photoFolders=data.groups.map(g=>({key:String(g.key),groupKeys:[String(g.key)]}));
  const seen=new Set(),folderIds=new Set();
  for(const folder of data.photoFolders){
-  (!(typeof folder?.key==='string'&&folder.key.startsWith('manual-photo-')&&Array.isArray(folder.groupKeys)&&folder.groupKeys.length===0) &&
- (!folder||typeof folder.key!=='string'||folderIds.has(folder.key)||!Array.isArray(folder.groupKeys)||!folder.groupKeys.length)) ||
- (folder&&folderIds.has(folder.key))
+  const manual=typeof folder?.key==='string'&&folder.key.startsWith('manual-photo-')&&
+   Array.isArray(folder.groupKeys)&&folder.groupKeys.length===0;
+  if(!folder||typeof folder.key!=='string'||folderIds.has(folder.key)||
+   !Array.isArray(folder.groupKeys)||(!folder.groupKeys.length&&!manual))
    throw Error('写真フォルダの記録が不正です。元の写真は変更していないよ');
   folderIds.add(folder.key);
   for(const key of folder.groupKeys){
