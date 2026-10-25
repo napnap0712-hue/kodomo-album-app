@@ -12,7 +12,9 @@
 #albumAiSingletonPairs .mergeSectionTitle small{font-size:12px;color:#607789}
 #albumAiSingletonPairs .mergeSlots{display:flex;gap:9px;overflow-x:auto;-webkit-overflow-scrolling:touch;
  padding:7px 5px 13px;scroll-snap-type:x proximity;overscroll-behavior-x:contain;
- border-radius:17px;background:#e9f8ff;border:2px solid #b7e1f7}
+ border-radius:17px;background:#e9f8ff;border:2px solid #b7e1f7;
+ position:sticky;top:6px;z-index:12;box-shadow:0 6px 16px #3a63801a;scrollbar-width:thin}
+#albumAiSingletonPairs .mergeSlots.mergeDragging{scroll-snap-type:none}
 #albumAiSingletonPairs .mergeBox{position:relative;flex:0 0 125px;min-width:125px;min-height:174px;
  display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 6px;border-radius:16px;
  background:#fff;border:2px dashed #87c3e3;box-shadow:0 4px 0 #beddea;color:#42647a;
@@ -34,7 +36,9 @@
 #albumAiSingletonPairs .mergeCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
  gap:12px;margin:8px 0 13px}
 #albumAiSingletonPairs .mergeCard{min-width:0;background:white;border:2px solid #b9d8e9;
- border-radius:16px;padding:7px;box-shadow:0 4px 0 #dbeaf2;touch-action:pan-y}
+ border-radius:16px;padding:7px;box-shadow:0 4px 0 #dbeaf2;touch-action:pan-y;
+ content-visibility:auto;contain-intrinsic-size:auto 245px}
+#albumAiSingletonPairs .mergeQuickAdd:disabled{opacity:.52;cursor:default}
 #albumAiSingletonPairs .mergeCard.mergePicked{border-color:#fa71ac;background:#fff2f8;box-shadow:0 4px 0 #ffc6dd}
 #albumAiSingletonPairs .mergeCover{display:block;position:relative;width:100%;height:145px;padding:0;
  border:0;border-radius:10px;overflow:hidden;background:#f0f4f7}
@@ -50,6 +54,7 @@
  border-radius:9px;white-space:normal;font-weight:800}
 #albumAiSingletonPairs .mergeMore{width:100%;min-height:45px;margin:5px 0 13px}
 #albumAiSingletonPairs .mergeInspector{border:2px solid #e9a3c5;background:#fff7fa;border-radius:17px;
+ scroll-margin-top:210px;
  padding:13px;margin:16px 0;box-shadow:0 4px 0 #f8dbe8}
 #albumAiSingletonPairs .mergeInspectorTitle{display:flex;justify-content:space-between;
  gap:10px;align-items:center}
@@ -83,6 +88,9 @@
  #albumAiSingletonPairs .mergeBox{flex-basis:111px;min-width:111px;min-height:162px}
  #albumAiSingletonPairs .mergeBoxPhoto{height:95px}
  #albumAiSingletonPairs .mergeCards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #albumAiSingletonPairs .mergeMini img{width:50%}
+ #albumAiSingletonPairs .mergeCard{contain-intrinsic-size:auto 250px}
+ #albumAiSingletonPairs .mergeInspector{scroll-margin-top:185px}
  #albumAiSingletonPairs .mergeCover{height:127px}
  #albumAiSingletonPairs .mergeCardFoot{flex-wrap:wrap}
  #albumAiSingletonPairs .mergeCardFoot button{width:100%}
