@@ -304,7 +304,6 @@
 #photoFolderMistakePanel .photoMistakeActions{position:sticky;bottom:0;z-index:7;
  background:#ffffffec;padding:6px;border:1px solid #dceaf1;border-radius:12px;
  box-shadow:0 -4px 13px #41698e17;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-#photoFolderMistakePanel .photoMoveInlineItem{touch-action:pan-y}
 @media(max-width:540px){
  #photoFolderMistakePanel .photoMoveInlineToolbar{gap:5px}
  #photoFolderMistakePanel .photoMoveInlineToolbar .photoMoveExclude{flex:1 1 100%}
