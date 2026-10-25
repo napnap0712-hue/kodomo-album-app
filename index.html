@@ -5361,7 +5361,8 @@ function photoSortCheckpointCaptureAI(data){
  return {
   samples:data.samples.map(sample=>({index:sample.index,box:[...sample.box]})),
   groups:data.groups.map(g=>({key:g.key,faceIndexes:[...g.faceIndexes]})),
-  photoFolders:photoFoldersEnsure(data).map(f=>({key:f.key,groupKeys:[...f.groupKeys]})),
+  photoFolders:photoFoldersEnsure(data).map(f=>({key:f.key,groupKeys:[...f.groupKeys],
+   addedPhotoIndexes:[...f.addedPhotoIndexes],excludedPhotoIndexes:[...f.excludedPhotoIndexes]})),
   photoFolderReviewed:[...data.photoFolderReviewed],
   confirmed:[...data.confirmed],unusedPhotoIndexes:[...data.unusedPhotoIndexes],
   unusedPhotoOrder:[...data.unusedPhotoOrder],
@@ -5599,7 +5600,8 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
    albumAiGroupsData={
     sourceFiles,registered,classId,schoolYear,samples:restoredAi.samples,
     groups:snapshot.groups.map(g=>({key:g.key,faceIndexes:[...g.faceIndexes]})),
-    photoFolders:Array.isArray(snapshot.photoFolders)?snapshot.photoFolders.map(f=>({key:f.key,groupKeys:[...f.groupKeys]})):null,
+    photoFolders:Array.isArray(snapshot.photoFolders)?snapshot.photoFolders.map(f=>({key:f.key,groupKeys:[...f.groupKeys],
+     addedPhotoIndexes:[...(f.addedPhotoIndexes||[])],excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})):null,
     photoFolderReviewed:new Set(snapshot.photoFolderReviewed||[]),photoFolderUndo:[],
     confirmed:new Set(snapshot.confirmed),unusedPhotoIndexes:new Set(snapshot.unusedPhotoIndexes),
     unusedPhotoOrder:[...snapshot.unusedPhotoOrder],valid,
@@ -6578,6 +6580,13 @@ function photoFoldersEnsure(data){
    if(typeof key!=='string'||!original.has(key)||seen.has(key))throw Error('写真フォルダとAI候補が一致しないよ。元の写真は変更していないよ');
    seen.add(key);
   }
+  // DQ: The correction list is an overlay on the AI folder. No source photo or facial data is moved.
+  const added=folder.addedPhotoIndexes??[],excluded=folder.excludedPhotoIndexes??[];
+  const validList=arr=>Array.isArray(arr)&&new Set(arr).size===arr.length&&
+   arr.every(i=>Number.isInteger(i)&&i>=0&&i<data.sourceFiles.length);
+  if(!validList(added)||!validList(excluded)||added.some(i=>excluded.includes(i)))
+   throw Error('保存したフォルダ内の写真修正が一致しません。元写真は変更していないよ');
+  folder.addedPhotoIndexes=added;folder.excludedPhotoIndexes=excluded;
  }
  for(const key of original)if(!seen.has(key))data.photoFolders.push({key,groupKeys:[key]});
  if(!(data.photoFolderReviewed instanceof Set))data.photoFolderReviewed=new Set(data.photoFolderReviewed||[]);
@@ -6595,7 +6604,48 @@ function photoFolderIndexes(data,folder){
    if(Number.isInteger(index)&&index>=0&&index<data.sourceFiles.length&&!data.unusedPhotoIndexes?.has(index))ids.add(index);
   }
  }
+ for(const index of folder.excludedPhotoIndexes||[])ids.delete(index);
+ for(const index of folder.addedPhotoIndexes||[])if(!data.unusedPhotoIndexes?.has(index))ids.add(index);
  return [...ids].sort((a,b)=>a-b);
+}
+function photoFolderSnapshot(data){
+ return {folders:data.photoFolders.map(f=>({key:f.key,groupKeys:[...f.groupKeys],
+  addedPhotoIndexes:[...(f.addedPhotoIndexes||[])],
+  excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})),reviewed:[...data.photoFolderReviewed]};
+}
+function photoFolderRestoreSnapshot(data,snapshot){
+ data.photoFolders=snapshot.folders.map(f=>({key:f.key,groupKeys:[...f.groupKeys],
+  addedPhotoIndexes:[...(f.addedPhotoIndexes||[])],
+  excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]}));
+ data.photoFolderReviewed=new Set(snapshot.reviewed);
+}
+function photoFolderRemember(data){
+ data.photoFolderUndo.push(photoFolderSnapshot(data));
+ if(data.photoFolderUndo.length>10)data.photoFolderUndo.shift();
+}
+function photoFolderEditMembership(data,sourceKey,photoIndexes,targetKey=null){
+ photoFoldersEnsure(data);
+ const source=data.photoFolders.find(f=>f.key===sourceKey);
+ const target=targetKey===null?null:data.photoFolders.find(f=>f.key===targetKey);
+ if(!source||targetKey!==null&&!target||source===target)
+  throw Error('移動先のフォルダが見つかりません');
+ if(!Array.isArray(photoIndexes)||!photoIndexes.length||
+   new Set(photoIndexes).size!==photoIndexes.length||
+   photoIndexes.some(i=>!photoFolderIndexes(data,source).includes(i)))
+  throw Error('選んだ写真がフォルダにありません。もう一度確認してね');
+ // Save an in-memory undo checkpoint; never alter data.groups, sourceFiles, samples or child assignments.
+ photoFolderRemember(data);
+ for(const index of photoIndexes){
+  source.addedPhotoIndexes=source.addedPhotoIndexes.filter(i=>i!==index);
+  if(!source.excludedPhotoIndexes.includes(index))source.excludedPhotoIndexes.push(index);
+  if(target){
+   target.excludedPhotoIndexes=target.excludedPhotoIndexes.filter(i=>i!==index);
+   if(!photoFolderIndexes(data,target).includes(index)&&!target.addedPhotoIndexes.includes(index))
+    target.addedPhotoIndexes.push(index);
+  }
+ }
+ data.photoFolderReviewed.delete(source.key);
+ if(target)data.photoFolderReviewed.delete(target.key);
 }
 function renderPhotoFolders(data,host){
  host.replaceChildren();
@@ -6614,8 +6664,7 @@ function renderPhotoFolders(data,host){
  if(data.photoFolderUndo.length){
   host.append(button('↩ 直前のまとめを戻す','secondary photoFolderUndo',()=>{
    const old=data.photoFolderUndo.pop();if(!old)return;
-   data.photoFolders=old.folders.map(f=>({key:f.key,groupKeys:[...f.groupKeys]}));
-   data.photoFolderReviewed=new Set(old.reviewed);renderPhotoFolders(data,host);
+   photoFolderRestoreSnapshot(data,old);renderPhotoFolders(data,host);
   }));
  }
  if(!focus){
@@ -6691,12 +6740,20 @@ function renderPhotoFolders(data,host){
   if(matches.length!==selected.size||matches.includes(focus))return;
   const photos=new Set([focus,...matches].flatMap(folder=>photoFolderIndexes(data,folder)));
   if(!window.confirm(matches.length+'フォルダをまとめて写真'+photos.size+'枚にしますか？ 集合写真は1枚だけ表示し、AI判定や元写真は変えません。'))return;
-  data.photoFolderUndo.push({folders:folders.map(f=>({key:f.key,groupKeys:[...f.groupKeys]})),reviewed:[...data.photoFolderReviewed]});
-  if(data.photoFolderUndo.length>10)data.photoFolderUndo.shift();
+  const members=[focus,...matches];
+  const sourcePhotos=new Set(members.flatMap(f=>photoFolderIndexes(data,f)));
   const toRemove=new Set(matches.map(f=>f.key)),all=new Set(focus.groupKeys);
   for(const group of matches)for(const key of group.groupKeys)all.add(key);
+  const aiPhotoIndexes=new Set();
+  for(const groupKey of all){
+   const group=data.groups.find(g=>String(g.key)===groupKey);
+   for(const faceIndex of group.faceIndexes)aiPhotoIndexes.add(data.samples[faceIndex]?.index);
+  }
+  photoFolderRemember(data);
   data.photoFolders=folders.filter(f=>!toRemove.has(f.key)).map(f=>
-   f===focus?{key:f.key,groupKeys:[...all]}:f);
+   f===focus?{key:f.key,groupKeys:[...all],
+    addedPhotoIndexes:[...sourcePhotos].filter(i=>!aiPhotoIndexes.has(i)),
+    excludedPhotoIndexes:[...aiPhotoIndexes].filter(i=>!sourcePhotos.has(i))}:f);
   data.photoFolderReviewed.add(focus.key);
   renderPhotoFolders(data,host);
  });
