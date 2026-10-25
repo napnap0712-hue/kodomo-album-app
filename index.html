@@ -5757,6 +5757,13 @@ function clearCurrentAlbumSingletonPairs(){
    const dest=document.elementFromPoint?.(e.clientX,e.clientY)?.closest?.('[data-pending-child]');
    document.querySelectorAll('.pendingQuickHover').forEach(el=>el.classList.remove('pendingQuickHover'));
    dest?.classList.add('pendingQuickHover');
+   const strip=$('#albumAiPendingDestinations');
+   if(strip){const box=strip.getBoundingClientRect();
+    if(e.clientY>=box.top&&e.clientY<=box.bottom){
+     if(e.clientX<box.left+35)strip.scrollLeft-=18;
+     else if(e.clientX>box.right-35)strip.scrollLeft+=18;
+    }
+   }
    if(e.clientY<65)window.scrollBy?.(0,-16);
    else if(e.clientY>window.innerHeight-65)window.scrollBy?.(0,16);
   });
@@ -5897,7 +5904,10 @@ function renderCurrentAlbumSingletonPairs(){
  if(!candidates.length){
   const empty=document.createElement('p');empty.className='muted';
   empty.textContent='似ている候補がありません。園児フォルダへ進んで確認できるよ。';
-  host.append(empty);return;
+  host.append(empty);
+  if(document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='review')
+   setPhotoAssignFlowStep('pending',{scroll:true});
+  return;
  }
  const session=data.pairReviewSession||(data.pairReviewSession={
   checked:new Map(),decisions:new Map(),seen:new Set()
@@ -6397,7 +6407,9 @@ function renderCurrentAlbumSingletonPairs(){
    assignPanel.hidden=true;actions.hidden=true;names.hidden=true;note.hidden=true;
    complete.hidden=false;previous.disabled=false;
    later.textContent='最初から見直す ›';
-   complete.textContent='🌷 候補の確認が終わったよ。名前を付けたグループは振り分け済み。迷った候補はあとで確認できるよ。';
+   complete.textContent='🌷 候補の確認が終わったよ。次は未確定の写真を整理しよう。';
+   if(document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='review')
+    setPhotoAssignFlowStep('pending',{scroll:true});
    return;
   }
   assignPanel.hidden=false;actions.hidden=false;names.hidden=false;note.hidden=false;
