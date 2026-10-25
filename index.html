@@ -5897,7 +5897,7 @@ function photoSortRestoreAiData(savedAI,sourceFiles,storedRoster){
   throw Error('使わない写真の記録が不正です。');
  const unused=new Set(savedAI.unusedPhotoIndexes);
  if(savedAI.unusedPhotoOrder.some(i=>!unused.has(i)))throw Error('使わない写真の復元順が不正です。');
- for(const i of used)if(unused.has(savedAI.samples[i].index))throw Error('使わない写真がAIグループに含まれています。');
+ // EQ: Exclusion in STEP 2 is a reversible mask; kept AI faces are not assigned while hidden.
  return {groups,keys,unused};
 }
 async function resumePhotoSortCheckpoint(replacementFiles=null){
@@ -5996,7 +5996,7 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
     photoFolders:Array.isArray(snapshot.photoFolders)?snapshot.photoFolders.map(f=>({key:f.key,groupKeys:[...f.groupKeys],
      addedPhotoIndexes:[...(f.addedPhotoIndexes||[])],excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})):null,
     photoFolderReviewed:new Set(snapshot.photoFolderReviewed||[]),
-    photoFolderMistakeReviewed:new Set((snapshot.photoFolderMistakeReviewed||[]).filter(k=>typeof k==='string'&&(snapshot.photoFolders||snapshot.groups).some(f=>f.key===k))),photoFolderUndo:[],
+    photoFolderMistakeReviewed:new Set((snapshot.photoFolderMistakeReviewed||[]).filter(k=>typeof k==='string'&&(k==='__photo-sort-unplaced__'||(snapshot.photoFolders||snapshot.groups).some(f=>f.key===k)))),photoFolderUndo:[],
     photoMatchActive:!!snapshot.photoMatchActive,
     photoMatchDifferent:Array.isArray(snapshot.photoMatchDifferent)?snapshot.photoMatchDifferent.map(pair=>({...pair})):[],
     photoMatchFolderChild:{...(snapshot.photoMatchFolderChild||{})},
@@ -7489,54 +7489,94 @@ function renderPhotoSortGameProgress(){
   const covered=new Set(photoFoldersEnsure(data).flatMap(f=>photoFolderIndexes(data,f)));
   return data.sourceFiles.map((_,i)=>i).filter(i=>!data.unusedPhotoIndexes.has(i)&&!covered.has(i));
  }
+ // EQ: moves use a single reversible snapshot, including mixed AI-card inbox sources.
  function photoSortMoveInlinePhotos(data,from,ids,destination,mode='move'){
   if(data!==albumAiGroupsData||!data.valid())throw Error('写真の状態が更新されたよ。開き直してね');
   photoFoldersEnsure(data);
-  const sourceUnplaced=from===PHOTO_SORT_UNPLACED;
-  const source=sourceUnplaced?null:data.photoFolders.find(f=>f.key===from);
-  const allowed=sourceUnplaced?photoSortUnplacedIndexes(data):source?photoFolderIndexes(data,source):[];
-  if((!source&&!sourceUnplaced)||!ids.length||new Set(ids).size!==ids.length||
+  const inbox=from===PHOTO_SORT_UNPLACED;
+  const source=inbox?null:data.photoFolders.find(f=>f.key===from);
+  const allowed=inbox?photoSortInboxIndexes(data):source?photoFolderIndexes(data,source):[];
+  if((!source&&!inbox)||!ids.length||new Set(ids).size!==ids.length||
    ids.some(i=>!allowed.includes(i)))throw Error('写真とフォルダが一致しません。選び直してね');
   const match=typeof destination==='string'?/^__merge-empty-slot:(\d+)$/.exec(destination):null;
   const snapshot=photoFolderSnapshot(data),undo=[...data.photoFolderUndo];
   try{
+   let target=null;
    if(match){
     const slot=Number(match[1]),childId=String(data.photoMergeChildIds?.[slot]||'');
     if(!childId||!getChildren(data.classId).some(k=>String(k.id)===childId)||
      data.photoFolders.some(f=>f.key===data.photoMergeSlots?.[slot]))
      throw Error('園児の移動先が変わったよ。もう一度選び直してね');
-    if(!sourceUnplaced&&mode==='move'){
+    if(!inbox&&mode==='move'){
      const previous=new Set(data.photoFolders.map(f=>f.key));
      photoMatchSplitPhotos(data,from,ids);
-     const made=data.photoFolders.find(f=>!previous.has(f.key));
-     if(!made)throw Error('移動先を作れませんでした');
-     data.photoMergeSlots[slot]=made.key;
+     target=data.photoFolders.find(f=>!previous.has(f.key));
+     if(!target)throw Error('移動先の新しいフォルダを作れませんでした');
     }else{
-     photoFolderRemember(data);
      let key;
      do{key='manual-photo-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9)}
      while(data.photoFolders.some(f=>f.key===key)||data.groups.some(g=>String(g.key)===key));
-     data.photoFolders.push({key,groupKeys:[],addedPhotoIndexes:[...ids],excludedPhotoIndexes:[]});
-     data.photoMergeSlots[slot]=key;
+     target={key,groupKeys:[],addedPhotoIndexes:[...ids],excludedPhotoIndexes:[]};
+     data.photoFolders.push(target);
     }
+    data.photoMergeSlots[slot]=target.key;
    }else{
-    const target=data.photoFolders.find(f=>f.key===destination);
-    if(!target||target===source)throw Error('移動先のフォルダを選び直してね');
-    if(sourceUnplaced){
-     photoFolderRemember(data);
-     target.excludedPhotoIndexes=(target.excludedPhotoIndexes||[]).filter(i=>!ids.includes(i));
-     target.addedPhotoIndexes=[...new Set([...(target.addedPhotoIndexes||[]),...ids])];
-     data.photoFolderReviewed.delete(target.key);
-     data.photoFolderMistakeReviewed.delete(target.key);
+    target=data.photoFolders.find(f=>f.key===destination);
+    if(!target||target===source)throw Error('移動先の園児フォルダを選び直してね');
+    if(inbox){
+     target.excludedPhotoIndexes=target.excludedPhotoIndexes.filter(i=>!ids.includes(i));
+     target.addedPhotoIndexes=[...new Set([...target.addedPhotoIndexes,...ids])];
     }else if(mode==='add')photoFolderAddMembership(data,from,ids,destination);
     else photoFolderEditMembership(data,from,ids,destination);
    }
-   if(!sourceUnplaced)data.photoFolderMistakeReviewed.delete(from);
+   if(inbox&&mode==='move'){
+    // The inbox can contain photos from several anonymous AI cards.
+    // Unlink those photos from their anonymous cards when moving, never the source Files.
+    const named=photoSortChildLinks(data);
+    for(const other of [...data.photoFolders]){
+     if(other===target||named.has(other.key))continue;
+     const belonging=ids.filter(i=>photoFolderIndexes(data,other).includes(i));
+     if(belonging.length)photoFolderEditMembership(data,other.key,belonging,null);
+    }
+   }
+   if(!inbox)data.photoFolderMistakeReviewed.delete(from);
+   data.photoFolderMistakeReviewed.delete(target.key);
+   data.photoFolderReviewed.delete(target.key);
    data.photoMatchFinalReviewed=false;
+   // Several anonymous cards may be affected, but one operation should undo all at once.
+   data.photoFolderUndo=[...undo,snapshot].slice(-10);
    return ids.length;
   }catch(error){
    photoFolderRestoreSnapshot(data,snapshot);data.photoFolderUndo=undo;throw error;
   }
+ }
+ // Exclusion only masks photos in THIS album. Keep File objects, facial groups
+ // and original snapshot untouched, so restoration and backups remain safe.
+ function photoSortExcludeForCheck(data,ids){
+  if(data!==albumAiGroupsData||!data.valid())return false;
+  const valid=[...new Set(ids)].filter(i=>Number.isInteger(i)&&i>=0&&i<data.sourceFiles.length&&
+   !data.unusedPhotoIndexes.has(i));
+  if(!valid.length)return false;
+  if(!window.confirm('🗑 '+valid.length+'枚を今回のアルバムで「使わない」にする？\n元の写真は削除せず、あとから元に戻せるよ。'))return false;
+  const affected=photoFoldersEnsure(data).filter(f=>
+   valid.some(i=>photoFolderIndexes(data,f).includes(i))).map(f=>f.key);
+  for(const index of valid){data.unusedPhotoIndexes.add(index);data.unusedPhotoOrder.push(index)}
+  for(const key of affected){data.photoFolderMistakeReviewed.delete(key);data.photoFolderReviewed.delete(key)}
+  data.photoMatchFinalReviewed=false;
+  data.photoFolderNotice='🗑 '+valid.length+'枚を今回のアルバムから除外したよ。元の写真は残っているよ。';
+  return true;
+ }
+ function photoSortRestoreExcludedForCheck(data,index){
+  if(data!==albumAiGroupsData||!data.valid()||!data.unusedPhotoIndexes.has(index))return;
+  data.unusedPhotoIndexes.delete(index);
+  data.unusedPhotoOrder=data.unusedPhotoOrder.filter(i=>i!==index);
+  for(const f of photoFoldersEnsure(data)){
+   if(photoFolderIndexes(data,f).includes(index)){
+    data.photoFolderMistakeReviewed.delete(f.key);data.photoFolderReviewed.delete(f.key);
+   }
+  }
+  data.photoMatchFinalReviewed=false;
+  data.photoFolderNotice='↩ 写真1枚を戻したよ。必要ならもう一度振り分けてね。';
  }
  function finishPhotoSortFromCheck(){
   const data=albumAiGroupsData;
