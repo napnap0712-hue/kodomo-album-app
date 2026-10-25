@@ -96,7 +96,7 @@ window.omoideMergeRender=function(data,host,api){
  host.replaceChildren();
  const head=el('div','mergeHero');
  head.append(el('h2','', '💕 おもいでマージ！'),el('p','',
-  'AIがまとめた写真カードを、同じ子の「なかまボックス」に集めよう。判断するのは先生だよ！'));
+  'ここは仮仕分けだけ！ AIカードを園児のボックスに集めよう。残りは次の画面で写真を移動できるよ。'));
  host.append(head);
  const stats=el('p','mergeStats','📦 ボックス '+occupied.size+'/'+slots.length+
   '　📸 未配置カード '+inbox.length+'組　✅ 確認 '+folders.filter(f=>reviewed.has(f.key)).length+'/'+folders.length+'組');
@@ -388,27 +388,21 @@ window.omoideMergeRender=function(data,host,api){
   }
   host.insertBefore(inspector,toolbar);
  }
- // At least one folder remains in the inbox until it is assigned to a teacher-selected box.
- if(!inbox.length){
-  const final=el('section','mergeFinal');
-  final.append(el('h3','','🔎 マージ完了前のチェック'));
-  const remaining=folders.filter(f=>!occupied.has(f.key)||!reviewed.has(f.key));
-  final.append(el('p','','すべてのカードをボックスに入れたよ！ 各ボックスの写真を開いて確認しよう。'+
-   (remaining.length?' 未確認：'+remaining.length+'組':' 全ボックス確認済み！')));
-  if(remaining.length){
-   final.append(btn('🔎 未確認のボックスを見る','secondary wide',()=>{
-    data.photoMergeInspectorKey=remaining[0].key;data.photoMergeScrollInspector=true;redraw();
-   }));
-  }else{
-   final.append(btn('✅ 次は写真の最終チェックへ ›','primary wide',()=>{
-    if(data!==api.current()||!api.valid())return;
-    data.photoMatchFinalReviewed=true;
-    writeNotice('✅ すべてのボックスを確認したよ。次は写真全体の最終チェック！');
-    api.next('check',{scroll:true});
-   }));
-  }
-  host.append(final);
- }
+ // EM: Merging is only the first, rough sorting pass. Never require an empty
+ // inbox or imply final verification here; all loose cards remain for photo moving.
+ const continuePanel=el('section','mergeFinal mergeContinue');
+ continuePanel.append(el('h3','','📷 次は写真のおひっこし！'));
+ continuePanel.append(el('p','',inbox.length?
+  'まだAIカードが'+inbox.length+'組残っていても大丈夫。残したカードも次の画面に持ち越して、写真を移動・修正できるよ。':
+  'カードの仕分けはここまで。次の画面で写真の混ざりを確認し、必要な写真だけ移動しよう。'));
+ continuePanel.append(btn('➡️ 写真の移動・修正へ進む','primary wide',()=>{
+  if(data!==api.current()||!api.valid())return;
+  data.photoMergeSelected=[];
+  data.photoMatchFinalReviewed=false;
+  data.photoMatchNotice='📷 カードの仮仕分けを終えたよ。写真は次の画面で移動できるよ。';
+  api.next('check',{scroll:true});
+ }));
+ host.append(continuePanel);
  api.progress();
  requestAnimationFrame(()=>{
   if(host.isConnected){
