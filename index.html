@@ -3786,10 +3786,9 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
 </div>
-<div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="ゲームの3ステップ">
+<div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="ゲームの2ステップ">
  <span data-flow-index="review">① 🎮 カードの仮仕分け</span>
  <span data-flow-index="check">② 📷 写真のおひっこし</span>
- <span data-flow-index="pending">③ 🏠 園児登録</span>
 </div>
 <p id="photoSortGameProgress" class="photoSortGameProgress" role="status" aria-live="polite"></p>
 <p id="photoAssignFlowHint" class="muted" role="status">まずは写真を整理しよう。ボタンを1つ押すだけで始められるよ。</p>
@@ -6138,9 +6137,9 @@ function setPhotoAssignFlowStep(step,{scroll=false}={}){
  if(details)details.open=false;
  const back=$('#photoAssignFlowBack');
  if(back){back.hidden=step==='start'||step==='review'||!albumAiGroupsData?.valid();
-  back.textContent=step==='folders'?'‹ 園児登録に戻る':step==='pending'?'‹ 写真のおひっこしに戻る':'‹ おもいでマージに戻る';}
+  back.textContent=step==='folders'||step==='pending'?'‹ 写真のおひっこしに戻る':'‹ おもいでマージに戻る';}
  const next=$('#photoAssignFlowNext');
- if(next)next.textContent=step==='review'?'② 写真を移動・修正する ›':step==='check'?'③ 園児へ写真を登録する ›':'園児フォルダを確認する ›';
+ if(next)next.textContent=step==='review'?'② 写真を移動・修正する ›':step==='check'?'✅ 振り分け完了！見開き編集へ ›':'園児フォルダを確認する ›';
  if(step==='check'&&albumAiGroupsData?.valid())renderPhotoFolderMistakes(albumAiGroupsData,$('#photoFolderMistakePanel'));
  if(step==='pending'&&albumAiGroupsData?.valid())renderAlbumAiPendingQuick();
  renderPhotoSortGameProgress();
@@ -6151,12 +6150,12 @@ function setPhotoAssignFlowStep(step,{scroll=false}={}){
 $('#photoAssignFlowManual')?.addEventListener('click',()=>setPhotoAssignFlowStep('folders',{scroll:true}));
 $('#photoAssignFlowNext')?.addEventListener('click',()=>{
  const step=document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep;
- setPhotoAssignFlowStep(step==='review'?'check':step==='check'?'pending':'folders',{scroll:true});
+ if(step==='check')finishPhotoSortFromCheck();else setPhotoAssignFlowStep(step==='review'?'check':'folders',{scroll:true});
 });
 $('#photoAssignFlowBack')?.addEventListener('click',()=>{
  if(!albumAiGroupsData?.valid())return;
  const step=document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep;
- setPhotoAssignFlowStep(step==='folders'?'pending':step==='pending'?'check':'review',{scroll:true});
+ setPhotoAssignFlowStep(step==='folders'||step==='pending'?'check':'review',{scroll:true});
 });
 function clearCurrentAlbumAi(){
  setPhotoAssignFlowStep('start');
@@ -7440,40 +7439,116 @@ function renderPhotoSortGameProgress(){
  }
  el.textContent='📷 '+total+'枚中'+sorted+'枚お届け済み・未振り分け'+(total-sorted)+'枚'+review;
 }
-// EN: A photo move changes only local folder membership; originals and face data are immutable.
-function photoSortMoveInlinePhotos(data,from,ids,destination){
- if(data!==albumAiGroupsData||!data.valid())throw Error('写真の状態が更新されたよ。開き直してね');
- photoFoldersEnsure(data);
- const source=data.photoFolders.find(f=>f.key===from);
- if(!source||!ids.length||new Set(ids).size!==ids.length||
-  ids.some(i=>!photoFolderIndexes(data,source).includes(i)))
-  throw Error('写真とフォルダが一致しません。選び直してね');
- const match=typeof destination==='string'?/^__merge-empty-slot:(\d+)$/.exec(destination):null;
- if(match){
-  const slot=Number(match[1]),childId=String(data.photoMergeChildIds?.[slot]||'');
-  if(!childId||!getChildren(data.classId).some(k=>String(k.id)===childId)||
-   data.photoFolders.some(f=>f.key===data.photoMergeSlots?.[slot]))
-   throw Error('園児の移動先が変わったよ。もう一度選び直してね');
+
+ // EO: The photo correction board is provisional and reversible; no File/face blob changes.
+ const PHOTO_SORT_UNPLACED='__photo-sort-unplaced__';
+ function photoSortUnplacedIndexes(data){
+  const covered=new Set(photoFoldersEnsure(data).flatMap(f=>photoFolderIndexes(data,f)));
+  return data.sourceFiles.map((_,i)=>i).filter(i=>!data.unusedPhotoIndexes.has(i)&&!covered.has(i));
+ }
+ function photoSortMoveInlinePhotos(data,from,ids,destination,mode='move'){
+  if(data!==albumAiGroupsData||!data.valid())throw Error('写真の状態が更新されたよ。開き直してね');
+  photoFoldersEnsure(data);
+  const sourceUnplaced=from===PHOTO_SORT_UNPLACED;
+  const source=sourceUnplaced?null:data.photoFolders.find(f=>f.key===from);
+  const allowed=sourceUnplaced?photoSortUnplacedIndexes(data):source?photoFolderIndexes(data,source):[];
+  if((!source&&!sourceUnplaced)||!ids.length||new Set(ids).size!==ids.length||
+   ids.some(i=>!allowed.includes(i)))throw Error('写真とフォルダが一致しません。選び直してね');
+  const match=typeof destination==='string'?/^__merge-empty-slot:(\\d+)$/.exec(destination):null;
   const snapshot=photoFolderSnapshot(data),undo=[...data.photoFolderUndo];
   try{
-   const previous=new Set(data.photoFolders.map(f=>f.key));
-   photoMatchSplitPhotos(data,from,ids);
-   const made=data.photoFolders.find(f=>!previous.has(f.key));
-   if(!made)throw Error('移動先を作れませんでした');
-   data.photoMergeSlots[slot]=made.key;
+   if(match){
+    const slot=Number(match[1]),childId=String(data.photoMergeChildIds?.[slot]||'');
+    if(!childId||!getChildren(data.classId).some(k=>String(k.id)===childId)||
+     data.photoFolders.some(f=>f.key===data.photoMergeSlots?.[slot]))
+     throw Error('園児の移動先が変わったよ。もう一度選び直してね');
+    if(!sourceUnplaced&&mode==='move'){
+     const previous=new Set(data.photoFolders.map(f=>f.key));
+     photoMatchSplitPhotos(data,from,ids);
+     const made=data.photoFolders.find(f=>!previous.has(f.key));
+     if(!made)throw Error('移動先を作れませんでした');
+     data.photoMergeSlots[slot]=made.key;
+    }else{
+     photoFolderRemember(data);
+     let key;
+     do{key='manual-photo-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9)}
+     while(data.photoFolders.some(f=>f.key===key)||data.groups.some(g=>String(g.key)===key));
+     data.photoFolders.push({key,groupKeys:[],addedPhotoIndexes:[...ids],excludedPhotoIndexes:[]});
+     data.photoMergeSlots[slot]=key;
+    }
+   }else{
+    const target=data.photoFolders.find(f=>f.key===destination);
+    if(!target||target===source)throw Error('移動先のフォルダを選び直してね');
+    if(sourceUnplaced){
+     photoFolderRemember(data);
+     target.excludedPhotoIndexes=(target.excludedPhotoIndexes||[]).filter(i=>!ids.includes(i));
+     target.addedPhotoIndexes=[...new Set([...(target.addedPhotoIndexes||[]),...ids])];
+     data.photoFolderReviewed.delete(target.key);
+     data.photoFolderMistakeReviewed.delete(target.key);
+    }else if(mode==='add')photoFolderAddMembership(data,from,ids,destination);
+    else photoFolderEditMembership(data,from,ids,destination);
+   }
+   if(!sourceUnplaced)data.photoFolderMistakeReviewed.delete(from);
+   data.photoMatchFinalReviewed=false;
+   return ids.length;
   }catch(error){
-   photoFolderRestoreSnapshot(data,snapshot);
-   data.photoFolderUndo=undo;
-   throw error;
+   photoFolderRestoreSnapshot(data,snapshot);data.photoFolderUndo=undo;throw error;
   }
- }else{
-  if(!destination||!data.photoFolders.some(f=>f.key===destination&&f.key!==from))
-   throw Error('移動先のフォルダを選び直してね');
-  photoFolderEditMembership(data,from,ids,destination);
  }
- data.photoMatchFinalReviewed=false;
- return ids.length;
-}
+ function finishPhotoSortFromCheck(){
+  const data=albumAiGroupsData;
+  if(!data?.valid()||!data.photoMatchActive){window.alert('写真の整理状況を確認できません。');return}
+  const kids=getChildren(data.classId),ids=new Set(kids.map(k=>String(k.id)));
+  if(!Array.isArray(photoAssignments)||photoAssignments.length!==files.length){
+   window.alert('写真と振り分けの記録が一致しません。途中保存はそのまま残っています。');return;
+  }
+  const all=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
+  const childByFolder=new Map(),linked={};
+  for(let slot=0;slot<(data.photoMergeSlots||[]).length;slot++){
+   const key=data.photoMergeSlots[slot],id=String(data.photoMergeChildIds?.[slot]||'');
+   if(key&&ids.has(id)){childByFolder.set(key,id);linked[key]=id}
+  }
+  for(const f of all){
+   if(childByFolder.has(f.key))continue;
+   const id=String(data.photoMatchFolderChild?.[f.key]||'');
+   if(ids.has(id)){childByFolder.set(f.key,id);linked[f.key]=id}
+  }
+  const noChild=all.filter(f=>!childByFolder.has(f.key)).length;
+  const unreviewed=all.filter(f=>!data.photoFolderMistakeReviewed.has(f.key)).length;
+  const staged=files.map(()=>[]);
+  for(const f of all){
+   const id=childByFolder.get(f.key);
+   if(!id)continue;
+   for(const index of photoFolderIndexes(data,f)){
+    if(!staged[index].includes(id))staged[index].push(id);
+   }
+  }
+  const noFolder=files.reduce((n,_,i)=>n+(!data.unusedPhotoIndexes.has(i)&&!staged[i].length?1:0),0);
+  if(noChild||unreviewed||noFolder){
+   const msg='まだ振り分けを完了できないよ。園児未設定のカード '+noChild+
+    '組、確認していないフォルダ '+unreviewed+'組、未振り分け写真 '+noFolder+'枚。STEP 2で整理してね。';
+   const label=$('#photoSortProgressSaveStatus');if(label)label.textContent='⚠️ '+msg;
+   window.alert('⚠️ '+msg);return;
+  }
+  const changed=files.reduce((n,_,i)=>{
+   const before=[...new Set(assignmentPhotoIds(i))].sort().join('|');
+   const after=[...staged[i]].sort().join('|');
+   return n+(before!==after&&before!==''?1:0);
+  },0);
+  if(changed&&!window.confirm('以前に登録した'+changed+
+   '枚の園児情報と、今整理したフォルダが異なります。今回のフォルダを正として見開き編集に反映しますか？\\nキャンセルなら以前の登録は変更しません。'))return;
+  const oldAssignments=photoAssignments,oldLinks=data.photoMatchFolderChild;
+  photoAssignments=staged;data.photoMatchFolderChild={...oldLinks,...linked};
+  try{
+   startEditingWithSelectedPhotos();
+   if(!document.querySelector('[data-screen="editor"]')?.classList.contains('active')){
+    photoAssignments=oldAssignments;data.photoMatchFolderChild=oldLinks;
+   }
+  }catch(error){
+   photoAssignments=oldAssignments;data.photoMatchFolderChild=oldLinks;
+   window.alert('見開き編集への移動を完了できませんでした：'+String(error?.message||error));
+  }
+ }
 function renderPhotoFolderMistakes(data,host){
  if(!host||!data?.valid())return;
  host.replaceChildren();
@@ -9527,7 +9602,7 @@ function renderClassPhotoSummary(id,used){
  counts.forEach(x=>{const row=document.createElement('span');row.className='photoUsageItem'+(used&&x.count>=goal?' achieved':'');row.textContent=(used&&x.count>=goal?'✓ ':'')+x.name+' '+x.count+(used?'/'+goal:'枚');list.append(row)});
  details.append(list);host.append(details);
 }
-$('#finishPhotoAssign').addEventListener('click',()=>startEditingWithSelectedPhotos());
+$('#finishPhotoAssign').addEventListener('click',()=>albumAiGroupsData?.valid()&&albumAiGroupsData.photoMatchActive?finishPhotoSortFromCheck():startEditingWithSelectedPhotos());
 
 // Explicit handoff from the face-review prototype to a NEW, still-empty album only.
 // Never edits an existing album or writes any saved album database until the user later saves.
