@@ -3301,6 +3301,43 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  box-shadow:0 7px 20px #1c3c5445;font-size:12px;font-weight:800;
 }
 
+
+/* DM: clear face markers, close-up insets and intuitive controls only. */
+#albumAiSingletonPairs .pairOriginalFrame .pairFaceMarker{filter:drop-shadow(0 1px 2px rgba(20,30,45,.65))}
+#albumAiSingletonPairs .pairOriginalFrame .pairFaceZoom{
+ position:absolute;z-index:2;bottom:6px;left:6px;display:block;
+ width:clamp(66px,36%,106px);aspect-ratio:1;
+ border:3px solid #fff;border-radius:11px;overflow:hidden;
+ background:#e8f0f7;box-shadow:0 0 0 2px #ff3288,0 3px 9px #152f4766;
+ pointer-events:none;
+}
+#albumAiSingletonPairs .pairOriginalFrame .pairFaceZoom[hidden]{display:none}
+#albumAiSingletonPairs .pairOriginalFrame .pairFaceZoom img{
+ position:absolute;display:block;height:auto;max-width:none;object-fit:fill;border-radius:0;pointer-events:none;
+}
+#albumAiSingletonPairs .pairFaceZoomLabel{
+ position:absolute;bottom:0;left:0;right:0;padding:3px 0;
+ background:rgba(38,53,73,.87);color:#fff;text-align:center;font-size:10px;font-weight:850;line-height:1.25;
+}
+#albumAiSingletonPairs .pairFaceTools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#albumAiSingletonPairs .pairFaceTools .pairQuickMove,
+#albumAiSingletonPairs .pairFaceTools .pairExcludeToggle{
+ display:block;width:100%;min-width:0;min-height:38px;margin:0;
+ border-radius:9px;padding:5px 3px;font-size:clamp(10px,1.1vw,12px);
+ line-height:1.3;white-space:normal;font-weight:800;
+}
+#albumAiSingletonPairs .pairFaceTools .pairQuickMove{
+ border:1px solid #a8d5f1;background:#eaf7ff;color:#24648c;
+}
+#albumAiSingletonPairs .pairGameGuide{font-size:13px;font-weight:750}
+@media(max-width:430px){
+ #albumAiSingletonPairs .pairOriginalFrame .pairFaceZoom{width:clamp(60px,34%,90px);border-width:2px}
+ #albumAiSingletonPairs .pairFaceZoomLabel{font-size:9px}
+ #albumAiSingletonPairs .pairFaceTools{gap:3px}
+ #albumAiSingletonPairs .pairFaceTools .pairQuickMove,
+ #albumAiSingletonPairs .pairFaceTools .pairExcludeToggle{font-size:10px;padding:5px 2px}
+}
+
 </style>
 </head>
 <body>
@@ -3361,7 +3398,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DL</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DM</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -3470,7 +3507,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DL</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DM</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -6196,7 +6233,7 @@ function renderCurrentAlbumSingletonPairs(){
  const gameHero=document.createElement('div');gameHero.className='pairGameHero';
  const gameIntro=document.createElement('div');
  const gameTitle=document.createElement('strong');gameTitle.textContent='🎮 おもいで顔あわせ！';
- const gameDescription=document.createElement('p');gameDescription.textContent='写真を見比べて、顔をお引っ越し！ あとで確認もできるよ。';
+ const gameDescription=document.createElement('p');gameDescription.textContent='顔のアップと元写真を見くらべて、ちがう顔をおひっこし！';
  gameIntro.append(gameTitle,gameDescription);
  const mascot=document.createElement('span');mascot.className='pairGameMascot';
  mascot.textContent='🐻 🌷';mascot.setAttribute('aria-hidden','true');
@@ -6205,7 +6242,7 @@ function renderCurrentAlbumSingletonPairs(){
  const names=document.createElement('h3');names.className='pairReviewNames';
  names.textContent='👀 おなじ子？ べつの子？';
  const gameGuide=document.createElement('p');gameGuide.className='pairGameGuide';
- gameGuide.textContent='↔ 顔を別候補へお引っ越ししたり、候補から外したりできるよ。修正を確定してから同じ子・べつの子を選ぼう。';
+ gameGuide.textContent='① 顔アップと元写真を見くらべよう！ ちがう顔は「移動」かドラッグ、迷った顔は「はずす」で整理できるよ。';
  const feedback=document.createElement('p');feedback.className='pairReviewFeedback muted';
  feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
  const assignPanel=document.createElement('section');assignPanel.className='pairAssignPanel';
@@ -6248,22 +6285,42 @@ function renderCurrentAlbumSingletonPairs(){
   const img=document.createElement('img');img.alt=label+'の元写真全体';img.loading='lazy';
   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('aria-hidden','true');svg.classList.add('pairFaceMarker');
+  const backing=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  backing.setAttribute('fill','none');backing.setAttribute('stroke','#fff');backing.setAttribute('rx','7');
   const rect=document.createElementNS('http://www.w3.org/2000/svg','rect');
-  rect.setAttribute('fill','none');rect.setAttribute('stroke','#ffd55c');rect.setAttribute('rx','7');
-  svg.append(rect);
+  rect.setAttribute('fill','none');rect.setAttribute('stroke','#ff3288');rect.setAttribute('rx','7');
+  svg.append(backing,rect);
+  // DM: visual-only close-up. Keep the full photo and face detection data unchanged.
+  const faceZoom=document.createElement('span');faceZoom.className='pairFaceZoom';faceZoom.hidden=true;
+  faceZoom.setAttribute('aria-hidden','true');
+  const zoomImg=document.createElement('img');zoomImg.alt='';zoomImg.draggable=false;
+  const zoomLabel=document.createElement('span');zoomLabel.className='pairFaceZoomLabel';zoomLabel.textContent='👀 顔アップ';
+  faceZoom.append(zoomImg,zoomLabel);
   img.addEventListener('load',()=>{
    const width=img.naturalWidth,height=img.naturalHeight;
-   if(!width||!height||!Array.isArray(sample?.box))return;
+   if(!width||!height||!Array.isArray(sample?.box)||sample.box.length<4)return;
    const scale=Math.min(1,1200/Math.max(width,height));
-   const [x,y,w,h]=sample.box;
+   const [x,y,w,h]=sample.box.map(Number).map(v=>v/scale);
+   if(![x,y,w,h].every(Number.isFinite)||w<=0||h<=0)return;
    svg.setAttribute('viewBox','0 0 '+width+' '+height);
-   rect.setAttribute('x',String(x/scale));rect.setAttribute('y',String(y/scale));
-   rect.setAttribute('width',String(w/scale));rect.setAttribute('height',String(h/scale));
-   rect.setAttribute('stroke-width',String(Math.max(3,Math.max(width,height)/300)));
+   for(const outline of [backing,rect]){
+    outline.setAttribute('x',String(x));outline.setAttribute('y',String(y));
+    outline.setAttribute('width',String(w));outline.setAttribute('height',String(h));
+   }
+   const stroke=Math.max(3,Math.max(width,height)/300);
+   rect.setAttribute('stroke-width',String(stroke));
+   backing.setAttribute('stroke-width',String(stroke*2.4));
+   const cropSize=Math.max(1,Math.min(width,height,Math.max(w,h)*1.65));
+   const cropX=Math.max(0,Math.min(width-cropSize,x+w/2-cropSize/2));
+   const cropY=Math.max(0,Math.min(height-cropSize,y+h/2-cropSize/2));
+   zoomImg.style.width=(width/cropSize*100)+'%';
+   zoomImg.style.left=(-cropX/cropSize*100)+'%';
+   zoomImg.style.top=(-cropY/cropSize*100)+'%';
+   zoomImg.src=img.currentSrc||img.src;faceZoom.hidden=false;
   });
   if(file)img.src=fileUrl(file);
   const hint=document.createElement('small');hint.textContent='タップで写真全体を拡大';
-  frame.append(img,svg);button.append(frame,hint);
+  frame.append(img,svg,faceZoom);button.append(frame,hint);
   button.addEventListener('click',()=>openAlbumAssignedPhoto(sample.index));
   return button;
  };
@@ -6275,12 +6332,15 @@ function renderCurrentAlbumSingletonPairs(){
   const draft=pendingPair;if(!draft)return;
   const dirty=!!(draft.moved.size||draft.excluded.size);
   correctionActions.hidden=!dirty;
+  gameGuide.textContent=dirty?
+   '② おひっこし・はずすを確認して、「顔の修正を確定」を押してね。まだやり直せるよ！':
+   '① 顔アップと元写真を見くらべよう！ ちがう顔は「移動」かドラッグ、迷った顔は「はずす」で整理。よければ下の3つから選んでね。';
   same.disabled=dirty;different.disabled=dirty;later.disabled=dirty;
   for(const entry of assignPhotos.querySelectorAll('.pairReviewFaceItem')){
    const faceIndex=Number(entry.dataset.faceIndex),excluded=draft.excluded.has(faceIndex);
    entry.classList.toggle('pairExcludedFace',excluded);
    const toggle=entry.querySelector('.pairExcludeToggle');
-   if(toggle){toggle.textContent=excluded?'↩ 候補に戻す':'📦 この顔を候補から外す';
+   if(toggle){toggle.textContent=excluded?'↩ 顔をもどす':'📦 この顔はちがう';
     toggle.setAttribute('aria-pressed',String(excluded));}
   }
  };
@@ -6356,7 +6416,7 @@ function renderCurrentAlbumSingletonPairs(){
     preview.draggable=false;
     const image=preview.querySelector('img');if(image)image.draggable=false;
     const grip=document.createElement('button');grip.type='button';grip.className='pairDragHandle';
-    grip.textContent='↔ おひっこし';grip.title='ドラッグして別の顔候補へ移動';
+    grip.textContent='✋ ドラッグで移動';grip.title='つかんで反対側の顔候補へ動かす';
     grip.setAttribute('aria-label','この写真をドラッグで別の候補へ移動');
     grip.draggable=true;
     grip.addEventListener('dragstart',event=>{event.stopPropagation();onDragStart(event)});
@@ -6404,7 +6464,7 @@ function renderCurrentAlbumSingletonPairs(){
     });
     grip.addEventListener('pointercancel',clearTouch);
     const quick=document.createElement('button');quick.type='button';quick.className='secondary pairQuickMove';
-    quick.textContent='→ 候補'+(side?1:2)+'へ移動';
+    quick.textContent='➡️ 候補'+(side?1:2)+'へ移動';quick.setAttribute('aria-label','この顔を反対側の候補へ移動');
     quick.addEventListener('click',()=>moveFaceInDraft(faceIndex,1-side));
     const exclude=document.createElement('button');exclude.type='button';
     exclude.className='secondary pairExcludeToggle';
@@ -6419,7 +6479,8 @@ function renderCurrentAlbumSingletonPairs(){
     discard.className='secondary pairDiscardPhoto';
     discard.textContent='🗑 この写真は使わない';
     discard.addEventListener('click',()=>setCurrentAlbumPhotoUnused(data,data.samples[faceIndex]?.index));
-    entry.append(preview,grip,quick,exclude,discard);gallery.append(entry);
+    const faceTools=document.createElement('div');faceTools.className='pairFaceTools';faceTools.append(quick,exclude);
+    entry.append(preview,grip,faceTools,discard);gallery.append(entry);
    }
    const expand=document.createElement('button');expand.type='button';
    expand.className='secondary pairReviewExpand';expand.textContent=expanded[side]?'閉じる ›':'▣ 写真をくわしく見る';
