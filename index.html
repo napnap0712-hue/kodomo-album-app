@@ -3780,7 +3780,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 EF</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 EG</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -4909,6 +4909,22 @@ function startEditingWithSelectedPhotos(){
    window.alert('⚠️ '+msg+' 途中保存はいつでもできるよ。');
    return;
   }
+  // Some child associations may originate outside the matched photo folders.
+  // Do not silently discard or accept them: ask the teacher to confirm.
+  const expected=new Map();
+  for(const f of alive){
+   const id=String(data.photoMatchFolderChild[f.key]);
+   for(const index of photoFolderIndexes(data,f)){
+    if(!expected.has(index))expected.set(index,new Set());
+    expected.get(index).add(id);
+   }
+  }
+  const unexpected=[...expected.entries()].filter(([index,ids])=>
+   assignmentPhotoIds(index).some(id=>!ids.has(String(id))));
+  if(unexpected.length&&!window.confirm('⚠️ '+unexpected.length+
+   '枚に、マッチングで作ったフォルダとは別の園児への登録があるよ。'+
+   '集合写真として意図的に追加したものなら続行できるけれど、間違いがないか園児別フォルダで確認した？'))
+   return;
  }
  const unused=albumAiGroupsData?.valid() ? albumAiGroupsData.unusedPhotoIndexes : null;
  if(unused?.size){
@@ -7609,8 +7625,21 @@ function renderPhotoMatching(data,host){
   data.photoMatchFocus=notDone[0].key;data.photoMatchCandidateKey=null;data.photoMatchShowAll=false;
  }
  const A=byKey.get(data.photoMatchFocus),facesA=photoMatchFaceSamples(data,A);
+ // EG: Reuse stable comparison scores while photo memberships remain unchanged.
+ // A different photo/group signature always forces a fresh local calculation.
+ const scoreCache=data.photoMatchScoreCache||(data.photoMatchScoreCache=new Map());
+ if(scoreCache.size>1800)scoreCache.clear();
+ const aSignature=photoMatchSignature(data,A);
  const candidates=folders.filter(f=>f!==A&&!validDifferent.has(photoMatchPairId(A.key,f.key)))
-  .map(f=>({folder:f,score:photoMatchScore(data,facesA,photoMatchFaceSamples(data,f))}))
+  .map(f=>{
+   const key=photoMatchPairId(A.key,f.key)+'|'+aSignature+'|'+photoMatchSignature(data,f);
+   let score=scoreCache.get(key);
+   if(score===undefined){
+    score=photoMatchScore(data,facesA,photoMatchFaceSamples(data,f));
+    scoreCache.set(key,score);
+   }
+   return {folder:f,score};
+  })
   .sort((x,y)=>y.score-x.score||(folders.indexOf(x.folder)-folders.indexOf(y.folder)));
  const suggested=candidates.filter(row=>!reviewed.has(row.folder.key)&&row.score>=.55).slice(0,8);
  const pool=data.photoMatchShowAll?candidates:suggested;
@@ -7624,7 +7653,7 @@ function renderPhotoMatching(data,host){
  host.append(count);
  const selectedA=new Set(),selectedB=new Set();
  // Drag mode changes only where the selected photo is shown, never the File.
- let dragMode='move';
+ let dragMode=data.photoMatchDragMode==='add'?'add':'move';
  const board=document.createElement('div');board.className='photoMatchBoard';
  let desktopDrag=null;
  function move(from,to,ids,mode='move'){
@@ -7766,15 +7795,16 @@ function renderPhotoMatching(data,host){
  if(B){
   const dragOptions=document.createElement('div');dragOptions.className='photoMatchDragMode';
   const moveMode=btn('↗ 移動して整理','secondary',()=>{
-   dragMode='move';moveMode.classList.add('selected');addMode.classList.remove('selected');
+   dragMode='move';data.photoMatchDragMode='move';moveMode.classList.add('selected');addMode.classList.remove('selected');
    moveMode.setAttribute('aria-pressed','true');addMode.setAttribute('aria-pressed','false');
   });
   const addMode=btn('📋 両方に追加','secondary',()=>{
-   dragMode='add';addMode.classList.add('selected');moveMode.classList.remove('selected');
+   dragMode='add';data.photoMatchDragMode='add';addMode.classList.add('selected');moveMode.classList.remove('selected');
    addMode.setAttribute('aria-pressed','true');moveMode.setAttribute('aria-pressed','false');
   });
-  moveMode.classList.add('selected');moveMode.setAttribute('aria-pressed','true');
-  addMode.setAttribute('aria-pressed','false');
+  (dragMode==='add'?addMode:moveMode).classList.add('selected');
+  moveMode.setAttribute('aria-pressed',String(dragMode==='move'));
+  addMode.setAttribute('aria-pressed',String(dragMode==='add'));
   dragOptions.append(moveMode,addMode);
   const instruction=document.createElement('p');instruction.className='photoMatchInstruction';
   instruction.textContent='写真をタップで選択 → 移動・追加。ドラッグでも操作できるよ。';
