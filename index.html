@@ -7768,6 +7768,67 @@ function renderPhotoFolderMistakes(data,host){
     }
    });
    grip.addEventListener('pointercancel',clearPointer);
+   // EO: Direct card dragging; normal touch swipes still scroll.
+   row.draggable=true;img.draggable=false;
+   row.addEventListener('dragstart',event=>{
+    activeDrag=photoPayload(index);
+    if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','omoide-photo-move')}
+   });
+   row.addEventListener('dragend',()=>{activeDrag=null;clearHighlights()});
+   let fingerDrag=null,fingerGhost=null,skipTap=false;
+   const matchingTouch=(list,id)=>[...list].find(point=>point.identifier===id);
+   function endFingerDrag(){
+    if(fingerDrag)clearTimeout(fingerDrag.timer);
+    fingerDrag=null;fingerGhost?.remove();fingerGhost=null;
+    row.classList.remove('photoMoveInlineDragging');clearHighlights();
+   }
+   pick.addEventListener('click',event=>{
+    if(skipTap){event.preventDefault();event.stopImmediatePropagation()}
+   },true);
+   row.addEventListener('touchstart',event=>{
+    if(fingerDrag||event.touches.length!==1||event.target.closest('.photoMoveInlineZoom'))return;
+    const point=event.touches[0];
+    fingerDrag={id:point.identifier,ox:point.clientX,oy:point.clientY,x:point.clientX,y:point.clientY,active:false,moved:false,timer:null};
+    fingerDrag.timer=setTimeout(()=>{
+     if(!fingerDrag)return;
+     fingerDrag.active=true;row.classList.add('photoMoveInlineDragging');
+     fingerGhost=make('div','photoFolderDragGhost','📷 '+photoPayload(index).length+'枚');
+     document.body.append(fingerGhost);
+     fingerGhost.style.left=fingerDrag.x+'px';fingerGhost.style.top=fingerDrag.y+'px';
+    },320);
+   },{passive:true});
+   row.addEventListener('touchmove',event=>{
+    if(!fingerDrag)return;
+    const point=matchingTouch(event.touches,fingerDrag.id);if(!point){endFingerDrag();return}
+    const delta=Math.hypot(point.clientX-fingerDrag.ox,point.clientY-fingerDrag.oy);
+    if(!fingerDrag.active){if(delta>9)endFingerDrag();return}
+    if(event.cancelable)event.preventDefault();
+    fingerDrag.x=point.clientX;fingerDrag.y=point.clientY;
+    if(delta>9)fingerDrag.moved=true;
+    if(fingerGhost){fingerGhost.style.left=point.clientX+'px';fingerGhost.style.top=point.clientY+'px'}
+    const target=document.elementFromPoint?.(point.clientX,point.clientY)?.closest?.('[data-inline-move-target]');
+    clearHighlights();if(target&&targets.contains(target))target.classList.add('photoMoveInlineHover');
+    const bounds=targets.getBoundingClientRect();
+    if(point.clientY>=bounds.top&&point.clientY<=bounds.bottom){
+     if(point.clientX<bounds.left+28)targets.scrollLeft-=18;
+     else if(point.clientX>bounds.right-28)targets.scrollLeft+=18;
+    }
+    if(point.clientY<85)window.scrollBy?.(0,-13);
+    else if(point.clientY>window.innerHeight-85)window.scrollBy?.(0,13);
+   },{passive:false});
+   row.addEventListener('touchend',event=>{
+    if(!fingerDrag)return;
+    const point=matchingTouch(event.changedTouches,fingerDrag.id);if(!point)return;
+    const active=fingerDrag.active,moved=active&&fingerDrag.moved,payload=moved?photoPayload(index):[];
+    const target=moved?document.elementFromPoint?.(point.clientX,point.clientY)?.closest?.('[data-inline-move-target]'):null;
+    if(active&&event.cancelable){event.preventDefault();skipTap=true;setTimeout(()=>{skipTap=false},450)}
+    endFingerDrag();
+    if(moved){
+     if(target&&targets.contains(target))perform(target.dataset.inlineMoveTarget,payload);
+     else notice.textContent='園児名のボックスの上で指を離してね。';
+    }
+   },{passive:false});
+   row.addEventListener('touchcancel',endFingerDrag,{passive:true});
    row.append(pick,zoom,grip);gallery.append(row);
   }
   shown=end;
