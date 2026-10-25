@@ -7454,7 +7454,7 @@ function renderPhotoSortGameProgress(){
   const allowed=sourceUnplaced?photoSortUnplacedIndexes(data):source?photoFolderIndexes(data,source):[];
   if((!source&&!sourceUnplaced)||!ids.length||new Set(ids).size!==ids.length||
    ids.some(i=>!allowed.includes(i)))throw Error('写真とフォルダが一致しません。選び直してね');
-  const match=typeof destination==='string'?/^__merge-empty-slot:(\\d+)$/.exec(destination):null;
+  const match=typeof destination==='string'?/^__merge-empty-slot:(\d+)$/.exec(destination):null;
   const snapshot=photoFolderSnapshot(data),undo=[...data.photoFolderUndo];
   try{
    if(match){
@@ -7536,7 +7536,7 @@ function renderPhotoSortGameProgress(){
    return n+(before!==after&&before!==''?1:0);
   },0);
   if(changed&&!window.confirm('以前に登録した'+changed+
-   '枚の園児情報と、今整理したフォルダが異なります。今回のフォルダを正として見開き編集に反映しますか？\\nキャンセルなら以前の登録は変更しません。'))return;
+   '枚の園児情報と、今整理したフォルダが異なります。今回のフォルダを正として見開き編集に反映しますか？\nキャンセルなら以前の登録は変更しません。'))return;
   const oldAssignments=photoAssignments,oldLinks=data.photoMatchFolderChild;
   photoAssignments=staged;data.photoMatchFolderChild={...oldLinks,...linked};
   try{
@@ -7553,14 +7553,17 @@ function renderPhotoFolderMistakes(data,host){
  if(!host||!data?.valid())return;
  host.replaceChildren();
  let folders;
- try{folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length)}
- catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
+ try{
+  folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
+  const missing=photoSortUnplacedIndexes(data);
+  if(missing.length)folders.push({key:PHOTO_SORT_UNPLACED,groupKeys:[],addedPhotoIndexes:missing,excludedPhotoIndexes:[]});
+ }catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
  const reviewed=data.photoFolderMistakeReviewed;
  const slots=data.photoMergeSlots||[];
  folders.sort((a,b)=>{
   const aSlot=slots.indexOf(a.key),bSlot=slots.indexOf(b.key);
-  return (aSlot<0?10000+data.photoFolders.indexOf(a):aSlot)-
-   (bSlot<0?10000+data.photoFolders.indexOf(b):bSlot);
+  return (a.key===PHOTO_SORT_UNPLACED?100000:aSlot<0?10000+data.photoFolders.indexOf(a):aSlot)-
+   (b.key===PHOTO_SORT_UNPLACED?100000:bSlot<0?10000+data.photoFolders.indexOf(b):bSlot);
  });
  if(!folders.some(f=>f.key===mistakeFocusKey))
   mistakeFocusKey=folders.find(f=>slots.includes(f.key)&&!reviewed.has(f.key))?.key||
@@ -7576,7 +7579,7 @@ function renderPhotoFolderMistakes(data,host){
  };
  const header=make('div','photoFolderHero');
  header.append(make('strong','','📷 STEP 2｜写真のおひっこし！'),
-  make('p','','この画面で写真を選んで、下の園児名を押すだけで移動できるよ。🔎で写真全体を確認！'));
+  make('p','','写真をタップで選択。長押しでドラッグ、または園児名をタップで移動できるよ。'));
  host.append(header);
  const n=folders.filter(f=>reviewed.has(f.key)).length;
  const count=make('p','photoFolderCounter',
@@ -7590,15 +7593,15 @@ function renderPhotoFolderMistakes(data,host){
   const note=make('p','photoFolderNotice',data.photoFolderNotice);note.setAttribute('role','status');host.append(note);
  }
  if(!folders.length){
-  host.append(btn('🏠 園児へ写真を登録 ›','primary wide',
-   ()=>setPhotoAssignFlowStep('pending',{scroll:true})));
+  host.append(make('p','photoFolderNotice','整理する写真がまだないよ。取り込み内容を確認してね。'));
   renderPhotoSortGameProgress();return;
  }
  const picker=document.createElement('select');picker.className='photoMistakePicker';
  picker.setAttribute('aria-label','写真を確認する園児または未仕分けカード');
  folders.forEach((folder,i)=>{
   const opt=document.createElement('option');opt.value=folder.key;
-  opt.textContent=(reviewed.has(folder.key)?'✅ ':'🔎 ')+photoSortFolderLabel(data,folder,i)+
+  opt.textContent=(reviewed.has(folder.key)?'✅ ':'🔎 ')+
+   (folder.key===PHOTO_SORT_UNPLACED?'📦 未振り分け写真':photoSortFolderLabel(data,folder,i))+
    ' · '+photoFolderIndexes(data,folder).length+'枚';picker.append(opt);
  });
  picker.value=mistakeFocusKey;
@@ -7608,6 +7611,7 @@ function renderPhotoFolderMistakes(data,host){
  const selected=new Set(),gallery=make('div','photoMistakeGallery photoMoveInlineGallery');
  gallery.setAttribute('aria-label','このフォルダの写真を選ぶ');
  const toolbar=make('div','photoMoveInlineToolbar');
+ let transferMode='move';
  const selectedText=make('strong','','写真をタップして選択しよう');
  const clear=btn('選択解除','secondary',()=>{selected.clear();syncSelection()});
  const selectVisible=btn('表示中を全選択','secondary',()=>{
@@ -7615,12 +7619,18 @@ function renderPhotoFolderMistakes(data,host){
    selected.add(Number(item.dataset.photoIndex));
   syncSelection();
  });
- toolbar.append(selectedText,selectVisible,clear);
+ const addMode=btn('📋 集合写真を追加：OFF','secondary',()=>{
+  transferMode=transferMode==='move'?'add':'move';
+  addMode.textContent='📋 集合写真を追加：'+(transferMode==='add'?'ON':'OFF');
+  addMode.setAttribute('aria-pressed',String(transferMode==='add'));
+ });
+ addMode.setAttribute('aria-pressed','false');
+ toolbar.append(selectedText,selectVisible,clear,addMode);
  host.append(toolbar);
  // Keep destinations in this same view and within reach during scrolling.
  const tray=make('section','photoMoveInlineTray');
- const trayTitle=make('strong','','🌷 写真の移動先を選ぶ');
- const hint=make('p','muted','写真を選んで園児名をタップ。選択写真の↗をドラッグしても移動できるよ。');
+ const trayTitle=make('strong','','🌷 おひっこし先');
+ const hint=make('p','muted','園児名をタップ、または写真を長押しで移動。集合写真は「追加」をONに。');
  const targets=make('div','photoMoveInlineTargets');
  tray.append(trayTitle,hint,targets);
  host.append(tray);
@@ -7632,8 +7642,8 @@ function renderPhotoFolderMistakes(data,host){
  function perform(dest,photoIndexes){
   if(!photoIndexes.length){notice.textContent='先に移動する写真を選んでね。';return}
   try{
-   const moved=photoSortMoveInlinePhotos(data,folder.key,photoIndexes,dest);
-   data.photoFolderNotice='✅ '+moved+'枚を移動したよ。移動先の写真も確認してね。';
+   const moved=photoSortMoveInlinePhotos(data,folder.key,photoIndexes,dest,transferMode);
+   data.photoFolderNotice='✅ '+moved+'枚を'+(transferMode==='add'?'追加':'移動')+'したよ。移動先の写真も確認してね。';
    renderPhotoFolderMistakes(data,host);
   }catch(error){notice.textContent='⚠️ '+String(error?.message||error)}
  }
@@ -7777,11 +7787,21 @@ function renderPhotoFolderMistakes(data,host){
  host.append(actions);
  const next=make('section','photoMistakeNext');
  const remaining=folders.length-n;
- next.append(make('p','muted',remaining?
-  '🔎 未確認のフォルダが'+remaining+'組あるよ。次へ進めるけれど、最終完了までに確認してね。':
-  '✅ 写真の確認が終わったよ。次は園児への登録！'));
- next.append(btn('🏠 次へ：園児へ写真を登録 ›','primary wide',
-  ()=>setPhotoAssignFlowStep('pending',{scroll:true})));
+ next.append(make('strong','photoMoveFinishTitle','🌷 園児別フォルダ'));
+ const summary=make('div','photoMoveFolderSummary');
+ for(const kid of kids){
+  const id=String(kid.id),set=new Set();
+  (data.photoMergeChildIds||[]).forEach((childId,slot)=>{
+   if(String(childId)!==id)return;
+   const linked=data.photoFolders.find(f=>f.key===data.photoMergeSlots?.[slot]);
+   if(linked)for(const index of photoFolderIndexes(data,linked))set.add(index);
+  });
+  summary.append(make('span','',kid.name+' '+set.size+'枚'));
+ }
+ next.append(summary,make('p','muted',remaining?
+  '🔎 未確認のフォルダが'+remaining+'組あるよ。確認したら見開き編集へ！':
+  '✅ 確認完了！ 未仕分け写真がなければ見開き編集へ進めるよ。'));
+ next.append(btn('✅ 振り分け完了！見開き編集へ ›','primary wide',finishPhotoSortFromCheck));
  host.append(next);
  host.append(make('p','muted','移動後にもう一度確認できるよ。残したAIカードも消えないよ。途中保存は画面上のボタンから。'));
  renderPhotoSortGameProgress();
