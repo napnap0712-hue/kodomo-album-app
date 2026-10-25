@@ -6572,7 +6572,7 @@ function renderCurrentAlbumSingletonPairs(){
   restoreSkipped.hidden=skipped.size===0;
   previous.disabled=position===0;
   if(position>=candidates.length){
-   assignPanel.hidden=true;actions.hidden=true;names.hidden=true;note.hidden=true;
+   assignPanel.hidden=true;actions.hidden=true;names.hidden=true;
    complete.hidden=false;previous.disabled=false;
    later.textContent='🕒 あとで確認';
    complete.textContent=checked.size?
@@ -6583,7 +6583,7 @@ function renderCurrentAlbumSingletonPairs(){
     setPhotoAssignFlowStep('pending',{scroll:true});
    return;
   }
-  assignPanel.hidden=false;actions.hidden=false;names.hidden=false;note.hidden=false;
+  assignPanel.hidden=false;actions.hidden=false;names.hidden=false;
   complete.hidden=true;later.textContent='🕒 あとで確認';
   const item=candidates[position],choice=decisions.get(pairId(item))||(skipped.has(pairId(item))?'different':'');
   same.setAttribute('aria-pressed',String(choice==='same'));
