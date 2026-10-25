@@ -287,3 +287,26 @@
  #photoFolderMistakePanel .photoMoveInlineBadge{font-size:10px;padding:3px 2px}
  #photoFolderMistakePanel .photoMoveInlineToolbar button{font-size:10px}
 }
+
+/* EQ: two-stage photo move review; compact controls only. */
+#photoFolderMistakePanel .photoMoveExclude{color:#915c56;background:#fff9f6;border-color:#e8c5bd}
+#photoFolderMistakePanel .photoMoveRemoveOne{min-height:29px;padding:4px 2px;
+ font-size:10px;color:#92544d;background:#fff8f5;border:1px solid #ecd5cf;border-radius:8px}
+#photoFolderMistakePanel .photoMoveInlineItem .photoMoveRemoveOne{margin-top:0}
+#photoFolderMistakePanel .photoMoveExcluded{margin:5px 0;padding:7px 9px;
+ background:#fff8f5;border:1px solid #e9d6ce;border-radius:10px}
+#photoFolderMistakePanel .photoMoveExcluded>summary{font-size:12px;font-weight:800;color:#85605e;
+ cursor:pointer;padding:3px 0}
+#photoFolderMistakePanel .photoMoveExcludedList{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:7px;
+ margin-top:7px;max-height:28vh;overflow:auto}
+#photoFolderMistakePanel .photoMoveExcludedList button{font-size:11px;min-height:39px;
+ overflow-wrap:anywhere;white-space:normal}
+#photoFolderMistakePanel .photoMistakeActions{position:sticky;bottom:0;z-index:7;
+ background:#ffffffec;padding:6px;border:1px solid #dceaf1;border-radius:12px;
+ box-shadow:0 -4px 13px #41698e17;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#photoFolderMistakePanel .photoMoveInlineItem{touch-action:pan-y}
+@media(max-width:540px){
+ #photoFolderMistakePanel .photoMoveInlineToolbar{gap:5px}
+ #photoFolderMistakePanel .photoMoveInlineToolbar .photoMoveExclude{flex:1 1 100%}
+ #photoFolderMistakePanel .photoMoveInlineItem .photoMoveRemoveOne{font-size:9px}
+}
