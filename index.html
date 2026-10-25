@@ -3398,6 +3398,9 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 #albumAiSingletonPairs .photoFolderCard{display:flex;flex-direction:column;gap:8px;min-width:0;border:2px solid #d2e5f5;border-radius:16px;padding:11px;background:#fff;box-shadow:0 3px 0 #e5ecf4;}
 #albumAiSingletonPairs .photoFolderMain .photoFolderCard{background:#fff2f8;border:3px solid #ff9ec6}
 #albumAiSingletonPairs .photoFolderCard strong{text-align:center;font-size:13px;color:#466680}
+#albumAiSingletonPairs .photoFolderShowAll{min-height:36px;font-size:12px;border-radius:9px}
+#albumAiSingletonPairs .photoFolderGallery.photoFolderExpanded{max-height:330px;overflow-y:auto;overscroll-behavior:contain;padding:3px;background:#f4f8fc;border-radius:10px}
+#albumAiSingletonPairs .photoFolderGallery.photoFolderExpanded .photoFolderZoom{height:92px}
 #albumAiSingletonPairs .photoFolderCard small{text-align:center;color:#6e8597;font-size:11px}
 #albumAiSingletonPairs .photoFolderGallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;min-height:95px}
 #albumAiSingletonPairs .photoFolderMain .photoFolderGallery{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -3547,7 +3550,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
     </div>
     <aside class="pendingGamePostbox">
      <h3>📮 園児ポストへポン！</h3>
-     <p>写真を選んで園児名をタップ、または「↗ 移動」をドラッグしてね。</p>
+     <p>フォルダ全部なら園児名をタップ！ 一部だけなら写真を選んでね。</p>
      <div id="albumAiPendingDestinations" class="pendingQuickDestinations"></div>
     </aside>
    </div>
@@ -6029,7 +6032,10 @@ function clearCurrentAlbumSingletonPairs(){
   if(!data?.valid()){status.textContent='⚠️ 写真の状態が変わりました。元データは変更していないよ。';return;}
   const kids=getChildren(data.classId),kid=kids.find(c=>String(c.id)===String(childId));
   if(!kid){status.textContent='⚠️ 園児名簿にない名前です。';return;}
-  const requested=only===null?[...pendingQuickSelected]:(Array.isArray(only.indices)?only.indices:[only.index]);
+  const requested=only===null?(pendingQuickSelected.size?[...pendingQuickSelected]:
+   pendingGameFolder!==null&&pendingGameFolder!==PENDING_GAME_INBOX?
+    pendingGameAllowedItems(data).map(item=>item.index):[]):
+   (Array.isArray(only.indices)?only.indices:[only.index]);
   if(!requested.length){status.textContent='写真をタップして選んでね。';return;}
   const available=new Set(pendingGameAllowedItems(data).map(item=>item.index));
   if(requested.some(index=>!Number.isInteger(index)||!available.has(index))){
@@ -6622,16 +6628,26 @@ function renderPhotoFolders(data,host){
  function tile(folder,max){
   const photos=photoFolderIndexes(data,folder),card=document.createElement('article');card.className='photoFolderCard';
   const gallery=document.createElement('div');gallery.className='photoFolderGallery';
-  for(const index of photos.slice(0,max)){
-   const zoom=button('','photoFolderZoom',()=>openAlbumAssignedPhoto(index));
-   zoom.setAttribute('aria-label','写真'+(index+1)+'を拡大');
-   const img=document.createElement('img');img.alt='写真'+(index+1);img.loading='lazy';img.decoding='async';
-   img.src=fileUrl(data.sourceFiles[index]);zoom.append(img);gallery.append(zoom);
+  function showImages(expanded){
+   gallery.replaceChildren();gallery.classList.toggle('photoFolderExpanded',expanded);
+   for(const index of (expanded?photos:photos.slice(0,max))){
+    const zoom=button('','photoFolderZoom',()=>openAlbumAssignedPhoto(index));
+    zoom.setAttribute('aria-label','写真'+(index+1)+'を拡大');
+    const img=document.createElement('img');img.alt='写真'+(index+1);img.loading='lazy';img.decoding='async';
+    img.src=fileUrl(data.sourceFiles[index]);zoom.append(img);gallery.append(zoom);
+   }
   }
+  showImages(false);
   const name=document.createElement('strong');
   name.textContent='📁 写真 '+photos.length+'枚'+(folder.groupKeys.length>1?' · まとめ済み':'');
   card.append(gallery,name);
-  if(photos.length>max){const more=document.createElement('small');more.textContent='ほか '+(photos.length-max)+'枚';card.append(more)}
+  if(photos.length>max){
+   const showAll=button('▣ 全'+photos.length+'枚を見る','secondary photoFolderShowAll',()=>{
+    const expanded=!gallery.classList.contains('photoFolderExpanded');
+    showImages(expanded);showAll.textContent=expanded?'▣ 少なく表示':'▣ 全'+photos.length+'枚を見る';
+   });
+   card.append(showAll);
+  }
   return card;
  }
  const main=document.createElement('section');main.className='photoFolderMain';
