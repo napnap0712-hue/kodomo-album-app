@@ -3443,7 +3443,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DN</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DO</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -3552,7 +3552,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DN</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DO</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -6283,6 +6283,7 @@ function renderGroupedFaceReview(data,host){
     faceBatchUndoJudgments:null;
    faceBatchSelectedKeys.clear();faceBatchFocusKey=null;
    if(undoLastFaceGameEdit(data)&&prior){
+    session.checked.clear();for(const [id,pair] of prior.checked)session.checked.set(id,pair);
     session.decisions.clear();for(const [id,choice] of prior.decisions)session.decisions.set(id,choice);
     session.seen.clear();for(const id of prior.seen)session.seen.add(id);
     skipped.clear();for(const id of prior.skipped)skipped.add(id);
@@ -6344,7 +6345,8 @@ function renderGroupedFaceReview(data,host){
  const allowed=new Set(linked.map(item=>String(item.group.key)));
  for(const key of [...faceBatchSelectedKeys])if(!allowed.has(String(key)))faceBatchSelectedKeys.delete(key);
  const instruction=document.createElement('p');instruction.className='faceBatchInstruction';
- instruction.textContent='① 上の基準の顔を確認 → ② 下から同じ子を選択 → ③ まとめる！';
+ const defaultGuide='① 上の基準の顔を確認 → ② 下から同じ子を選択 → ③ まとめる！';
+ instruction.textContent=defaultGuide;
  host.append(instruction);
  function tile(group,mode){
   const holder=document.createElement('article');holder.className='faceBatchTile';
@@ -6387,7 +6389,23 @@ function renderGroupedFaceReview(data,host){
  const skip=document.createElement('button');skip.type='button';skip.className='secondary faceBatchSkip';
  skip.textContent='🕒 この基準はいったんあとで';
  footer.append(status,merge,skip);host.append(footer);
+ // DO: Refuse unsafe mixed-photo choices before the teacher tries to merge.
+ function selectedGroupConflict(keys){
+  const seen=new Map();
+  const all=[focus,...keys.map(key=>byKey.get(String(key)))];
+  if(all.some(g=>!g))return '候補が変わったよ。もう一度確認してね。';
+  for(const g of all)for(const faceIndex of g.faceIndexes){
+   const photoIndex=data.samples[faceIndex]?.index;
+   if(!Number.isSafeInteger(photoIndex)||photoIndex<0)return '顔の元写真が確認できないよ。';
+   const previous=seen.get(photoIndex);
+   if(previous!==undefined&&previous!==String(g.key))
+    return '同じ写真に写る別々の顔が含まれるため、一度にはまとめられないよ。候補を選び直してね。';
+   seen.set(photoIndex,String(g.key));
+  }
+  return '';
+ }
  function updateSelected(){
+  instruction.textContent=defaultGuide;
   status.textContent='💞 同じ子として選択中：'+faceBatchSelectedKeys.size+'候補';
   merge.textContent='💞 '+faceBatchSelectedKeys.size+'候補をまとめる！';
   merge.disabled=!faceBatchSelectedKeys.size;
@@ -6402,10 +6420,15 @@ function renderGroupedFaceReview(data,host){
   const key=String(group.key),entry=tile(group,'candidate');entry.dataset.batchKey=key;
   const choices=document.createElement('div');choices.className='faceBatchChoices';
   const same=document.createElement('button');same.type='button';same.className='faceBatchSame';
-  same.addEventListener('click',()=>{
-   if(faceBatchSelectedKeys.has(key))faceBatchSelectedKeys.delete(key);else faceBatchSelectedKeys.add(key);
-   updateSelected();
-  });
+  function toggleCandidate(){
+   if(faceBatchSelectedKeys.has(key)){faceBatchSelectedKeys.delete(key);updateSelected();return}
+   const reason=selectedGroupConflict([...faceBatchSelectedKeys,key]);
+   if(reason){instruction.textContent='⚠️ '+reason;status.textContent='⚠️ '+reason;return}
+   faceBatchSelectedKeys.add(key);updateSelected();
+  }
+  same.addEventListener('click',toggleCandidate);
+  // The portrait itself is now tappable; photo zoom and judgment buttons keep their own actions.
+  entry.addEventListener('click',event=>{if(!event.target.closest('button'))toggleCandidate()});
   const different=document.createElement('button');different.type='button';different.className='secondary faceBatchDifferent';
   different.textContent='↔ べつの子';
   const later=document.createElement('button');later.type='button';later.className='secondary faceBatchLater';
@@ -6423,29 +6446,26 @@ function renderGroupedFaceReview(data,host){
  }
  updateSelected();
  merge.addEventListener('click',()=>{
-  if(!faceBatchSelectedKeys.size||data!==albumAiGroupsData||!data.valid())return;
+  if(!faceBatchSelectedKeys.size){status.textContent='先に「おなじ子！」を選んでね。';return}
+  if(data!==albumAiGroupsData||!data.valid()){
+   status.textContent='⚠️ 顔の候補が変わったよ。画面を開き直して確認してね。';return;
+  }
   const selected=[...faceBatchSelectedKeys],all=[focus,...selected.map(k=>byKey.get(k))];
-  if(all.some(g=>!g)){renderCurrentAlbumSingletonPairs();return}
+  if(all.some(g=>!g)){status.textContent='⚠️ 候補が変わったよ。画面を開き直してね。';return}
   const involved=new Set(all.map(g=>String(g.key)));
-  if([...session.checked.values()].some(pair=>involved.has(String(pair.sourceKey))||involved.has(String(pair.targetKey)))){
-   status.textContent='⚠️ 以前の「おなじ子」仮判断と重なるよ。「顔を個別に移動・はずす」から先に確認してね。';
-   return;
-  }
-  const photoSet=new Set();
-  for(const group of all)for(const index of group.faceIndexes){
-   const photo=data.samples[index]?.index;
-   if(!Number.isSafeInteger(photo)||photoSet.has(photo)){
-    status.textContent='⚠️ 同じ写真の別々の顔が混ざるため、まとめられないよ。選択を減らしてね。';return;
-   }
-   photoSet.add(photo);
-  }
-  if(!window.confirm('選んだ'+selected.length+'候補を基準の顔とまとめますか？ 元写真や園児名は変更しません。'))return;
+  const conflictingOldPairs=[...session.checked.entries()].filter(([,pair])=>
+   involved.has(String(pair.sourceKey))||involved.has(String(pair.targetKey)));
+  const reason=selectedGroupConflict(selected);
+  if(reason){instruction.textContent='⚠️ '+reason;status.textContent='⚠️ '+reason;return}
+  let message='選んだ'+selected.length+'候補を基準の顔とまとめますか？ 元写真や園児名は変更しません。';
+  if(conflictingOldPairs.length)message+='\n\n以前の「おなじ子」仮判断'+conflictingOldPairs.length+'組と重なっています。今回の統合を優先し、重なった古い仮判断のみ取り下げます。取り消しは「直前のまとめを戻す」でできます。';
+  if(!window.confirm(message))return;
   try{
    // Existing atomic batch function validates original-photo overlap again.
    const next=data.mergeTeacherAlbumGroupsBatch(data.groups,data.samples,focus.key,selected);
    const snapshot=data.groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
    faceBatchUndoJudgments={
-    data,snapshot,decisions:new Map(session.decisions),seen:new Set(session.seen),skipped:new Set(skipped)
+    data,snapshot,checked:new Map(session.checked),decisions:new Map(session.decisions),seen:new Set(session.seen),skipped:new Set(skipped)
    };
    // Inherit confirmed different/later judgments when B is merged into A:
    // B vs C must not be asked again as A vs C. Preserve original keys for undo compatibility.
@@ -6465,6 +6485,8 @@ function renderGroupedFaceReview(data,host){
    data.mergeUndo.push(snapshot);if(data.mergeUndo.length>10)data.mergeUndo.shift();
    data.groups=next;data.faceGameUndoLatest=true;data.faceGameUndoSnapshot=snapshot;
    data.mergeSuggestions=null;data.selections.clear();
+   // A newly confirmed selection supersedes only older overlapping *pending* judgments.
+   for(const [id] of conflictingOldPairs)session.checked.delete(id);
    for(const [id,choice] of inherited){
     session.decisions.set(id,choice);session.seen.add(id);
     if(choice==='different')skipped.add(id);
