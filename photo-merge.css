@@ -1,0 +1,88 @@
+/* EI: Omoide Merge — American pop board, scoped to photo sorter. */
+#albumAiSingletonPairs .mergeHero{background:linear-gradient(113deg,#ffe3f0,#fff4bc 50%,#d8f5ff);
+ border:2px solid #efb7cf;border-radius:19px;padding:14px 17px;margin:5px 0 12px}
+#albumAiSingletonPairs .mergeHero h2{font-size:clamp(21px,3.5vw,29px);font-weight:900;color:#a34c82;margin:0}
+#albumAiSingletonPairs .mergeHero p{font-size:13px;line-height:1.65;color:#637184;margin:7px 0 0}
+#albumAiSingletonPairs .mergeStats{font-size:12px;color:#46657c;font-weight:800;text-align:center;margin:10px 0}
+#albumAiSingletonPairs .mergeNotice{background:#fff8dc;border:1px solid #e5ce8c;color:#725935;
+ padding:10px;border-radius:12px;font-size:13px;font-weight:750}
+#albumAiSingletonPairs .mergeUndo{margin:4px 0 10px;min-height:40px}
+#albumAiSingletonPairs .mergeSectionTitle{display:flex;gap:9px;flex-wrap:wrap;align-items:baseline;margin:12px 0 7px}
+#albumAiSingletonPairs .mergeSectionTitle strong{font-size:17px;font-weight:900;color:#765278}
+#albumAiSingletonPairs .mergeSectionTitle small{font-size:12px;color:#607789}
+#albumAiSingletonPairs .mergeSlots{display:flex;gap:9px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+ padding:7px 5px 13px;scroll-snap-type:x proximity;overscroll-behavior-x:contain;
+ border-radius:17px;background:#e9f8ff;border:2px solid #b7e1f7}
+#albumAiSingletonPairs .mergeBox{position:relative;flex:0 0 125px;min-width:125px;min-height:174px;
+ display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 6px;border-radius:16px;
+ background:#fff;border:2px dashed #87c3e3;box-shadow:0 4px 0 #beddea;color:#42647a;
+ scroll-snap-align:start;touch-action:pan-x}
+#albumAiSingletonPairs .mergeBox.mergeFilled{border:2px solid #ec92b7;background:#fff5f8;box-shadow:0 4px 0 #f4bfd7}
+#albumAiSingletonPairs .mergeBox.mergeOver{background:#fff0aa!important;border-color:#efa13e!important;
+ box-shadow:0 0 0 4px #ffdc80!important;transform:scale(1.025)}
+#albumAiSingletonPairs .mergeBoxPhoto{width:100%;height:104px;border-radius:10px;overflow:hidden;
+ background:#eff5fa;display:flex;align-items:center;justify-content:center;font-size:40px;color:#9dc9e3}
+#albumAiSingletonPairs .mergeBoxPhoto img{width:100%;height:100%;object-fit:cover}
+#albumAiSingletonPairs .mergeBox b{font-size:13px;font-weight:900}
+#albumAiSingletonPairs .mergeBox small{font-size:11px;color:#6e8297}
+#albumAiSingletonPairs .mergeActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
+#albumAiSingletonPairs .mergeActions b{font-size:13px;color:#966387;margin-right:auto}
+#albumAiSingletonPairs .mergeActions button{min-height:39px;font-size:12px;border-radius:10px}
+#albumAiSingletonPairs .mergeCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
+ gap:12px;margin:8px 0 13px}
+#albumAiSingletonPairs .mergeCard{min-width:0;background:white;border:2px solid #b9d8e9;
+ border-radius:16px;padding:7px;box-shadow:0 4px 0 #dbeaf2;touch-action:pan-y}
+#albumAiSingletonPairs .mergeCard.mergePicked{border-color:#fa71ac;background:#fff2f8;box-shadow:0 4px 0 #ffc6dd}
+#albumAiSingletonPairs .mergeCover{display:block;position:relative;width:100%;height:145px;padding:0;
+ border:0;border-radius:10px;overflow:hidden;background:#f0f4f7}
+#albumAiSingletonPairs .mergeCover img{width:100%;height:100%;object-fit:cover}
+#albumAiSingletonPairs .mergeCardBadge{position:absolute;right:5px;top:5px;background:#fffdeb;
+ color:#805a39;border-radius:8px;padding:4px 7px;font-size:12px;font-weight:900}
+#albumAiSingletonPairs .mergeMini{display:flex;gap:3px;height:41px;margin:6px 0 2px;
+ align-items:center;overflow:hidden;font-size:10px;color:#8793a3}
+#albumAiSingletonPairs .mergeMini img{height:41px;width:33%;object-fit:cover;border-radius:5px}
+#albumAiSingletonPairs .mergeCardFoot{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-top:5px}
+#albumAiSingletonPairs .mergeCardFoot small{font-size:11px;color:#6a7d8e;white-space:nowrap}
+#albumAiSingletonPairs .mergeCardFoot button{min-height:40px;padding:4px 6px;font-size:11px;
+ border-radius:9px;white-space:normal;font-weight:800}
+#albumAiSingletonPairs .mergeMore{width:100%;min-height:45px;margin:5px 0 13px}
+#albumAiSingletonPairs .mergeInspector{border:2px solid #e9a3c5;background:#fff7fa;border-radius:17px;
+ padding:13px;margin:16px 0;box-shadow:0 4px 0 #f8dbe8}
+#albumAiSingletonPairs .mergeInspectorTitle{display:flex;justify-content:space-between;
+ gap:10px;align-items:center}
+#albumAiSingletonPairs .mergeInspectorTitle strong{font-size:17px;color:#8a4c73}
+#albumAiSingletonPairs .mergeInspectorTitle button{min-height:38px;font-size:12px}
+#albumAiSingletonPairs .mergeInspector .muted{font-size:12px;line-height:1.7}
+#albumAiSingletonPairs .mergeGallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));
+ gap:8px;max-height:49vh;overflow-y:auto;padding:6px}
+#albumAiSingletonPairs .mergePhotoCell{position:relative;height:117px;border:2px solid #d1dbe4;border-radius:10px;overflow:hidden;background:white}
+#albumAiSingletonPairs .mergePhotoCell.mergePhotoSelected{border-color:#f364a5;box-shadow:0 0 0 2px #ffc1df}
+#albumAiSingletonPairs .mergePhotoPick{padding:0;border:0;width:100%;height:100%;background:transparent}
+#albumAiSingletonPairs .mergePhotoPick img{width:100%;height:100%;object-fit:contain}
+#albumAiSingletonPairs .mergePhotoZoom{position:absolute;right:1px;bottom:1px;min-height:30px;
+ width:34px;padding:2px;border:1px solid #b1cddd;background:#fffd;border-radius:8px;font-size:12px}
+#albumAiSingletonPairs .mergeDestination{display:block;width:100%;font-size:14px;background:white;
+ border-radius:11px;border:1px solid #a9cede;min-height:45px;margin:10px 0}
+#albumAiSingletonPairs .mergeEditActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:7px;margin:10px 0}
+#albumAiSingletonPairs .mergeEditActions button{min-height:49px;white-space:normal;
+ border-radius:10px;font-size:12px;padding:6px 4px}
+#albumAiSingletonPairs .mergeFinal{border:2px solid #b8e1c9;border-radius:17px;background:#f6fff9;
+ padding:15px;margin:14px 0}
+#albumAiSingletonPairs .mergeFinal h3{font-size:19px;color:#4e8066;margin:0 0 8px}
+#albumAiSingletonPairs .mergeFinal p{font-size:13px;color:#5e7c6a;line-height:1.7}
+#albumAiSingletonPairs .mergeFinal button{min-height:48px}
+.mergeGhost{position:fixed;z-index:2147483000;transform:translate(-50%,-125%);pointer-events:none;
+ border-radius:14px;padding:12px;background:#ffe3f1;border:3px solid #f28ab8;
+ box-shadow:0 7px 15px #0003;font-size:15px;font-weight:900;color:#8e4f79}
+@media(max-width:600px){
+ #albumAiSingletonPairs .mergeSlots{gap:8px}
+ #albumAiSingletonPairs .mergeBox{flex-basis:111px;min-width:111px;min-height:162px}
+ #albumAiSingletonPairs .mergeBoxPhoto{height:95px}
+ #albumAiSingletonPairs .mergeCards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ #albumAiSingletonPairs .mergeCover{height:127px}
+ #albumAiSingletonPairs .mergeCardFoot{flex-wrap:wrap}
+ #albumAiSingletonPairs .mergeCardFoot button{width:100%}
+ #albumAiSingletonPairs .mergeGallery{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #albumAiSingletonPairs .mergeEditActions{grid-template-columns:1fr 1fr}
+}
