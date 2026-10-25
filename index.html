@@ -5309,6 +5309,8 @@ function photoSortCheckpointCaptureAI(data){
  return {
   samples:data.samples.map(sample=>({index:sample.index,box:[...sample.box]})),
   groups:data.groups.map(g=>({key:g.key,faceIndexes:[...g.faceIndexes]})),
+  photoFolders:photoFoldersEnsure(data).map(f=>({key:f.key,groupKeys:[...f.groupKeys]})),
+  photoFolderReviewed:[...data.photoFolderReviewed],
   confirmed:[...data.confirmed],unusedPhotoIndexes:[...data.unusedPhotoIndexes],
   unusedPhotoOrder:[...data.unusedPhotoOrder],
   skippedSingletonPairs:[...(data.skippedSingletonPairs||[])],
@@ -5545,6 +5547,8 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
    albumAiGroupsData={
     sourceFiles,registered,classId,schoolYear,samples:restoredAi.samples,
     groups:snapshot.groups.map(g=>({key:g.key,faceIndexes:[...g.faceIndexes]})),
+    photoFolders:Array.isArray(snapshot.photoFolders)?snapshot.photoFolders.map(f=>({key:f.key,groupKeys:[...f.groupKeys]})):null,
+    photoFolderReviewed:new Set(snapshot.photoFolderReviewed||[]),photoFolderUndo:[],
     confirmed:new Set(snapshot.confirmed),unusedPhotoIndexes:new Set(snapshot.unusedPhotoIndexes),
     unusedPhotoOrder:[...snapshot.unusedPhotoOrder],valid,
     assignConfirmedAlbumCluster:methods.assignConfirmedAlbumCluster,
@@ -5866,7 +5870,7 @@ function clearCurrentAlbumSingletonPairs(){
    // No face detected: one teacher-assigned child finishes this photo.
    // Otherwise keep a group photo until each detected face has a distinct
    // child association. This is a review-count, NOT an AI identity judgment.
-   const target=faces||1;
+   const target=1; // DP: first/main child assignment completes the photo; others optional.
    if(assigned>=target)continue;
    items.push({index,faces,assigned,remaining:target-assigned});
   }
@@ -5879,8 +5883,8 @@ function clearCurrentAlbumSingletonPairs(){
  let pendingGameFolder=null;
  function pendingGameStages(data){
   const remaining=pendingQuickItems(data);
-  const groups=data.groups.filter(g=>g.faceIndexes.length).map((g,n)=>{
-   const photoIndexes=albumAiPhotoIndexes(g,data).filter(index=>!isAlbumUnusedPhoto(index));
+  const groups=photoFoldersEnsure(data).map((g,n)=>{
+   const photoIndexes=photoFolderIndexes(data,g);
    const set=new Set(photoIndexes);
    const outstanding=remaining.filter(row=>set.has(row.index));
    return {key:String(g.key),title:'候補フォルダ '+(n+1),photoIndexes,
@@ -6007,7 +6011,7 @@ function clearCurrentAlbumSingletonPairs(){
    const postbox=document.querySelector('[data-pending-child="'+targetId+'"]');
    if(postbox){postbox.classList.add('pendingGamePop');setTimeout(()=>postbox.classList.remove('pendingGamePop'),650)}
    $('#albumAiPendingMessage').textContent='📮 ポン！ '+kid.name+'さんへ'+newIndexes.length+
-    '枚を登録したよ。まだ振り分けていない顔がある写真は一覧に残っているよ。';
+    '枚を登録したよ。集合写真は必要ならほかの園児にも追加できるよ。';
   }catch(error){
    status.textContent='⚠️ 振り分けできません：'+String(error?.message||error)+
     '。写真・保存済みデータは変更していません。';
