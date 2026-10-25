@@ -860,6 +860,17 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .pendingQuickImageFrame{position:relative;display:block;width:100%;height:100%}
 .pendingQuickImageFrame img{display:block;width:100%;height:100%;object-fit:contain}
 .pendingQuickFaceMarker{position:absolute;border:3px solid #f3bc39;border-radius:6px;pointer-events:none}
+
+/* DI: photo index selection instead of face-group checkboxes. */
+.pendingQuickPhoto{position:relative;overflow:hidden}
+.pendingQuickPhoto.pendingQuickPicked{border-color:#348bd0;box-shadow:0 0 0 3px #bcdfff}
+.pendingQuickPhoto .pendingQuickPreview{cursor:pointer;position:relative}
+.pendingQuickPhoto .pendingQuickPreview[aria-pressed="true"]{background:#d8ecff}
+.pendingQuickSelectionMark{position:absolute;top:6px;left:6px;z-index:3;border-radius:8px;padding:6px 8px;background:#236ca8;color:white;font-size:11px;font-weight:800;pointer-events:none}
+.pendingQuickZoom{position:absolute;left:6px;bottom:39px;z-index:3;width:34px;min-height:34px;padding:4px;border:1px solid #bad3e9;border-radius:8px;background:#ffffffed;font-size:16px}
+.pendingQuickAssigned{margin:0 6px 8px;font-size:11px;overflow-wrap:anywhere;line-height:1.4}
+.pendingQuickPhoto .pendingQuickCaption{flex-wrap:wrap;line-height:1.4}
+
 .assignmentBottomActions{position:sticky;bottom:0;z-index:5;background:linear-gradient(#fffefbfa,#fff 25%);padding:12px 0 calc(9px + env(safe-area-inset-bottom))}
 .assignmentPhotoDialog{border:0;border-radius:14px;padding:15px;width:min(94vw,850px);max-height:92dvh;box-shadow:0 16px 65px #0004}
 .assignmentPhotoDialog::backdrop{background:#11233ac9}
@@ -3239,7 +3250,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DH</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DI</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -3272,11 +3283,11 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  </div>
  <section id="albumAiPendingQuick" class="albumAiPendingQuick">
  <div class="pendingQuickHeading"><strong>🌷 未確定の写真を整理しよう</strong><span id="albumAiPendingQuickCount"></span></div>
- <p class="muted">元写真を確認して、同じ園児の写真を選んでね。黄色い枠が確認対象の顔だよ。</p>
+ <p class="muted">写真をタップすると選択・解除できるよ。顔の黄色い枠はAIの確認情報で、写真そのものは1回だけ表示するよ。</p>
  <div class="pendingQuickToolbar"><span id="albumAiPendingPicked" class="muted">選択 0枚</span>
   <button id="albumAiPendingSelectVisible" type="button" class="secondary">表示中を全選択</button>
   <button id="albumAiPendingClear" type="button" class="secondary">選択解除</button></div>
- <p class="muted">選んだ写真は園児名をタップして一括振り分け。1枚なら「↗ 移動」をドラッグできるよ。</p>
+ <p class="muted">複数選んだら園児名をタップ。1枚なら「↗ 移動」をドラッグしてね。拡大は🔍から見られるよ。</p>
  <div id="albumAiPendingDestinations" class="pendingQuickDestinations"></div>
  <p id="albumAiPendingMessage" class="muted" role="status" aria-live="polite"></p>
  <div id="albumAiPendingList" class="pendingQuickList"></div>
@@ -3323,7 +3334,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DH</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DI</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -5614,185 +5625,169 @@ function clearCurrentAlbumSingletonPairs(){
  if(panel)panel.hidden=true;
 }
 
- // DG: Only unconfirmed faces/photos in the current album are eligible.
- // Selection and drag are temporary; no persistent write or original photo edits.
- const PENDING_NO_FACE_KEY='__manual-no-face__';
- const pendingQuickSelected=new Map();
- const pendingQuickOpened=new Set();
+
+ // DI: AI clustering still operates on faces. The teacher's selection and
+ // album membership operate on ORIGINAL photo indices, once per photo.
+ // This stage does not delete/move any face samples/groups or saved blobs.
+ const pendingQuickSelected=new Set();
  let pendingQuickLimit=48,pendingQuickDrag=null,pendingQuickSource=null;
- function pendingQuickGroupList(data){
-  const groups=data.groups.filter(g=>!data.confirmed.has(g.key)&&g.faceIndexes.length)
-   .map(g=>({key:String(g.key),indexes:albumAiPhotoIndexes(g,data),group:g}));
-  const covered=new Set(data.groups.flatMap(g=>albumAiPhotoIndexes(g,data)));
-  const loose=files.map((_,i)=>i).filter(i=>!isAlbumUnusedPhoto(i)&&!covered.has(i)&&!assignmentPhotoIds(i).length);
-  if(loose.length)groups.push({key:PENDING_NO_FACE_KEY,indexes:loose,group:null});
-  return groups;
- }
- function pendingQuickValidSelections(data){
-  const groups=pendingQuickGroupList(data),allowed=new Map(groups.map(g=>[g.key,new Set(g.indexes)]));
-  for(const [key,set] of [...pendingQuickSelected]){
-   if(!allowed.has(key)){pendingQuickSelected.delete(key);continue;}
-   for(const i of [...set])if(!allowed.get(key).has(i))set.delete(i);
-   if(!set.size)pendingQuickSelected.delete(key);
+ function pendingQuickFaceCount(data){
+  const counts=new Map();
+  for(const sample of data.samples||[]){
+   const index=sample?.index;
+   if(Number.isInteger(index)&&index>=0&&index<files.length)
+    counts.set(index,(counts.get(index)||0)+1);
   }
-  return groups;
+  return counts;
  }
- function pendingQuickCount(){
-  return [...pendingQuickSelected.values()].reduce((n,s)=>n+s.size,0);
+ function pendingQuickItems(data){
+  const faceCounts=pendingQuickFaceCount(data),items=[];
+  for(let index=0;index<files.length;index++){
+   if(isAlbumUnusedPhoto(index))continue;
+   const faces=faceCounts.get(index)||0,assigned=new Set(assignmentPhotoIds(index)).size;
+   // No face detected: one teacher-assigned child finishes this photo.
+   // Otherwise keep a group photo until each detected face has a distinct
+   // child association. This is a review-count, NOT an AI identity judgment.
+   const target=faces||1;
+   if(assigned>=target)continue;
+   items.push({index,faces,assigned,remaining:target-assigned});
+  }
+  return items;
  }
- function pendingQuickRefreshChecks(){
-  $('#albumAiPendingPicked').textContent='選択 '+pendingQuickCount()+'枚';
+ function pendingQuickPruneSelection(data){
+  const allowed=new Set(pendingQuickItems(data).map(item=>item.index));
+  for(const index of [...pendingQuickSelected])
+   if(!allowed.has(index))pendingQuickSelected.delete(index);
+ }
+ function pendingQuickRefreshSelection(){
+  const label=$('#albumAiPendingPicked');
+  if(label)label.textContent='選択 '+pendingQuickSelected.size+'枚';
   for(const card of document.querySelectorAll('#albumAiPendingList .pendingQuickPhoto')){
-   const set=pendingQuickSelected.get(card.dataset.groupKey);
-   const checked=!!set?.has(Number(card.dataset.photoIndex));
-   card.classList.toggle('pendingQuickPicked',checked);
-   const check=card.querySelector('input');if(check)check.checked=checked;
+   const selected=pendingQuickSelected.has(Number(card.dataset.photoIndex));
+   card.classList.toggle('pendingQuickPicked',selected);
+   const button=card.querySelector('.pendingQuickPreview');
+   if(button)button.setAttribute('aria-pressed',String(selected));
+   const badge=card.querySelector('.pendingQuickSelectionMark');
+   if(badge)badge.hidden=!selected;
   }
  }
- function pendingQuickToggle(key,index,enabled){
+ function pendingQuickToggle(index,enabled){
   const data=albumAiGroupsData;
-  if(!data?.valid())return;
-  const group=pendingQuickGroupList(data).find(g=>g.key===key);
-  if(!group||!group.indexes.includes(index))return;
-  if(enabled){
-   if(!pendingQuickSelected.has(key))pendingQuickSelected.set(key,new Set());
-   pendingQuickSelected.get(key).add(index);
-  }else{
-   pendingQuickSelected.get(key)?.delete(index);
-   if(!pendingQuickSelected.get(key)?.size)pendingQuickSelected.delete(key);
-  }
-  pendingQuickRefreshChecks();
+  if(!data?.valid()||!pendingQuickItems(data).some(item=>item.index===index))return;
+  if(enabled)pendingQuickSelected.add(index);else pendingQuickSelected.delete(index);
+  pendingQuickRefreshSelection();
  }
- function pendingQuickCommit(childId,only){
+ function pendingQuickCommit(childId,only=null){
   const data=albumAiGroupsData,status=$('#albumAiPendingMessage');
-  if(!data?.valid()||data!==albumAiGroupsData){
-   status.textContent='⚠️ 写真の状態が変わりました。元データは変更していません。';return;
-  }
-  const kids=getChildren(data.classId),kid=kids.find(k=>String(k.id)===String(childId));
+  if(!data?.valid()){status.textContent='⚠️ 写真の状態が変わりました。元データは変更していないよ。';return;}
+  const kids=getChildren(data.classId),kid=kids.find(c=>String(c.id)===String(childId));
   if(!kid){status.textContent='⚠️ 園児名簿にない名前です。';return;}
-  const chosen=only?new Map([[only.key,new Set([only.index])]]):new Map([...pendingQuickSelected].map(([k,set])=>[k,new Set(set)]));
-  const available=new Map(pendingQuickGroupList(data).map(g=>[g.key,g]));
-  const picked=[];
-  for(const [key,set] of chosen){
-   const group=available.get(key);
-   if(!group||!set.size){status.textContent='⚠️ 未確定候補が変わりました。もう一度選んでね。';return;}
-   for(const index of set){
-    if(!group.indexes.includes(index)||isAlbumUnusedPhoto(index)){
-     status.textContent='⚠️ 写真が変更されたため振り分けを中止しました。';return;
-    }
-    picked.push({key,index,group:group.group});
-   }
+  const requested=only===null?[...pendingQuickSelected]:[only.index];
+  if(!requested.length){status.textContent='写真をタップして選んでね。';return;}
+  const available=new Set(pendingQuickItems(data).map(item=>item.index));
+  if(requested.some(index=>!Number.isInteger(index)||!available.has(index))){
+   status.textContent='⚠️ 写真の状態が変わったよ。振り分けは変更していないよ。';return;
   }
-  if(!picked.length){status.textContent='先に写真をチェックしてね。';return;}
-  const photoGroups=new Map();
-  for(const p of picked){
-   const seen=photoGroups.get(p.index)||new Set();seen.add(p.key);
-   photoGroups.set(p.index,seen);
+  if(!Array.isArray(photoAssignments)||photoAssignments.length!==files.length){
+   status.textContent='⚠️ 写真と振り分けの数が一致しません。元データは変更していないよ。';return;
   }
-  if([...photoGroups.values()].some(keys=>keys.size>1)){
-   status.textContent='⚠️ 同じ写真の別の顔が複数グループにあります。誤判定を防ぐため、まず写真と顔を1人ずつ確認してね。';return;
-  }
-  for(const p of picked){
-   if(p.group&&p.group.faceIndexes.filter(face=>data.samples[face]?.index===p.index).length>1){
-    status.textContent='⚠️ 同じ写真に複数の顔が入った候補です。まず候補グループ内の顔を確認してね。';return;
-   }
-  }
-  const unique=[...photoGroups.keys()];
-  if(!window.confirm(kid.name+'さんへ写真'+unique.length+'枚を振り分けますか？ これまでの確定結果や元写真はそのまま残します。'))return;
+  const targetId=String(kid.id),newIndexes=requested.filter(index=>!assignmentPhotoIds(index).includes(targetId));
+  if(!newIndexes.length){status.textContent='この写真はすでに'+kid.name+'さんに登録済みだよ。ほかの園児を選べるよ。';return;}
+  if(!window.confirm(kid.name+'さんへ写真'+newIndexes.length+'枚を登録しますか？ 集合写真はほかの園児にも登録でき、元写真とAIの顔候補は変更しません。'))return;
   try{
-   // Stage a complete new assignment/group state before swapping either.
+   // The existing safe routine adds the destination child ID without removing
+   // any previous child links. The photo (not a face cluster) is assigned.
    const staged=data.assignConfirmedAlbumCluster({
-    photoAssignments,photoCount:files.length,photoIndexes:unique,childId:kid.id,validChildIds:kids.map(k=>k.id)
+    photoAssignments,photoCount:files.length,photoIndexes:newIndexes,
+    childId:targetId,validChildIds:kids.map(c=>c.id)
    });
-   const toRemove=new Map();
-   for(const p of picked)if(p.group){
-    if(!toRemove.has(p.key))toRemove.set(p.key,new Set());
-    toRemove.get(p.key).add(p.index);
-   }
-   const nextGroups=data.groups.map(g=>({
-    ...g,faceIndexes:toRemove.has(g.key)?
-     g.faceIndexes.filter(face=>!toRemove.get(g.key).has(data.samples[face]?.index)):
-     [...g.faceIndexes]
-   })).filter(g=>g.faceIndexes.length);
-   // The quick operation moves only the explicitly checked face/photo; it
-   // does not merge unrelated groups, delete images or rewrite any checkpoints.
+   if(data!==albumAiGroupsData||!data.valid())throw Error('写真の確認状態が変わりました');
    photoAssignments=staged;
-   data.groups=nextGroups;
-   data.confirmed=new Set([...data.confirmed].filter(key=>nextGroups.some(g=>g.key===key)));
-   activeAssignmentFolder=String(kid.id);
+   activeAssignmentFolder=targetId;
    pendingQuickSelected.clear();
-   const message='✅ '+kid.name+'さんへ'+unique.length+'枚振り分けたよ。ほかの未確定候補は残してあるよ。';
-   refreshAfterAlbumPhotoUseChange(data,message,[...toRemove.keys()]);
-   $('#albumAiPendingMessage').textContent=message;
-  }catch(e){status.textContent='⚠️ 振り分けを変更できません：'+String(e?.message||e)}
+   // Keep AI groups, samples, confirmed face decisions and undo records intact.
+   // Remaining faces are still visible through pendingQuickItems().
+   renderPhotoAssignmentPage();
+   renderAlbumAiPendingQuick();
+   $('#albumAiPendingMessage').textContent='✅ '+kid.name+'さんへ'+newIndexes.length+
+    '枚を登録したよ。まだ振り分けていない顔がある写真は一覧に残っているよ。';
+  }catch(error){
+   status.textContent='⚠️ 振り分けできません：'+String(error?.message||error)+
+    '。写真・保存済みデータは変更していません。';
+  }
  }
- function pendingQuickAttachDrag(grip,key,index){
+ function pendingQuickAttachDrag(grip,index){
   grip.draggable=true;
-  grip.addEventListener('dragstart',e=>{
-   pendingQuickDrag={key,index};
-   if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain','pending-photo-'+index);}
+  grip.addEventListener('dragstart',event=>{
+   pendingQuickDrag={index};
+   if(event.dataTransfer){
+    event.dataTransfer.effectAllowed='move';
+    event.dataTransfer.setData('text/plain','omoide-pending-photo-'+index);
+   }
   });
   grip.addEventListener('dragend',()=>{
    pendingQuickDrag=null;
    document.querySelectorAll('.pendingQuickHover').forEach(el=>el.classList.remove('pendingQuickHover'));
   });
-  let touch=null,ghost=null;
-  const clear=()=>{
-   touch=null;ghost?.remove();ghost=null;
+  let gesture=null,ghost=null;
+  const clearDrag=()=>{
+   gesture=null;ghost?.remove();ghost=null;
    document.querySelectorAll('.pendingQuickHover').forEach(el=>el.classList.remove('pendingQuickHover'));
   };
-  grip.addEventListener('pointerdown',e=>{
-   if(e.pointerType==='mouse'||e.button!==0)return;
-   e.preventDefault();touch={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};
-   try{grip.setPointerCapture(e.pointerId)}catch{}
+  grip.addEventListener('pointerdown',event=>{
+   if(event.pointerType==='mouse'||event.button!==0)return;
+   event.preventDefault();
+   gesture={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+   try{grip.setPointerCapture(event.pointerId)}catch{}
   });
-  grip.addEventListener('pointermove',e=>{
-   if(!touch||touch.id!==e.pointerId)return;
-   e.preventDefault();
-   if(Math.hypot(e.clientX-touch.x,e.clientY-touch.y)>8)touch.moved=true;
-   if(!touch.moved)return;
-   if(!ghost){ghost=document.createElement('div');ghost.className='pendingQuickGhost';
-    ghost.textContent='📷 写真を移動中';document.body.append(ghost)}
-   ghost.style.left=e.clientX+'px';ghost.style.top=e.clientY+'px';
-   const dest=document.elementFromPoint?.(e.clientX,e.clientY)?.closest?.('[data-pending-child]');
+  grip.addEventListener('pointermove',event=>{
+   if(!gesture||gesture.id!==event.pointerId)return;
+   event.preventDefault();
+   if(Math.hypot(event.clientX-gesture.x,event.clientY-gesture.y)>8)gesture.moved=true;
+   if(!gesture.moved)return;
+   if(!ghost){
+    ghost=document.createElement('div');ghost.className='pendingQuickGhost';
+    ghost.textContent='📷 写真を移動中';document.body.append(ghost);
+   }
+   ghost.style.left=event.clientX+'px';ghost.style.top=event.clientY+'px';
+   const target=document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('[data-pending-child]');
    document.querySelectorAll('.pendingQuickHover').forEach(el=>el.classList.remove('pendingQuickHover'));
-   dest?.classList.add('pendingQuickHover');
+   target?.classList.add('pendingQuickHover');
    const strip=$('#albumAiPendingDestinations');
-   if(strip){const box=strip.getBoundingClientRect();
-    if(e.clientY>=box.top&&e.clientY<=box.bottom){
-     if(e.clientX<box.left+35)strip.scrollLeft-=18;
-     else if(e.clientX>box.right-35)strip.scrollLeft+=18;
+   if(strip){
+    const box=strip.getBoundingClientRect();
+    if(event.clientY>=box.top&&event.clientY<=box.bottom){
+     if(event.clientX<box.left+35)strip.scrollLeft-=18;
+     else if(event.clientX>box.right-35)strip.scrollLeft+=18;
     }
    }
-   if(e.clientY<65)window.scrollBy?.(0,-16);
-   else if(e.clientY>window.innerHeight-65)window.scrollBy?.(0,16);
+   if(event.clientY<65)window.scrollBy?.(0,-16);
+   else if(event.clientY>window.innerHeight-65)window.scrollBy?.(0,16);
   });
-  grip.addEventListener('pointerup',e=>{
-   if(!touch||touch.id!==e.pointerId)return;
-   const moved=touch.moved,dest=moved?
-    document.elementFromPoint?.(e.clientX,e.clientY)?.closest?.('[data-pending-child]'):null;
-   try{grip.releasePointerCapture(e.pointerId)}catch{}
-   clear();
+  grip.addEventListener('pointerup',event=>{
+   if(!gesture||gesture.id!==event.pointerId)return;
+   const moved=gesture.moved;
+   const target=moved?document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('[data-pending-child]'):null;
+   try{grip.releasePointerCapture(event.pointerId)}catch{}
+   clearDrag();
    if(moved){
-    e.preventDefault();
-    if(dest)pendingQuickCommit(dest.dataset.pendingChild,{key,index});
+    event.preventDefault();
+    if(target)pendingQuickCommit(target.dataset.pendingChild,{index});
     else $('#albumAiPendingMessage').textContent='園児名ボタンの上で指を離してね。';
    }
   });
-  grip.addEventListener('pointercancel',clear);
- }
-
- function pendingQuickItems(data){
-  return pendingQuickGroupList(data).flatMap(group=>
-   group.indexes.map(index=>({key:group.key,index,group:group.group})));
+  grip.addEventListener('pointercancel',clearDrag);
  }
  function renderAlbumAiPendingQuick(){
   const data=albumAiGroupsData,host=$('#albumAiPendingList'),more=$('#albumAiPendingMore');
   if(!data?.valid()||!host)return;
-  if(pendingQuickSource!==data){pendingQuickSource=data;pendingQuickSelected.clear();pendingQuickLimit=48;}
-  pendingQuickValidSelections(data);
+  if(pendingQuickSource!==data){
+   pendingQuickSource=data;pendingQuickSelected.clear();pendingQuickLimit=48;
+  }
+  pendingQuickPruneSelection(data);
   const all=pendingQuickItems(data),visible=all.slice(0,pendingQuickLimit);
-  $('#albumAiPendingQuickCount').textContent='残り '+new Set(all.map(x=>x.index)).size+'枚';
+  const counter=$('#albumAiPendingQuickCount');
+  if(counter)counter.textContent='未整理 '+all.length+'枚';
   host.replaceChildren();
   const destinations=$('#albumAiPendingDestinations');destinations.replaceChildren();
   const kids=getChildren(data.classId);
@@ -5804,37 +5799,42 @@ function clearCurrentAlbumSingletonPairs(){
    button.textContent='📁 '+kid.name+'さん '+count+'枚';
    button.addEventListener('click',()=>pendingQuickCommit(kid.id));
    button.addEventListener('dragover',event=>{
-    if(!pendingQuickDrag)return;event.preventDefault();
+    if(!pendingQuickDrag)return;
+    event.preventDefault();
     if(event.dataTransfer)event.dataTransfer.dropEffect='move';
     button.classList.add('pendingQuickHover');
    });
    button.addEventListener('dragleave',()=>button.classList.remove('pendingQuickHover'));
    button.addEventListener('drop',event=>{
-    if(!pendingQuickDrag)return;event.preventDefault();
-    const chosen=pendingQuickDrag;pendingQuickDrag=null;
+    if(!pendingQuickDrag)return;
+    event.preventDefault();const chosen=pendingQuickDrag;pendingQuickDrag=null;
     button.classList.remove('pendingQuickHover');
     pendingQuickCommit(kid.id,chosen);
    });
    destinations.append(button);
   }
   if(!all.length){
-   const p=document.createElement('p');p.className='muted';
-   p.textContent='✅ 未確定の写真はありません。園児フォルダへ進めるよ。';
-   host.append(p);
+   const notice=document.createElement('p');notice.className='muted';
+   notice.textContent='✅ 振り分けが必要な写真はありません。園児フォルダの写真を確認してね。';
+   host.append(notice);
   }
-  for(const {key,index,group} of visible){
-   const item=document.createElement('article');item.className='pendingQuickPhoto';
-   item.dataset.groupKey=key;item.dataset.photoIndex=String(index);
-   const imageButton=document.createElement('button');imageButton.type='button';imageButton.className='pendingQuickPreview';
+  // The photo index is the sole row key: multi-person photos appear exactly once.
+  for(const {index,faces,assigned,remaining} of visible){
+   const card=document.createElement('article');card.className='pendingQuickPhoto';
+   card.dataset.photoIndex=String(index);
+   const selection=document.createElement('button');selection.type='button';selection.className='pendingQuickPreview';
+   selection.setAttribute('aria-label','写真'+(index+1)+'を選択・解除');
+   selection.setAttribute('aria-pressed',String(pendingQuickSelected.has(index)));
    const frame=document.createElement('span');frame.className='pendingQuickImageFrame';
    const img=document.createElement('img');img.src=fileUrl(files[index]);
    img.alt='写真'+(index+1)+'の全体';img.loading='lazy';img.decoding='async';
    frame.append(img);
-   const faceIndexes=group?.faceIndexes.filter(i=>data.samples[i]?.index===index)||[];
-   if(faceIndexes.length){
-    const sample=data.samples[faceIndexes[0]],marker=document.createElement('span');
+   // Face markers are informational only; staff selects the whole photo.
+   const faceIndexes=data.samples.map((face,i)=>face.index===index?i:-1).filter(i=>i!==-1);
+   for(const faceIndex of faceIndexes){
+    const sample=data.samples[faceIndex],marker=document.createElement('span');
     marker.className='pendingQuickFaceMarker';marker.setAttribute('aria-hidden','true');frame.append(marker);
-    const fitMarker=()=>{
+    const position=()=>{
      const width=img.naturalWidth,height=img.naturalHeight;
      if(!width||!height||!frame.clientWidth||!frame.clientHeight||!Array.isArray(sample?.box))return;
      const fit=Math.min(frame.clientWidth/width,frame.clientHeight/height);
@@ -5846,37 +5846,46 @@ function clearCurrentAlbumSingletonPairs(){
      marker.style.width=(w*fit/originalScale)+'px';
      marker.style.height=(h*fit/originalScale)+'px';
     };
-    img.addEventListener('load',()=>requestAnimationFrame(fitMarker));
-    if(img.complete)requestAnimationFrame(fitMarker);
+    img.addEventListener('load',()=>requestAnimationFrame(position));
+    if(img.complete)requestAnimationFrame(position);
    }
-   imageButton.append(frame);imageButton.addEventListener('click',()=>openAlbumAssignedPhoto(index));
-   const label=document.createElement('label');label.className='pendingQuickCheck';
-   const checkbox=document.createElement('input');checkbox.type='checkbox';
-   checkbox.checked=!!pendingQuickSelected.get(key)?.has(index);
-   checkbox.setAttribute('aria-label','写真'+(index+1)+'を選択');
-   checkbox.addEventListener('change',()=>pendingQuickToggle(key,index,checkbox.checked));
-   label.append(checkbox,document.createTextNode('選択'));
+   selection.append(frame);
+   selection.addEventListener('click',()=>pendingQuickToggle(index,!pendingQuickSelected.has(index)));
+   const pickedBadge=document.createElement('span');
+   pickedBadge.className='pendingQuickSelectionMark';pickedBadge.textContent='✓ 選択中';
+   pickedBadge.hidden=!pendingQuickSelected.has(index);
+   const zoom=document.createElement('button');zoom.type='button';zoom.className='pendingQuickZoom';
+   zoom.setAttribute('aria-label','写真'+(index+1)+'を拡大して見る');
+   zoom.textContent='🔍';
+   zoom.addEventListener('click',()=>openAlbumAssignedPhoto(index));
    const grip=document.createElement('button');grip.type='button';grip.className='pendingQuickGrip';
-   grip.textContent='↗ 移動';grip.setAttribute('aria-label','この写真を園児名へドラッグ');
-   pendingQuickAttachDrag(grip,key,index);
+   grip.textContent='↗ 移動';grip.setAttribute('aria-label','写真'+(index+1)+'を園児名へドラッグ');
+   pendingQuickAttachDrag(grip,index);
    const caption=document.createElement('div');caption.className='pendingQuickCaption';
-   const from=document.createElement('span');from.textContent=group?'候補 '+(data.groups.indexOf(group)+1):'顔なし・未分類';
-   const number=document.createElement('span');
-   number.textContent='写真 '+(index+1)+(faceIndexes.length>1?'・顔の確認必要':'');
-   caption.append(from,number);
-   item.append(imageButton,label,grip,caption);host.append(item);
+   const number=document.createElement('span');number.textContent='写真 '+(index+1);
+   const waiting=document.createElement('span');
+   waiting.textContent=faces?'あと'+remaining+'人を振り分け':'園児を選んでね';
+   caption.append(number,waiting);
+   const currentIds=assignmentPhotoIds(index);
+   if(currentIds.length){
+    const line=document.createElement('p');line.className='pendingQuickAssigned muted';
+    line.textContent='登録済み：'+currentIds.map(id=>kids.find(k=>String(k.id)===id)?.name||'未登録').join('・');
+    card.append(selection,pickedBadge,zoom,grip,caption,line);
+   }else card.append(selection,pickedBadge,zoom,grip,caption);
+   host.append(card);
   }
   more.hidden=all.length<=pendingQuickLimit;
-  if(!more.hidden)more.textContent='＋ 次の写真を表示（'+visible.length+' / '+all.length+'件）';
-  pendingQuickRefreshChecks();
+  if(!more.hidden)more.textContent='＋ 次の写真を表示（'+visible.length+' / '+all.length+'枚）';
+  pendingQuickRefreshSelection();
  }
  $('#albumAiPendingSelectVisible')?.addEventListener('click',()=>{
   const data=albumAiGroupsData;if(!data?.valid())return;
-  for(const item of pendingQuickItems(data).slice(0,pendingQuickLimit))
-   pendingQuickToggle(item.key,item.index,true);
+  for(const row of pendingQuickItems(data).slice(0,pendingQuickLimit))pendingQuickSelected.add(row.index);
+  pendingQuickRefreshSelection();
  });
  $('#albumAiPendingClear')?.addEventListener('click',()=>{
-  pendingQuickSelected.clear();pendingQuickRefreshChecks();$('#albumAiPendingMessage').textContent='';
+  pendingQuickSelected.clear();pendingQuickRefreshSelection();
+  $('#albumAiPendingMessage').textContent='';
  });
  $('#albumAiPendingMore')?.addEventListener('click',()=>{
   pendingQuickLimit+=48;renderAlbumAiPendingQuick();
