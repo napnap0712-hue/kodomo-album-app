@@ -28,6 +28,9 @@
 #albumAiSingletonPairs .mergeActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}
 #albumAiSingletonPairs .mergeActions b{font-size:13px;color:#966387;margin-right:auto}
 #albumAiSingletonPairs .mergeActions button{min-height:39px;font-size:12px;border-radius:10px}
+#albumAiSingletonPairs .mergeQuickDestination{min-height:42px;border-radius:10px;border:1px solid #b0d1e6;
+ background:#fff;padding:5px 9px;color:#496b82;flex:1 1 145px;max-width:240px;font-size:13px}
+#albumAiSingletonPairs .mergeQuickAdd{min-height:42px;border-radius:10px;font-size:13px;font-weight:850}
 #albumAiSingletonPairs .mergeCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
  gap:12px;margin:8px 0 13px}
 #albumAiSingletonPairs .mergeCard{min-width:0;background:white;border:2px solid #b9d8e9;
