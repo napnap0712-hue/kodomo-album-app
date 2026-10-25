@@ -5696,6 +5696,7 @@ function photoSortCheckpointCaptureAI(data){
    addedPhotoIndexes:[...f.addedPhotoIndexes],excludedPhotoIndexes:[...f.excludedPhotoIndexes]})),
   photoFolderReviewed:[...data.photoFolderReviewed],
   photoFolderMistakeReviewed:[...(data.photoFolderMistakeReviewed||new Set())],
+  photoFolderConfirmedOnce:[...(data.photoFolderConfirmedOnce||data.photoFolderMistakeReviewed||new Set())],
   photoMatchActive:!!data.photoMatchActive,
   photoMatchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
   photoMatchFolderChild:{...(data.photoMatchFolderChild||{})},
@@ -5996,7 +5997,8 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
     photoFolders:Array.isArray(snapshot.photoFolders)?snapshot.photoFolders.map(f=>({key:f.key,groupKeys:[...f.groupKeys],
      addedPhotoIndexes:[...(f.addedPhotoIndexes||[])],excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})):null,
     photoFolderReviewed:new Set(snapshot.photoFolderReviewed||[]),
-    photoFolderMistakeReviewed:new Set((snapshot.photoFolderMistakeReviewed||[]).filter(k=>typeof k==='string'&&(k==='__photo-sort-unplaced__'||(snapshot.photoFolders||snapshot.groups).some(f=>f.key===k)))),photoFolderUndo:[],
+    photoFolderMistakeReviewed:new Set((snapshot.photoFolderMistakeReviewed||[]).filter(k=>typeof k==='string'&&(k==='__photo-sort-unplaced__'||(snapshot.photoFolders||snapshot.groups).some(f=>f.key===k)))),
+    photoFolderConfirmedOnce:new Set((snapshot.photoFolderConfirmedOnce||snapshot.photoFolderMistakeReviewed||[]).filter(k=>typeof k==='string'&&(k==='__photo-sort-unplaced__'||(snapshot.photoFolders||snapshot.groups).some(f=>f.key===k)))),photoFolderUndo:[],
     photoMatchActive:!!snapshot.photoMatchActive,
     photoMatchDifferent:Array.isArray(snapshot.photoMatchDifferent)?snapshot.photoMatchDifferent.map(pair=>({...pair})):[],
     photoMatchFolderChild:{...(snapshot.photoMatchFolderChild||{})},
@@ -7656,11 +7658,12 @@ function renderPhotoFolderMistakes(data,host){
   return slots.indexOf(a.key)-slots.indexOf(b.key);
  });
  if(mistakeFocusData!==data){
-  mistakeFocusData=data;mistakeFocusKey=null;mistakeManualFocusKey=null;mistakeNeverAutoOpen=new Set(reviewed);
+  mistakeFocusData=data;mistakeFocusKey=null;mistakeManualFocusKey=null;mistakeNeverAutoOpen=new Set([...(data.photoFolderConfirmedOnce||[]),...reviewed]);
  }
  // If an already-checked folder changes, it still needs rechecking,
  // but never pops up on its own. The teacher opens it from the picker.
  for(const folder of folders)if(reviewed.has(folder.key))mistakeNeverAutoOpen.add(folder.key);
+ data.photoFolderConfirmedOnce=new Set(mistakeNeverAutoOpen);
  const focused=folders.find(f=>f.key===mistakeFocusKey);
  if(!focused||
    (mistakeNeverAutoOpen.has(focused.key)&&mistakeManualFocusKey!==focused.key)||
@@ -8012,6 +8015,7 @@ function renderPhotoFolderMistakes(data,host){
   }else{
    reviewed.add(folder.key);
    mistakeNeverAutoOpen.add(folder.key);
+   data.photoFolderConfirmedOnce=new Set(mistakeNeverAutoOpen);
    // Advance to the next unconfirmed child in roster order.
    // When none remain, show a summary rather than reopening this folder.
    mistakeFocusKey=null;mistakeManualFocusKey=null;
