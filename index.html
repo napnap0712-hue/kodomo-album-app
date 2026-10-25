@@ -3484,6 +3484,23 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 #albumAiSingletonPairs .photoFolderMerge{background:#f46ea8;border-color:#f46ea8;color:white}
 #albumAiSingletonPairs .photoFolderReviewBar::-webkit-progress-value{background:#f46ea8}
 
+
+/* DS: Photo moving, accessible by tap or drag. Keep old select/undo controls. */
+#albumAiSingletonPairs .photoFolderMoveTray{margin-top:12px;padding:12px;border:1px solid #c8dfed;
+ border-radius:13px;background:#f5faff}
+#albumAiSingletonPairs .photoFolderMoveTray strong{display:block;font-size:14px;color:#426987}
+#albumAiSingletonPairs .photoFolderMoveHelp{font-size:12px;color:#617b8e;line-height:1.55;margin:4px 0 10px}
+#albumAiSingletonPairs .photoFolderDropZones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:7px;max-height:214px;overflow-y:auto;overscroll-behavior:contain;padding:4px}
+#albumAiSingletonPairs .photoFolderDropTarget{min-height:53px;padding:6px;font-size:11px;
+ white-space:normal;line-height:1.4;border:1px dashed #91b7d3;border-radius:10px;background:white;color:#385f80}
+#albumAiSingletonPairs .photoFolderDropTarget.photoFolderDropHover{border:2px solid #ee5e9c;background:#fff0f7;color:#934571}
+#albumAiSingletonPairs .photoFolderPhotoGrip{font-size:11px;border:1px dashed #a3bdd0;background:#f7fbff;
+ color:#426e8d;min-height:33px;padding:4px 2px;border-radius:8px;
+ touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+#albumAiSingletonPairs .photoFolderPhotoGrip:active{cursor:grabbing}
+@media(max-width:500px){#albumAiSingletonPairs .photoFolderDropZones{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -6711,6 +6728,13 @@ function photoFolderOpenFixer(data,host,folder){
  const note=document.createElement('p');note.textContent='移動・除外したい写真を選択してください。「🔍 全体を見る」で元写真を確認できます。元写真は削除されません。';
  const gallery=document.createElement('div');gallery.className='photoFolderFixerGallery';
  const controls=document.createElement('div');controls.className='photoFolderFixerActions';
+ const moveTray=document.createElement('section');moveTray.className='photoFolderMoveTray';
+ const moveTrayHeader=document.createElement('strong');moveTrayHeader.textContent='📁 写真のおひっこし';
+ const moveTrayHelp=document.createElement('p');moveTrayHelp.className='photoFolderMoveHelp';
+ moveTrayHelp.textContent='写真を選んで移動先を押す、または写真の「↗ 移動」を移動先へドラッグ。';
+ const dropZones=document.createElement('div');dropZones.className='photoFolderDropZones';
+ moveTray.append(moveTrayHeader,moveTrayHelp,dropZones);
+ let dragPhotoIndexes=null;
  const status=document.createElement('p');status.className='photoFolderFixerStatus';status.setAttribute('role','status');
  const remove=document.createElement('button');remove.type='button';remove.className='secondary photoFolderRemove';
  remove.textContent='📦 この候補からはずす';
@@ -6728,6 +6752,29 @@ function photoFolderOpenFixer(data,host,folder){
  const clear=document.createElement('button');clear.type='button';clear.className='secondary';
  clear.textContent='選択を解除';clear.addEventListener('click',()=>{chosen.clear();refresh()});
  controls.append(remove,moveSelect,move,clear);
+ const availableDestinations=data.photoFolders.filter(f=>f!==folder);
+ for(const target of availableDestinations){
+  const n=data.photoFolders.indexOf(target);
+  const drop=document.createElement('button');drop.type='button';
+  drop.className='secondary photoFolderDropTarget';drop.dataset.photoFolderTarget=target.key;
+  drop.textContent='📁 フォルダ '+(n+1)+'（'+photoFolderIndexes(data,target).length+'枚）';
+  drop.setAttribute('aria-label','写真を候補フォルダ'+(n+1)+'へ移動');
+  drop.addEventListener('click',()=>perform(target.key));
+  drop.addEventListener('dragover',event=>{
+   if(!dragPhotoIndexes?.length)return;
+   event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';
+   drop.classList.add('photoFolderDropHover');
+  });
+  drop.addEventListener('dragleave',()=>drop.classList.remove('photoFolderDropHover'));
+  drop.addEventListener('drop',event=>{
+   if(!dragPhotoIndexes?.length)return;
+   event.preventDefault();
+   const indices=[...dragPhotoIndexes];dragPhotoIndexes=null;
+   drop.classList.remove('photoFolderDropHover');
+   perform(target.key,indices);
+  });
+  dropZones.append(drop);
+ }
  function refresh(){
   remove.disabled=chosen.size===0;move.disabled=!chosen.size||!moveSelect.value;
   status.textContent=chosen.size?'選択中：'+chosen.size+'枚':'写真をタップして選択してください。';
@@ -6739,12 +6786,14 @@ function photoFolderOpenFixer(data,host,folder){
    b.querySelector('.photoFolderBadge').textContent=active?'✓ 選択中':'○ 選ぶ';
   }
  }
- function perform(targetKey){
-  if(!chosen.size||data!==albumAiGroupsData||!data.valid())return;
+ function perform(targetKey,explicitPhotos=null){
+  if(data!==albumAiGroupsData||!data.valid())return;
+  const indexes=explicitPhotos===null?[...chosen]:explicitPhotos;
+  if(!indexes.length){status.textContent='写真を選んでね。';return}
   if(targetKey!==null&&!targetKey){status.textContent='移動先を選んでね';return}
-  const n=chosen.size;
+  const n=indexes.length;
   try{
-   photoFolderEditMembership(data,folder.key,[...chosen],targetKey);
+   photoFolderEditMembership(data,folder.key,indexes,targetKey);
    data.photoFolderNotice=targetKey?
     '✅ '+n+'枚を別の写真フォルダへ移動しました。':
     '✅ '+n+'枚をこの候補フォルダから外しました。元写真は変更していません。';
@@ -6765,9 +6814,57 @@ function photoFolderOpenFixer(data,host,folder){
   });
   const zoom=document.createElement('button');zoom.type='button';zoom.className='secondary photoFolderFixerZoom';
   zoom.textContent='🔍 全体を見る';zoom.addEventListener('click',()=>openAlbumAssignedPhoto(index));
-  cell.append(pick,zoom);gallery.append(cell);
+  const grip=document.createElement('button');grip.type='button';grip.className='secondary photoFolderPhotoGrip';
+  grip.textContent='↗ 移動';grip.setAttribute('aria-label','写真'+(index+1)+'を移動先フォルダへドラッグ');
+  grip.draggable=true;
+  const payload=()=>chosen.has(index)&&chosen.size>1?[...chosen]:[index];
+  const clearHover=()=>dropZones.querySelectorAll('.photoFolderDropHover').forEach(x=>x.classList.remove('photoFolderDropHover'));
+  grip.addEventListener('dragstart',event=>{
+   dragPhotoIndexes=payload();
+   if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','omoide-photo-'+index)}
+  });
+  grip.addEventListener('dragend',()=>{dragPhotoIndexes=null;clearHover()});
+  let touch=null,ghost=null;
+  const clearTouch=()=>{
+   touch=null;ghost?.remove();ghost=null;clearHover();
+  };
+  grip.addEventListener('pointerdown',event=>{
+   if(event.pointerType==='mouse'||event.button!==0)return;
+   event.preventDefault();
+   touch={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+   try{grip.setPointerCapture(event.pointerId)}catch{}
+  });
+  grip.addEventListener('pointermove',event=>{
+   if(!touch||touch.id!==event.pointerId)return;
+   event.preventDefault();
+   if(Math.hypot(event.clientX-touch.x,event.clientY-touch.y)>9)touch.moved=true;
+   if(!touch.moved)return;
+   if(!ghost){
+    ghost=document.createElement('div');ghost.className='photoFolderDragGhost';
+    ghost.textContent='📷 '+payload().length+'枚を移動中';document.body.append(ghost);
+   }
+   ghost.style.left=event.clientX+'px';ghost.style.top=event.clientY+'px';
+   const target=document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('[data-photo-folder-target]');
+   clearHover();
+   if(target&&dropZones.contains(target))target.classList.add('photoFolderDropHover');
+  });
+  grip.addEventListener('pointerup',event=>{
+   if(!touch||touch.id!==event.pointerId)return;
+   const moved=touch.moved;
+   const target=moved?document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('[data-photo-folder-target]'):null;
+   const indexes=moved?payload():null;
+   try{grip.releasePointerCapture(event.pointerId)}catch{}
+   clearTouch();
+   if(moved){
+    event.preventDefault();
+    if(target&&dropZones.contains(target))perform(target.dataset.photoFolderTarget,indexes);
+    else status.textContent='移動先フォルダの上で指を離してね。';
+   }
+  });
+  grip.addEventListener('pointercancel',clearTouch);
+  cell.append(pick,zoom,grip);gallery.append(cell);
  }
- panel.append(header,note,gallery,controls,status);
+ panel.append(header,note,gallery,controls,moveTray,status);
  host.insertBefore(panel,host.children[1]||null);
  refresh();panel.scrollIntoView?.({behavior:'smooth',block:'start'});
 }
