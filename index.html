@@ -3781,7 +3781,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EQ</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 ER</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -7948,7 +7948,12 @@ function renderPhotoFolderMistakes(data,host){
    row.addEventListener('dragend',()=>{activeDrag=null;clearHighlights()});
    let fingerDrag=null,fingerGhost=null,skipTap=false;
    const matchingTouch=(list,id)=>[...list].find(point=>point.identifier===id);
+   function blockActivePageScroll(event){
+    if(fingerDrag?.active&&matchingTouch(event.touches,fingerDrag.id)&&event.cancelable)
+     event.preventDefault();
+   }
    function endFingerDrag(){
+    document.removeEventListener('touchmove',blockActivePageScroll,true);
     if(fingerDrag)clearTimeout(fingerDrag.timer);
     fingerDrag=null;fingerGhost?.remove();fingerGhost=null;
     row.classList.remove('photoMoveInlineDragging');clearHighlights();
@@ -7956,13 +7961,19 @@ function renderPhotoFolderMistakes(data,host){
    pick.addEventListener('click',event=>{
     if(skipTap){event.preventDefault();event.stopImmediatePropagation()}
    },true);
+   row.addEventListener('contextmenu',event=>{
+    if(fingerDrag?.active){event.preventDefault()}
+   });
    row.addEventListener('touchstart',event=>{
-    if(fingerDrag||event.touches.length!==1||event.target.closest('.photoMoveInlineZoom'))return;
+    if(fingerDrag||event.touches.length!==1||
+     event.target.closest('.photoMoveInlineZoom,.photoMoveRemoveOne,.photoMoveInlineGrip'))return;
     const point=event.touches[0];
     fingerDrag={id:point.identifier,ox:point.clientX,oy:point.clientY,x:point.clientX,y:point.clientY,active:false,moved:false,timer:null};
     fingerDrag.timer=setTimeout(()=>{
      if(!fingerDrag)return;
      fingerDrag.active=true;row.classList.add('photoMoveInlineDragging');
+     // Capture on document: iOS Safari may move the touch target while dragging.
+     document.addEventListener('touchmove',blockActivePageScroll,{capture:true,passive:false});
      fingerGhost=make('div','photoFolderDragGhost','📷 '+photoPayload(index).length+'枚');
      document.body.append(fingerGhost);
      fingerGhost.style.left=fingerDrag.x+'px';fingerGhost.style.top=fingerDrag.y+'px';
@@ -7972,7 +7983,7 @@ function renderPhotoFolderMistakes(data,host){
     if(!fingerDrag)return;
     const point=matchingTouch(event.touches,fingerDrag.id);if(!point){endFingerDrag();return}
     const delta=Math.hypot(point.clientX-fingerDrag.ox,point.clientY-fingerDrag.oy);
-    if(!fingerDrag.active){if(delta>9)endFingerDrag();return}
+    if(!fingerDrag.active){if(delta>8)endFingerDrag();return}
     if(event.cancelable)event.preventDefault();
     fingerDrag.x=point.clientX;fingerDrag.y=point.clientY;
     if(delta>9)fingerDrag.moved=true;
@@ -8000,6 +8011,7 @@ function renderPhotoFolderMistakes(data,host){
     }
    },{passive:false});
    row.addEventListener('touchcancel',endFingerDrag,{passive:true});
+   window.addEventListener('blur',endFingerDrag,{once:true});
    row.append(pick,zoom,grip,removeOne);gallery.append(row);
   }
   shown=end;
