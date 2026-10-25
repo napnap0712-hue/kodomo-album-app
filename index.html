@@ -6126,6 +6126,19 @@ function clearCurrentAlbumSingletonPairs(){
   pendingQuickLimit+=48;renderAlbumAiPendingQuick();
  });
 
+
+ // DL: only reverse an immediately preceding face-game commit, never a checkpoint.
+ function undoLastFaceGameEdit(data){
+  if(data!==albumAiGroupsData||!data.valid()||!data.faceGameUndoLatest||!data.mergeUndo?.length)return false;
+  const snapshot=data.mergeUndo.pop();
+  data.groups=snapshot.map(group=>({...group,faceIndexes:[...group.faceIndexes]}));
+  data.faceGameUndoLatest=false;data.mergeSuggestions=null;data.selections.clear();
+  $('#currentAlbumAiFeedback').textContent='↩ 直前の顔グループ修正を戻したよ。写真と園児名は変更していないよ。';
+  renderCurrentAlbumAiGroups();
+  renderCurrentAlbumSingletonPairs();
+  return true;
+ }
+
 function renderCurrentAlbumSingletonPairs(){
  const data=albumAiGroupsData,host=$('#albumAiSingletonPairs');
  if(!data?.valid()||!host)return;
@@ -6147,9 +6160,18 @@ function renderCurrentAlbumSingletonPairs(){
  const pairId=item=>String(item.sourceKey)+'→'+String(item.targetKey);
  if(!candidates.length){
   const empty=document.createElement('p');empty.className='muted';
-  empty.textContent='似ている候補がありません。園児フォルダへ進んで確認できるよ。';
+  empty.textContent='🎉 顔あわせクリア！ 次は「写真ポン！」へ進めるよ。';
   host.append(empty);
-  if(document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='review')
+  if(data.faceGameUndoLatest&&data.mergeUndo?.length){
+   const undo=document.createElement('button');undo.type='button';undo.className='secondary wide';
+   undo.textContent='↩ 直前の顔修正を戻す';
+   undo.addEventListener('click',()=>undoLastFaceGameEdit(data));
+   host.append(undo);
+   const next=document.createElement('button');next.type='button';next.className='primary wide';
+   next.textContent='📸 写真ポン！へ進む ›';
+   next.addEventListener('click',()=>setPhotoAssignFlowStep('pending',{scroll:true}));
+   host.append(next);
+  }else if(document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='review')
    setPhotoAssignFlowStep('pending',{scroll:true});
   return;
  }
@@ -6599,11 +6621,7 @@ function renderCurrentAlbumSingletonPairs(){
  undoFace.addEventListener('click',()=>{
   if(!data.faceGameUndoLatest||!data.mergeUndo?.length||!data.valid())return;
   if(pendingPair?.moved.size||pendingPair?.excluded.size){feedback.textContent='未確定の顔の修正をやり直してから戻してね。';return}
-  const previousGroups=data.mergeUndo.pop();
-  data.groups=previousGroups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
-  data.faceGameUndoLatest=false;data.mergeSuggestions=null;data.selections.clear();
-  $('#currentAlbumAiFeedback').textContent='↩ 直前の顔修正を戻したよ。元写真と園児名は変更していないよ。';
-  renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();
+  undoLastFaceGameEdit(data);
  });
  restoreSkipped.addEventListener('click',()=>{
   if(data!==albumAiGroupsData||!data.valid())return;
@@ -6649,7 +6667,8 @@ function renderCurrentAlbumSingletonPairs(){
    complete.textContent=checked.size?
     '🌟 旧版の顔あわせ仮判断が'+checked.size+'組あるよ。下のボタンで反映してね。':
     '🎉 顔あわせクリア！ 次は「写真ポン！」へ進もう。';
-   if(!checked.size&&document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='review')
+   if(!checked.size&&!data.faceGameUndoLatest&&
+     document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='review')
     setPhotoAssignFlowStep('pending',{scroll:true});
    return;
   }
