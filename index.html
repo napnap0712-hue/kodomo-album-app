@@ -3110,10 +3110,11 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 #albumAiSingletonPairs .pairReviewFaceItem{position:relative}
 #albumAiSingletonPairs .pairReviewFaceItem[draggable="true"]{cursor:grab}
 #albumAiSingletonPairs .pairDragHandle{
- display:block;width:100%;min-height:35px;border:1px solid #b6d8ef;
- border-radius:9px;font-size:11px;font-weight:800;background:#eff8ff;
+ position:absolute;z-index:3;right:5px;top:5px;
+ display:block;width:auto;min-height:38px;border:1px solid #b6d8ef;
+ border-radius:9px;font-size:11px;font-weight:800;background:rgba(239,248,255,.97);
  color:#38688e;touch-action:none;-webkit-user-select:none;user-select:none;
- cursor:grab;margin:3px 0 0;padding:6px 5px;
+ cursor:grab;margin:0;padding:6px 7px;box-shadow:0 2px 6px #324f6826;
 }
 #albumAiSingletonPairs .pairQuickMove{display:none;min-height:38px;font-size:12px}
 #albumAiSingletonPairs .pairReviewGroup.expanded .pairQuickMove{display:block}
