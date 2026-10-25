@@ -3781,7 +3781,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EN</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EO</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -7425,19 +7425,38 @@ function renderPhotoSortGameProgress(){
  const data=albumAiGroupsData;
  if(!files.length){el.textContent='写真を入れると進み具合が表示されるよ。';return}
  let total=0,sorted=0;
+ const previewMode=data?.valid()&&data.photoMatchActive&&
+  document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='check';
+ const provisional=new Set();
+ if(previewMode){
+  try{
+   const validChildren=new Set(getChildren(data.classId).map(k=>String(k.id)));
+   const linked=new Map();
+   (data.photoMergeSlots||[]).forEach((key,slot)=>{
+    const id=String(data.photoMergeChildIds?.[slot]||'');
+    if(key&&validChildren.has(id))linked.set(key,id);
+   });
+   for(const folder of photoFoldersEnsure(data)){
+    const id=linked.get(folder.key)||String(data.photoMatchFolderChild?.[folder.key]||'');
+    if(!validChildren.has(id))continue;
+    for(const index of photoFolderIndexes(data,folder))provisional.add(index);
+   }
+  }catch(error){}
+ }
  for(let i=0;i<files.length;i++){
   if(data?.unusedPhotoIndexes?.has(i))continue;
   total++;
-  if(Array.isArray(photoAssignments[i])&&photoAssignments[i].length)sorted++;
+  if(previewMode?provisional.has(i):Array.isArray(photoAssignments[i])&&photoAssignments[i].length)sorted++;
  }
  let review='';
  if(data?.valid()){
   try{
-   const fs=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
-   review=' ｜ 🕵️ 確認 '+fs.filter(f=>data.photoFolderMistakeReviewed.has(f.key)).length+'/'+fs.length+'組';
+   const folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
+   review=' ｜ 🔎 確認 '+folders.filter(f=>data.photoFolderMistakeReviewed.has(f.key)).length+'/'+folders.length+'組';
   }catch(error){}
  }
- el.textContent='📷 '+total+'枚中'+sorted+'枚お届け済み・未振り分け'+(total-sorted)+'枚'+review;
+ el.textContent='📷 '+total+'枚中'+sorted+(previewMode?'枚仮仕分け済み':'枚お届け済み')+
+  '・未振り分け'+(total-sorted)+'枚'+review;
 }
 
  // EO: The photo correction board is provisional and reversible; no File/face blob changes.
