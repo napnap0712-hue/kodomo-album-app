@@ -3766,7 +3766,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DZ</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 EA</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -5717,7 +5717,16 @@ async function saveCurrentPhotoSortCheckpoint(){
   if(!verified||verified.savedAt!==snapshot.savedAt||verified.photos.length!==snapshot.photos.length||
    verified.photoAssignments.length!==snapshot.photos.length||
    verified.photos.some((p,i)=>!(p.blob instanceof Blob)||p.blob.size!==snapshot.photos[i].size||
-    p.name!==snapshot.photos[i].name))throw Error('写真の保存後照合に失敗しました。');
+    p.name!==snapshot.photos[i].name)||
+   JSON.stringify(verified.photoAssignments)!==JSON.stringify(snapshot.photoAssignments)||
+   JSON.stringify(verified.ai?.photoFolders||[])!==JSON.stringify(snapshot.ai?.photoFolders||[])||
+   JSON.stringify(verified.ai?.photoMatchDifferent||[])!==JSON.stringify(snapshot.ai?.photoMatchDifferent||[])||
+   JSON.stringify(verified.ai?.photoFolderReviewed||[])!==JSON.stringify(snapshot.ai?.photoFolderReviewed||[])||
+   JSON.stringify(verified.ai?.photoFolderMistakeReviewed||[])!==JSON.stringify(snapshot.ai?.photoFolderMistakeReviewed||[])||
+   verified.ai?.photoMatchFocus!==snapshot.ai?.photoMatchFocus||
+   verified.ai?.photoMatchCandidateKey!==snapshot.ai?.photoMatchCandidateKey||
+   verified.ai?.photoMatchFinalReviewed!==snapshot.ai?.photoMatchFinalReviewed)
+   throw Error('写真・振り分け・マッチング結果の保存後照合に失敗しました。');
   if(classId===selected.id&&schoolYear===activeYear()&&slot===pendingProjectSlot){
    photoSortCheckpointKnownSavedAt=snapshot.savedAt;
    status.textContent='✅ 途中保存できたよ！この端末で同じアルバムを開けば続きから再開できるよ。';
@@ -5793,6 +5802,36 @@ function photoSortRestoreAiData(savedAI,sourceFiles,storedRoster){
   }
  }
  if(savedAI.confirmed.some(key=>!keys.has(key)))throw Error('確定済みグループと写真が一致しません。');
+ // EA: Older checkpoints have no matching fields; they remain readable.
+ const folders=Array.isArray(savedAI.photoFolders)?
+  savedAI.photoFolders:groups.map(g=>({key:g.key,groupKeys:[g.key]}));
+ const ids=new Set(folders.map(f=>f?.key));
+ const covered=new Set();
+ const validIndexes=items=>Array.isArray(items)&&new Set(items).size===items.length&&
+  items.every(i=>Number.isInteger(i)&&i>=0&&i<sourceFiles.length);
+ if(ids.size!==folders.length||folders.some(f=>{
+  if(!f||typeof f.key!=='string'||!Array.isArray(f.groupKeys)||
+   (!f.groupKeys.length&&!f.key.startsWith('manual-photo-'))||
+   !validIndexes(f.addedPhotoIndexes||[])||!validIndexes(f.excludedPhotoIndexes||[])||
+   (f.addedPhotoIndexes||[]).some(i=>(f.excludedPhotoIndexes||[]).includes(i))||
+   (!f.groupKeys.length&&(!(f.addedPhotoIndexes||[]).length||(f.excludedPhotoIndexes||[]).length)))
+   return true;
+  for(const key of f.groupKeys){
+   if(!keys.has(key)||covered.has(key))return true;
+   covered.add(key);
+  }
+  return false;
+ })||covered.size!==keys.size)
+  throw Error('保存した写真フォルダの情報が一致しません。元写真は変更していないよ。');
+ if(savedAI.photoMatchDifferent!==undefined&&
+  (!Array.isArray(savedAI.photoMatchDifferent)||savedAI.photoMatchDifferent.some(p=>
+   !p||typeof p.a!=='string'||typeof p.b!=='string'||p.a===p.b||
+   !ids.has(p.a)||!ids.has(p.b)||typeof p.sa!=='string'||typeof p.sb!=='string')))
+  throw Error('保存した「同じ／別々」の判定が一致しません。');
+ if(savedAI.photoMatchFocus!=null&&!ids.has(savedAI.photoMatchFocus))
+  throw Error('マッチングの基準フォルダが保存内容にありません。');
+ if(savedAI.photoMatchCandidateKey!=null&&!ids.has(savedAI.photoMatchCandidateKey))
+  throw Error('マッチングの候補フォルダが保存内容にありません。');
  if(!Array.isArray(savedAI.unusedPhotoIndexes)||!Array.isArray(savedAI.unusedPhotoOrder)||
   savedAI.unusedPhotoIndexes.some(i=>!Number.isInteger(i)||i<0||i>=sourceFiles.length))
   throw Error('使わない写真の記録が不正です。');
