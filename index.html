@@ -3385,6 +3385,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 
 
 /* DP: photo-folder review. Real original photos, not face-crop cards. */
+.screen[data-screen="photoAssign"] #albumAiOtherGroups{display:none!important}
 #albumAiSingletonPairs .photoFolderHero{
  padding:17px 19px;border-radius:20px;background:linear-gradient(110deg,#ffedf6,#effaff);
  border:2px solid #f3c1d6;font-size:clamp(17px,2.5vw,23px);font-weight:900;color:#8a3f72;
@@ -6653,7 +6654,7 @@ function renderPhotoFolders(data,host){
  const main=document.createElement('section');main.className='photoFolderMain';
  const title2=document.createElement('h3');title2.textContent='① このフォルダの写真を見てね';
  main.append(title2,tile(focus,6));host.append(main);
- const candidates=visible.filter(f=>f!==focus);
+ const candidates=visible.filter(f=>f!==focus&&!data.photoFolderReviewed.has(f.key));
  if(!candidates.length){data.photoFolderReviewed.add(focus.key);renderPhotoFolders(data,host);return}
  const heading=document.createElement('h3');heading.className='photoFolderHeading';
  heading.textContent='② 同じ子がメインのフォルダを選んでね';host.append(heading);
