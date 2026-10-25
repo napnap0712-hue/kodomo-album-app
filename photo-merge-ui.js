@@ -4,8 +4,15 @@
 window.omoideMergeRender=function(data,host,api){
  if(!data||!api.valid()||!host)return;
  const oldScroll=host.querySelector('.mergeSlots')?.scrollLeft||0;
+ // Cache photo membership only for this render. It is invalidated after merges.
+ const photoIndexesCache=new Map();
+ function photos(folder){
+  if(!folder)return [];
+  if(!photoIndexesCache.has(folder.key))photoIndexesCache.set(folder.key,api.indexes(data,folder));
+  return photoIndexesCache.get(folder.key);
+ }
  let folders;
- try{folders=api.ensure(data).filter(f=>api.indexes(data,f).length)}
+ try{folders=api.ensure(data).filter(f=>photos(f).length)}
  catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
  data.photoMatchActive=true;
  const keys=new Set(folders.map(f=>f.key));
@@ -55,7 +62,6 @@ window.omoideMergeRender=function(data,host,api){
   img.src=api.url(data.sourceFiles[index]);img.loading='lazy';img.decoding='async';img.alt=alt||'写真';
   img.draggable=false;return img;
  }
- function photos(folder){return api.indexes(data,folder)}
  function boxLabel(slot){
   const id=slotChildIds[slot];
   return id?(namesById.get(id)||'⚠️ 名簿にいない園児'):'なかま '+(slot+1);
@@ -69,6 +75,7 @@ window.omoideMergeRender=function(data,host,api){
    if(!targets.length)return;
    if(!key){key=targets.shift();data.photoMergeSlots[slot]=key}
    for(const from of targets){api.merge(data,key,from);merged++}
+   photoIndexesCache.clear();
    data.photoFolderUndo=oldUndo.slice();
    data.photoFolderUndo.push(initial);
    if(data.photoFolderUndo.length>10)data.photoFolderUndo.shift();
@@ -101,20 +108,57 @@ window.omoideMergeRender=function(data,host,api){
  host.append(title);
  const tray=el('div','mergeSlots');tray.setAttribute('aria-label','園児ごとのなかまボックス');
  let drag=null;
+ function dragPayload(key){
+  // Dragging a selected card carries the entire selected batch.
+  // Dragging a card outside the selection carries that card alone.
+  return (selected.has(key)?[...selected]:[key])
+   .filter(k=>indexed.has(k)&&!occupied.has(k));
+ }
  function dropInto(slot){
-  const source=drag?.key;
+  const keys=drag?.keys||[];
   drag=null;
-  if(source&&indexed.has(source)&&!occupied.has(source))adopt(slot,[source]);
-  else adopt(slot,[...selected]);
+  if(keys.length)adopt(slot,keys);
  }
  function longPressCard(card,key){
   let gesture=null;
+  const highlight=()=>{
+   if(!gesture)return;
+   for(const b of tray.querySelectorAll('.mergeDrop')){
+    const r=b.getBoundingClientRect();
+    b.classList.toggle('mergeOver',gesture.x>=r.left&&gesture.x<=r.right&&
+     gesture.y>=r.top&&gesture.y<=r.bottom);
+   }
+  };
+  const autoScroll=()=>{
+   const g=gesture;if(!g?.active)return;
+   const viewport=window.visualViewport?.height||window.innerHeight;
+   const edge=Math.min(76,viewport*.16);
+   const delta=g.y<edge?-Math.min(12,Math.ceil((edge-g.y)/6)):
+    g.y>viewport-edge?Math.min(12,Math.ceil((g.y-viewport+edge)/6)):0;
+   if(delta)window.scrollBy(0,delta);
+   const r=tray.getBoundingClientRect();
+   if(g.y>=r.top&&g.y<=r.bottom){
+    if(g.x<r.left+40)tray.scrollLeft-=9;
+    else if(g.x>r.right-40)tray.scrollLeft+=9;
+   }
+   highlight();
+   g.raf=requestAnimationFrame(autoScroll);
+  };
   const clear=()=>{
    if(!gesture)return;
-   clearTimeout(gesture.timer);gesture.ghost?.remove();
+   clearTimeout(gesture.timer);
+   if(gesture.raf)cancelAnimationFrame(gesture.raf);
+   gesture.ghost?.remove();
+   tray.classList.remove('mergeDragging');
    tray.querySelectorAll('.mergeDrop').forEach(b=>b.classList.remove('mergeOver'));
    gesture=null;
   };
+  // Long press must not accidentally click the photo or selection button.
+  card.addEventListener('click',event=>{
+   if(Number(card.dataset.mergeSuppressUntil||0)>Date.now()){
+    event.preventDefault();event.stopImmediatePropagation();
+   }
+  },true);
   card.addEventListener('touchstart',event=>{
    if(event.touches.length!==1)return;
    const t=event.touches[0];
@@ -122,9 +166,13 @@ window.omoideMergeRender=function(data,host,api){
    gesture.timer=setTimeout(()=>{
     if(!gesture)return;
     gesture.active=true;
-    const ghost=el('div','mergeGhost','📸 カードをお届け！');
+    gesture.keys=dragPayload(key);
+    card.dataset.mergeSuppressUntil=String(Date.now()+650);
+    tray.classList.add('mergeDragging');
+    const ghost=el('div','mergeGhost','📸 '+gesture.keys.length+'組をお届け！');
     document.body.append(ghost);gesture.ghost=ghost;
     ghost.style.left=gesture.x+'px';ghost.style.top=gesture.y+'px';
+    gesture.raf=requestAnimationFrame(autoScroll);
    },380);
   },{passive:true});
   card.addEventListener('touchmove',event=>{
@@ -137,21 +185,18 @@ window.omoideMergeRender=function(data,host,api){
    if(event.cancelable)event.preventDefault();
    g.x=t.clientX;g.y=t.clientY;
    g.ghost.style.left=g.x+'px';g.ghost.style.top=g.y+'px';
-   tray.querySelectorAll('.mergeDrop').forEach(b=>{
-    const r=b.getBoundingClientRect();
-    b.classList.toggle('mergeOver',g.x>=r.left&&g.x<=r.right&&g.y>=r.top&&g.y<=r.bottom);
-   });
+   highlight();
   },{passive:false});
   card.addEventListener('touchend',event=>{
    if(!gesture)return;
    const t=[...event.changedTouches].find(t=>t.identifier===gesture.id);
    if(!t)return;
    const wasActive=gesture.active, x=t.clientX,y=t.clientY;
+   const payload=wasActive?gesture.keys:[];
    if(wasActive&&event.cancelable)event.preventDefault();
    const target=wasActive?document.elementFromPoint(x,y)?.closest('[data-merge-slot]'):null;
-   if(wasActive)card.dataset.mergeSkipClick='yes';
    clear();
-   if(target&&wasActive)adopt(Number(target.dataset.mergeSlot),[key]);
+   if(target&&wasActive&&payload.length)adopt(Number(target.dataset.mergeSlot),payload);
   },{passive:false});
   card.addEventListener('touchcancel',clear);
  }
@@ -168,7 +213,7 @@ window.omoideMergeRender=function(data,host,api){
   else thumb.textContent='＋';
   box.append(thumb,el('b','',boxLabel(i)),el('small','',ids.length+'枚'+(f&&reviewed.has(f.key)?' · ✅':'')));
   box.addEventListener('dragover',event=>{
-   if(drag?.key&&drag.key!==key){event.preventDefault();box.classList.add('mergeOver')}
+   if(drag?.keys?.length){event.preventDefault();box.classList.add('mergeOver')}
   });
   box.addEventListener('dragleave',()=>box.classList.remove('mergeOver'));
   box.addEventListener('drop',event=>{event.preventDefault();box.classList.remove('mergeOver');dropInto(i)});
@@ -180,7 +225,9 @@ window.omoideMergeRender=function(data,host,api){
  host.append(toolbar);
  const actions=el('div','mergeActions');
  const count=el('b','',selected.size+'組を選択中');
- actions.append(count,btn('選択解除','secondary',()=>{selected.clear();redraw()}));
+ actions.append(count,btn('選択解除','secondary',()=>{
+  selected.clear();syncSelection();
+ }));
  const sortBtn=btn(data.photoMergeSort==='similar'?'↩ 枚数順':'✨ AI候補順','secondary',()=>{
   data.photoMergeSort=data.photoMergeSort==='similar'?'size':'similar';redraw();
  });
@@ -194,60 +241,81 @@ window.omoideMergeRender=function(data,host,api){
  });
  const firstEmpty=slots.findIndex(k=>!k);
  if(firstEmpty>=0)quick.value=String(firstEmpty);
- actions.append(quick,btn('💕 選んだカードを入れる','primary mergeQuickAdd',()=>{
+ const quickAdd=btn('💕 選んだカードを入れる','primary mergeQuickAdd',()=>{
   adopt(Number(quick.value),[...selected]);
- }));
- host.append(actions);
+ });
+ actions.append(quick,quickAdd);host.append(actions);
+ function syncSelection(){
+  data.photoMergeSelected=[...selected];
+  count.textContent=selected.size+'組を選択中';
+  quickAdd.disabled=selected.size===0;
+  for(const card of grid.querySelectorAll('.mergeCard')){
+   const picked=selected.has(card.dataset.mergeKey);
+   card.classList.toggle('mergePicked',picked);
+   const pick=card.querySelector('.mergeSelectCard');
+   if(pick){
+    pick.textContent=picked?'✅ 選択中':'＋ まとめて選ぶ';
+    pick.setAttribute('aria-pressed',String(picked));
+   }
+  }
+ }
  const targetKey=slots.find(Boolean);
  const target=indexed.get(data.photoMergeFocusBoxKey)||indexed.get(targetKey);
  let ordered=[...inbox];
  if(data.photoMergeSort==='similar'&&target){
   const faces=api.faces(data,target),cache=data.photoMatchScoreCache||(data.photoMatchScoreCache=new Map());
   if(cache.size>1800)cache.clear();
-  const signature=api.signature(data,target);
-  ordered.sort((a,b)=>{
-   const score=f=>{
-    const key=target.key+'|'+f.key+'|'+signature+'|'+api.signature(data,f);
-    if(!cache.has(key))cache.set(key,api.score(data,faces,api.faces(data,f)));
-    return cache.get(key);
-   };
-   return score(b)-score(a);
-  });
+  const signature=api.signature(data,target),scores=new Map();
+  for(const f of ordered){
+   const key=target.key+'|'+f.key+'|'+signature+'|'+api.signature(data,f);
+   if(!cache.has(key))cache.set(key,api.score(data,faces,api.faces(data,f)));
+   scores.set(f.key,cache.get(key));
+  }
+  ordered.sort((a,b)=>scores.get(b.key)-scores.get(a.key));
  }else ordered.sort((a,b)=>photos(b).length-photos(a).length);
  const grid=el('div','mergeCards');
- const limit=Math.max(24,Number(data.photoMergeCardLimit)||24);
+ const mobile=window.matchMedia?.('(max-width:600px)').matches||false;
+ const batchSize=mobile?16:24;
+ const limit=Math.max(batchSize,Number(data.photoMergeCardLimit)||batchSize);
  ordered.slice(0,limit).forEach((f,i)=>{
   const ids=photos(f);
   const card=el('div','mergeCard'+(selected.has(f.key)?' mergePicked':''));
+  card.dataset.mergeKey=f.key;
   card.draggable=true;
   card.addEventListener('dragstart',event=>{
-   drag={key:f.key};event.dataTransfer?.setData('text/plain','omoide-merge');
-   if(event.dataTransfer)event.dataTransfer.effectAllowed='move';
+   const keys=dragPayload(f.key);
+   if(!keys.length){event.preventDefault();return}
+   drag={keys};
+   if(event.dataTransfer){
+    event.dataTransfer.setData('text/plain','omoide-merge');
+    event.dataTransfer.effectAllowed='move';
+   }
   });
   card.addEventListener('dragend',()=>{drag=null;tray.querySelectorAll('.mergeDrop').forEach(b=>b.classList.remove('mergeOver'))});
   longPressCard(card,f.key);
   const cover=btn('','mergeCover',()=>{
-   if(card.dataset.mergeSkipClick==='yes'){delete card.dataset.mergeSkipClick;return}
    data.photoMergeInspectorKey=f.key;data.photoMergeScrollInspector=true;redraw();
   });
   cover.append(image(ids[0],'AIフォルダの代表写真'));
   const tag=el('span','mergeCardBadge',ids.length+'枚');cover.append(tag);
   card.append(cover);
   const preview=el('div','mergeMini');
-  ids.slice(1,4).forEach(id=>preview.append(image(id,'フォルダの写真')));
+  ids.slice(1,1+(mobile?2:3)).forEach(id=>preview.append(image(id,'フォルダの写真')));
   if(ids.length===1)preview.textContent='写真を開いて確認できるよ';
   card.append(preview);
   const footer=el('div','mergeCardFoot');
-  footer.append(el('small','', 'AIカード '+(i+1)),
-   btn(selected.has(f.key)?'✅ 選択中':'＋ まとめて選ぶ','secondary',()=>{
-    if(selected.has(f.key))selected.delete(f.key);else selected.add(f.key);
-    redraw();
-   }));
+  const pick=btn(selected.has(f.key)?'✅ 選択中':'＋ まとめて選ぶ','secondary mergeSelectCard',()=>{
+   if(selected.has(f.key))selected.delete(f.key);else selected.add(f.key);
+   syncSelection();
+  });
+  pick.setAttribute('aria-pressed',String(selected.has(f.key)));
+  footer.append(el('small','', 'AIカード '+(i+1)),pick);
   card.append(footer);grid.append(card);
  });
  host.append(grid);
+ syncSelection();
  if(inbox.length>limit)host.append(btn('＋ カードをもっと見る（'+limit+' / '+inbox.length+'組）','secondary wide mergeMore',()=>{
-  data.photoMergeCardLimit=limit+24;redraw();
+  data.photoMergeCardLimit=limit+batchSize;redraw();
  }));
  // Inspect source photos without navigating away from the merge board.
  const active=indexed.get(data.photoMergeInspectorKey);
