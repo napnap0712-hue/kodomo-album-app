@@ -3622,6 +3622,81 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  cursor:grabbing;border-color:#f48dbe;box-shadow:0 0 0 3px #ffd7e9
 }
 #albumAiSingletonPairs .photoFolderGrid>.photoFolderCard .photoFolderZoom{cursor:zoom-in}
+
+/* DY: Two-folder matching UI scoped to AI review. */
+#albumAiSingletonPairs .photoMatchHead{border:2px solid #f4bfd7;background:linear-gradient(108deg,#ffe8f2,#fff9da 58%,#eaf6ff);
+ border-radius:19px;padding:13px 17px;margin:6px 0 10px}
+#albumAiSingletonPairs .photoMatchHead strong{font-size:clamp(20px,3vw,27px);font-weight:900;color:#93527c}
+#albumAiSingletonPairs .photoMatchHead p{font-size:13px;color:#60758b;line-height:1.6;margin:5px 0 0}
+#albumAiSingletonPairs .photoMatchStats{font-size:12px;font-weight:800;color:#476b83;text-align:center;line-height:1.6}
+#albumAiSingletonPairs .photoMatchBar{width:100%;height:10px;accent-color:#f58ab5;margin:6px 0 9px}
+#albumAiSingletonPairs .photoMatchNotice{background:#fff7e5;border:1px solid #f3d69d;padding:9px 12px;
+ color:#795c39;border-radius:12px;font-size:13px;font-weight:750;margin:8px 0}
+#albumAiSingletonPairs .photoMatchUndo{min-height:41px;font-size:12px;margin-bottom:9px}
+#albumAiSingletonPairs .photoMatchCounter{text-align:center;margin:9px 0;color:#4e6e86;font-size:12px;font-weight:800}
+#albumAiSingletonPairs .photoMatchBoard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;
+ max-width:1150px;margin:auto;align-items:stretch}
+#albumAiSingletonPairs .photoMatchColumn{min-width:0;display:flex;flex-direction:column;gap:7px;
+ border:2px solid #f4bed3;border-radius:17px;padding:11px;background:#fff8fa;transition:box-shadow .12s}
+#albumAiSingletonPairs .photoMatchColumn:nth-child(2){border-color:#9bc9ef;background:#f3faff}
+#albumAiSingletonPairs .photoMatchColumn.photoMatchDropOver{box-shadow:0 0 0 4px #ffbd60;background:#fff5d8}
+#albumAiSingletonPairs .photoMatchColumnTop{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+#albumAiSingletonPairs .photoMatchColumnTop strong{font-size:clamp(13px,2.2vw,17px);color:#4e647d}
+#albumAiSingletonPairs .photoMatchColumnTop span{font-size:12px;color:#6d8498;font-weight:800}
+#albumAiSingletonPairs .photoMatchHero{width:100%;max-height:230px;min-height:115px;
+ display:flex;align-items:center;justify-content:center;border-radius:11px;overflow:hidden;
+ padding:0;background:#edf2f8;border:1px solid #d9e2ea}
+#albumAiSingletonPairs .photoMatchHero img{width:100%;height:clamp(115px,20vw,230px);object-fit:contain}
+#albumAiSingletonPairs .photoMatchThumbnails{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;
+ -webkit-overflow-scrolling:touch;min-height:83px;padding:5px 3px 10px}
+#albumAiSingletonPairs .photoMatchThumb{position:relative;flex:0 0 83px;height:82px;border:2px solid #dbe6f0;
+ border-radius:10px;background:white;overflow:hidden}
+#albumAiSingletonPairs .photoMatchThumb.photoMatchSelected{border-color:#f25a9c;box-shadow:0 0 0 2px #ffc2df}
+#albumAiSingletonPairs .photoMatchSelect{display:block;padding:0;width:100%;height:100%;border:0;background:transparent;cursor:grab}
+#albumAiSingletonPairs .photoMatchSelect img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+#albumAiSingletonPairs .photoMatchZoom{position:absolute;right:1px;bottom:1px;padding:2px 4px;
+ min-height:29px;min-width:30px;width:auto;font-size:12px;border-radius:8px;background:#fffd;color:#34536b;
+ border:1px solid #d0dce7}
+#albumAiSingletonPairs .photoMatchMoveActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0 6px}
+#albumAiSingletonPairs .photoMatchMoveActions button{white-space:normal;min-height:44px;font-size:12px}
+#albumAiSingletonPairs .photoMatchScore{font-size:12px;color:#617c91;text-align:center;margin:6px 0}
+#albumAiSingletonPairs .photoMatchDecisionActions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:11px 0}
+#albumAiSingletonPairs .photoMatchDecisionActions button{font-size:clamp(17px,3vw,22px);
+ border:2px solid transparent;border-radius:16px;min-height:68px;font-weight:900;box-shadow:0 5px 0 #dee4ea;
+ transition:transform .1s}
+#albumAiSingletonPairs .photoMatchDecisionActions button:active{transform:translateY(3px);box-shadow:0 2px 0 #dee4ea}
+#albumAiSingletonPairs .photoMatchSame{background:#ffdaeb;border-color:#f6a6c9!important;color:#a53d78}
+#albumAiSingletonPairs .photoMatchDifferent{background:#ddf1ff;border-color:#9ecbea!important;color:#3971a2}
+#albumAiSingletonPairs .photoMatchNav{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:13px 0}
+#albumAiSingletonPairs .photoMatchNav button{min-height:45px;white-space:normal;font-size:12px}
+#albumAiSingletonPairs .photoMatchPlaceholder{display:flex;align-items:center;justify-content:center;padding:30px;
+ border:2px dashed #b5d3e8;border-radius:16px;background:#f5fbff;font-size:13px;color:#4b718c;text-align:center}
+#albumAiSingletonPairs .photoMatchFinal{padding:12px;border:2px solid #d4e5f2;border-radius:16px;background:#fff}
+#albumAiSingletonPairs .photoMatchFinal h3{font-size:20px;color:#6e5279;margin:0 0 7px}
+#albumAiSingletonPairs .photoMatchFinal p{font-size:13px;color:#59748d;line-height:1.7}
+#albumAiSingletonPairs .photoMatchFinalGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));
+ max-height:45vh;overflow-y:auto;gap:7px;padding:6px}
+#albumAiSingletonPairs .photoMatchFinalCard{display:flex;flex-direction:column;gap:5px;align-items:center;padding:4px;
+ min-height:0;border-radius:12px;border:1px solid #c5d8e7;background:#f9fcff}
+#albumAiSingletonPairs .photoMatchFinalCard img{width:100%;height:85px;object-fit:contain;border-radius:9px}
+#albumAiSingletonPairs .photoMatchFinalCard span{font-size:12px;color:#4b677d;font-weight:750}
+@media(max-width:560px){
+ #albumAiSingletonPairs .photoMatchBoard{gap:6px}
+ #albumAiSingletonPairs .photoMatchColumn{padding:6px;gap:5px;border-radius:13px}
+ #albumAiSingletonPairs .photoMatchHero{min-height:100px;max-height:155px}
+ #albumAiSingletonPairs .photoMatchHero img{height:clamp(100px,27vw,155px)}
+ #albumAiSingletonPairs .photoMatchThumb{flex-basis:68px;height:72px}
+ #albumAiSingletonPairs .photoMatchMoveActions{gap:5px}
+ #albumAiSingletonPairs .photoMatchMoveActions button{font-size:11px;padding:5px 3px}
+ #albumAiSingletonPairs .photoMatchDecisionActions{gap:8px}
+ #albumAiSingletonPairs .photoMatchDecisionActions button{min-height:62px;font-size:17px}
+ #albumAiSingletonPairs .photoMatchNav{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){#albumAiSingletonPairs .photoMatchDecisionActions button{transition:none}}
+/* Step transitions are controlled by the in-game final confirmation buttons. */
+.screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowNext,
+.screen[data-screen="photoAssign"][data-flow-step="check"] #photoAssignFlowNext{display:none!important}
+
 </style>
 </head>
 <body>
@@ -3682,15 +3757,15 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DX</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DY</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
 </div>
 <div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="ゲームの3ステップ">
- <span data-flow-index="review">① 🧩 なかまをあつめよう！</span>
- <span data-flow-index="check">② 🕵️ まちがいさがし！</span>
- <span data-flow-index="pending">③ 🏠 この子だーれ？</span>
+ <span data-flow-index="review">① 💕 マッチング</span>
+ <span data-flow-index="check">② 🔎 最終チェック</span>
+ <span data-flow-index="pending">③ 🏠 園児登録</span>
 </div>
 <p id="photoSortGameProgress" class="photoSortGameProgress" role="status" aria-live="polite"></p>
 <p id="photoAssignFlowHint" class="muted" role="status">まずは写真を整理しよう。ボタンを1つ押すだけで始められるよ。</p>
@@ -4792,6 +4867,21 @@ function switchEditorTab(tab){const next=tab==='none'?'none':activeEditorTab===t
 document.querySelectorAll('[data-editor-tab]').forEach(b=>b.addEventListener('click',()=>switchEditorTab(b.dataset.editorTab)));
 function startEditingWithSelectedPhotos(){
  if(!files.length)return;
+ // DY: The matching game never claims completion while photos or reviews remain.
+ if(albumAiGroupsData?.valid()&&albumAiGroupsData.photoMatchActive){
+  const data=albumAiGroupsData;
+  const photoMissing=files.reduce((n,_,i)=>n+(!data.unusedPhotoIndexes.has(i)&&
+   !(photoAssignments[i]||[]).length?1:0),0);
+  const unreviewed=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length&&
+   !data.photoFolderMistakeReviewed.has(f.key)).length;
+  if(!data.photoMatchFinalReviewed||photoMissing||unreviewed){
+   const msg='まだ確認が必要だよ。マッチング最終確認：'+(data.photoMatchFinalReviewed?'済':'未完了')+
+    '・未確認フォルダ：'+unreviewed+'組・未振り分け写真：'+photoMissing+'枚。';
+   const label=$('#photoSortProgressSaveStatus');if(label)label.textContent='⚠️ '+msg;
+   window.alert('⚠️ '+msg+' 途中保存はいつでもできるよ。');
+   return;
+  }
+ }
  const unused=albumAiGroupsData?.valid() ? albumAiGroupsData.unusedPhotoIndexes : null;
  if(unused?.size){
   const keep=files.map((file,index)=>({file,index})).filter(item=>!unused.has(item.index));
@@ -5553,6 +5643,12 @@ function photoSortCheckpointCaptureAI(data){
    addedPhotoIndexes:[...f.addedPhotoIndexes],excludedPhotoIndexes:[...f.excludedPhotoIndexes]})),
   photoFolderReviewed:[...data.photoFolderReviewed],
   photoFolderMistakeReviewed:[...(data.photoFolderMistakeReviewed||new Set())],
+  photoMatchActive:!!data.photoMatchActive,
+  photoMatchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
+  photoMatchFocus:data.photoMatchFocus||null,
+  photoMatchCandidateKey:data.photoMatchCandidateKey||null,
+  photoMatchOriginalCount:data.photoMatchOriginalCount||data.groups.length,
+  photoMatchFinalReviewed:!!data.photoMatchFinalReviewed,
   confirmed:[...data.confirmed],unusedPhotoIndexes:[...data.unusedPhotoIndexes],
   unusedPhotoOrder:[...data.unusedPhotoOrder],
   skippedSingletonPairs:[...(data.skippedSingletonPairs||[])],
@@ -5793,6 +5889,12 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
      addedPhotoIndexes:[...(f.addedPhotoIndexes||[])],excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})):null,
     photoFolderReviewed:new Set(snapshot.photoFolderReviewed||[]),
     photoFolderMistakeReviewed:new Set((snapshot.photoFolderMistakeReviewed||[]).filter(k=>typeof k==='string'&&(snapshot.photoFolders||snapshot.groups).some(f=>f.key===k))),photoFolderUndo:[],
+    photoMatchActive:!!snapshot.photoMatchActive,
+    photoMatchDifferent:Array.isArray(snapshot.photoMatchDifferent)?snapshot.photoMatchDifferent.map(pair=>({...pair})):[],
+    photoMatchFocus:snapshot.photoMatchFocus||null,
+    photoMatchCandidateKey:snapshot.photoMatchCandidateKey||null,
+    photoMatchOriginalCount:Number(snapshot.photoMatchOriginalCount)||snapshot.groups.length,
+    photoMatchFinalReviewed:!!snapshot.photoMatchFinalReviewed,
     confirmed:new Set(snapshot.confirmed),unusedPhotoIndexes:new Set(snapshot.unusedPhotoIndexes),
     unusedPhotoOrder:[...snapshot.unusedPhotoOrder],valid,
     assignConfirmedAlbumCluster:methods.assignConfirmedAlbumCluster,
@@ -5914,10 +6016,15 @@ function refreshAfterAlbumPhotoUseChange(data,message,affectedKeys=[]){
 function setPhotoAssignFlowStep(step,{scroll=false}={}){
  const screen=document.querySelector('[data-screen="photoAssign"]');
  if(!screen||!['start','review','check','pending','folders'].includes(step))return;
+ if(step==='check'&&albumAiGroupsData?.valid()&&albumAiGroupsData.photoMatchActive&&
+    !albumAiGroupsData.photoMatchFinalReviewed){
+  albumAiGroupsData.photoMatchNotice='⚠️ 先に「なかまの最終チェック」を確認してね。';
+  renderCurrentAlbumSingletonPairs();return;
+ }
  screen.dataset.flowStep=step;
  const hint=$('#photoAssignFlowHint'),details=$('#albumAiOtherGroups');
  if(hint)hint.textContent=step==='start'?'まずは「写真を整理する」を押してね。':
-  step==='review'?'🧩 同じ子の写真カードを選んでまとめよう！':
+  step==='review'?'💕 2つの写真フォルダを比較して「同じ」か「別々」を選ぼう。':
   step==='check'?'🕵️ 元写真を見て、違う子が混ざっていないか確かめよう。':
   step==='pending'?'🏠 園児名のおうちへ写真を届けよう。':'園児別の写真を確認して見開き編集へ！';
  if(details)details.open=false;
@@ -6785,6 +6892,9 @@ function photoFoldersEnsure(data){
  for(const key of original)if(!seen.has(key))data.photoFolders.push({key,groupKeys:[key]});
  if(!(data.photoFolderReviewed instanceof Set))data.photoFolderReviewed=new Set(data.photoFolderReviewed||[]);
  if(!(data.photoFolderMistakeReviewed instanceof Set))data.photoFolderMistakeReviewed=new Set(data.photoFolderMistakeReviewed||[]);
+ if(!Array.isArray(data.photoMatchDifferent))data.photoMatchDifferent=[];
+ if(!Number.isInteger(data.photoMatchOriginalCount)||data.photoMatchOriginalCount<1)
+  data.photoMatchOriginalCount=data.groups.length;
  if(!Array.isArray(data.photoFolderUndo))data.photoFolderUndo=[];
  return data.photoFolders;
 }
@@ -6806,7 +6916,10 @@ function photoFolderIndexes(data,folder){
 function photoFolderSnapshot(data){
  return {folders:data.photoFolders.map(f=>({key:f.key,groupKeys:[...f.groupKeys],
   addedPhotoIndexes:[...(f.addedPhotoIndexes||[])],
-  excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})),reviewed:[...data.photoFolderReviewed],mistakeReviewed:[...data.photoFolderMistakeReviewed]};
+  excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})),reviewed:[...data.photoFolderReviewed],mistakeReviewed:[...data.photoFolderMistakeReviewed],
+  matchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
+  matchFocus:data.photoMatchFocus||null,matchCandidate:data.photoMatchCandidateKey||null,
+  matchFinal:!!data.photoMatchFinalReviewed};
 }
 function photoFolderRestoreSnapshot(data,snapshot){
  data.photoFolders=snapshot.folders.map(f=>({key:f.key,groupKeys:[...f.groupKeys],
@@ -6814,6 +6927,10 @@ function photoFolderRestoreSnapshot(data,snapshot){
   excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]}));
  data.photoFolderReviewed=new Set(snapshot.reviewed);
  data.photoFolderMistakeReviewed=new Set(snapshot.mistakeReviewed||[]);
+ data.photoMatchDifferent=(snapshot.matchDifferent||[]).map(pair=>({...pair}));
+ data.photoMatchFocus=snapshot.matchFocus||null;
+ data.photoMatchCandidateKey=snapshot.matchCandidate||null;
+ data.photoMatchFinalReviewed=!!snapshot.matchFinal;
 }
 function photoFolderRemember(data){
  data.photoFolderUndo.push(photoFolderSnapshot(data));
@@ -6844,6 +6961,7 @@ function photoFolderEditMembership(data,sourceKey,photoIndexes,targetKey=null){
  if(target)data.photoFolderReviewed.delete(target.key);
  data.photoFolderMistakeReviewed.delete(source.key);
  if(target)data.photoFolderMistakeReviewed.delete(target.key);
+ data.photoMatchFinalReviewed=false;
 }
 
 // DQ: Optional photo correction screen. Selecting a photo never changes AI identity.
@@ -7087,7 +7205,350 @@ function renderPhotoFolderMistakes(data,host){
  renderPhotoSortGameProgress();
 }
 
+
+/* DY: Omoide matching. All identity comparisons are local and provisional.
+   The underlying face groups, File objects, and child assignments are never rewritten. */
+function photoMatchSignature(data,folder){
+ // Original groups + corrected photo membership: any teacher move invalidates this pair.
+ return JSON.stringify([folder.groupKeys.slice().sort(),photoFolderIndexes(data,folder)]);
+}
+function photoMatchPairId(a,b){return [String(a),String(b)].sort().join('\u21c4')}
+function photoMatchValidDifferent(data,folders){
+ const byKey=new Map(folders.map(f=>[f.key,f]));
+ const seen=new Set();
+ data.photoMatchDifferent=(data.photoMatchDifferent||[]).filter(pair=>{
+  if(!pair||typeof pair.a!=='string'||typeof pair.b!=='string'||pair.a===pair.b)return false;
+  const a=byKey.get(pair.a),b=byKey.get(pair.b),id=photoMatchPairId(pair.a,pair.b);
+  if(!a||!b||seen.has(id)||pair.sa!==photoMatchSignature(data,a)||pair.sb!==photoMatchSignature(data,b))return false;
+  seen.add(id);return true;
+ });
+ return new Set(data.photoMatchDifferent.map(pair=>photoMatchPairId(pair.a,pair.b)));
+}
+function photoMatchFaceSamples(data,folder){
+ const faceList=[],present=new Set(photoFolderIndexes(data,folder));
+ for(const key of folder.groupKeys){
+  const group=data.groups.find(g=>String(g.key)===key);
+  for(const faceIndex of group?.faceIndexes||[]){
+   const face=data.samples[faceIndex];
+   if(face?.embedding?.length&&present.has(face.index))faceList.push(faceIndex);
+  }
+ }
+ if(faceList.length<=7)return faceList;
+ return Array.from({length:7},(_,i)=>faceList[Math.floor(i*(faceList.length-1)/6)]);
+}
+function photoMatchScore(data,facesA,facesB){
+ let best=-1;
+ for(const ia of facesA)for(const ib of facesB){
+  const a=data.samples[ia],b=data.samples[ib];
+  if(a.index===b.index)continue; // Same-photo, different faces cannot prove identity.
+  const score=faceEmbeddingSimilarity(a.embedding,b.embedding);
+  if(Number.isFinite(score)&&score>best)best=score;
+ }
+ return best;
+}
+function photoMatchMergeFolders(data,a,b){
+ if(data!==albumAiGroupsData||!data.valid())throw Error('別のアルバムに切り替わったよ');
+ const folders=photoFoldersEnsure(data),A=folders.find(f=>f.key===a),B=folders.find(f=>f.key===b);
+ if(!A||!B||A===B)throw Error('選んだフォルダが見つからないよ');
+ const photoIds=new Set([...photoFolderIndexes(data,A),...photoFolderIndexes(data,B)]);
+ const allKeys=[...new Set([...A.groupKeys,...B.groupKeys])];
+ const aiIds=new Set();
+ for(const key of allKeys){
+  const group=data.groups.find(g=>String(g.key)===key);
+  if(!group)throw Error('AI顔グループの照合に失敗しました');
+  for(const faceIndex of group.faceIndexes)aiIds.add(data.samples[faceIndex]?.index);
+ }
+ photoFolderRemember(data);
+ data.photoFolders=folders.filter(f=>f!==B).map(f=>f===A?{
+  key:A.key,groupKeys:allKeys,
+  addedPhotoIndexes:[...photoIds].filter(i=>!aiIds.has(i)),
+  excludedPhotoIndexes:[...aiIds].filter(i=>!photoIds.has(i))
+ }:f);
+ data.photoFolderReviewed.delete(a);
+ data.photoFolderMistakeReviewed.delete(a);
+ data.photoFolderMistakeReviewed.delete(b);
+ data.photoMatchDifferent=data.photoMatchDifferent.filter(p=>![a,b].includes(p.a)&&![a,b].includes(p.b));
+ data.photoMatchCandidateKey=null;data.photoMatchFocus=a;
+ data.photoMatchFinalReviewed=false;
+ data.photoMatchNotice='💕 なかまになったよ！ 写真は重複なく'+photoIds.size+'枚。';
+}
+function photoMatchMovePhotos(data,from,to,ids){
+ if(data!==albumAiGroupsData||!data.valid())throw Error('写真の状態が変わりました');
+ photoFolderEditMembership(data,from,ids,to);
+ data.photoMatchFocus=data.photoMatchFocus||from;
+ data.photoMatchCandidateKey=data.photoMatchFocus===from?to:from;
+ data.photoMatchFinalReviewed=false;
+ data.photoMatchNotice='📷 '+ids.length+'枚を移動したよ！ 2つのフォルダをもう一度確認してね。';
+}
+function renderPhotoMatching(data,host){
+ if(!host||!data?.valid())return;
+ host.replaceChildren();
+ let folders;
+ try{folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length)}
+ catch(error){host.textContent='⚠️ '+String(error?.message||error);return}
+ data.photoMatchActive=true;
+ const validDifferent=photoMatchValidDifferent(data,folders);
+ const byKey=new Map(folders.map(f=>[f.key,f]));
+ const reviewed=data.photoFolderReviewed,notDone=folders.filter(f=>!reviewed.has(f.key));
+ const btn=(label,cls,callback)=>{
+  const el=document.createElement('button');el.type='button';el.className=cls;el.textContent=label;
+  el.addEventListener('click',callback);return el;
+ };
+ const header=document.createElement('div');header.className='photoMatchHead';
+ const name=document.createElement('strong');name.textContent='💕 おもいでマッチング！';
+ const subtitle=document.createElement('p');subtitle.textContent='同じ？ 別々？ 写真を見て決めよう！ 写真の移動もできるよ。';
+ header.append(name,subtitle);host.append(header);
+ const original=Math.max(data.photoMatchOriginalCount,folders.length),
+   joined=Math.max(0,original-folders.length);
+ const stats=document.createElement('div');stats.className='photoMatchStats';
+ stats.textContent='📁 '+original+'組から '+folders.length+'組 ／ 💕 統合 '+joined+'組 ／ 💙 別々 '+validDifferent.size+'組';
+ host.append(stats);
+ const progress=document.createElement('progress');progress.className='photoMatchBar';
+ progress.max=Math.max(1,folders.length);progress.value=folders.length-notDone.length;
+ progress.setAttribute('aria-label','基準フォルダを確認した進捗');host.append(progress);
+ if(data.photoMatchNotice){
+  const notice=document.createElement('p');notice.className='photoMatchNotice';
+  notice.setAttribute('role','status');notice.textContent=data.photoMatchNotice;host.append(notice);
+ }
+ if(data.photoFolderUndo.length)host.append(btn('↩ 直前の操作を戻す','secondary photoMatchUndo',()=>{
+  const old=data.photoFolderUndo.pop();
+  if(!old)return;
+  photoFolderRestoreSnapshot(data,old);
+  data.photoMatchNotice='↩ 前の状態に戻したよ。';data.photoMatchShowAll=false;
+  renderPhotoMatching(data,host);
+ }));
+ // All A cards visited: a separate, mandatory human final review follows.
+ if(!notDone.length){
+  const final=document.createElement('section');final.className='photoMatchFinal';
+  const h=document.createElement('h3');h.textContent='🔎 なかまの最終チェック！';
+  const note=document.createElement('p');note.textContent='AIの候補が終わっても、整理の正しさは保証されないよ。同じ子が別フォルダに残っていないか見直してね。';
+  final.append(h,note);
+  const all=document.createElement('div');all.className='photoMatchFinalGrid';
+  folders.forEach((f,i)=>{
+   const card=btn('','photoMatchFinalCard',()=>{
+    reviewed.delete(f.key);
+    data.photoMatchFocus=f.key;data.photoMatchCandidateKey=null;
+    data.photoMatchShowAll=true;data.photoMatchFinalReviewed=false;
+    data.photoMatchNotice='🔎 このフォルダと、ほかの全フォルダを見比べよう。';
+    renderPhotoMatching(data,host);
+   });
+   const cover=photoFolderIndexes(data,f)[0];
+   if(cover!==undefined){
+    const img=document.createElement('img');img.src=fileUrl(data.sourceFiles[cover]);
+    img.loading='lazy';img.decoding='async';img.alt='フォルダ'+(i+1)+'の見本';
+    card.append(img);
+   }
+   const label=document.createElement('span');label.textContent='📁 '+(i+1)+' ／ '+photoFolderIndexes(data,f).length+'枚';
+   card.append(label);all.append(card);
+  });
+  final.append(all);
+  const remainingPhotos=files.reduce((n,_,i)=>n+(!data.unusedPhotoIndexes.has(i)&&!(photoAssignments[i]||[]).length?1:0),0);
+  const msg=document.createElement('p');msg.className='muted';
+  msg.textContent='園児名が未登録の写真：'+remainingPhotos+'枚。名前は最後のステップで登録するよ。';
+  final.append(msg);
+  final.append(btn('✅ すべてのフォルダを見直した！','primary wide',()=>{
+   if(!data.valid()||data!==albumAiGroupsData)return;
+   data.photoMatchFinalReviewed=true;
+   data.photoMatchNotice='✅ マッチングの最終チェックが完了。次は写真の混ざりを確認しよう。';
+   setPhotoAssignFlowStep('check',{scroll:true});
+  }));
+  host.append(final);renderPhotoSortGameProgress();return;
+ }
+ if(!byKey.has(data.photoMatchFocus)||reviewed.has(data.photoMatchFocus)){
+  data.photoMatchFocus=notDone[0].key;data.photoMatchCandidateKey=null;data.photoMatchShowAll=false;
+ }
+ const A=byKey.get(data.photoMatchFocus),facesA=photoMatchFaceSamples(data,A);
+ const candidates=folders.filter(f=>f!==A&&!validDifferent.has(photoMatchPairId(A.key,f.key)))
+  .map(f=>({folder:f,score:photoMatchScore(data,facesA,photoMatchFaceSamples(data,f))}))
+  .sort((x,y)=>y.score-x.score||(folders.indexOf(x.folder)-folders.indexOf(y.folder)));
+ const suggested=candidates.filter(row=>!reviewed.has(row.folder.key)&&row.score>=.55).slice(0,8);
+ const pool=data.photoMatchShowAll?candidates:suggested;
+ let choice=pool.find(c=>c.folder.key===data.photoMatchCandidateKey);
+ if(!choice&&pool.length)choice=pool[0];
+ data.photoMatchCandidateKey=choice?.folder.key||null;
+ const B=choice?.folder||null;
+ const count=document.createElement('p');count.className='photoMatchCounter';
+ count.textContent='基準フォルダ '+(folders.indexOf(A)+1)+' ／ 確認済み '+reviewed.size+' / '+folders.length+
+  ' ／ 未確認の比較候補 '+pool.length+'組'+(data.photoMatchShowAll?'（全候補）':'（AI提案）');
+ host.append(count);
+ const selectedA=new Set(),selectedB=new Set();
+ const board=document.createElement('div');board.className='photoMatchBoard';
+ let desktopDrag=null;
+ function move(from,to,ids){
+  try{
+   if(!ids.length){data.photoMatchNotice='写真をタップして選んでね。';renderPhotoMatching(data,host);return}
+   photoMatchMovePhotos(data,from.key,to.key,ids);
+   renderPhotoMatching(data,host);
+  }catch(error){data.photoMatchNotice='⚠️ '+String(error?.message||error);renderPhotoMatching(data,host)}
+ }
+ function showFolder(folder,title,chosen,side){
+  const col=document.createElement('section');col.className='photoMatchColumn';
+  col.dataset.matchDrop=folder.key;
+  const top=document.createElement('div');top.className='photoMatchColumnTop';
+  const label=document.createElement('strong');label.textContent=title+' 📁 '+(folders.indexOf(folder)+1);
+  const count=document.createElement('span');count.textContent=photoFolderIndexes(data,folder).length+'枚';
+  top.append(label,count);col.append(top);
+  const ids=photoFolderIndexes(data,folder),group=data.groups.find(g=>folder.groupKeys.includes(String(g.key))),
+    sampleIndex=photoMatchFaceSamples(data,folder)[0],
+    sample=data.samples[sampleIndex];
+  const hero=btn('','photoMatchHero',()=>openAlbumAssignedPhoto(ids[0]));
+  if(ids.length){
+   const img=document.createElement('img');img.alt=title+'の代表写真';
+   img.src=fileUrl(data.sourceFiles[sample?.index??ids[0]]);
+   img.loading='lazy';img.decoding='async';
+   hero.append(img);
+   if(sample){
+    const cached=data.faceThumbs?.get(sampleIndex);
+    if(cached)img.src=cached;
+    else currentAlbumFaceThumbnail(data.sourceFiles[sample.index],sample).then(url=>{
+     if(data===albumAiGroupsData&&data.valid()&&img.isConnected){
+      img.src=url;data.faceThumbs?.set(sampleIndex,url);
+     }
+    }).catch(()=>{});
+   }
+  }
+  col.append(hero);
+  const row=document.createElement('div');row.className='photoMatchThumbnails';
+  const previewMax=18;
+  for(const index of ids.slice(0,previewMax)){
+   const entry=document.createElement('div');entry.className='photoMatchThumb';
+   entry.dataset.photo=String(index);
+   const select=btn('','photoMatchSelect',()=>{
+    if(chosen.has(index))chosen.delete(index);else chosen.add(index);
+    entry.classList.toggle('photoMatchSelected',chosen.has(index));
+    select.setAttribute('aria-pressed',String(chosen.has(index)));
+   });
+   select.setAttribute('aria-label','写真'+(index+1)+'を選択');
+   select.setAttribute('aria-pressed','false');select.draggable=true;
+   const img=document.createElement('img');img.src=fileUrl(data.sourceFiles[index]);img.alt='写真'+(index+1);
+   img.loading='lazy';img.decoding='async';img.draggable=false;select.append(img);
+   const zoom=btn('🔍','photoMatchZoom',()=>openAlbumAssignedPhoto(index));
+   function payload(){return chosen.has(index)&&chosen.size>1?[...chosen]:[index]}
+   select.addEventListener('dragstart',event=>{
+    desktopDrag={from:folder.key,indices:payload()};
+    if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','omoide-match-photo')}
+   });
+   select.addEventListener('dragend',()=>{desktopDrag=null;board.querySelectorAll('.photoMatchDropOver').forEach(node=>node.classList.remove('photoMatchDropOver'))});
+   // Long-press dragging on iPhone; a normal swipe keeps horizontal scrolling.
+   let touch=null;
+   const cleanup=()=>{if(touch)clearTimeout(touch.timer);touch?.ghost?.remove();touch=null;board.querySelectorAll('.photoMatchDropOver').forEach(n=>n.classList.remove('photoMatchDropOver'))};
+   select.addEventListener('touchstart',event=>{
+    if(touch||event.touches.length!==1)return;
+    const t=event.touches[0];
+    touch={id:t.identifier,x:t.clientX,y:t.clientY,ox:t.clientX,oy:t.clientY,active:false,dragged:false,ghost:null,timer:null};
+    touch.timer=setTimeout(()=>{
+     if(!touch||touch.id!==t.identifier)return;
+     touch.active=true;touch.ghost=document.createElement('div');touch.ghost.className='photoFolderDragGhost';
+     touch.ghost.textContent='📷 '+payload().length+'枚を移動';document.body.append(touch.ghost);
+     touch.ghost.style.left=touch.x+'px';touch.ghost.style.top=touch.y+'px';
+    },340);
+   },{passive:true});
+   select.addEventListener('touchmove',event=>{
+    if(!touch)return;
+    const t=[...event.touches].find(t=>t.identifier===touch.id);
+    if(!t){cleanup();return}
+    const distance=Math.hypot(t.clientX-touch.ox,t.clientY-touch.oy);
+    if(!touch.active){if(distance>9)cleanup();return}
+    if(event.cancelable)event.preventDefault();
+    touch.x=t.clientX;touch.y=t.clientY;
+    if(distance>9)touch.dragged=true;
+    if(touch.ghost){touch.ghost.style.left=touch.x+'px';touch.ghost.style.top=touch.y+'px'}
+    board.querySelectorAll('.photoMatchColumn').forEach(col=>{
+     const rect=col.getBoundingClientRect();
+     col.classList.toggle('photoMatchDropOver',col.dataset.matchDrop!==folder.key&&
+      t.clientX>=rect.left&&t.clientX<=rect.right&&t.clientY>=rect.top&&t.clientY<=rect.bottom);
+    });
+   },{passive:false});
+   select.addEventListener('touchend',event=>{
+    if(!touch)return;
+    const t=[...event.changedTouches].find(t=>t.identifier===touch.id);
+    if(!t)return;
+    const active=touch.active,dragged=touch.dragged,idsToMove=payload();
+    const target=board.querySelector('.photoMatchDropOver');
+    if(active&&event.cancelable)event.preventDefault();
+    cleanup();
+    if(active&&dragged&&target){
+     const to=byKey.get(target.dataset.matchDrop);
+     if(to&&to!==folder)move(folder,to,idsToMove);
+    }
+   },{passive:false});
+   select.addEventListener('touchcancel',cleanup);
+   entry.append(select,zoom);row.append(entry);
+  }
+  col.append(row);
+  if(ids.length>previewMax)col.append(btn('＋ 残り'+(ids.length-previewMax)+'枚も見る','secondary photoMatchMore',()=>{
+   // Opening the existing correction gallery avoids 100 full-size DOM images.
+   photoFolderOpenFixer(data,host,folder,{scroll:false,onChange:()=>renderPhotoMatching(data,host)});
+  }));
+  col.addEventListener('dragover',event=>{
+   if(desktopDrag&&desktopDrag.from!==folder.key){
+    event.preventDefault();col.classList.add('photoMatchDropOver');
+   }
+  });
+  col.addEventListener('dragleave',event=>{
+   if(!col.contains(event.relatedTarget))col.classList.remove('photoMatchDropOver');
+  });
+  col.addEventListener('drop',event=>{
+   if(!desktopDrag||desktopDrag.from===folder.key)return;
+   event.preventDefault();
+   const drag=desktopDrag;desktopDrag=null;
+   col.classList.remove('photoMatchDropOver');
+   const from=byKey.get(drag.from);
+   if(from)move(from,folder,drag.indices);
+  });
+  return col;
+ }
+ board.append(showFolder(A,'📁 A（基準）',selectedA,'A'));
+ if(B)board.append(showFolder(B,'📁 B（AI候補）',selectedB,'B'));
+ else{
+  const placeholder=document.createElement('div');placeholder.className='photoMatchPlaceholder';
+  placeholder.textContent='AI提案がなくなったよ。必要なら他の候補も確認しよう。';board.append(placeholder);
+ }
+ host.append(board);
+ if(B){
+  const moveRow=document.createElement('div');moveRow.className='photoMatchMoveActions';
+  moveRow.append(btn('⬅ 選択したBの写真をAへ','secondary',()=>move(B,A,[...selectedB])),
+   btn('選択したAの写真をBへ ➡','secondary',()=>move(A,B,[...selectedA])));
+  host.append(moveRow);
+  const score=document.createElement('p');score.className='photoMatchScore';
+  score.textContent=choice.score>=0?'AIの顔比較値 '+choice.score.toFixed(2)+'（正確率ではありません）':'AIの比較値なし・先生の確認が必要';
+  host.append(score);
+  const actions=document.createElement('div');actions.className='photoMatchDecisionActions';
+  actions.append(btn('❤️ 同じ','photoMatchSame',()=>{
+   try{photoMatchMergeFolders(data,A.key,B.key);renderPhotoMatching(data,host)}
+   catch(error){data.photoMatchNotice='⚠️ '+String(error?.message||error);renderPhotoMatching(data,host)}
+  }),btn('💙 別々','photoMatchDifferent',()=>{
+   if(data!==albumAiGroupsData||!data.valid())return;
+   photoFolderRemember(data);
+   data.photoMatchDifferent.push({a:A.key,b:B.key,sa:photoMatchSignature(data,A),sb:photoMatchSignature(data,B)});
+   data.photoMatchCandidateKey=null;data.photoMatchFinalReviewed=false;
+   data.photoMatchNotice='💙 別々のフォルダとして残したよ。次の候補を表示するね。';
+   renderPhotoMatching(data,host);
+  }));
+  host.append(actions);
+ }
+ const nav=document.createElement('div');nav.className='photoMatchNav';
+ if(!data.photoMatchShowAll)nav.append(btn('👀 AI提案以外の候補も見る','secondary',()=>{
+  data.photoMatchShowAll=true;data.photoMatchCandidateKey=null;
+  renderPhotoMatching(data,host);
+ }));
+ const next=btn('この基準Aの確認を終えて次へ ›','secondary',()=>{
+  reviewed.add(A.key);
+  data.photoMatchFocus=null;data.photoMatchCandidateKey=null;data.photoMatchShowAll=false;
+  data.photoMatchNotice='次の基準フォルダに進んだよ。';
+  renderPhotoMatching(data,host);
+ });
+ nav.append(next);host.append(nav);
+ if(!B){
+  const note=document.createElement('p');note.className='muted';
+  note.textContent='同じ子の候補がほかにいる場合は「AI提案以外の候補も見る」を押してね。';
+  host.append(note);
+ }
+ renderPhotoSortGameProgress();
+}
+
 function renderPhotoFolders(data,host){
+ return renderPhotoMatching(data,host);
  host.replaceChildren();renderPhotoSortGameProgress();
  let folders;
  try{folders=photoFoldersEnsure(data)}catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
