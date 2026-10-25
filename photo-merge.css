@@ -235,3 +235,55 @@
  #photoFolderMistakePanel .photoMoveInlineItem{padding:4px}
  #photoFolderMistakePanel .photoMoveInlineTray>.muted{font-size:10px}
 }
+
+/* EO: compact two-step photo sorting, responsive on iPhone/Windows/Mac. */
+#photoAssignFlowGuide{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;position:sticky;top:0;z-index:9}
+#photoAssignFlowGuide span[data-flow-index]{min-height:38px;padding:5px 7px;font-size:12px}
+#photoFolderMistakePanel .photoFolderHero{padding:7px 9px;margin:5px 0}
+#photoFolderMistakePanel .photoFolderHero strong{font-size:17px}
+#photoFolderMistakePanel .photoFolderHero p{font-size:12px;margin:4px 0}
+#photoFolderMistakePanel .photoFolderCounter{margin:5px 0;font-size:12px}
+#photoFolderMistakePanel .photoMistakePicker{min-height:42px;margin:5px 0;padding:5px 8px}
+#photoFolderMistakePanel .photoMoveInlineToolbar{gap:5px;margin:5px 0}
+#photoFolderMistakePanel .photoMoveInlineToolbar strong{flex:1 1 100%;font-size:12px}
+#photoFolderMistakePanel .photoMoveInlineToolbar button{min-height:35px;padding:5px 7px;font-size:11px}
+#photoFolderMistakePanel .photoMoveInlineToolbar button[aria-pressed="true"]{
+ background:#eaf6ff;border-color:#6a9bcc;color:#285e8b}
+#photoFolderMistakePanel .photoMoveInlineTray{top:46px;margin:4px 0 8px;padding:7px;
+ border-width:1px;border-radius:12px;box-shadow:0 3px 9px #325e4514}
+#photoFolderMistakePanel .photoMoveInlineTray>strong{font-size:12px}
+#photoFolderMistakePanel .photoMoveInlineTray>.muted{font-size:10px;margin:2px 0}
+#photoFolderMistakePanel .photoMoveInlineTargets{gap:5px;padding:2px 1px 6px}
+#photoFolderMistakePanel .photoMoveInlineTarget{flex:0 0 102px;min-width:99px;max-width:110px;
+ min-height:46px;padding:4px 5px;border-radius:9px;gap:0;box-shadow:0 2px 0 #d3eedd}
+#photoFolderMistakePanel .photoMoveInlineTarget b{font-size:12px;line-height:1.25}
+#photoFolderMistakePanel .photoMoveInlineTarget small{font-size:10px}
+#photoFolderMistakePanel .photoMoveInlineGallery{max-height:58vh;
+ grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:6px;padding:5px}
+#photoFolderMistakePanel .photoMoveInlineItem{padding:4px;gap:3px;cursor:grab;
+ user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+#photoFolderMistakePanel .photoMoveInlineItem.photoMoveInlineDragging{
+ border-color:#ea7ca6;background:#fff1f7;cursor:grabbing;box-shadow:0 0 0 2px #ffd8ea}
+#photoFolderMistakePanel .photoMoveInlineItem img{-webkit-user-drag:none;user-select:none;pointer-events:none}
+#photoFolderMistakePanel .photoMoveInlineItem .photoMistakePhoto{min-height:0;aspect-ratio:1}
+#photoFolderMistakePanel .photoMoveInlineGrip{display:none}
+#photoFolderMistakePanel .photoMoveInlineZoom{min-height:29px;padding:4px 2px;font-size:10px}
+#photoFolderMistakePanel .photoMoveInlineStatus{margin:3px 0;padding:3px 0;font-size:11px}
+#photoFolderMistakePanel .photoMistakeActions{margin:6px 0}
+#photoFolderMistakePanel .photoMistakeActions button{min-height:42px}
+#photoFolderMistakePanel .photoMistakeNext{margin:8px 0;padding:8px}
+#photoFolderMistakePanel .photoMoveFinishTitle{display:block;margin-bottom:5px;font-size:13px}
+#photoFolderMistakePanel .photoMoveFolderSummary{display:flex;gap:6px;overflow-x:auto;
+ overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding:2px 0 8px}
+#photoFolderMistakePanel .photoMoveFolderSummary span{flex:0 0 auto;min-width:82px;
+ padding:6px;border:1px solid #d0e2ef;border-radius:9px;background:white;font-size:12px;
+ color:#43627b;font-weight:800;text-align:center}
+@media(max-width:540px){
+ #photoFolderMistakePanel .photoMoveInlineGallery{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ #photoFolderMistakePanel .photoMoveInlineItem{padding:3px}
+ #photoFolderMistakePanel .photoMoveInlineTray{top:43px;padding:6px}
+ #photoFolderMistakePanel .photoMoveInlineTray>.muted{display:none}
+ #photoFolderMistakePanel .photoMoveInlineTarget{flex-basis:96px;min-width:92px;min-height:43px}
+ #photoFolderMistakePanel .photoMoveInlineBadge{font-size:10px;padding:3px 2px}
+ #photoFolderMistakePanel .photoMoveInlineToolbar button{font-size:10px}
+}
