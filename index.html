@@ -3781,7 +3781,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EP</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EQ</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -4896,7 +4896,7 @@ document.querySelectorAll('[data-editor-tab]').forEach(b=>b.addEventListener('cl
 function startEditingWithSelectedPhotos(){
  if(!files.length)return;
  // DY: The matching game never claims completion while photos or reviews remain.
- if(albumAiGroupsData?.valid()&&albumAiGroupsData.photoMatchActive){
+ if(!photoSortSkipStrictFinish&&albumAiGroupsData?.valid()&&albumAiGroupsData.photoMatchActive){
   const data=albumAiGroupsData;
   const photoMissing=files.reduce((n,_,i)=>n+(!data.unusedPhotoIndexes.has(i)&&
    !(photoAssignments[i]||[]).length?1:0),0);
@@ -7421,7 +7421,7 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
 /* DT: review stage uses the DS safe folder correction and undo methods. */
 let mistakeFocusKey=null;
  // EP: Keep reviewed folders closed unless the teacher explicitly selects one.
- let mistakeFocusData=null,mistakeManualFocusKey=null,mistakeNeverAutoOpen=new Set();
+ let mistakeFocusData=null,mistakeManualFocusKey=null,mistakeNeverAutoOpen=new Set(),photoSortSkipStrictFinish=false;
 function renderPhotoSortGameProgress(){
  const el=document.getElementById('photoSortGameProgress');if(!el)return;
  const data=albumAiGroupsData;
@@ -7463,6 +7463,28 @@ function renderPhotoSortGameProgress(){
 
  // EO: The photo correction board is provisional and reversible; no File/face blob changes.
  const PHOTO_SORT_UNPLACED='__photo-sort-unplaced__';
+ // EQ: named boxes provide membership; unnamed AI cards are shown in the inbox.
+ function photoSortChildLinks(data){
+  const roster=new Set(getChildren(data.classId).map(k=>String(k.id))),links=new Map();
+  (data.photoMergeSlots||[]).forEach((key,slot)=>{
+   const id=String(data.photoMergeChildIds?.[slot]||'');
+   if(key&&roster.has(id))links.set(key,id);
+  });
+  for(const f of photoFoldersEnsure(data)){
+   if(links.has(f.key))continue;
+   const id=String(data.photoMatchFolderChild?.[f.key]||'');
+   if(roster.has(id))links.set(f.key,id);
+  }
+  return links;
+ }
+ function photoSortInboxIndexes(data){
+  const links=photoSortChildLinks(data),covered=new Set();
+  for(const f of photoFoldersEnsure(data)){
+   if(links.has(f.key))for(const index of photoFolderIndexes(data,f))covered.add(index);
+  }
+  return data.sourceFiles.map((_,index)=>index).filter(index=>
+   !data.unusedPhotoIndexes.has(index)&&!covered.has(index));
+ }
  function photoSortUnplacedIndexes(data){
   const covered=new Set(photoFoldersEnsure(data).flatMap(f=>photoFolderIndexes(data,f)));
   return data.sourceFiles.map((_,i)=>i).filter(i=>!data.unusedPhotoIndexes.has(i)&&!covered.has(i));
@@ -7535,7 +7557,7 @@ function renderPhotoSortGameProgress(){
    if(ids.has(id)){childByFolder.set(f.key,id);linked[f.key]=id}
   }
   const noChild=all.filter(f=>!childByFolder.has(f.key)).length;
-  const unreviewed=all.filter(f=>!data.photoFolderMistakeReviewed.has(f.key)).length;
+  const unreviewed=all.filter(f=>childByFolder.has(f.key)&&!data.photoFolderMistakeReviewed.has(f.key)).length;
   const staged=files.map(()=>[]);
   for(const f of all){
    const id=childByFolder.get(f.key);
@@ -7546,10 +7568,10 @@ function renderPhotoSortGameProgress(){
   }
   const noFolder=files.reduce((n,_,i)=>n+(!data.unusedPhotoIndexes.has(i)&&!staged[i].length?1:0),0);
   if(noChild||unreviewed||noFolder){
-   const msg='まだ振り分けを完了できないよ。園児未設定のカード '+noChild+
-    '組、確認していないフォルダ '+unreviewed+'組、未振り分け写真 '+noFolder+'枚。STEP 2で整理してね。';
-   const label=$('#photoSortProgressSaveStatus');if(label)label.textContent='⚠️ '+msg;
-   window.alert('⚠️ '+msg);return;
+   const msg='📷 整理が残っているよ。未振り分け写真 '+noFolder+'枚・未確認の園児フォルダ '+
+    unreviewed+'組・園児未設定のAIカード '+noChild+'組。';
+   const label=$('#photoSortProgressSaveStatus');if(label)label.textContent=msg;
+   if(!window.confirm(msg+'\n未振り分けは消さずに残します。このまま見開き編集へ進む？'))return;
   }
   const changed=files.reduce((n,_,i)=>{
    const before=[...new Set(assignmentPhotoIds(i))].sort().join('|');
@@ -7561,7 +7583,8 @@ function renderPhotoSortGameProgress(){
   const oldAssignments=photoAssignments,oldLinks=data.photoMatchFolderChild;
   photoAssignments=staged;data.photoMatchFolderChild={...oldLinks,...linked};
   try{
-   startEditingWithSelectedPhotos();
+   photoSortSkipStrictFinish=true;
+   try{startEditingWithSelectedPhotos()}finally{photoSortSkipStrictFinish=false}
    if(!document.querySelector('[data-screen="editor"]')?.classList.contains('active')){
     photoAssignments=oldAssignments;data.photoMatchFolderChild=oldLinks;
    }
@@ -7576,28 +7599,21 @@ function renderPhotoFolderMistakes(data,host){
  let folders;
  try{
   folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
-  const missing=photoSortUnplacedIndexes(data);
-  if(missing.length)folders.push({key:PHOTO_SORT_UNPLACED,groupKeys:[],addedPhotoIndexes:missing,excludedPhotoIndexes:[]});
+  const missing=photoSortInboxIndexes(data),named=photoSortChildLinks(data);
+  folders=folders.filter(f=>named.has(f.key));
+  if(missing.length)folders.unshift({key:PHOTO_SORT_UNPLACED,groupKeys:[],addedPhotoIndexes:missing,excludedPhotoIndexes:[]});
  }catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
  const reviewed=data.photoFolderMistakeReviewed;
  const slots=data.photoMergeSlots||[];
- const kids=getChildren(data.classId);
- const names=new Map(kids.map(k=>[String(k.id),String(k.name||'')]));
- const collator=new Intl.Collator('ja',{sensitivity:'base',numeric:true});
- function folderName(folder){
-  const slot=slots.indexOf(folder.key);
-  const id=slot>=0?String(data.photoMergeChildIds?.[slot]||''):
-   String(data.photoMatchFolderChild?.[folder.key]||'');
-  return names.get(id)||null;
- }
- // Readable child-name order first; unlinked AI candidates, then the unplaced inbox.
+ const kids=getChildren(data.classId),links=photoSortChildLinks(data);
+ // Inbox first; children follow the roster registration order, not kana order.
  folders.sort((a,b)=>{
-  const an=folderName(a),bn=folderName(b);
-  const rank=f=>f.key===PHOTO_SORT_UNPLACED?2:folderName(f)?0:1;
-  const diff=rank(a)-rank(b);if(diff)return diff;
-  if(an&&bn){const nameOrder=collator.compare(an,bn);if(nameOrder)return nameOrder}
-  return (slots.indexOf(a.key)>=0?slots.indexOf(a.key):10000+data.photoFolders.indexOf(a))-
-   (slots.indexOf(b.key)>=0?slots.indexOf(b.key):10000+data.photoFolders.indexOf(b));
+  if(a.key===PHOTO_SORT_UNPLACED)return -1;
+  if(b.key===PHOTO_SORT_UNPLACED)return 1;
+  const ia=kids.findIndex(k=>String(k.id)===links.get(a.key));
+  const ib=kids.findIndex(k=>String(k.id)===links.get(b.key));
+  if(ia!==ib)return (ia<0?1e6:ia)-(ib<0?1e6:ib);
+  return slots.indexOf(a.key)-slots.indexOf(b.key);
  });
  if(mistakeFocusData!==data){
   mistakeFocusData=data;mistakeFocusKey=null;mistakeManualFocusKey=null;mistakeNeverAutoOpen=new Set(reviewed);
