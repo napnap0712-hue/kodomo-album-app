@@ -104,7 +104,7 @@ window.omoideMergeRender=function(data,host,api){
  if(data.photoMatchNotice){const n=el('p','mergeNotice',data.photoMatchNotice);n.setAttribute('role','status');host.append(n)}
  if(data.photoFolderUndo?.length)host.append(btn('↩ 直前の操作を戻す','secondary mergeUndo',undo));
  const title=el('div','mergeSectionTitle');
- title.append(el('strong','','🏠 なかまボックス'),el('small','','カードを選んでボックスをタップ。ドラッグでも入れられるよ。'));
+ title.append(el('strong','','🏠 なかまボックス'),el('small','','複数選択したら、選んだカードを長押し・ドラッグでまとめて運べるよ！'));
  host.append(title);
  const tray=el('div','mergeSlots');tray.setAttribute('aria-label','園児ごとのなかまボックス');
  let drag=null;
@@ -137,11 +137,13 @@ window.omoideMergeRender=function(data,host,api){
     g.y>viewport-edge?Math.min(12,Math.ceil((g.y-viewport+edge)/6)):0;
    if(delta)window.scrollBy(0,delta);
    const r=tray.getBoundingClientRect();
+   let horizontal=0;
    if(g.y>=r.top&&g.y<=r.bottom){
-    if(g.x<r.left+40)tray.scrollLeft-=9;
-    else if(g.x>r.right-40)tray.scrollLeft+=9;
+    if(g.x<r.left+40)horizontal=-9;
+    else if(g.x>r.right-40)horizontal=9;
    }
-   highlight();
+   if(horizontal)tray.scrollLeft+=horizontal;
+   if(delta||horizontal)highlight();
    g.raf=requestAnimationFrame(autoScroll);
   };
   const clear=()=>{
@@ -221,7 +223,7 @@ window.omoideMergeRender=function(data,host,api){
  });
  host.append(tray);
  const toolbar=el('div','mergeSectionTitle');
- toolbar.append(el('strong','','📸 AIの仮フォルダ'),el('small','','写真を開いて確認 → 同じ子のカードをまとめて選択'));
+ toolbar.append(el('strong','','📸 AIの仮フォルダ'),el('small','','同じ子のカードを複数選択 → その1枚をドラッグすると全選択分を運べるよ'));
  host.append(toolbar);
  const actions=el('div','mergeActions');
  const count=el('b','',selected.size+'組を選択中');
