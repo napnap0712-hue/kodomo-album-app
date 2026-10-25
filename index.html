@@ -3239,7 +3239,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DG</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DH</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -3323,7 +3323,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DG</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DH</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -5619,7 +5619,7 @@ function clearCurrentAlbumSingletonPairs(){
  const PENDING_NO_FACE_KEY='__manual-no-face__';
  const pendingQuickSelected=new Map();
  const pendingQuickOpened=new Set();
- let pendingQuickLimit=8,pendingQuickDrag=null,pendingQuickSource=null;
+ let pendingQuickLimit=48,pendingQuickDrag=null,pendingQuickSource=null;
  function pendingQuickGroupList(data){
   const groups=data.groups.filter(g=>!data.confirmed.has(g.key)&&g.faceIndexes.length)
    .map(g=>({key:String(g.key),indexes:albumAiPhotoIndexes(g,data),group:g}));
@@ -5774,93 +5774,105 @@ function clearCurrentAlbumSingletonPairs(){
   });
   grip.addEventListener('pointercancel',clear);
  }
+
+ function pendingQuickItems(data){
+  return pendingQuickGroupList(data).flatMap(group=>
+   group.indexes.map(index=>({key:group.key,index,group:group.group})));
+ }
  function renderAlbumAiPendingQuick(){
   const data=albumAiGroupsData,host=$('#albumAiPendingList'),more=$('#albumAiPendingMore');
-  if(!host||!data?.valid())return;
-  if(pendingQuickSource!==data){pendingQuickSource=data;pendingQuickSelected.clear();pendingQuickOpened.clear();pendingQuickLimit=8;}
-  const groups=pendingQuickValidSelections(data);
-  const photos=new Set(groups.flatMap(g=>g.indexes));
-  $('#albumAiPendingQuickCount').textContent='（候補'+groups.length+'組・写真'+photos.size+'枚）';
+  if(!data?.valid()||!host)return;
+  if(pendingQuickSource!==data){pendingQuickSource=data;pendingQuickSelected.clear();pendingQuickLimit=48;}
+  pendingQuickValidSelections(data);
+  const all=pendingQuickItems(data),visible=all.slice(0,pendingQuickLimit);
+  $('#albumAiPendingQuickCount').textContent='残り '+new Set(all.map(x=>x.index)).size+'枚';
   host.replaceChildren();
   const destinations=$('#albumAiPendingDestinations');destinations.replaceChildren();
   const kids=getChildren(data.classId);
-  if(!kids.length)destinations.textContent='園児名簿を登録すると振り分けできるよ。';
+  if(!kids.length)destinations.textContent='先に園児名簿を登録してね。';
   for(const kid of kids){
-   const button=document.createElement('button');button.type='button';button.dataset.pendingChild=String(kid.id);
-   button.textContent='📁 '+kid.name+'さんへ';
+   const button=document.createElement('button');button.type='button';
+   button.dataset.pendingChild=String(kid.id);
+   const count=files.filter((_,i)=>!isAlbumUnusedPhoto(i)&&assignmentPhotoIds(i).includes(String(kid.id))).length;
+   button.textContent='📁 '+kid.name+'さん '+count+'枚';
    button.addEventListener('click',()=>pendingQuickCommit(kid.id));
-   button.addEventListener('dragover',e=>{
-    if(!pendingQuickDrag)return;e.preventDefault();
-    if(e.dataTransfer)e.dataTransfer.dropEffect='move';
+   button.addEventListener('dragover',event=>{
+    if(!pendingQuickDrag)return;event.preventDefault();
+    if(event.dataTransfer)event.dataTransfer.dropEffect='move';
     button.classList.add('pendingQuickHover');
    });
    button.addEventListener('dragleave',()=>button.classList.remove('pendingQuickHover'));
-   button.addEventListener('drop',e=>{
-    if(!pendingQuickDrag)return;e.preventDefault();
-    const one=pendingQuickDrag;pendingQuickDrag=null;
-    button.classList.remove('pendingQuickHover');pendingQuickCommit(kid.id,one);
+   button.addEventListener('drop',event=>{
+    if(!pendingQuickDrag)return;event.preventDefault();
+    const chosen=pendingQuickDrag;pendingQuickDrag=null;
+    button.classList.remove('pendingQuickHover');
+    pendingQuickCommit(kid.id,chosen);
    });
    destinations.append(button);
   }
-  if(!groups.length){
+  if(!all.length){
    const p=document.createElement('p');p.className='muted';
-   p.textContent='✅ 未確定の候補はありません。園児フォルダへ進んで確認できるよ。';host.append(p);
+   p.textContent='✅ 未確定の写真はありません。園児フォルダへ進めるよ。';
+   host.append(p);
   }
-  const shown=groups.slice(0,pendingQuickLimit);
-  for(const group of shown){
-   const groupIndex=group.group?data.groups.indexOf(group.group)+1:null;
-   const card=document.createElement('details');card.className='pendingQuickGroup';
-   card.open=pendingQuickOpened.has(group.key);
-   card.addEventListener('toggle',()=>{
-    if(data!==albumAiGroupsData)return;
-    if(card.open)pendingQuickOpened.add(group.key);else pendingQuickOpened.delete(group.key);
-   });
-   const title=document.createElement('summary');
-   title.textContent=group.group?'👤 候補グループ '+groupIndex+'（'+group.indexes.length+'枚）':
-    '📷 顔が見つからない・候補から外した写真（'+group.indexes.length+'枚）';
-   card.append(title);
-   const controls=document.createElement('div');controls.className='pendingQuickGroupControls';
-   const selectAll=document.createElement('button');selectAll.type='button';selectAll.className='secondary';
-   selectAll.textContent='このグループを全選択';
-   selectAll.addEventListener('click',()=>{
-    for(const index of group.indexes)pendingQuickToggle(group.key,index,true);
-   });
-   controls.append(selectAll);card.append(controls);
-   const grid=document.createElement('div');grid.className='pendingQuickPhotos';
-   for(const index of group.indexes){
-    const item=document.createElement('div');item.className='pendingQuickPhoto';
-    item.dataset.groupKey=group.key;item.dataset.photoIndex=String(index);
-    const imageButton=document.createElement('button');imageButton.type='button';imageButton.className='pendingQuickPreview';
-    const img=document.createElement('img');img.src=fileUrl(files[index]);
-    img.alt='写真'+(index+1)+'の全体';img.loading='lazy';img.decoding='async';
-    imageButton.append(img);imageButton.addEventListener('click',()=>openAlbumAssignedPhoto(index));
-    const label=document.createElement('label');label.className='pendingQuickCheck';
-    const check=document.createElement('input');check.type='checkbox';
-    check.checked=!!pendingQuickSelected.get(group.key)?.has(index);
-    check.setAttribute('aria-label','候補写真'+(index+1)+'を選択');
-    check.addEventListener('change',()=>pendingQuickToggle(group.key,index,check.checked));
-    label.append(check,document.createTextNode('選択'));
-    const grip=document.createElement('button');grip.type='button';grip.className='pendingQuickGrip';
-    grip.textContent='↗ 移動';grip.setAttribute('aria-label','この写真を園児名へドラッグして移動');
-    pendingQuickAttachDrag(grip,group.key,index);
-    item.append(imageButton,label,grip);grid.append(item);
+  for(const {key,index,group} of visible){
+   const item=document.createElement('article');item.className='pendingQuickPhoto';
+   item.dataset.groupKey=key;item.dataset.photoIndex=String(index);
+   const imageButton=document.createElement('button');imageButton.type='button';imageButton.className='pendingQuickPreview';
+   const frame=document.createElement('span');frame.className='pendingQuickImageFrame';
+   const img=document.createElement('img');img.src=fileUrl(files[index]);
+   img.alt='写真'+(index+1)+'の全体';img.loading='lazy';img.decoding='async';
+   frame.append(img);
+   const faceIndexes=group?.faceIndexes.filter(i=>data.samples[i]?.index===index)||[];
+   if(faceIndexes.length){
+    const sample=data.samples[faceIndexes[0]],marker=document.createElement('span');
+    marker.className='pendingQuickFaceMarker';marker.setAttribute('aria-hidden','true');frame.append(marker);
+    const fitMarker=()=>{
+     const width=img.naturalWidth,height=img.naturalHeight;
+     if(!width||!height||!frame.clientWidth||!frame.clientHeight||!Array.isArray(sample?.box))return;
+     const fit=Math.min(frame.clientWidth/width,frame.clientHeight/height);
+     const originalScale=Math.min(1,1200/Math.max(width,height));
+     const offX=(frame.clientWidth-width*fit)/2,offY=(frame.clientHeight-height*fit)/2;
+     const [x,y,w,h]=sample.box;
+     marker.style.left=(offX+x*fit/originalScale)+'px';
+     marker.style.top=(offY+y*fit/originalScale)+'px';
+     marker.style.width=(w*fit/originalScale)+'px';
+     marker.style.height=(h*fit/originalScale)+'px';
+    };
+    img.addEventListener('load',()=>requestAnimationFrame(fitMarker));
+    if(img.complete)requestAnimationFrame(fitMarker);
    }
-   card.append(grid);host.append(card);
+   imageButton.append(frame);imageButton.addEventListener('click',()=>openAlbumAssignedPhoto(index));
+   const label=document.createElement('label');label.className='pendingQuickCheck';
+   const checkbox=document.createElement('input');checkbox.type='checkbox';
+   checkbox.checked=!!pendingQuickSelected.get(key)?.has(index);
+   checkbox.setAttribute('aria-label','写真'+(index+1)+'を選択');
+   checkbox.addEventListener('change',()=>pendingQuickToggle(key,index,checkbox.checked));
+   label.append(checkbox,document.createTextNode('選択'));
+   const grip=document.createElement('button');grip.type='button';grip.className='pendingQuickGrip';
+   grip.textContent='↗ 移動';grip.setAttribute('aria-label','この写真を園児名へドラッグ');
+   pendingQuickAttachDrag(grip,key,index);
+   const caption=document.createElement('div');caption.className='pendingQuickCaption';
+   const from=document.createElement('span');from.textContent=group?'候補 '+(data.groups.indexOf(group)+1):'顔なし・未分類';
+   const number=document.createElement('span');
+   number.textContent='写真 '+(index+1)+(faceIndexes.length>1?'・顔の確認必要':'');
+   caption.append(from,number);
+   item.append(imageButton,label,grip,caption);host.append(item);
   }
-  more.hidden=groups.length<=pendingQuickLimit;
-  if(!more.hidden)more.textContent='＋ 次の候補を表示（'+shown.length+' / '+groups.length+'組）';
+  more.hidden=all.length<=pendingQuickLimit;
+  if(!more.hidden)more.textContent='＋ 次の写真を表示（'+visible.length+' / '+all.length+'件）';
   pendingQuickRefreshChecks();
  }
  $('#albumAiPendingSelectVisible')?.addEventListener('click',()=>{
   const data=albumAiGroupsData;if(!data?.valid())return;
-  for(const group of pendingQuickGroupList(data).slice(0,pendingQuickLimit))
-   for(const index of group.indexes)pendingQuickToggle(group.key,index,true);
+  for(const item of pendingQuickItems(data).slice(0,pendingQuickLimit))
+   pendingQuickToggle(item.key,item.index,true);
  });
  $('#albumAiPendingClear')?.addEventListener('click',()=>{
   pendingQuickSelected.clear();pendingQuickRefreshChecks();$('#albumAiPendingMessage').textContent='';
  });
  $('#albumAiPendingMore')?.addEventListener('click',()=>{
-  pendingQuickLimit+=8;renderAlbumAiPendingQuick();
+  pendingQuickLimit+=48;renderAlbumAiPendingQuick();
  });
 
 function renderCurrentAlbumSingletonPairs(){
@@ -6402,7 +6414,7 @@ $('#albumAiFindSingletonPairs')?.addEventListener('click',()=>{
 });
 function renderCurrentAlbumAiGroups(){
  const data=albumAiGroupsData,host=$('#currentAlbumAiGroups');
- if(data?.valid()){$('#albumAiSingletonReview').hidden=false;renderAlbumAiPendingQuick();}
+ if(data?.valid()){$('#albumAiSingletonReview').hidden=false;if(document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='pending')renderAlbumAiPendingQuick();}
  if(!host)return;
  if(albumAiPreviewObserver){albumAiPreviewObserver.disconnect();albumAiPreviewObserver=null}
  host.replaceChildren();
