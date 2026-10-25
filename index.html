@@ -5769,6 +5769,8 @@ async function saveCurrentPhotoSortCheckpoint(){
    JSON.stringify(verified.ai?.photoMatchDifferent||[])!==JSON.stringify(snapshot.ai?.photoMatchDifferent||[])||
    JSON.stringify(verified.ai?.photoFolderReviewed||[])!==JSON.stringify(snapshot.ai?.photoFolderReviewed||[])||
    JSON.stringify(verified.ai?.photoFolderMistakeReviewed||[])!==JSON.stringify(snapshot.ai?.photoFolderMistakeReviewed||[])||
+   JSON.stringify(verified.ai?.photoMergeSlots||[])!==JSON.stringify(snapshot.ai?.photoMergeSlots||[])||
+   JSON.stringify(verified.ai?.photoMergeChildIds||[])!==JSON.stringify(snapshot.ai?.photoMergeChildIds||[])||
    verified.ai?.photoMatchFocus!==snapshot.ai?.photoMatchFocus||
    verified.ai?.photoMatchCandidateKey!==snapshot.ai?.photoMatchCandidateKey||
    verified.ai?.photoMatchFinalReviewed!==snapshot.ai?.photoMatchFinalReviewed||
@@ -7245,7 +7247,10 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
  // All other raw AI folders remain available through this detailed picker.
  const slotRows=(data.photoMergeChildIds||[]).map((id,slot)=>{
   const child=getChildren(data.classId).find(k=>String(k.id)===String(id));
-  return {slot,child,key:data.photoMergeSlots?.[slot]||null};
+  const saved=data.photoMergeSlots?.[slot]||null;
+  // Older checkpoints can contain a stale manual destination. Treat it as empty.
+  const key=data.photoFolders.some(f=>f.key===saved)?saved:null;
+  return {slot,child,key};
  }).filter(row=>row.child&&row.key!==folder.key);
  const emptySlotKey=slot=>'__merge-empty-slot:'+slot;
  for(const row of slotRows){
@@ -7317,14 +7322,22 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
    const emptyTarget=typeof targetKey==='string'?/^__merge-empty-slot:(\d+)$/.exec(targetKey):null;
    if(emptyTarget){
     const slot=Number(emptyTarget[1]);
-    if(!data.photoMergeChildIds?.[slot]||data.photoMergeSlots?.[slot])
+    if(!data.photoMergeChildIds?.[slot]||
+     data.photoFolders.some(f=>f.key===data.photoMergeSlots?.[slot]))
      throw Error('園児の移動先が更新されています。いったん開き直してね');
     const previous=new Set(data.photoFolders.map(f=>f.key));
-    // Existing split performs one safe, undoable membership change.
-    photoMatchSplitPhotos(data,folder.key,indexes);
-    const created=data.photoFolders.find(f=>!previous.has(f.key));
-    if(!created)throw Error('移動先フォルダを作れませんでした');
-    data.photoMergeSlots[slot]=created.key;
+    const before=photoFolderSnapshot(data),undo=[...data.photoFolderUndo];
+    try{
+     // Existing split performs one safe, undoable membership change.
+     photoMatchSplitPhotos(data,folder.key,indexes);
+     const created=data.photoFolders.find(f=>!previous.has(f.key));
+     if(!created)throw Error('移動先フォルダを作れませんでした');
+     data.photoMergeSlots[slot]=created.key;
+    }catch(error){
+     // Roll back every membership and box-reference change on partial failure.
+     photoFolderRestoreSnapshot(data,before);data.photoFolderUndo=undo;
+     throw error;
+    }
    }else photoFolderEditMembership(data,folder.key,indexes,targetKey);
    data.photoFolderNotice=targetKey?
     '✅ '+n+'枚を移動したよ。移動先の写真も次に確認してね。':
