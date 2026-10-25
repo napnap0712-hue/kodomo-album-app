@@ -6647,6 +6647,82 @@ function photoFolderEditMembership(data,sourceKey,photoIndexes,targetKey=null){
  data.photoFolderReviewed.delete(source.key);
  if(target)data.photoFolderReviewed.delete(target.key);
 }
+
+// DQ: Optional photo correction screen. Selecting a photo never changes AI identity.
+function photoFolderOpenFixer(data,host,folder){
+ host.querySelector('.photoFolderFixer')?.remove();
+ if(!data?.valid()||!data.photoFolders?.includes(folder))return;
+ const photos=photoFolderIndexes(data,folder),chosen=new Set();
+ const panel=document.createElement('section');panel.className='photoFolderFixer';
+ const header=document.createElement('div');header.className='photoFolderFixerHeader';
+ const title=document.createElement('strong');title.textContent='🧹 ちがう写真をなおす';
+ const close=document.createElement('button');close.type='button';close.className='secondary';
+ close.textContent='閉じる ×';close.addEventListener('click',()=>panel.remove());
+ header.append(title,close);
+ const note=document.createElement('p');note.textContent='ちがう子の写真をタップして選ぼう！ 🔍は元写真の拡大。元写真は消えないよ。';
+ const gallery=document.createElement('div');gallery.className='photoFolderFixerGallery';
+ const controls=document.createElement('div');controls.className='photoFolderFixerActions';
+ const status=document.createElement('p');status.className='photoFolderFixerStatus';status.setAttribute('role','status');
+ const remove=document.createElement('button');remove.type='button';remove.className='secondary photoFolderRemove';
+ remove.textContent='📦 この候補からはずす';
+ const moveSelect=document.createElement('select');moveSelect.className='photoFolderMoveSelect';
+ moveSelect.setAttribute('aria-label','移動先の写真フォルダ');
+ const empty=document.createElement('option');empty.value='';empty.textContent='移動先を選ぶ';moveSelect.append(empty);
+ data.photoFolders.forEach((target,n)=>{
+  if(target===folder)return;
+  const option=document.createElement('option');option.value=target.key;
+  option.textContent='📁 フォルダ '+(n+1)+'（'+photoFolderIndexes(data,target).length+'枚）';
+  moveSelect.append(option);
+ });
+ const move=document.createElement('button');move.type='button';move.className='secondary photoFolderMove';
+ move.textContent='➡️ 選んだ先へ移動';
+ const clear=document.createElement('button');clear.type='button';clear.className='secondary';
+ clear.textContent='選択を解除';clear.addEventListener('click',()=>{chosen.clear();refresh()});
+ controls.append(remove,moveSelect,move,clear);
+ function refresh(){
+  remove.disabled=chosen.size===0;move.disabled=!chosen.size||!moveSelect.value;
+  status.textContent=chosen.size?'✅ '+chosen.size+'枚選択中':'写真をタップして選択してね';
+  for(const row of gallery.children){
+   const active=chosen.has(Number(row.dataset.photo));
+   row.classList.toggle('photoFolderPhotoSelected',active);
+   const b=row.querySelector('.photoFolderPhotoChoose');
+   b.setAttribute('aria-pressed',String(active));
+   b.querySelector('.photoFolderBadge').textContent=active?'✓ 選択中':'○ 選ぶ';
+  }
+ }
+ function perform(targetKey){
+  if(!chosen.size||data!==albumAiGroupsData||!data.valid())return;
+  if(targetKey!==null&&!targetKey){status.textContent='移動先を選んでね';return}
+  const n=chosen.size;
+  try{
+   photoFolderEditMembership(data,folder.key,[...chosen],targetKey);
+   data.photoFolderNotice=targetKey?
+    '✅ '+n+'枚を別の写真フォルダに移動したよ！':
+    '✅ '+n+'枚をこのフォルダからはずしたよ。元写真はそのままだよ！';
+   renderPhotoFolders(data,host);
+  }catch(error){status.textContent='⚠️ '+String(error?.message||error)}
+ }
+ remove.addEventListener('click',()=>perform(null));
+ move.addEventListener('click',()=>perform(moveSelect.value));
+ moveSelect.addEventListener('change',refresh);
+ for(const index of photos){
+  const cell=document.createElement('div');cell.className='photoFolderFixerPhoto';cell.dataset.photo=String(index);
+  const pick=document.createElement('button');pick.type='button';pick.className='photoFolderPhotoChoose';
+  const img=document.createElement('img');img.src=fileUrl(data.sourceFiles[index]);
+  img.loading='lazy';img.decoding='async';img.alt='写真'+(index+1);
+  const badge=document.createElement('span');badge.className='photoFolderBadge';badge.textContent='○ 選ぶ';
+  pick.append(img,badge);pick.addEventListener('click',()=>{
+   if(chosen.has(index))chosen.delete(index);else chosen.add(index);refresh();
+  });
+  const zoom=document.createElement('button');zoom.type='button';zoom.className='secondary photoFolderFixerZoom';
+  zoom.textContent='🔍 全体を見る';zoom.addEventListener('click',()=>openAlbumAssignedPhoto(index));
+  cell.append(pick,zoom);gallery.append(cell);
+ }
+ panel.append(header,note,gallery,controls,status);
+ host.insertBefore(panel,host.children[1]||null);
+ refresh();panel.scrollIntoView?.({behavior:'smooth',block:'start'});
+}
+
 function renderPhotoFolders(data,host){
  host.replaceChildren();
  let folders;
@@ -6660,7 +6736,11 @@ function renderPhotoFolders(data,host){
  const title=document.createElement('div');title.className='photoFolderHero';
  title.textContent='🌷 おもいでまとめ！　AIの写真フォルダを同じ園児ごとにまとめよう！';host.append(title);
  const counter=document.createElement('p');counter.className='photoFolderCounter';
- counter.textContent='📁 確認したフォルダ '+data.photoFolderReviewed.size+' / '+visible.length+'　園児名は次の写真ポン！で付けるよ';host.append(counter);
+ counter.textContent='🌟 '+visible.filter(f=>data.photoFolderReviewed.has(f.key)).length+' / '+visible.length+' フォルダ完了';host.append(counter);
+ if(data.photoFolderNotice){
+  const message=document.createElement('p');message.className='photoFolderNotice';message.setAttribute('role','status');
+  message.textContent=data.photoFolderNotice;host.append(message);
+ }
  if(data.photoFolderUndo.length){
   host.append(button('↩ 直前のまとめを戻す','secondary photoFolderUndo',()=>{
    const old=data.photoFolderUndo.pop();if(!old)return;
@@ -6691,6 +6771,10 @@ function renderPhotoFolders(data,host){
   const name=document.createElement('strong');
   name.textContent='📁 写真 '+photos.length+'枚'+(folder.groupKeys.length>1?' · まとめ済み':'');
   card.append(gallery,name);
+  const edit=document.createElement('button');edit.type='button';edit.className='secondary photoFolderFixButton';
+  edit.textContent='🧹 ちがう写真をなおす';
+  edit.addEventListener('click',()=>photoFolderOpenFixer(data,host,folder));
+  card.append(edit);
   if(photos.length>max){
    const showAll=button('▣ 全'+photos.length+'枚を見る','secondary photoFolderShowAll',()=>{
     const expanded=!gallery.classList.contains('photoFolderExpanded');
