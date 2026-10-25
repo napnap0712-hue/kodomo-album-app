@@ -3657,7 +3657,13 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 #albumAiSingletonPairs .photoMatchZoom{position:absolute;right:1px;bottom:1px;padding:2px 4px;
  min-height:29px;min-width:30px;width:auto;font-size:12px;border-radius:8px;background:#fffd;color:#34536b;
  border:1px solid #d0dce7}
-#albumAiSingletonPairs .photoMatchMoveActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0 6px}
+#albumAiSingletonPairs .photoMatchMoveActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0}
+#albumAiSingletonPairs .photoMatchDragMode{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:8px 0}
+#albumAiSingletonPairs .photoMatchDragMode button{min-height:43px;font-size:13px;border-radius:11px;
+ background:#f0f5fb;color:#526f86;border:1px solid #bcd5e8}
+#albumAiSingletonPairs .photoMatchDragMode button.selected{background:#fff0db;border:2px solid #f3bb67;
+ color:#925d1f;font-weight:850}
+#albumAiSingletonPairs .photoMatchInstruction{font-size:12px;line-height:1.6;color:#658198;margin:12px 0 3px}
 #albumAiSingletonPairs .photoMatchMoveActions button{white-space:normal;min-height:44px;font-size:12px}
 #albumAiSingletonPairs .photoMatchExtraMoves{margin:9px 0 14px;padding:11px;border:1px solid #dce7f0;
  border-radius:13px;background:#fbfdff}
@@ -3766,7 +3772,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 EC</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 ED</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -7021,6 +7027,31 @@ function photoFolderEditMembership(data,sourceKey,photoIndexes,targetKey=null){
  }
  data.photoMatchFinalReviewed=false;
 }
+// ED: Add a photo to another folder without removing its original membership.
+// This never duplicates a File, changes a face sample, or assigns a child.
+function photoFolderAddMembership(data,sourceKey,photoIndexes,targetKey){
+ photoFoldersEnsure(data);
+ const source=data.photoFolders.find(f=>f.key===sourceKey);
+ const target=data.photoFolders.find(f=>f.key===targetKey);
+ if(!source||!target||source===target)throw Error('追加先のフォルダが見つかりません');
+ if(!Array.isArray(photoIndexes)||!photoIndexes.length||
+  new Set(photoIndexes).size!==photoIndexes.length||
+  photoIndexes.some(i=>!photoFolderIndexes(data,source).includes(i)))
+  throw Error('選んだ写真が元のフォルダにありません');
+ const current=new Set(photoFolderIndexes(data,target));
+ const toAdd=photoIndexes.filter(i=>!current.has(i));
+ if(!toAdd.length)return 0;
+ photoFolderRemember(data);
+ for(const index of toAdd){
+  target.excludedPhotoIndexes=target.excludedPhotoIndexes.filter(i=>i!==index);
+  if(!photoFolderIndexes(data,target).includes(index)&&!target.addedPhotoIndexes.includes(index))
+   target.addedPhotoIndexes.push(index);
+ }
+ data.photoFolderReviewed.delete(target.key);
+ data.photoFolderMistakeReviewed.delete(target.key);
+ data.photoMatchFinalReviewed=false;
+ return toAdd.length;
+}
 
 // DQ: Optional photo correction screen. Selecting a photo never changes AI identity.
 function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
@@ -7343,6 +7374,16 @@ function photoMatchMovePhotos(data,from,to,ids){
  data.photoMatchFinalReviewed=false;
  data.photoMatchNotice='📷 '+ids.length+'枚を移動したよ！ 2つのフォルダをもう一度確認してね。';
 }
+function photoMatchAddPhotos(data,from,to,ids){
+ if(data!==albumAiGroupsData||!data.valid())throw Error('写真の状態が変わりました');
+ const count=photoFolderAddMembership(data,from,ids,to);
+ data.photoMatchCandidateKey=from===data.photoMatchFocus?to:from;
+ data.photoMatchShowAll=true;
+ data.photoMatchNotice=count?
+  '📋 '+count+'枚を追加したよ。元のフォルダにも残っているよ！':
+  '✅ 選んだ写真はすでに追加先に入っているよ。';
+ return count;
+}
 function photoMatchSplitPhotos(data,sourceKey,ids){
  if(data!==albumAiGroupsData||!data.valid())throw Error('写真が切り替わったよ');
  photoFoldersEnsure(data);
@@ -7376,7 +7417,7 @@ function renderPhotoMatching(data,host){
  };
  const header=document.createElement('div');header.className='photoMatchHead';
  const name=document.createElement('strong');name.textContent='💕 おもいでマッチング！';
- const subtitle=document.createElement('p');subtitle.textContent='同じ？ 別々？ 写真を見て決めよう！ 写真の移動もできるよ。';
+ const subtitle=document.createElement('p');subtitle.textContent='顔が同じかではなく、「その子のフォルダに入れたい写真か」を決めよう！ 写真の移動も追加もできるよ。';
  header.append(name,subtitle);host.append(header);
  const original=Math.max(data.photoMatchOriginalCount,folders.length),
    joined=Math.max(0,original-folders.length);
@@ -7452,12 +7493,17 @@ function renderPhotoMatching(data,host){
   ' ／ 未確認の比較候補 '+pool.length+'組'+(data.photoMatchShowAll?'（全候補）':'（AI提案）');
  host.append(count);
  const selectedA=new Set(),selectedB=new Set();
+ // Drag mode changes only where the selected photo is shown, never the File.
+ let dragMode='move';
  const board=document.createElement('div');board.className='photoMatchBoard';
  let desktopDrag=null;
- function move(from,to,ids){
+ function move(from,to,ids,mode='move'){
   try{
-   if(!ids.length){data.photoMatchNotice='写真をタップして選んでね。';renderPhotoMatching(data,host);return}
-   photoMatchMovePhotos(data,from.key,to.key,ids);
+   if(!ids.length){
+    data.photoMatchNotice='写真をタップして選んでね。';renderPhotoMatching(data,host);return;
+   }
+   if(mode==='add')photoMatchAddPhotos(data,from.key,to.key,ids);
+   else photoMatchMovePhotos(data,from.key,to.key,ids);
    renderPhotoMatching(data,host);
   }catch(error){data.photoMatchNotice='⚠️ '+String(error?.message||error);renderPhotoMatching(data,host)}
  }
@@ -7505,8 +7551,8 @@ function renderPhotoMatching(data,host){
    const zoom=btn('🔍','photoMatchZoom',()=>openAlbumAssignedPhoto(index));
    function payload(){return chosen.has(index)&&chosen.size>1?[...chosen]:[index]}
    select.addEventListener('dragstart',event=>{
-    desktopDrag={from:folder.key,indices:payload()};
-    if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','omoide-match-photo')}
+    desktopDrag={from:folder.key,indices:payload(),mode:dragMode};
+    if(event.dataTransfer){event.dataTransfer.effectAllowed=dragMode==='add'?'copy':'move';event.dataTransfer.setData('text/plain','omoide-match-photo')}
    });
    select.addEventListener('dragend',()=>{desktopDrag=null;board.querySelectorAll('.photoMatchDropOver').forEach(node=>node.classList.remove('photoMatchDropOver'))});
    // Long-press dragging on iPhone; a normal swipe keeps horizontal scrolling.
@@ -7549,7 +7595,7 @@ function renderPhotoMatching(data,host){
     cleanup();
     if(active&&dragged&&target){
      const to=byKey.get(target.dataset.matchDrop);
-     if(to&&to!==folder)move(folder,to,idsToMove);
+     if(to&&to!==folder)move(folder,to,idsToMove,dragMode);
     }
    },{passive:false});
    select.addEventListener('touchcancel',cleanup);
@@ -7562,7 +7608,9 @@ function renderPhotoMatching(data,host){
   }));
   col.addEventListener('dragover',event=>{
    if(desktopDrag&&desktopDrag.from!==folder.key){
-    event.preventDefault();col.classList.add('photoMatchDropOver');
+    event.preventDefault();
+    if(event.dataTransfer)event.dataTransfer.dropEffect=desktopDrag.mode==='add'?'copy':'move';
+    col.classList.add('photoMatchDropOver');
    }
   });
   col.addEventListener('dragleave',event=>{
@@ -7574,7 +7622,7 @@ function renderPhotoMatching(data,host){
    const drag=desktopDrag;desktopDrag=null;
    col.classList.remove('photoMatchDropOver');
    const from=byKey.get(drag.from);
-   if(from)move(from,folder,drag.indices);
+   if(from)move(from,folder,drag.indices,drag.mode);
   });
   return col;
  }
@@ -7586,9 +7634,26 @@ function renderPhotoMatching(data,host){
  }
  host.append(board);
  if(B){
+  const dragOptions=document.createElement('div');dragOptions.className='photoMatchDragMode';
+  const moveMode=btn('↗ 移動して整理','secondary',()=>{
+   dragMode='move';moveMode.classList.add('selected');addMode.classList.remove('selected');
+   moveMode.setAttribute('aria-pressed','true');addMode.setAttribute('aria-pressed','false');
+  });
+  const addMode=btn('📋 両方に追加','secondary',()=>{
+   dragMode='add';addMode.classList.add('selected');moveMode.classList.remove('selected');
+   addMode.setAttribute('aria-pressed','true');moveMode.setAttribute('aria-pressed','false');
+  });
+  moveMode.classList.add('selected');moveMode.setAttribute('aria-pressed','true');
+  addMode.setAttribute('aria-pressed','false');
+  dragOptions.append(moveMode,addMode);
+  const instruction=document.createElement('p');instruction.className='photoMatchInstruction';
+  instruction.textContent='写真をタップで選択 → 移動・追加。ドラッグでも操作できるよ。';
+  host.append(instruction,dragOptions);
   const moveRow=document.createElement('div');moveRow.className='photoMatchMoveActions';
-  moveRow.append(btn('⬅ 選択したBの写真をAへ','secondary',()=>move(B,A,[...selectedB])),
-   btn('選択したAの写真をBへ ➡','secondary',()=>move(A,B,[...selectedA])));
+  moveRow.append(btn('⬅ BからAへ移動','secondary',()=>move(B,A,[...selectedB])),
+   btn('AからBへ移動 ➡','secondary',()=>move(A,B,[...selectedA])),
+   btn('📋 Bの写真をAにも追加','secondary',()=>move(B,A,[...selectedB],'add')),
+   btn('📋 Aの写真をBにも追加','secondary',()=>move(A,B,[...selectedA],'add')));
   host.append(moveRow);
   const otherDestinations=folders.filter(f=>f!==A&&f!==B);
   const extras=document.createElement('details');extras.className='photoMatchExtraMoves';
@@ -7621,13 +7686,13 @@ function renderPhotoMatching(data,host){
    btn('＋ Bから新フォルダへ','secondary',()=>split(B,[...selectedB])));
   extras.append(splits);host.append(extras);
   const score=document.createElement('p');score.className='photoMatchScore';
-  score.textContent=choice.score>=0?'AIの顔比較値 '+choice.score.toFixed(2)+'（正確率ではありません）':'AIの比較値なし・先生の確認が必要';
+  score.textContent=choice.score>=0?'AI候補順位の参考値 '+choice.score.toFixed(2)+'（先生の写真整理を補助）':'AIの参考比較値なし・先生の確認が必要';
   host.append(score);
   const actions=document.createElement('div');actions.className='photoMatchDecisionActions';
-  actions.append(btn('❤️ 同じ','photoMatchSame',()=>{
+  actions.append(btn('❤️ Aにまとめる','photoMatchSame',()=>{
    try{photoMatchMergeFolders(data,A.key,B.key);renderPhotoMatching(data,host)}
    catch(error){data.photoMatchNotice='⚠️ '+String(error?.message||error);renderPhotoMatching(data,host)}
-  }),btn('💙 別々','photoMatchDifferent',()=>{
+  }),btn('💙 別フォルダのまま','photoMatchDifferent',()=>{
    if(data!==albumAiGroupsData||!data.valid())return;
    photoFolderRemember(data);
    data.photoMatchDifferent.push({a:A.key,b:B.key,sa:photoMatchSignature(data,A),sb:photoMatchSignature(data,B)});
