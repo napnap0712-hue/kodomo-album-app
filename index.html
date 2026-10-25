@@ -3682,7 +3682,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DW</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DX</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -7163,7 +7163,16 @@ function renderPhotoFolders(data,host){
  dropHelp.textContent='↙ 下の候補をここへドラッグしてまとめることもできます';
  main.append(title2,baseCard,dropHelp);host.append(main);
  const candidates=visible.filter(f=>f!==focus&&!data.photoFolderReviewed.has(f.key));
- if(!candidates.length){data.photoFolderReviewed.add(focus.key);renderPhotoFolders(data,host);return}
+ if(!candidates.length){
+  const hint=document.createElement('p');hint.className='photoFolderDone';
+  hint.textContent='このフォルダはここで確認できるよ。よければ「次のフォルダへ」を押してね。';
+  host.append(hint,button('このフォルダを確認して次へ ›','secondary wide photoFolderNext',()=>{
+   data.photoFolderReviewed.add(focus.key);
+   data.photoFolderNotice='次の写真フォルダを表示しています。';
+   renderPhotoFolders(data,host);
+  }));
+  return;
+ }
  const heading=document.createElement('h3');heading.className='photoFolderHeading';
  heading.textContent='② 同じ子だと思うフォルダをタップで選択';host.append(heading);
  const grid=document.createElement('div');grid.className='photoFolderGrid';host.append(grid);
@@ -7293,10 +7302,12 @@ function renderPhotoFolders(data,host){
    f===focus?{key:f.key,groupKeys:[...all],
     addedPhotoIndexes:[...sourcePhotos].filter(i=>!aiPhotoIndexes.has(i)),
     excludedPhotoIndexes:[...aiPhotoIndexes].filter(i=>!sourcePhotos.has(i))}:f);
-  data.photoFolderReviewed.add(focus.key);
+  // DX: Adding folders does not finish this reference card.
+  // Only the explicit "next folder" button marks it as reviewed.
+  data.photoFolderReviewed.delete(focus.key);
   data.photoFolderMistakeReviewed?.delete(focus.key);
   for(const other of matches)data.photoFolderMistakeReviewed?.delete(other.key);
-  data.photoFolderNotice='💞 '+matches.length+'組をまとめました！ 写真は重複を除いて'+photos.size+'枚です。';
+  data.photoFolderNotice='💞 '+matches.length+'組をまとめました！ 写真は重複を除いて'+photos.size+'枚。同じ子の候補があれば続けて追加してね。';
   renderPhotoFolders(data,host);
  }
  merge.addEventListener('click',()=>mergePicked([...selected]));
