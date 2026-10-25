@@ -7440,6 +7440,40 @@ function renderPhotoSortGameProgress(){
  }
  el.textContent='📷 '+total+'枚中'+sorted+'枚お届け済み・未振り分け'+(total-sorted)+'枚'+review;
 }
+// EN: A photo move changes only local folder membership; originals and face data are immutable.
+function photoSortMoveInlinePhotos(data,from,ids,destination){
+ if(data!==albumAiGroupsData||!data.valid())throw Error('写真の状態が更新されたよ。開き直してね');
+ photoFoldersEnsure(data);
+ const source=data.photoFolders.find(f=>f.key===from);
+ if(!source||!ids.length||new Set(ids).size!==ids.length||
+  ids.some(i=>!photoFolderIndexes(data,source).includes(i)))
+  throw Error('写真とフォルダが一致しません。選び直してね');
+ const match=typeof destination==='string'?/^__merge-empty-slot:(\d+)$/.exec(destination):null;
+ if(match){
+  const slot=Number(match[1]),childId=String(data.photoMergeChildIds?.[slot]||'');
+  if(!childId||!getChildren(data.classId).some(k=>String(k.id)===childId)||
+   data.photoFolders.some(f=>f.key===data.photoMergeSlots?.[slot]))
+   throw Error('園児の移動先が変わったよ。もう一度選び直してね');
+  const snapshot=photoFolderSnapshot(data),undo=[...data.photoFolderUndo];
+  try{
+   const previous=new Set(data.photoFolders.map(f=>f.key));
+   photoMatchSplitPhotos(data,from,ids);
+   const made=data.photoFolders.find(f=>!previous.has(f.key));
+   if(!made)throw Error('移動先を作れませんでした');
+   data.photoMergeSlots[slot]=made.key;
+  }catch(error){
+   photoFolderRestoreSnapshot(data,snapshot);
+   data.photoFolderUndo=undo;
+   throw error;
+  }
+ }else{
+  if(!destination||!data.photoFolders.some(f=>f.key===destination&&f.key!==from))
+   throw Error('移動先のフォルダを選び直してね');
+  photoFolderEditMembership(data,from,ids,destination);
+ }
+ data.photoMatchFinalReviewed=false;
+ return ids.length;
+}
 function renderPhotoFolderMistakes(data,host){
  if(!host||!data?.valid())return;
  host.replaceChildren();
@@ -7456,61 +7490,225 @@ function renderPhotoFolderMistakes(data,host){
  if(!folders.some(f=>f.key===mistakeFocusKey))
   mistakeFocusKey=folders.find(f=>slots.includes(f.key)&&!reviewed.has(f.key))?.key||
    folders.find(f=>!reviewed.has(f.key))?.key||folders[0]?.key||null;
- const btn=(label,cls,fn)=>{const el=document.createElement('button');el.type='button';
-  el.className=cls;el.textContent=label;el.addEventListener('click',fn);return el};
- const header=document.createElement('div');header.className='photoFolderHero';
- const title=document.createElement('strong');title.textContent='📷 STEP 2｜写真のおひっこし！';
- const text=document.createElement('p');text.textContent='園児のボックスや未仕分けカードから写真を選び、正しい子のフォルダへ移動しよう。';
- header.append(title,text);host.append(header);
+ const btn=(label,cls,callback)=>{
+  const element=document.createElement('button');element.type='button';element.className=cls;
+  element.textContent=label;element.addEventListener('click',callback);return element;
+ };
+ const make=(tag,cls,value)=>{
+  const element=document.createElement(tag);if(cls)element.className=cls;
+  if(value!==undefined)element.textContent=value;
+  return element;
+ };
+ const header=make('div','photoFolderHero');
+ header.append(make('strong','','📷 STEP 2｜写真のおひっこし！'),
+  make('p','','この画面で写真を選んで、下の園児名を押すだけで移動できるよ。🔎で写真全体を確認！'));
+ host.append(header);
  const n=folders.filter(f=>reviewed.has(f.key)).length;
- const count=document.createElement('p');count.className='photoFolderCounter';
- count.textContent='確認済み '+n+' / '+folders.length+'組　·　仮仕分けに残したカード '+folders.filter(f=>!slots.includes(f.key)).length+'組';
+ const count=make('p','photoFolderCounter',
+  '確認済み '+n+' / '+folders.length+'組　·　未仕分けカード '+folders.filter(f=>!slots.includes(f.key)).length+'組');
  host.append(count);
- if(data.photoFolderUndo.length)host.append(btn('↩ 直前の操作を戻す','secondary',()=>{
-  const old=data.photoFolderUndo.pop();if(old){photoFolderRestoreSnapshot(data,old);renderPhotoFolderMistakes(data,host)}
+ if(data.photoFolderUndo.length)host.append(btn('↩ 直前の移動を戻す','secondary',()=>{
+  const old=data.photoFolderUndo.pop();
+  if(old){photoFolderRestoreSnapshot(data,old);data.photoFolderNotice='↩ 直前の写真移動を元に戻したよ。';renderPhotoFolderMistakes(data,host)}
  }));
- if(data.photoFolderNotice){const note=document.createElement('p');note.className='photoFolderNotice';
-  note.textContent=data.photoFolderNotice;host.append(note)}
- if(!folders.length){host.append(btn('🏠 この子だーれ？へ ›','primary wide',
-  ()=>setPhotoAssignFlowStep('pending',{scroll:true})));renderPhotoSortGameProgress();return}
- const select=document.createElement('select');select.className='photoMistakePicker';
- select.setAttribute('aria-label','確認するフォルダを選ぶ');
- folders.forEach((f,i)=>{const o=document.createElement('option');o.value=f.key;
-  o.textContent=(reviewed.has(f.key)?'✅ ':'🔎 ')+photoSortFolderLabel(data,f,i)+' · '+photoFolderIndexes(data,f).length+'枚';select.append(o)});
- select.value=mistakeFocusKey;
- select.addEventListener('change',()=>{mistakeFocusKey=select.value;renderPhotoFolderMistakes(data,host)});
- host.append(select);
- const f=folders.find(f=>f.key===mistakeFocusKey),indexes=photoFolderIndexes(data,f);
- const gallery=document.createElement('div');gallery.className='photoMistakeGallery';
- for(const index of indexes.slice(0,12)){
-  const cell=btn('','photoMistakePhoto',()=>openAlbumAssignedPhoto(index));
-  const img=document.createElement('img');img.src=fileUrl(data.sourceFiles[index]);
-  img.loading='lazy';img.decoding='async';img.alt='写真'+(index+1)+'の全体を確認';
-  cell.append(img);gallery.append(cell);
+ if(data.photoFolderNotice){
+  const note=make('p','photoFolderNotice',data.photoFolderNotice);note.setAttribute('role','status');host.append(note);
  }
- host.append(gallery);
- if(indexes.length>12){const more=document.createElement('p');more.className='muted';
-  more.textContent='残り'+(indexes.length-12)+'枚は「写真を選んで直す」で見られるよ。';host.append(more)}
- const actions=document.createElement('div');actions.className='photoMistakeActions';
- actions.append(btn('📦 写真を選んで移動する','secondary',()=>photoFolderOpenFixer(data,host,f,
-  {scroll:false,onChange:()=>renderPhotoFolderMistakes(data,host)})),
-  btn(reviewed.has(f.key)?'↩ 確認を取り消す':'🎉 みんなおなじ子！','primary',()=>{
-   if(reviewed.has(f.key))reviewed.delete(f.key);else reviewed.add(f.key);
-   mistakeFocusKey=folders.find(k=>!reviewed.has(k.key))?.key||f.key;
+ if(!folders.length){
+  host.append(btn('🏠 園児へ写真を登録 ›','primary wide',
+   ()=>setPhotoAssignFlowStep('pending',{scroll:true})));
+  renderPhotoSortGameProgress();return;
+ }
+ const picker=document.createElement('select');picker.className='photoMistakePicker';
+ picker.setAttribute('aria-label','写真を確認する園児または未仕分けカード');
+ folders.forEach((folder,i)=>{
+  const opt=document.createElement('option');opt.value=folder.key;
+  opt.textContent=(reviewed.has(folder.key)?'✅ ':'🔎 ')+photoSortFolderLabel(data,folder,i)+
+   ' · '+photoFolderIndexes(data,folder).length+'枚';picker.append(opt);
+ });
+ picker.value=mistakeFocusKey;
+ picker.addEventListener('change',()=>{mistakeFocusKey=picker.value;renderPhotoFolderMistakes(data,host)});
+ host.append(picker);
+ const folder=folders.find(f=>f.key===mistakeFocusKey),indexes=photoFolderIndexes(data,folder);
+ const selected=new Set(),gallery=make('div','photoMistakeGallery photoMoveInlineGallery');
+ gallery.setAttribute('aria-label','このフォルダの写真を選ぶ');
+ const toolbar=make('div','photoMoveInlineToolbar');
+ const selectedText=make('strong','','写真をタップして選択しよう');
+ const clear=btn('選択解除','secondary',()=>{selected.clear();syncSelection()});
+ const selectVisible=btn('表示中を全選択','secondary',()=>{
+  for(const item of gallery.querySelectorAll('[data-photo-index]'))
+   selected.add(Number(item.dataset.photoIndex));
+  syncSelection();
+ });
+ toolbar.append(selectedText,selectVisible,clear);
+ host.append(toolbar);
+ // Keep destinations in this same view and within reach during scrolling.
+ const tray=make('section','photoMoveInlineTray');
+ const trayTitle=make('strong','','🌷 写真の移動先を選ぶ');
+ const hint=make('p','muted','写真を選んで園児名をタップ。選択写真の↗をドラッグしても移動できるよ。');
+ const targets=make('div','photoMoveInlineTargets');
+ tray.append(trayTitle,hint,targets);
+ host.append(tray);
+ const notice=make('p','photoMoveInlineStatus','写真を選択してね');
+ notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
+ function photoPayload(index){return selected.has(index)?[...selected]:[index]}
+ function clearHighlights(){for(const t of targets.querySelectorAll('.photoMoveInlineHover'))t.classList.remove('photoMoveInlineHover')}
+ let activeDrag=null;
+ function perform(dest,photoIndexes){
+  if(!photoIndexes.length){notice.textContent='先に移動する写真を選んでね。';return}
+  try{
+   const moved=photoSortMoveInlinePhotos(data,folder.key,photoIndexes,dest);
+   data.photoFolderNotice='✅ '+moved+'枚を移動したよ。移動先の写真も確認してね。';
    renderPhotoFolderMistakes(data,host);
-  }));
+  }catch(error){notice.textContent='⚠️ '+String(error?.message||error)}
+ }
+ const kids=getChildren(data.classId),slotRows=(data.photoMergeChildIds||[]).map((childId,slot)=>{
+  const child=kids.find(k=>String(k.id)===String(childId));
+  const saved=data.photoMergeSlots?.[slot];
+  const key=data.photoFolders.some(f=>f.key===saved)?saved:null;
+  return {child,slot,key};
+ }).filter(row=>row.child&&row.key!==folder.key);
+ const emptySlotKey=slot=>'__merge-empty-slot:'+slot;
+ for(const row of slotRows){
+  const dest=row.key||emptySlotKey(row.slot);
+  const target=btn('', 'photoMoveInlineTarget',()=>perform(dest,[...selected]));
+  const number=row.key?photoFolderIndexes(data,data.photoFolders.find(f=>f.key===row.key)).length:0;
+  target.append(make('b','',row.child.name),make('small','',number+'枚'));
+  target.dataset.inlineMoveTarget=dest;
+  target.setAttribute('aria-label',row.child.name+'さんへ選択した写真を移動');
+  target.addEventListener('dragover',event=>{
+   if(!activeDrag?.length)return;event.preventDefault();target.classList.add('photoMoveInlineHover');
+  });
+  target.addEventListener('dragleave',()=>target.classList.remove('photoMoveInlineHover'));
+  target.addEventListener('drop',event=>{
+   if(!activeDrag?.length)return;
+   event.preventDefault();const payload=[...activeDrag];activeDrag=null;clearHighlights();
+   perform(dest,payload);
+  });
+  targets.append(target);
+ }
+ if(!slotRows.length)tray.append(make('p','muted','移動先の園児ボックスがまだないよ。下の「ほかの候補へ移動」から選べるよ。'));
+ // Other provisional AI groups remain accessible, but do not flood the main controls.
+ const otherFolders=data.photoFolders.filter(f=>f.key!==folder.key&&!slots.includes(f.key)&&photoFolderIndexes(data,f).length);
+ if(otherFolders.length){
+  const more=make('details','photoMoveInlineOther');
+  more.append(make('summary','','📦 ほかの未仕分けカードへ移動する'));
+  const otherPicker=document.createElement('select');
+  otherPicker.setAttribute('aria-label','別のAIカードへの移動先');
+  otherFolders.forEach((other,i)=>{
+   const opt=document.createElement('option');opt.value=other.key;
+   opt.textContent=photoSortFolderLabel(data,other,i)+' · '+photoFolderIndexes(data,other).length+'枚';
+   otherPicker.append(opt);
+  });
+  more.append(otherPicker,btn('このカードへ移動','secondary',()=>perform(otherPicker.value,[...selected])));
+  tray.append(more);
+ }
+ function syncSelection(){
+  selectedText.textContent=selected.size?'✅ '+selected.size+'枚を選択中':'写真をタップして選択しよう';
+  clear.disabled=selected.size===0;
+  selectVisible.disabled=gallery.children.length===0;
+  notice.textContent=selected.size?
+   '選択した'+selected.size+'枚を、移動先の園児名でまとめて移動できるよ。':'写真を選択してね';
+  for(const row of gallery.querySelectorAll('[data-photo-index]')){
+   const picked=selected.has(Number(row.dataset.photoIndex));
+   row.classList.toggle('photoMoveInlinePicked',picked);
+   row.querySelector('.photoMistakePhoto')?.setAttribute('aria-pressed',String(picked));
+   const badge=row.querySelector('.photoMoveInlineBadge');
+   if(badge)badge.textContent=picked?'✅ 選択中':'○ 選ぶ';
+  }
+ }
+ const initial=18,batch=18;
+ let shown=0;
+ const showMore=btn('','secondary wide photoMoveInlineMore',addPhotos);
+ function addPhotos(){
+  const end=Math.min(indexes.length,shown+(shown===0?initial:batch));
+  for(const index of indexes.slice(shown,end)){
+   const row=make('div','photoMoveInlineItem');row.dataset.photoIndex=String(index);
+   const pick=btn('','photoMistakePhoto',()=>{
+    if(selected.has(index))selected.delete(index);else selected.add(index);
+    syncSelection();
+   });
+   pick.setAttribute('aria-pressed','false');
+   const img=document.createElement('img');img.src=fileUrl(data.sourceFiles[index]);
+   img.loading='lazy';img.decoding='async';img.alt='写真'+(index+1)+'の全体';
+   pick.append(img,make('span','photoMoveInlineBadge','○ 選ぶ'));
+   const zoom=btn('🔎 全体を見る','secondary photoMoveInlineZoom',()=>openAlbumAssignedPhoto(index));
+   const grip=btn('↗ 移動','secondary photoMoveInlineGrip',()=>{});
+   grip.draggable=true;grip.setAttribute('aria-label','写真'+(index+1)+'を園児フォルダへドラッグ');
+   grip.addEventListener('dragstart',event=>{
+    activeDrag=photoPayload(index);
+    if(event.dataTransfer){
+     event.dataTransfer.effectAllowed='move';
+     event.dataTransfer.setData('text/plain','omoide-photo-move');
+    }
+   });
+   grip.addEventListener('dragend',()=>{activeDrag=null;clearHighlights()});
+   let pointer=null,ghost=null;
+   function clearPointer(){
+    pointer=null;ghost?.remove();ghost=null;clearHighlights();
+   }
+   grip.addEventListener('pointerdown',event=>{
+    if(event.pointerType==='mouse'||event.button!==0)return;
+    event.preventDefault();
+    pointer={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+    try{grip.setPointerCapture(event.pointerId)}catch(error){}
+   });
+   grip.addEventListener('pointermove',event=>{
+    if(!pointer||pointer.id!==event.pointerId)return;
+    event.preventDefault();
+    if(Math.hypot(event.clientX-pointer.x,event.clientY-pointer.y)>9)pointer.moved=true;
+    if(!pointer.moved)return;
+    if(!ghost){
+     ghost=make('div','photoFolderDragGhost','📷 '+photoPayload(index).length+'枚を移動中');
+     document.body.append(ghost);
+    }
+    ghost.style.left=event.clientX+'px';ghost.style.top=event.clientY+'px';
+    const top=event.clientY;
+    if(top<85)window.scrollBy?.(0,-11);
+    else if(top>window.innerHeight-85)window.scrollBy?.(0,11);
+    const drop=document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('[data-inline-move-target]');
+    clearHighlights();
+    if(drop&&targets.contains(drop))drop.classList.add('photoMoveInlineHover');
+   });
+   grip.addEventListener('pointerup',event=>{
+    if(!pointer||pointer.id!==event.pointerId)return;
+    const moved=pointer.moved,photoIndexes=moved?photoPayload(index):[];
+    const target=moved?document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('[data-inline-move-target]'):null;
+    try{grip.releasePointerCapture(event.pointerId)}catch(error){}
+    clearPointer();
+    if(moved){
+     event.preventDefault();
+     if(target&&targets.contains(target))perform(target.dataset.inlineMoveTarget,photoIndexes);
+     else notice.textContent='園児名のボックスの上で指を離してね。';
+    }
+   });
+   grip.addEventListener('pointercancel',clearPointer);
+   row.append(pick,zoom,grip);gallery.append(row);
+  }
+  shown=end;
+  showMore.hidden=shown>=indexes.length;
+  showMore.textContent='＋ 残りの写真を見る（'+shown+' / '+indexes.length+'枚）';
+  syncSelection();
+ }
+ host.append(gallery,showMore,notice);
+ addPhotos();
+ const actions=make('div','photoMistakeActions');
+ actions.append(btn(reviewed.has(folder.key)?'↩ 確認を取り消す':'✅ このフォルダを確認済みにする','primary wide',()=>{
+  if(reviewed.has(folder.key))reviewed.delete(folder.key);
+  else reviewed.add(folder.key);
+  mistakeFocusKey=folders.find(f=>!reviewed.has(f.key))?.key||folder.key;
+  renderPhotoFolderMistakes(data,host);
+ }));
  host.append(actions);
- const nextPanel=document.createElement('section');nextPanel.className='photoMistakeNext';
+ const next=make('section','photoMistakeNext');
  const remaining=folders.length-n;
- const reminder=document.createElement('p');reminder.className='muted';
- reminder.textContent=remaining?
+ next.append(make('p','muted',remaining?
   '🔎 未確認のフォルダが'+remaining+'組あるよ。次へ進めるけれど、最終完了までに確認してね。':
-  '✅ 写真の確認が終わったよ。次は園児への登録！';
- nextPanel.append(reminder,btn('🏠 次へ：園児へ写真を登録 ›','primary wide',
+  '✅ 写真の確認が終わったよ。次は園児への登録！'));
+ next.append(btn('🏠 次へ：園児へ写真を登録 ›','primary wide',
   ()=>setPhotoAssignFlowStep('pending',{scroll:true})));
- host.append(nextPanel);
- const foot=document.createElement('p');foot.className='muted';
- foot.textContent='移動後はもう一度確認してね。残したAIカードも消えないよ。途中保存は画面上のボタンから。';host.append(foot);
+ host.append(next);
+ host.append(make('p','muted','移動後にもう一度確認できるよ。残したAIカードも消えないよ。途中保存は画面上のボタンから。'));
  renderPhotoSortGameProgress();
 }
 
