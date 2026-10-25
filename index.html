@@ -3624,6 +3624,14 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 #albumAiSingletonPairs .photoFolderGrid>.photoFolderCard .photoFolderZoom{cursor:zoom-in}
 
 /* DY: Two-folder matching UI scoped to AI review. */
+#pendingGameFolderLink{background:linear-gradient(112deg,#fff0f7,#f1fbff);border:2px solid #efc6dd;
+ border-radius:15px;padding:12px;margin:10px 0;display:grid;gap:8px}
+#pendingGameFolderLink[hidden]{display:none!important}
+#pendingGameFolderLink strong{font-size:15px;color:#914f7c}
+#pendingGameFolderLink p{font-size:12px;line-height:1.6;color:#5d778e;margin:0}
+#pendingGameFolderLink select{width:100%;min-height:46px;border-radius:11px;
+ font-size:15px;border:1px solid #bfd7e9;background:white}
+#pendingGameFolderLink button{min-height:48px;border-radius:12px;font-weight:850}
 #albumAiSingletonPairs .photoMatchHead{border:2px solid #f4bfd7;background:linear-gradient(108deg,#ffe8f2,#fff9da 58%,#eaf6ff);
  border-radius:19px;padding:13px 17px;margin:6px 0 10px}
 #albumAiSingletonPairs .photoMatchHead strong{font-size:clamp(20px,3vw,27px);font-weight:900;color:#93527c}
@@ -3772,7 +3780,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 ED</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 EE</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -3812,6 +3820,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
    <p class="muted">AIの候補をまとめた写真フォルダだよ。集合写真はまずメインの子に登録して、必要なら他の子にも追加できるよ。</p>
   </div>
   <div id="pendingGameDetail" hidden>
+   <div id="pendingGameFolderLink" class="pendingGameFolderLink" hidden></div>
    <div class="pendingGameStageTop">
     <button type="button" id="pendingGameBack" class="pendingGameBack">‹ 候補フォルダ一覧</button>
     <span id="albumAiPendingQuickCount" class="muted"></span>
@@ -4887,11 +4896,15 @@ function startEditingWithSelectedPhotos(){
   const data=albumAiGroupsData;
   const photoMissing=files.reduce((n,_,i)=>n+(!data.unusedPhotoIndexes.has(i)&&
    !(photoAssignments[i]||[]).length?1:0),0);
-  const unreviewed=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length&&
-   !data.photoFolderMistakeReviewed.has(f.key)).length;
-  if(!data.photoMatchFinalReviewed||photoMissing||unreviewed){
+  const alive=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
+  const unreviewed=alive.filter(f=>!data.photoFolderMistakeReviewed.has(f.key)).length;
+  const notNamed=alive.filter(f=>!data.photoMatchFolderChild?.[f.key]).length;
+  const mismatched=alive.filter(f=>data.photoMatchFolderChild?.[f.key]&&
+   photoFolderIndexes(data,f).some(index=>!assignmentPhotoIds(index).includes(String(data.photoMatchFolderChild[f.key])))).length;
+  if(!data.photoMatchFinalReviewed||photoMissing||unreviewed||notNamed||mismatched){
    const msg='まだ確認が必要だよ。マッチング最終確認：'+(data.photoMatchFinalReviewed?'済':'未完了')+
-    '・未確認フォルダ：'+unreviewed+'組・未振り分け写真：'+photoMissing+'枚。';
+    '・未確認フォルダ：'+unreviewed+'組・園児名未登録：'+notNamed+'組・登録の再確認：'+mismatched+
+    '組・未振り分け写真：'+photoMissing+'枚。';
    const label=$('#photoSortProgressSaveStatus');if(label)label.textContent='⚠️ '+msg;
    window.alert('⚠️ '+msg+' 途中保存はいつでもできるよ。');
    return;
@@ -5660,6 +5673,7 @@ function photoSortCheckpointCaptureAI(data){
   photoFolderMistakeReviewed:[...(data.photoFolderMistakeReviewed||new Set())],
   photoMatchActive:!!data.photoMatchActive,
   photoMatchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
+  photoMatchFolderChild:{...(data.photoMatchFolderChild||{})},
   photoMatchFocus:data.photoMatchFocus||null,
   photoMatchCandidateKey:data.photoMatchCandidateKey||null,
   photoMatchOriginalCount:data.photoMatchOriginalCount||data.groups.length,
@@ -5731,7 +5745,8 @@ async function saveCurrentPhotoSortCheckpoint(){
    JSON.stringify(verified.ai?.photoFolderMistakeReviewed||[])!==JSON.stringify(snapshot.ai?.photoFolderMistakeReviewed||[])||
    verified.ai?.photoMatchFocus!==snapshot.ai?.photoMatchFocus||
    verified.ai?.photoMatchCandidateKey!==snapshot.ai?.photoMatchCandidateKey||
-   verified.ai?.photoMatchFinalReviewed!==snapshot.ai?.photoMatchFinalReviewed)
+   verified.ai?.photoMatchFinalReviewed!==snapshot.ai?.photoMatchFinalReviewed||
+   JSON.stringify(verified.ai?.photoMatchFolderChild||{})!==JSON.stringify(snapshot.ai?.photoMatchFolderChild||{}))
    throw Error('写真・振り分け・マッチング結果の保存後照合に失敗しました。');
   if(classId===selected.id&&schoolYear===activeYear()&&slot===pendingProjectSlot){
    photoSortCheckpointKnownSavedAt=snapshot.savedAt;
@@ -5838,6 +5853,16 @@ function photoSortRestoreAiData(savedAI,sourceFiles,storedRoster){
   throw Error('マッチングの基準フォルダが保存内容にありません。');
  if(savedAI.photoMatchCandidateKey!=null&&!ids.has(savedAI.photoMatchCandidateKey))
   throw Error('マッチングの候補フォルダが保存内容にありません。');
+ // EE: Verify each folder's roster name before using a restored link.
+ if(savedAI.photoMatchFolderChild!==undefined){
+  const map=savedAI.photoMatchFolderChild;
+  let roster;
+  try{roster=JSON.parse(storedRoster)}catch{throw Error('園児名簿の照合ができません')}
+  const childIds=new Set((Array.isArray(roster)?roster:[]).map(k=>String(k.id)));
+  if(!map||typeof map!=='object'||Array.isArray(map)||
+   Object.entries(map).some(([key,id])=>!ids.has(key)||!childIds.has(String(id))))
+   throw Error('保存したフォルダの園児名が名簿と一致しません。');
+ }
  if(!Array.isArray(savedAI.unusedPhotoIndexes)||!Array.isArray(savedAI.unusedPhotoOrder)||
   savedAI.unusedPhotoIndexes.some(i=>!Number.isInteger(i)||i<0||i>=sourceFiles.length))
   throw Error('使わない写真の記録が不正です。');
@@ -5945,6 +5970,7 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
     photoFolderMistakeReviewed:new Set((snapshot.photoFolderMistakeReviewed||[]).filter(k=>typeof k==='string'&&(snapshot.photoFolders||snapshot.groups).some(f=>f.key===k))),photoFolderUndo:[],
     photoMatchActive:!!snapshot.photoMatchActive,
     photoMatchDifferent:Array.isArray(snapshot.photoMatchDifferent)?snapshot.photoMatchDifferent.map(pair=>({...pair})):[],
+    photoMatchFolderChild:{...(snapshot.photoMatchFolderChild||{})},
     photoMatchFocus:snapshot.photoMatchFocus||null,
     photoMatchCandidateKey:snapshot.photoMatchCandidateKey||null,
     photoMatchOriginalCount:Number(snapshot.photoMatchOriginalCount)||snapshot.groups.length,
@@ -6291,11 +6317,17 @@ function clearCurrentAlbumSingletonPairs(){
  let pendingGameFolder=null;
  function pendingGameStages(data){
   const remaining=pendingQuickItems(data);
+  const faces=pendingQuickFaceCount(data);
   const groups=photoFoldersEnsure(data).map((g,n)=>{
-   const photoIndexes=photoFolderIndexes(data,g);
+   const photoIndexes=photoFolderIndexes(data,g),linked=String(data.photoMatchFolderChild?.[g.key]||'');
    const set=new Set(photoIndexes);
-   const outstanding=remaining.filter(row=>set.has(row.index));
-   return {key:String(g.key),title:'候補フォルダ '+(n+1),photoIndexes,
+   // EE: A shared photo must remain available for EVERY folder's child.
+   // One assignment elsewhere does not finish this folder.
+   const outstanding=data.photoMatchActive?
+    photoIndexes.filter(index=>!linked||!assignmentPhotoIds(index).includes(linked))
+     .map(index=>({index,faces:faces.get(index)||0,assigned:assignmentPhotoIds(index).length,remaining:1})):
+    remaining.filter(row=>set.has(row.index));
+   return {key:String(g.key),title:'候補フォルダ '+(n+1),photoIndexes,linked,
     remaining:outstanding,completed:photoIndexes.length-outstanding.length,confirmed:data.confirmed.has(g.key)};
   }).filter(stage=>stage.photoIndexes.length);
   const uniqueOutstanding=[...new Set(remaining.map(row=>row.index))];
@@ -6332,7 +6364,9 @@ function clearCurrentAlbumSingletonPairs(){
    }else{
     const icon=document.createElement('span');icon.textContent=isInbox?'📦':'📁';preview.append(icon);
    }
-   const name=document.createElement('strong');name.textContent=stage.title;
+   const name=document.createElement('strong');
+   const kid=stage.linked?getChildren(data.classId).find(k=>String(k.id)===stage.linked):null;
+   name.textContent=kid?'📁 '+kid.name+'さん':stage.title;
    const count=document.createElement('small');count.textContent=isInbox?
     '残りの写真 '+stage.remaining.length+'枚':
     '写真 '+stage.photoIndexes.length+'枚';
@@ -6341,6 +6375,7 @@ function clearCurrentAlbumSingletonPairs(){
    progress.setAttribute('aria-label','この候補の写真の登録状況');
    const state=document.createElement('span');state.className='pendingGameStageLabel';
    state.textContent=isInbox?(stage.remaining.length?'最後にここも確認':'確認する') :
+    data.photoMatchActive&&!stage.linked?'👦 園児名を登録してね':
     !stage.remaining.length?'🌟 一通り整理済み':
     stage.completed?'🌷 整理中':'✨ これから';
    card.append(preview,name,count,progress,state);
@@ -6493,6 +6528,77 @@ function clearCurrentAlbumSingletonPairs(){
   });
   grip.addEventListener('pointercancel',clearDrag);
  }
+
+ // EE: Naming is performed AFTER photo membership matching is complete.
+ // Assign all photo references to one child, including photos already assigned
+ // to someone else (group photos). Never duplicate source Files.
+ function renderPendingGameFolderLink(data,stage){
+  const host=$('#pendingGameFolderLink');if(!host)return;
+  host.replaceChildren();
+  host.hidden=!data.photoMatchActive||!stage||stage.key===PENDING_GAME_INBOX;
+  if(host.hidden)return;
+  const kids=getChildren(data.classId);
+  const title=document.createElement('strong');title.textContent='🌷 この写真フォルダを誰のおうちへ？';
+  const description=document.createElement('p');
+  description.textContent='写真'+stage.photoIndexes.length+'枚をまとめて園児名と紐づけるよ。集合写真は別の園児にも追加できるよ。';
+  host.append(title,description);
+  if(!kids.length){host.append(document.createTextNode('先にクラス管理で園児名簿を登録してね。'));return}
+  const current=String(data.photoMatchFolderChild?.[stage.key]||'');
+  const select=document.createElement('select');select.setAttribute('aria-label','この写真フォルダの園児名');
+  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='園児名を選んでね';select.append(placeholder);
+  kids.forEach(k=>{
+   const item=document.createElement('option');item.value=String(k.id);item.textContent=k.name+'さん';
+   select.append(item);
+  });
+  if(current)select.value=current;
+  const action=document.createElement('button');action.type='button';action.className='primary';
+  action.textContent=current?'📁 登録済み写真を再確認する':'📮 このフォルダを園児へ一括登録';
+  const status=document.createElement('p');status.className='muted';status.id='pendingGameLinkStatus';
+  if(current){
+   const kid=kids.find(k=>String(k.id)===current);
+   status.textContent='✅ '+(kid?.name||'登録済み園児')+'さんに登録済み。名前を変更したいときは園児フォルダの写真を確認してね。';
+  }
+  action.addEventListener('click',()=>{
+   if(data!==albumAiGroupsData||!data.valid())return;
+   const folder=photoFoldersEnsure(data).find(f=>f.key===stage.key);
+   if(!folder){status.textContent='⚠️ フォルダが変更されたよ。もう一度開き直してね。';return}
+   const kid=kids.find(k=>String(k.id)===select.value);
+   if(!kid){status.textContent='先に園児名を選んでね。';return}
+   const id=String(kid.id);
+   if(current&&current!==id){
+    status.textContent='⚠️ 別の園児名への変更は、誤って付いた写真を残さないよう園児フォルダの「変更」から修正してね。';
+    select.value=current;return;
+   }
+   if(!Array.isArray(photoAssignments)||photoAssignments.length!==files.length){
+    status.textContent='⚠️ 写真の枚数と振り分けデータが一致しません。';return;
+   }
+   const keys=photoFolderIndexes(data,folder);
+   if(!keys.length){status.textContent='⚠️ 写真がないフォルダは登録できません。';return}
+   const already=Object.entries(data.photoMatchFolderChild||{}).find(([key,value])=>key!==stage.key&&String(value)===id);
+   if(already&&!window.confirm(kid.name+'さんには別の仮フォルダも登録されているよ。\n園児別の写真は1つにまとめて表示される（同じ元写真は重複しない）けれど、両方の仮フォルダを確認した？'))return;
+   const missing=keys.filter(index=>!assignmentPhotoIds(index).includes(id));
+   if(!window.confirm('📁 '+kid.name+'さんへ、このフォルダの写真'+keys.length+'枚を登録する？'+
+     (missing.length!==keys.length?'\n追加登録 '+missing.length+'枚（登録済み '+(keys.length-missing.length)+'枚）':'')+
+     '\n元画像はそのまま残り、他の園児への登録も維持されるよ。'))return;
+   try{
+    const updated=missing.length?data.assignConfirmedAlbumCluster({
+     photoAssignments,photoCount:files.length,photoIndexes:missing,
+     childId:id,validChildIds:kids.map(k=>k.id)}):photoAssignments;
+    if(data!==albumAiGroupsData||!data.valid()||
+     keys.some(index=>!photoFolderIndexes(data,folder).includes(index)))throw Error('フォルダが更新されたよ');
+    photoAssignments=updated;
+    data.photoMatchFolderChild[stage.key]=id;
+    pendingQuickSelected.clear();
+    activeAssignmentFolder=id;
+    renderPhotoAssignmentPage();
+    renderAlbumAiPendingQuick();
+    const msg=$('#pendingGameLinkStatus');
+    if(msg)msg.textContent='✅ '+kid.name+'さんに'+keys.length+'枚を登録したよ（追加 '+missing.length+'枚）。';
+   }catch(error){status.textContent='⚠️ 登録できません：'+String(error?.message||error)}
+  });
+  host.append(select,action,status);
+ }
+
  function renderAlbumAiPendingQuick(){
   const data=albumAiGroupsData,host=$('#albumAiPendingList'),more=$('#albumAiPendingMore');
   if(!data?.valid()||!host)return;
@@ -6512,6 +6618,7 @@ function clearCurrentAlbumSingletonPairs(){
   }
   pendingQuickPruneSelection(data);
   const stage=stages.find(s=>s.key===pendingGameFolder);
+  renderPendingGameFolderLink(data,stage);
   const all=stage.remaining,visible=all.slice(0,pendingQuickLimit);
   $('#pendingGameTitle').textContent='📁 '+stage.title;
   $('#pendingGameProgressText').textContent='写真 '+stage.photoIndexes.length+'枚 ／ 未整理 '+all.length+'枚';
@@ -6951,6 +7058,8 @@ function photoFoldersEnsure(data){
  if(!(data.photoFolderReviewed instanceof Set))data.photoFolderReviewed=new Set(data.photoFolderReviewed||[]);
  if(!(data.photoFolderMistakeReviewed instanceof Set))data.photoFolderMistakeReviewed=new Set(data.photoFolderMistakeReviewed||[]);
  if(!Array.isArray(data.photoMatchDifferent))data.photoMatchDifferent=[];
+ if(!data.photoMatchFolderChild||typeof data.photoMatchFolderChild!=='object'||
+  Array.isArray(data.photoMatchFolderChild))data.photoMatchFolderChild=Object.create(null);
  if(!Number.isInteger(data.photoMatchOriginalCount)||data.photoMatchOriginalCount<1)
   data.photoMatchOriginalCount=data.groups.length;
  if(!Array.isArray(data.photoFolderUndo))data.photoFolderUndo=[];
@@ -6976,6 +7085,7 @@ function photoFolderSnapshot(data){
   addedPhotoIndexes:[...(f.addedPhotoIndexes||[])],
   excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})),reviewed:[...data.photoFolderReviewed],mistakeReviewed:[...data.photoFolderMistakeReviewed],
   matchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
+  matchFolderChild:{...(data.photoMatchFolderChild||{})},
   matchFocus:data.photoMatchFocus||null,matchCandidate:data.photoMatchCandidateKey||null,
   matchFinal:!!data.photoMatchFinalReviewed};
 }
@@ -6986,6 +7096,7 @@ function photoFolderRestoreSnapshot(data,snapshot){
  data.photoFolderReviewed=new Set(snapshot.reviewed);
  data.photoFolderMistakeReviewed=new Set(snapshot.mistakeReviewed||[]);
  data.photoMatchDifferent=(snapshot.matchDifferent||[]).map(pair=>({...pair}));
+ data.photoMatchFolderChild={...(snapshot.matchFolderChild||{})};
  data.photoMatchFocus=snapshot.matchFocus||null;
  data.photoMatchCandidateKey=snapshot.matchCandidate||null;
  data.photoMatchFinalReviewed=!!snapshot.matchFinal;
@@ -7024,6 +7135,7 @@ function photoFolderEditMembership(data,sourceKey,photoIndexes,targetKey=null){
   data.photoFolders=data.photoFolders.filter(f=>f!==source);
   if(data.photoMatchFocus===source.key)data.photoMatchFocus=target?.key||null;
   if(data.photoMatchCandidateKey===source.key)data.photoMatchCandidateKey=null;
+  if(data.photoMatchFolderChild)delete data.photoMatchFolderChild[source.key];
  }
  data.photoMatchFinalReviewed=false;
 }
@@ -7339,6 +7451,10 @@ function photoMatchMergeFolders(data,a,b){
  if(data!==albumAiGroupsData||!data.valid())throw Error('別のアルバムに切り替わったよ');
  const folders=photoFoldersEnsure(data),A=folders.find(f=>f.key===a),B=folders.find(f=>f.key===b);
  if(!A||!B||A===B)throw Error('選んだフォルダが見つからないよ');
+ const existingLinks=data.photoMatchFolderChild||{};
+ const linkedA=existingLinks[a],linkedB=existingLinks[b];
+ if(linkedA&&linkedB&&String(linkedA)!==String(linkedB))
+  throw Error('別の園児名が登録済みのフォルダは統合できません。先に名前を確認してね。');
  const photoIds=new Set([...photoFolderIndexes(data,A),...photoFolderIndexes(data,B)]);
  const allKeys=[...new Set([...A.groupKeys,...B.groupKeys])];
  const aiIds=new Set();
@@ -7356,6 +7472,8 @@ function photoMatchMergeFolders(data,a,b){
  data.photoFolderReviewed.delete(a);
  data.photoFolderMistakeReviewed.delete(a);
  data.photoFolderMistakeReviewed.delete(b);
+ if(linkedB&&!linkedA)data.photoMatchFolderChild[a]=linkedB;
+ delete data.photoMatchFolderChild[b];
  data.photoMatchDifferent=data.photoMatchDifferent.filter(p=>![a,b].includes(p.a)&&![a,b].includes(p.b));
  data.photoMatchCandidateKey=null;data.photoMatchFocus=a;
  data.photoMatchFinalReviewed=false;
