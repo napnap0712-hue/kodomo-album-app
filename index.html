@@ -7456,7 +7456,17 @@ function renderPhotoSortGameProgress(){
  if(data?.valid()){
   try{
    const folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
-   review=' ｜ 🔎 確認 '+folders.filter(f=>data.photoFolderMistakeReviewed.has(f.key)).length+'/'+folders.length+'組';
+   if(previewMode){
+    const named=photoSortChildLinks(data);
+    const visible=folders.filter(f=>named.has(f.key));
+    const inbox=photoSortInboxIndexes(data).length?1:0;
+    const total=visible.length+inbox;
+    const approved=visible.filter(f=>data.photoFolderMistakeReviewed.has(f.key)).length+
+     (inbox&&data.photoFolderMistakeReviewed.has(PHOTO_SORT_UNPLACED)?1:0);
+    review=' ｜ ✅ 確認 '+approved+'/'+total+'組';
+   }else{
+    review=' ｜ 🔎 確認 '+folders.filter(f=>data.photoFolderMistakeReviewed.has(f.key)).length+'/'+folders.length+'組';
+   }
   }catch(error){}
  }
  el.textContent='📷 '+total+'枚中'+sorted+(previewMode?'枚仮仕分け済み':'枚お届け済み')+
