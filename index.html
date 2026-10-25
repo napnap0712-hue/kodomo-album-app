@@ -3105,6 +3105,27 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 .screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonPairs.currentAlbumAiGroups {
  margin-top:0;
 }
+
+/* DE: Desktop drag-and-drop and iPhone pointer drag, with tap fallback. */
+#albumAiSingletonPairs .pairReviewFaceItem{position:relative}
+#albumAiSingletonPairs .pairReviewFaceItem[draggable="true"]{cursor:grab}
+#albumAiSingletonPairs .pairDragHandle{
+ display:block;width:100%;min-height:35px;border:1px solid #b6d8ef;
+ border-radius:9px;font-size:11px;font-weight:800;background:#eff8ff;
+ color:#38688e;touch-action:none;-webkit-user-select:none;user-select:none;
+ cursor:grab;margin:3px 0 0;padding:6px 5px;
+}
+#albumAiSingletonPairs .pairQuickMove{display:none;min-height:38px;font-size:12px}
+#albumAiSingletonPairs .pairReviewGroup.expanded .pairQuickMove{display:block}
+#albumAiSingletonPairs .pairReviewGroup.pairDropTarget{
+ outline:3px solid #5ab0ef;outline-offset:2px;background:#e5f4ff;
+}
+.pairTouchDragGhost{
+ position:fixed;z-index:99999;pointer-events:none;transform:translate(-50%,-120%);
+ padding:8px 12px;border-radius:12px;background:#2d5479;color:white;
+ box-shadow:0 7px 20px #1c3c5445;font-size:12px;font-weight:800;
+}
+
 </style>
 </head>
 <body>
@@ -3236,7 +3257,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DD</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DE</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -5703,16 +5724,42 @@ function renderCurrentAlbumSingletonPairs(){
    toggle.setAttribute('aria-pressed',String(excluded));
   }
  };
- function renderPair(){
+ // Each photo move is an in-memory draft until the teacher confirms.
+ function moveFaceInDraft(faceIndex,toSide){
+  const draft=pendingPair;
+  if(!draft||data!==albumAiGroupsData||!data.valid())return false;
+  const from=draft.faces.findIndex(part=>part.includes(faceIndex));
+  if(from<0||from===toSide||![0,1].includes(toSide))return false;
+  if(draft.faces[from].length<2){
+   feedback.textContent='⚠️ 元の候補を空にできないよ。全て同じ子なら「ひとつにまとめる」を選んでね。';return false;
+  }
+  const index=data.samples[faceIndex]?.index;
+  if(draft.faces[toSide].some(i=>data.samples[i]?.index===index)){
+   feedback.textContent='⚠️ 同じ写真に写る別々の顔は同じグループにできません。';return false;
+  }
+  draft.faces[from]=draft.faces[from].filter(i=>i!==faceIndex);
+  draft.faces[toSide].push(faceIndex);
+  draft.excluded.delete(faceIndex);draft.moved.add(faceIndex);
+  renderPair(true);
+  feedback.textContent='✅ 候補'+(toSide+1)+'へ仮移動したよ。最後に「振り分ける」を押すと確定するよ。';
+  return true;
+ }
+ let nativeDraggingFace=null;
+ function renderPair(preserve=false){
   const item=candidates[position],source=data.groups.find(g=>g.key===item.sourceKey);
   const target=data.groups.find(g=>g.key===item.targetKey);
   if(!source||!target||data.confirmed.has(source.key)||data.confirmed.has(target.key)){
    position++;show();return;
   }
-  pendingPair={item,faces:[[...source.faceIndexes],[...target.faceIndexes]],excluded:new Set()};
-  assignmentMode='separate';mergeSelect.value='';
-  assignPanel.classList.remove('pairMergeMode');mergeDestination.hidden=true;
-  separateMode.setAttribute('aria-pressed','true');mergeMode.setAttribute('aria-pressed','false');
+  const previousNames=preserve?selectForSide.map(select=>select.value):['',''];
+  const expanded=preserve?[...assignPhotos.children].map(group=>group.classList.contains('expanded')):[false,false];
+  if(!preserve){
+   const originalFaces=[[...source.faceIndexes],[...target.faceIndexes]];
+   pendingPair={item,originalFaces,faces:originalFaces.map(part=>[...part]),excluded:new Set(),moved:new Set()};
+   assignmentMode='separate';mergeSelect.value='';
+   assignPanel.classList.remove('pairMergeMode');mergeDestination.hidden=true;
+   separateMode.setAttribute('aria-pressed','true');mergeMode.setAttribute('aria-pressed','false');
+  }
   selectForSide.length=0;
   assignPhotos.replaceChildren();
   const colors=['pink','blue'];
@@ -5720,13 +5767,93 @@ function renderCurrentAlbumSingletonPairs(){
    const faceIndexes=pendingPair.faces[side];
    const group=document.createElement('section');
    group.className='pairReviewGroup pairReviewGroup--'+colors[side];
+   group.dataset.side=String(side);
+   group.addEventListener('dragover',event=>{
+    if(nativeDraggingFace===null)return;
+    event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';
+    group.classList.add('pairDropTarget');
+   });
+   group.addEventListener('dragleave',event=>{
+    if(!group.contains(event.relatedTarget))group.classList.remove('pairDropTarget');
+   });
+   group.addEventListener('drop',event=>{
+    if(nativeDraggingFace===null)return;
+    event.preventDefault();const moving=nativeDraggingFace;nativeDraggingFace=null;
+    group.classList.remove('pairDropTarget');
+    moveFaceInDraft(moving,side);
+   });
    const title=document.createElement('strong');title.className='pairReviewGroupHeading';
    title.textContent=(side?'②':'①')+' 候補グループ'+(side?'②':'①')+'（'+countFacePhotos(faceIndexes)+'枚）';
    const gallery=document.createElement('div');gallery.className='pairReviewGroupEntries';
    for(const faceIndex of faceIndexes){
     const entry=document.createElement('div');entry.className='pairReviewFaceItem';
-    entry.dataset.faceIndex=String(faceIndex);
+    entry.dataset.faceIndex=String(faceIndex);entry.draggable=true;
+    const onDragStart=event=>{
+     nativeDraggingFace=faceIndex;
+     if(event.dataTransfer){
+      event.dataTransfer.effectAllowed='move';
+      event.dataTransfer.setData('text/plain','omoide-face-'+faceIndex);
+     }
+    };
+    entry.addEventListener('dragstart',onDragStart);
+    entry.addEventListener('dragend',()=>{
+     nativeDraggingFace=null;
+     for(const el of assignPhotos.querySelectorAll('.pairDropTarget'))el.classList.remove('pairDropTarget');
+    });
     const preview=originalPhoto(faceIndex,'候補グループ'+(side+1));
+    preview.draggable=false;
+    const image=preview.querySelector('img');if(image)image.draggable=false;
+    const grip=document.createElement('button');grip.type='button';grip.className='pairDragHandle';
+    grip.textContent='↔ 写真を移動';grip.title='ドラッグして別グループへ移動';
+    grip.setAttribute('aria-label','この写真をドラッグで別の候補へ移動');
+    grip.draggable=true;
+    grip.addEventListener('dragstart',event=>{event.stopPropagation();onDragStart(event)});
+    grip.addEventListener('dragend',()=>{
+     nativeDraggingFace=null;
+     for(const el of assignPhotos.querySelectorAll('.pairDropTarget'))el.classList.remove('pairDropTarget');
+    });
+    let touchStart=null,touchGhost=null;
+    const clearTouch=()=>{
+     touchStart=null;touchGhost?.remove();touchGhost=null;
+     for(const el of assignPhotos.querySelectorAll('.pairDropTarget'))el.classList.remove('pairDropTarget');
+    };
+    grip.addEventListener('pointerdown',event=>{
+     if(event.pointerType==='mouse'||event.button!==0)return;
+     event.preventDefault();
+     touchStart={pointerId:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
+     try{grip.setPointerCapture(event.pointerId)}catch{}
+     touchGhost=document.createElement('div');touchGhost.className='pairTouchDragGhost';
+     touchGhost.textContent='📷 写真を移動中';document.body.append(touchGhost);
+     touchGhost.style.left=event.clientX+'px';touchGhost.style.top=event.clientY+'px';
+    });
+    grip.addEventListener('pointermove',event=>{
+     if(!touchStart||touchStart.pointerId!==event.pointerId)return;
+     event.preventDefault();
+     if(Math.hypot(event.clientX-touchStart.x,event.clientY-touchStart.y)>8)touchStart.moved=true;
+     if(!touchStart.moved)return;
+     touchGhost.style.left=event.clientX+'px';touchGhost.style.top=event.clientY+'px';
+     const hovered=document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('.pairReviewGroup');
+     for(const el of assignPhotos.querySelectorAll('.pairDropTarget'))el.classList.remove('pairDropTarget');
+     hovered?.classList.add('pairDropTarget');
+     if(event.clientY<70)window.scrollBy?.(0,-17);
+     else if(event.clientY>window.innerHeight-70)window.scrollBy?.(0,17);
+    });
+    grip.addEventListener('pointerup',event=>{
+     if(!touchStart||touchStart.pointerId!==event.pointerId)return;
+     const moved=touchStart.moved;
+     const hovered=moved?document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('.pairReviewGroup'):null;
+     try{grip.releasePointerCapture(event.pointerId)}catch{}
+     clearTouch();
+     if(moved){
+      event.preventDefault();
+      if(hovered)moveFaceInDraft(faceIndex,Number(hovered.dataset.side));
+      else feedback.textContent='移動先のグループ上で指を離してね。';
+     }
+    });
+    grip.addEventListener('pointercancel',clearTouch);
+    const quick=document.createElement('button');quick.type='button';quick.className='secondary pairQuickMove';
+    quick.textContent='→ 候補'+(side?1:2)+'へ移動';
+    quick.addEventListener('click',()=>moveFaceInDraft(faceIndex,1-side));
     const exclude=document.createElement('button');exclude.type='button';
     exclude.className='secondary pairExcludeToggle';
     exclude.setAttribute('aria-label','この顔を候補から外す、または戻す');
@@ -5740,7 +5867,7 @@ function renderCurrentAlbumSingletonPairs(){
     discard.className='secondary pairDiscardPhoto';
     discard.textContent='🗑 この写真は使わない';
     discard.addEventListener('click',()=>setCurrentAlbumPhotoUnused(data,data.samples[faceIndex]?.index));
-    entry.append(preview,exclude,discard);gallery.append(entry);
+    entry.append(preview,grip,quick,exclude,discard);gallery.append(entry);
    }
    const label=document.createElement('label');label.className='pairReviewChildLabel';
    label.textContent='このグループの園児名';
@@ -5753,10 +5880,12 @@ function renderCurrentAlbumSingletonPairs(){
     option.textContent=child.name+'さん';select.append(option);
    }
    select.addEventListener('change',()=>{feedback.textContent='';updateChoice()});
+   select.value=previousNames[side]||'';
    label.append(select);selectForSide.push(select);
    const expand=document.createElement('button');expand.type='button';
-   expand.className='secondary pairReviewExpand';expand.textContent='▣ 写真をくわしく見る';
-   expand.setAttribute('aria-expanded','false');
+   expand.className='secondary pairReviewExpand';expand.textContent=expanded[side]?'閉じる ›':'▣ 写真をくわしく見る';
+   if(expanded[side])group.classList.add('expanded');
+   expand.setAttribute('aria-expanded',String(!!expanded[side]));
    expand.addEventListener('click',()=>{
     const expanded=group.classList.toggle('expanded');
     expand.textContent=expanded?'閉じる ›':'▣ 写真をくわしく見る';
@@ -5794,9 +5923,10 @@ function renderCurrentAlbumSingletonPairs(){
   const source=data.groups.find(g=>g.key===draft.item.sourceKey);
   const target=data.groups.find(g=>g.key===draft.item.targetKey);
   if(!source||!target||data.confirmed.has(source.key)||data.confirmed.has(target.key)||
-   !draft.faces[0].every(i=>source.faceIndexes.includes(i))||
-   !draft.faces[1].every(i=>target.faceIndexes.includes(i))||
-   source.faceIndexes.length!==draft.faces[0].length||target.faceIndexes.length!==draft.faces[1].length){
+   !draft.originalFaces[0].every(i=>source.faceIndexes.includes(i))||
+   !draft.originalFaces[1].every(i=>target.faceIndexes.includes(i))||
+   source.faceIndexes.length!==draft.originalFaces[0].length||
+   target.faceIndexes.length!==draft.originalFaces[1].length){
    feedback.textContent='候補が更新されたよ。もう一度確認してね。';return;
   }
   try{
@@ -5824,7 +5954,9 @@ function renderCurrentAlbumSingletonPairs(){
    let nextAssignments=photoAssignments;
    if(sameChild&&kept[0].length&&kept[1].length){
     // Existing merge routine enforces that a group cannot contain 2 faces from one photo.
-    next=data.mergeTeacherReviewedGroupPairs(next,data.samples,[draft.item]);
+    next=draft.moved.size?
+     data.mergeTeacherAlbumGroups(next,data.samples,source.key,target.key):
+     data.mergeTeacherReviewedGroupPairs(next,data.samples,[draft.item]);
     const merged=next.find(g=>g.key===target.key);
     if(!merged)throw Error('統合先の候補がありません');
     nextAssignments=data.assignConfirmedAlbumCluster({
@@ -5860,7 +5992,8 @@ function renderCurrentAlbumSingletonPairs(){
    const message='✅ '+(labels.length===2?
     (sameChild?'2つをまとめて'+labels[0]+'さんへ':labels[0]+'さん・'+labels[1]+'さんへそれぞれ'):
     labels[0]+'さんへ')+'振り分けたよ。'+
-    (draft.excluded.size?'外した顔は未確定に戻したよ。':'')+' 写真は削除していません。';
+    (draft.excluded.size?'外した顔は未確定に戻したよ。':'')+
+    (draft.moved.size?'仮移動した写真も確定したよ。':'')+' 写真は削除していません。';
    $('#currentAlbumAiFeedback').textContent=message;
    $('#currentAlbumAiStatus').textContent=message;
    renderPhotoAssignmentPage();renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();
@@ -5871,18 +6004,24 @@ function renderCurrentAlbumSingletonPairs(){
   if(pendingPair.excluded.size){
    feedback.textContent='外した顔を戻してから、名前を付けずにまとめてね。';return;
   }
+  if(pendingPair.moved.size){feedback.textContent='仮移動は園児名を選んで「振り分ける」で確定してね。';return}
   if(!window.confirm('2つを同じグループとして記録します。まだ園児フォルダには入れません。よろしいですか？'))return;
   decide('same');
  });
  different.addEventListener('click',()=>{
+  if(pendingPair?.moved.size&&!window.confirm('仮移動を取り消して次へ進みますか？'))return;
   if(pendingPair?.excluded.size&&!window.confirm('外した顔は反映されません。違う園児として次へ進みますか？'))return;
   decide('different');
  });
  later.addEventListener('click',()=>{
+  if(pendingPair?.moved.size&&!window.confirm('仮移動を取り消してあとで確認しますか？'))return;
   if(pendingPair?.excluded.size&&!window.confirm('外した顔はまだ反映されません。この候補をあとで確認しますか？'))return;
   decide('later');
  });
- previous.addEventListener('click',()=>{position=Math.max(0,position-1);show()});
+ previous.addEventListener('click',()=>{
+  if(pendingPair?.moved.size&&!window.confirm('仮移動を取り消して前の候補に戻りますか？'))return;
+  position=Math.max(0,position-1);show();
+ });
  restoreSkipped.addEventListener('click',()=>{
   if(data!==albumAiGroupsData||!data.valid())return;
   skipped.clear();
