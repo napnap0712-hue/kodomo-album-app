@@ -3055,6 +3055,37 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  #albumAiSingletonPairs .pairReviewProgress progress{width:70px}
 }
 
+
+/* DC: Explicit separate or combined child-folder operations. */
+#albumAiSingletonPairs .pairAssignModePicker{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+ margin:0 0 16px;padding:6px;border-radius:16px;background:#eef4f9;
+}
+#albumAiSingletonPairs .pairAssignModeButton{
+ width:100%;min-height:52px;padding:10px 8px;border:1px solid transparent;
+ border-radius:12px;background:transparent;color:#46637d;font-weight:800;
+ font-size:14px;line-height:1.4;white-space:normal;
+}
+#albumAiSingletonPairs .pairAssignModeButton[aria-pressed="true"]{
+ background:#fff;border-color:#a8d0ee;box-shadow:0 2px 8px rgba(48,86,121,.10);color:#234e74;
+}
+#albumAiSingletonPairs .pairAssignPanel.pairMergeMode .pairReviewChildLabel{display:none}
+#albumAiSingletonPairs .pairMergeDestination{
+ display:flex;flex-direction:column;gap:8px;margin:14px 0 12px;padding:16px;
+ background:#f0f8ff;border:1px solid #d2e7f7;border-radius:15px;
+ color:#31516d;font-size:15px;
+}
+#albumAiSingletonPairs .pairMergeDestination[hidden]{display:none}
+#albumAiSingletonPairs .pairMergeSelect{
+ display:block;width:100%;min-height:54px;padding:10px 12px;
+ border-radius:12px;border:1px solid #9fc9e8;background:#fff;
+ font-size:16px;font-weight:750;color:#314c64;
+}
+@media(max-width:430px){
+ #albumAiSingletonPairs .pairAssignModePicker{gap:5px;padding:4px}
+ #albumAiSingletonPairs .pairAssignModeButton{font-size:12px;min-height:55px;padding:8px 4px}
+ #albumAiSingletonPairs .pairMergeDestination{padding:12px}
+}
 </style>
 </head>
 <body>
@@ -3186,7 +3217,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DB</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DC</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -5516,19 +5547,30 @@ function renderCurrentAlbumSingletonPairs(){
  const feedback=document.createElement('p');feedback.className='pairReviewFeedback muted';
  feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
  const assignPanel=document.createElement('section');assignPanel.className='pairAssignPanel';
+ const modePicker=document.createElement('div');modePicker.className='pairAssignModePicker';
+ modePicker.setAttribute('role','group');modePicker.setAttribute('aria-label','振り分け方法を選ぶ');
+ const separateMode=document.createElement('button');separateMode.type='button';separateMode.className='pairAssignModeButton';separateMode.textContent='👧👦 別々に振り分ける';
+ const mergeMode=document.createElement('button');mergeMode.type='button';mergeMode.className='pairAssignModeButton';mergeMode.textContent='👧 ひとつにまとめる';
+ modePicker.append(separateMode,mergeMode);
  const assignPhotos=document.createElement('div');assignPhotos.className='pairReviewGroupPhotos';
+ const mergeDestination=document.createElement('label');mergeDestination.className='pairMergeDestination';mergeDestination.hidden=true;
+ const mergeLabel=document.createElement('strong');mergeLabel.textContent='🌷 まとめた写真を誰のフォルダへ入れる？';
+ const mergeSelect=document.createElement('select');mergeSelect.className='pairMergeSelect';
+ mergeSelect.setAttribute('aria-label','まとめて振り分ける園児名');
+ const mergeEmpty=document.createElement('option');mergeEmpty.value='';mergeEmpty.textContent='園児名を選んでね';
+ mergeSelect.append(mergeEmpty);mergeDestination.append(mergeLabel,mergeSelect);
  const assignHint=document.createElement('p');assignHint.className='pairReviewHelp muted';
  const assignSummary=document.createElement('p');assignSummary.className='pairAssignSummary';
  assignSummary.setAttribute('role','status');
- assignPanel.append(assignPhotos,assignSummary,assignHint);
+ assignPanel.append(modePicker,assignPhotos,mergeDestination,assignSummary,assignHint);
  const actions=document.createElement('div');actions.className='pairReviewDecisions';
  const assignButton=document.createElement('button');assignButton.type='button';
  assignButton.className='primary pairAssignMain';assignButton.textContent='✓ この2つを振り分ける';assignButton.disabled=true;
  const same=document.createElement('button');same.type='button';same.className='secondary';
- same.textContent='👥 同じ園児としてまとめる';
+ same.textContent='園児名を付けずに同じグループへまとめる';
  const different=document.createElement('button');different.type='button';different.className='secondary';
  different.textContent='違う園児（名前はあとで）';
- actions.append(assignButton,same);
+ actions.append(assignButton);
  const navigation=document.createElement('div');navigation.className='pairReviewNavigation';
  const previous=document.createElement('button');previous.type='button';previous.className='secondary';previous.textContent='‹ 前の候補';
  const later=document.createElement('button');later.type='button';later.className='secondary';later.textContent='🕘 あとで確認 ›';
@@ -5541,11 +5583,15 @@ function renderCurrentAlbumSingletonPairs(){
  const extraTitle=document.createElement('summary');extraTitle.textContent='確認内容を見直す';
  const restoreSkipped=document.createElement('button');restoreSkipped.type='button';restoreSkipped.className='secondary wide';
  restoreSkipped.textContent='違う園児にした候補をすべて戻す';
- extra.append(extraTitle,different,restoreSkipped);
+ extra.append(extraTitle,same,different,restoreSkipped);
  card.append(names,assignPanel,feedback,actions,navigation,note,complete);
  host.append(intro,progress,card,apply,extra);
- let pendingPair=null;
+ let pendingPair=null,assignmentMode='separate';
  const children=getChildren(data.classId);
+ for(const child of children){
+  const option=document.createElement('option');option.value=String(child.id);
+  option.textContent=child.name+'さん';mergeSelect.append(option);
+ }
  // Every preview is a full original photograph, not just a cropped face.
  const originalPhoto=(faceIndex,label)=>{
   const sample=data.samples[faceIndex],file=data.sourceFiles[sample?.index];
@@ -5578,29 +5624,57 @@ function renderCurrentAlbumSingletonPairs(){
    .filter(Number.isInteger)).size;
  }
  const selectForSide=[];
+ const setAssignmentMode=next=>{
+  assignmentMode=next;
+  const merging=next==='merge';
+  assignPanel.classList.toggle('pairMergeMode',merging);
+  mergeDestination.hidden=!merging;
+  separateMode.setAttribute('aria-pressed',String(!merging));
+  mergeMode.setAttribute('aria-pressed',String(merging));
+  if(merging&&!mergeSelect.value&&selectForSide.length===2){
+   const [left,right]=selectForSide.map(select=>select.value);
+   if((left&&left===right)||(left&&!right)||(!left&&right))mergeSelect.value=left||right;
+  }
+  feedback.textContent='';
+  updateChoice();
+ };
+ separateMode.addEventListener('click',()=>setAssignmentMode('separate'));
+ mergeMode.addEventListener('click',()=>setAssignmentMode('merge'));
+ mergeSelect.addEventListener('change',()=>{feedback.textContent='';updateChoice()});
  const updateChoice=()=>{
   const draft=pendingPair;if(!draft)return;
+  const merging=assignmentMode==='merge';
   const picked=selectForSide.map(select=>select?.value||'');
   const kept=draft.faces.map(part=>part.filter(index=>!draft.excluded.has(index)));
-  const counts=kept.map(countFacePhotos);
-  const hasChoice=picked.some(Boolean);
-  const selectedWithoutPhotos=picked.some((id,i)=>id&&!kept[i].length);
-  const twoDifferent=picked[0]&&picked[1]&&picked[0]!==picked[1];
   const conflicts=[...checked.entries()].some(([id,p])=>id!==pairId(draft.item)&&(
    p.sourceKey===draft.item.sourceKey||p.sourceKey===draft.item.targetKey||
    p.targetKey===draft.item.sourceKey||p.targetKey===draft.item.targetKey));
-  assignButton.disabled=!hasChoice||selectedWithoutPhotos||conflicts;
-  assignButton.textContent=(picked[0]&&picked[1]?'✓ この2つを振り分ける':'✓ 選んだグループを振り分ける');
-  same.disabled=conflicts||(twoDifferent);
-  same.title=twoDifferent?'違う園児名を選択中です。同じ子なら名前を揃えてね。':'';
-  const selectedCount=picked.filter(Boolean).length;
-  assignSummary.textContent='振り分け予定：'+(selectedCount?selectedCount+'グループ':'園児名を選んでね')+
-   (selectedCount?'（写真 '+kept.reduce((sum,part,i)=>sum+(picked[i]?countFacePhotos(part):0),0)+'枚分）':'');
-  assignHint.textContent=selectedCount?
-   (picked[0]&&picked[1]&&picked[0]===picked[1]?
-    '同じ園児名なので、2つのグループをまとめて振り分けるよ。':
-    '違う名前なら、それぞれ別の園児フォルダへ振り分けるよ。'):
-   '同じ子だと分かったときも、別の子だったときも、名前を選ぶだけで大丈夫。';
+  const sameSelected=!!(picked[0]&&picked[1]&&picked[0]===picked[1]);
+  const hasChoice=merging?!!mergeSelect.value:picked.some(Boolean);
+  const missingPhotos=merging?kept.some(part=>!part.length):
+   picked.some((id,index)=>id&&!kept[index].length);
+  const removedWithPartial=!merging&&draft.excluded.size&&!picked.every(Boolean);
+  assignButton.disabled=!hasChoice||missingPhotos||removedWithPartial||conflicts||
+   (!merging&&sameSelected);
+  assignButton.textContent=merging?'✓ 2つをまとめて振り分ける':
+   (picked[0]&&picked[1]?'✓ 2つを別々に振り分ける':'✓ 選んだグループを振り分ける');
+  same.disabled=conflicts;
+  const count=kept.reduce((sum,part,index)=>sum+((merging||picked[index])?countFacePhotos(part):0),0);
+  if(merging){
+   const child=children.find(c=>String(c.id)===mergeSelect.value);
+   assignSummary.textContent=child?'振り分け先：'+child.name+'さん（写真 '+count+'枚分）':
+    '振り分け先の園児名を選んでね';
+   assignHint.textContent=missingPhotos?'左右どちらにも1枚以上の顔写真を残してね。':
+    '左右をひとつのグループにまとめて、選んだ園児のフォルダへ入れるよ。';
+   note.textContent='💡 2つのグループをまとめ、選んだ園児のフォルダに振り分けます。';
+  }else{
+   assignSummary.textContent='振り分け予定：'+(picked.some(Boolean)?
+    picked.filter(Boolean).length+'グループ（写真 '+count+'枚分）':'園児名を選んでね');
+   assignHint.textContent=sameSelected?'同じ園児にまとめたいときは、上の「ひとつにまとめる」を選んでね。':
+    (removedWithPartial?'顔を外した場合は、左右それぞれの園児名を選んでね。':
+     '左右で違う名前を選ぶと、それぞれ別の園児フォルダへ振り分けられるよ。');
+   note.textContent='💡 左右の園児名を選び、別々のフォルダに振り分けます。';
+  }
   for(const entry of assignPhotos.querySelectorAll('.pairReviewFaceItem')){
    const faceIndex=Number(entry.dataset.faceIndex);
    const excluded=draft.excluded.has(faceIndex);
@@ -5617,6 +5691,9 @@ function renderCurrentAlbumSingletonPairs(){
    position++;show();return;
   }
   pendingPair={item,faces:[[...source.faceIndexes],[...target.faceIndexes]],excluded:new Set()};
+  assignmentMode='separate';mergeSelect.value='';
+  assignPanel.classList.remove('pairMergeMode');mergeDestination.hidden=true;
+  separateMode.setAttribute('aria-pressed','true');mergeMode.setAttribute('aria-pressed','false');
   selectForSide.length=0;
   assignPhotos.replaceChildren();
   const colors=['pink','blue'];
@@ -5691,7 +5768,9 @@ function renderCurrentAlbumSingletonPairs(){
   if(!draft||data!==albumAiGroupsData||!data.valid()){
    feedback.textContent='候補が更新されました。もう一度開いてね。';return;
   }
-  const childIds=selectForSide.map(select=>select.value);
+  const merging=assignmentMode==='merge';
+  const childIds=merging?[mergeSelect.value,mergeSelect.value]:
+   selectForSide.map(select=>select.value);
   if(!childIds.some(Boolean)){feedback.textContent='園児名を選んでね。';return}
   const source=data.groups.find(g=>g.key===draft.item.sourceKey);
   const target=data.groups.find(g=>g.key===draft.item.targetKey);
@@ -5704,7 +5783,11 @@ function renderCurrentAlbumSingletonPairs(){
   try{
    const ids=children.map(c=>String(c.id));
    if(childIds.some(id=>id&&!ids.includes(id)))throw Error('園児名簿にない名前です');
+   if(!merging&&childIds[0]&&childIds[1]&&childIds[0]===childIds[1])
+    throw Error('同じ子へまとめるときは「ひとつにまとめる」を選んでね');
    const kept=draft.faces.map(faceIndexes=>faceIndexes.filter(i=>!draft.excluded.has(i)));
+   if(merging&&kept.some(part=>!part.length))
+    throw Error('2つのグループのどちらにも顔を1つ以上残してね');
    if(childIds.some((id,side)=>id&&!kept[side].length))
     throw Error('振り分けるグループから顔がすべて外されています');
    if(draft.excluded.size&&!childIds.every(Boolean))
@@ -5717,7 +5800,7 @@ function renderCurrentAlbumSingletonPairs(){
     ...group,faceIndexes:group.key===source.key?kept[0]:
      group.key===target.key?kept[1]:[...group.faceIndexes]
    })).filter(group=>group.faceIndexes.length);
-   const sameChild=childIds[0]&&childIds[1]&&childIds[0]===childIds[1];
+   const sameChild=merging;
    const confirmedKeys=[];
    let nextAssignments=photoAssignments;
    if(sameChild&&kept[0].length&&kept[1].length){
@@ -5766,15 +5849,10 @@ function renderCurrentAlbumSingletonPairs(){
  });
  same.addEventListener('click',()=>{
   if(!pendingPair)return;
-  const ids=selectForSide.map(select=>select.value);
-  if(ids.some(Boolean)){
-   if(ids[0]&&ids[0]===ids[1]){assignButton.click();return}
-   feedback.textContent='同じ園児なら左右で同じ名前を選んで「振り分ける」を押してね。名前はあとから付けることもできるよ。';
-   return;
-  }
   if(pendingPair.excluded.size){
-   feedback.textContent='外した顔は未確定だよ。顔を戻すか、園児名を付けて振り分けてね。';return;
+   feedback.textContent='外した顔を戻してから、名前を付けずにまとめてね。';return;
   }
+  if(!window.confirm('2つを同じグループとして記録します。まだ園児フォルダには入れません。よろしいですか？'))return;
   decide('same');
  });
  different.addEventListener('click',()=>{
