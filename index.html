@@ -7705,11 +7705,10 @@ function renderPhotoFolderMistakes(data,host){
  const summary=make('div','photoMoveFolderSummary');
  for(const kid of kids){
   const id=String(kid.id),set=new Set();
-  (data.photoMergeChildIds||[]).forEach((childId,slot)=>{
-   if(String(childId)!==id)return;
-   const linked=data.photoFolders.find(f=>f.key===data.photoMergeSlots?.[slot]);
-   if(linked)for(const index of photoFolderIndexes(data,linked))set.add(index);
-  });
+  for(const linked of photoFoldersEnsure(data)){
+   if(links.get(linked.key)===id)
+    for(const index of photoFolderIndexes(data,linked))set.add(index);
+  }
   summary.append(make('span','',kid.name+' '+set.size+'枚'));
  }
  next.append(summary,make('p','muted',remaining?
