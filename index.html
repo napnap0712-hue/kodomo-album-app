@@ -3781,7 +3781,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EO</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EP</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -7420,6 +7420,8 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
 
 /* DT: review stage uses the DS safe folder correction and undo methods. */
 let mistakeFocusKey=null;
+ // EP: Keep reviewed folders closed unless the teacher explicitly selects one.
+ let mistakeFocusData=null,mistakeManualFocusKey=null,mistakeNeverAutoOpen=new Set();
 function renderPhotoSortGameProgress(){
  const el=document.getElementById('photoSortGameProgress');if(!el)return;
  const data=albumAiGroupsData;
@@ -7579,14 +7581,37 @@ function renderPhotoFolderMistakes(data,host){
  }catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
  const reviewed=data.photoFolderMistakeReviewed;
  const slots=data.photoMergeSlots||[];
+ const kids=getChildren(data.classId);
+ const names=new Map(kids.map(k=>[String(k.id),String(k.name||'')]));
+ const collator=new Intl.Collator('ja',{sensitivity:'base',numeric:true});
+ function folderName(folder){
+  const slot=slots.indexOf(folder.key);
+  const id=slot>=0?String(data.photoMergeChildIds?.[slot]||''):
+   String(data.photoMatchFolderChild?.[folder.key]||'');
+  return names.get(id)||null;
+ }
+ // Readable child-name order first; unlinked AI candidates, then the unplaced inbox.
  folders.sort((a,b)=>{
-  const aSlot=slots.indexOf(a.key),bSlot=slots.indexOf(b.key);
-  return (a.key===PHOTO_SORT_UNPLACED?100000:aSlot<0?10000+data.photoFolders.indexOf(a):aSlot)-
-   (b.key===PHOTO_SORT_UNPLACED?100000:bSlot<0?10000+data.photoFolders.indexOf(b):bSlot);
+  const an=folderName(a),bn=folderName(b);
+  const rank=f=>f.key===PHOTO_SORT_UNPLACED?2:folderName(f)?0:1;
+  const diff=rank(a)-rank(b);if(diff)return diff;
+  if(an&&bn){const nameOrder=collator.compare(an,bn);if(nameOrder)return nameOrder}
+  return (slots.indexOf(a.key)>=0?slots.indexOf(a.key):10000+data.photoFolders.indexOf(a))-
+   (slots.indexOf(b.key)>=0?slots.indexOf(b.key):10000+data.photoFolders.indexOf(b));
  });
- if(!folders.some(f=>f.key===mistakeFocusKey))
-  mistakeFocusKey=folders.find(f=>slots.includes(f.key)&&!reviewed.has(f.key))?.key||
-   folders.find(f=>!reviewed.has(f.key))?.key||folders[0]?.key||null;
+ if(mistakeFocusData!==data){
+  mistakeFocusData=data;mistakeFocusKey=null;mistakeManualFocusKey=null;mistakeNeverAutoOpen=new Set(reviewed);
+ }
+ // If an already-checked folder changes, it still needs rechecking,
+ // but never pops up on its own. The teacher opens it from the picker.
+ for(const folder of folders)if(reviewed.has(folder.key))mistakeNeverAutoOpen.add(folder.key);
+ const focused=folders.find(f=>f.key===mistakeFocusKey);
+ if(!focused||
+   (mistakeNeverAutoOpen.has(focused.key)&&mistakeManualFocusKey!==focused.key)||
+   (reviewed.has(focused.key)&&mistakeManualFocusKey!==focused.key)){
+  mistakeFocusKey=folders.find(f=>!reviewed.has(f.key)&&!mistakeNeverAutoOpen.has(f.key))?.key||null;
+  mistakeManualFocusKey=null;
+ }
  const btn=(label,cls,callback)=>{
   const element=document.createElement('button');element.type='button';element.className=cls;
   element.textContent=label;element.addEventListener('click',callback);return element;
@@ -7604,6 +7629,26 @@ function renderPhotoFolderMistakes(data,host){
  const count=make('p','photoFolderCounter',
   '確認済み '+n+' / '+folders.length+'組　·　未仕分けカード '+folders.filter(f=>!slots.includes(f.key)).length+'組');
  host.append(count);
+ function appendReviewFinish(){
+ const next=make('section','photoMistakeNext');
+ const remaining=folders.length-n;
+ next.append(make('strong','photoMoveFinishTitle','🌷 園児別フォルダ'));
+ const summary=make('div','photoMoveFolderSummary');
+ for(const kid of kids){
+  const id=String(kid.id),set=new Set();
+  (data.photoMergeChildIds||[]).forEach((childId,slot)=>{
+   if(String(childId)!==id)return;
+   const linked=data.photoFolders.find(f=>f.key===data.photoMergeSlots?.[slot]);
+   if(linked)for(const index of photoFolderIndexes(data,linked))set.add(index);
+  });
+  summary.append(make('span','',kid.name+' '+set.size+'枚'));
+ }
+ next.append(summary,make('p','muted',remaining?
+  '🔎 未確認のフォルダが'+remaining+'組あるよ。確認したら見開き編集へ！':
+  '✅ 確認完了！ 未仕分け写真がなければ見開き編集へ進めるよ。'));
+ next.append(btn('✅ 振り分け完了！見開き編集へ ›','primary wide',finishPhotoSortFromCheck));
+ host.append(next);
+ }
  if(data.photoFolderUndo.length)host.append(btn('↩ 直前の移動を戻す','secondary',()=>{
   const old=data.photoFolderUndo.pop();
   if(old){photoFolderRestoreSnapshot(data,old);data.photoFolderNotice='↩ 直前の写真移動を元に戻したよ。';renderPhotoFolderMistakes(data,host)}
@@ -7616,16 +7661,35 @@ function renderPhotoFolderMistakes(data,host){
   renderPhotoSortGameProgress();return;
  }
  const picker=document.createElement('select');picker.className='photoMistakePicker';
- picker.setAttribute('aria-label','写真を確認する園児または未仕分けカード');
+ picker.setAttribute('aria-label','園児名順で確認するフォルダを選ぶ');
+ const placeholder=document.createElement('option');
+ placeholder.value='';
+ placeholder.textContent='📂 '+(folders.every(f=>reviewed.has(f.key))?
+  '確認完了・見直す園児を選べるよ':'確認する園児を選んでね');
+ picker.append(placeholder);
  folders.forEach((folder,i)=>{
   const opt=document.createElement('option');opt.value=folder.key;
   opt.textContent=(reviewed.has(folder.key)?'✅ ':'🔎 ')+
    (folder.key===PHOTO_SORT_UNPLACED?'📦 未振り分け写真':photoSortFolderLabel(data,folder,i))+
    ' · '+photoFolderIndexes(data,folder).length+'枚';picker.append(opt);
  });
- picker.value=mistakeFocusKey;
- picker.addEventListener('change',()=>{mistakeFocusKey=picker.value;renderPhotoFolderMistakes(data,host)});
+ picker.value=mistakeFocusKey||'';
+ picker.addEventListener('change',()=>{
+  mistakeFocusKey=picker.value||null;
+  mistakeManualFocusKey=mistakeFocusKey;
+  renderPhotoFolderMistakes(data,host);
+ });
  host.append(picker);
+ if(!mistakeFocusKey){
+  const pending=folders.filter(f=>!reviewed.has(f.key)).length;
+  const message=make('p','photoFolderNotice',pending?
+   '🔎 再確認が必要なフォルダが'+pending+'組あるよ。確認済みのフォルダは自動で開かないので、園児名一覧から選んでね。':
+   '🎉 全フォルダの確認が終わったよ！ 必要なら園児名を選んで見直せるよ。');
+  host.append(message);
+  appendReviewFinish();
+  renderPhotoSortGameProgress();
+  return;
+ }
  const folder=folders.find(f=>f.key===mistakeFocusKey),indexes=photoFolderIndexes(data,folder);
  const selected=new Set(),gallery=make('div','photoMistakeGallery photoMoveInlineGallery');
  gallery.setAttribute('aria-label','このフォルダの写真を選ぶ');
@@ -7666,7 +7730,7 @@ function renderPhotoFolderMistakes(data,host){
    renderPhotoFolderMistakes(data,host);
   }catch(error){notice.textContent='⚠️ '+String(error?.message||error)}
  }
- const kids=getChildren(data.classId),slotRows=(data.photoMergeChildIds||[]).map((childId,slot)=>{
+ const slotRows=(data.photoMergeChildIds||[]).map((childId,slot)=>{
   const child=kids.find(k=>String(k.id)===String(childId));
   const saved=data.photoMergeSlots?.[slot];
   const key=data.photoFolders.some(f=>f.key===saved)?saved:null;
@@ -7859,30 +7923,22 @@ function renderPhotoFolderMistakes(data,host){
  addPhotos();
  const actions=make('div','photoMistakeActions');
  actions.append(btn(reviewed.has(folder.key)?'↩ 確認を取り消す':'✅ このフォルダを確認済みにする','primary wide',()=>{
-  if(reviewed.has(folder.key))reviewed.delete(folder.key);
-  else reviewed.add(folder.key);
-  mistakeFocusKey=folders.find(f=>!reviewed.has(f.key))?.key||folder.key;
+  if(reviewed.has(folder.key)){
+   reviewed.delete(folder.key);
+   mistakeNeverAutoOpen.delete(folder.key);
+   mistakeFocusKey=folder.key;
+   mistakeManualFocusKey=folder.key;
+  }else{
+   reviewed.add(folder.key);
+   mistakeNeverAutoOpen.add(folder.key);
+   // Advance only to another never-reviewed folder in child-name order.
+   // When none remain, show a summary rather than reopening this folder.
+   mistakeFocusKey=null;mistakeManualFocusKey=null;
+  }
   renderPhotoFolderMistakes(data,host);
  }));
  host.append(actions);
- const next=make('section','photoMistakeNext');
- const remaining=folders.length-n;
- next.append(make('strong','photoMoveFinishTitle','🌷 園児別フォルダ'));
- const summary=make('div','photoMoveFolderSummary');
- for(const kid of kids){
-  const id=String(kid.id),set=new Set();
-  (data.photoMergeChildIds||[]).forEach((childId,slot)=>{
-   if(String(childId)!==id)return;
-   const linked=data.photoFolders.find(f=>f.key===data.photoMergeSlots?.[slot]);
-   if(linked)for(const index of photoFolderIndexes(data,linked))set.add(index);
-  });
-  summary.append(make('span','',kid.name+' '+set.size+'枚'));
- }
- next.append(summary,make('p','muted',remaining?
-  '🔎 未確認のフォルダが'+remaining+'組あるよ。確認したら見開き編集へ！':
-  '✅ 確認完了！ 未仕分け写真がなければ見開き編集へ進めるよ。'));
- next.append(btn('✅ 振り分け完了！見開き編集へ ›','primary wide',finishPhotoSortFromCheck));
- host.append(next);
+ appendReviewFinish();
  host.append(make('p','muted','移動後にもう一度確認できるよ。残したAIカードも消えないよ。途中保存は画面上のボタンから。'));
  renderPhotoSortGameProgress();
 }
