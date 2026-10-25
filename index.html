@@ -838,6 +838,28 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .pendingQuickCheck input{width:17px;height:17px;margin:0;accent-color:#338bd0}
 .pendingQuickGrip{position:absolute;z-index:2;bottom:6px;right:6px;background:#fffe;border:1px solid #bdd3e8;border-radius:8px;font-size:11px;min-height:32px;padding:6px;touch-action:none;cursor:grab;color:#326286}
 .pendingQuickGhost{position:fixed;z-index:99999;pointer-events:none;transform:translate(-50%,-110%);border:1px solid #82b1d9;border-radius:10px;background:#e9f4ff;padding:8px;box-shadow:0 8px 20px #0002;font-size:12px;font-weight:700}
+
+/* DH: independent flat unconfirmed review and sticky child drop zone */
+.screen[data-screen="photoAssign"][data-flow-step="pending"] :is(#albumAiSingletonReview,#currentAlbumAiPanel>.currentAlbumAiActions,#currentAlbumAiPanel>strong,#currentAlbumAiPanel>p.muted,#currentAlbumAiStatus,#currentAlbumAiDiagnosticPanel,#photoAssignFlowManual,#albumChildFolderPanel,#albumAiOtherGroups,#assignmentTransferPanel,#photoAssignDevTools,.assignmentOverview,.assignmentMorePhotos,.assignmentSimpleFolders,#photoAssignGrid,#showMoreAssignedPhotos,.assignmentBottomActions){display:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiPendingQuick,
+.screen[data-screen="photoAssign"][data-flow-step="start"] #albumAiPendingQuick,
+.screen[data-screen="photoAssign"][data-flow-step="folders"] #albumAiPendingQuick{display:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="pending"] #photoAssignFlowHint{display:none!important}
+.pendingQuickDestinations{display:flex;flex-wrap:nowrap;overflow-x:auto;position:sticky;top:6px;z-index:10;gap:8px;padding:9px 6px;margin:10px -5px;background:#f0f8ffef;border:1px solid #cde2f2;border-radius:11px;touch-action:pan-x;-webkit-overflow-scrolling:touch}
+.pendingQuickDestinations button{min-width:112px;max-width:170px;flex:0 0 auto;min-height:47px;white-space:normal;font-weight:750}
+.pendingQuickList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+@media(min-width:620px){.pendingQuickList{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:950px){.pendingQuickList{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:1400px){.pendingQuickList{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.pendingQuickPhoto{min-width:0;border-radius:10px}
+.pendingQuickPreview{display:block;width:100%;aspect-ratio:4/3}
+.pendingQuickPhoto .pendingQuickCaption{display:flex;justify-content:space-between;gap:4px;padding:6px;font-size:11px;color:#4b657b}
+.pendingQuickGrip{top:6px;right:6px;bottom:auto}
+.pendingQuickHeading{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;color:#295d83;font-size:15px}
+.pendingQuickHeading span{font-size:12px}
+.pendingQuickImageFrame{position:relative;display:block;width:100%;height:100%}
+.pendingQuickImageFrame img{display:block;width:100%;height:100%;object-fit:contain}
+.pendingQuickFaceMarker{position:absolute;border:3px solid #f3bc39;border-radius:6px;pointer-events:none}
 .assignmentBottomActions{position:sticky;bottom:0;z-index:5;background:linear-gradient(#fffefbfa,#fff 25%);padding:12px 0 calc(9px + env(safe-area-inset-bottom))}
 .assignmentPhotoDialog{border:0;border-radius:14px;padding:15px;width:min(94vw,850px);max-height:92dvh;box-shadow:0 16px 65px #0004}
 .assignmentPhotoDialog::backdrop{background:#11233ac9}
@@ -1000,6 +1022,7 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .photoAssignFlowGuide span[data-flow-index]{padding:7px 8px;border-radius:10px;font-weight:650}
 .screen[data-screen="photoAssign"][data-flow-step="start"] [data-flow-index="start"],
 .screen[data-screen="photoAssign"][data-flow-step="review"] [data-flow-index="review"],
+.screen[data-screen="photoAssign"][data-flow-step="pending"] [data-flow-index="pending"],
 .screen[data-screen="photoAssign"][data-flow-step="folders"] [data-flow-index="folders"]{background:#e6f2ff;color:#28609a}
 #photoAssignFlowHint{margin:10px 0 14px;font-size:13px;line-height:1.55}
 #photoAssignFlowManual{margin-top:8px;border:0;background:transparent;text-decoration:underline;color:#54728d;font-size:12px;min-height:34px}
@@ -2971,6 +2994,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 }
 .screen[data-screen="photoAssign"][data-flow-step="start"] [data-flow-index="start"],
 .screen[data-screen="photoAssign"][data-flow-step="review"] [data-flow-index="review"],
+.screen[data-screen="photoAssign"][data-flow-step="pending"] [data-flow-index="pending"],
 .screen[data-screen="photoAssign"][data-flow-step="folders"] [data-flow-index="folders"]{
  background:#e6f4fa;color:#346e8d;
 }
@@ -3223,7 +3247,8 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="写真整理の進み具合">
  <span data-flow-index="start">① 写真を整理</span><span class="arrow">›</span>
  <span data-flow-index="review">② 顔を確認</span><span class="arrow">›</span>
- <span data-flow-index="folders">③ 園児へ振り分け</span>
+ <span data-flow-index="pending">③ 未確定を整理</span><span class="arrow">›</span>
+ <span data-flow-index="folders">④ 園児フォルダ</span>
 </div>
 <p id="photoAssignFlowHint" class="muted" role="status">まずは写真を整理しよう。ボタンを1つ押すだけで始められるよ。</p>
 
@@ -3243,22 +3268,21 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  <div id="albumAiSingletonReview" hidden>
   <button type="button" id="albumAiFindSingletonPairs" class="secondary wide">🔎 単独グループの似た候補をまとめて探す</button>
   <p class="muted">写真全体を見比べて、同じ園児かどうか確認しよう。</p>
-  <details id="albumAiPendingQuick" class="albumAiPendingQuick">
-   <summary>🌷 未確定の写真をまとめて振り分ける <span id="albumAiPendingQuickCount"></span></summary>
-   <p class="muted">写真全体を見て、同じ園児の写真をチェックしてね。違う子が混ざっていたら、その写真だけ選べるよ。</p>
-   <div class="pendingQuickToolbar">
-    <span id="albumAiPendingPicked" class="muted">選択 0枚</span>
-    <button id="albumAiPendingSelectVisible" type="button" class="secondary">表示中を全選択</button>
-    <button id="albumAiPendingClear" type="button" class="secondary">選択解除</button>
-   </div>
-   <div class="pendingQuickDestinations" id="albumAiPendingDestinations"></div>
-   <p id="albumAiPendingMessage" class="muted" role="status" aria-live="polite"></p>
-   <div id="albumAiPendingList" class="pendingQuickList"></div>
-   <button id="albumAiPendingMore" class="secondary wide" type="button" hidden>＋ 次の候補を表示</button>
-  </details>
   <div id="albumAiSingletonPairs" class="currentAlbumAiGroups"></div>
  </div>
- <button type="button" class="primary wide" id="photoAssignFlowNext">園児フォルダへ進む ›</button>
+ <section id="albumAiPendingQuick" class="albumAiPendingQuick">
+ <div class="pendingQuickHeading"><strong>🌷 未確定の写真を整理しよう</strong><span id="albumAiPendingQuickCount"></span></div>
+ <p class="muted">元写真を確認して、同じ園児の写真を選んでね。黄色い枠が確認対象の顔だよ。</p>
+ <div class="pendingQuickToolbar"><span id="albumAiPendingPicked" class="muted">選択 0枚</span>
+  <button id="albumAiPendingSelectVisible" type="button" class="secondary">表示中を全選択</button>
+  <button id="albumAiPendingClear" type="button" class="secondary">選択解除</button></div>
+ <p class="muted">選んだ写真は園児名をタップして一括振り分け。1枚なら「↗ 移動」をドラッグできるよ。</p>
+ <div id="albumAiPendingDestinations" class="pendingQuickDestinations"></div>
+ <p id="albumAiPendingMessage" class="muted" role="status" aria-live="polite"></p>
+ <div id="albumAiPendingList" class="pendingQuickList"></div>
+ <button id="albumAiPendingMore" type="button" class="secondary wide" hidden>＋ 次の写真を表示</button>
+ </section>
+ <button type="button" class="primary wide" id="photoAssignFlowNext">未確定の写真を整理する ›</button>
 </section>
 <button type="button" class="secondary" id="photoAssignFlowBack">‹ 似ている顔の確認に戻る</button>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
@@ -5320,7 +5344,7 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
   show('photoAssign');
   renderPhotoAssignmentPage();
   const resumedStep=albumAiGroupsData?
-   (row.flowStep==='folders'?'folders':'review'):
+   (['folders','pending'].includes(row.flowStep)?row.flowStep:'review'):
    (row.flowStep==='folders'?'folders':'start');
   setPhotoAssignFlowStep(resumedStep);
   if(albumAiGroupsData){
@@ -5412,25 +5436,32 @@ function refreshAfterAlbumPhotoUseChange(data,message,affectedKeys=[]){
 }
 function setPhotoAssignFlowStep(step,{scroll=false}={}){
  const screen=document.querySelector('[data-screen="photoAssign"]');
- if(!screen||!['start','review','folders'].includes(step))return;
+ if(!screen||!['start','review','pending','folders'].includes(step))return;
  screen.dataset.flowStep=step;
  const hint=$('#photoAssignFlowHint'),details=$('#albumAiOtherGroups');
- if(hint)hint.textContent=step==='start'?
-  'まずは「写真を整理する」を押してね。AIを使わずに進むこともできるよ。':
-  step==='review'?'2つのグループを見比べて、それぞれの園児名を選んでね。迷ったら「あとで確認」で大丈夫。':
-  '園児フォルダと未確定の写真を確認しよう。終わったら下の「見開き編集へ進む」を押してね。';
- if(details)details.open=false; // Keep the 94-group list folded until staff asks for it.
+ if(hint)hint.textContent=step==='start'?'まずは「写真を整理する」を押してね。':
+  step==='review'?'似ている候補を確認してね。最後に未確定の写真を整理するよ。':
+  step==='pending'?'未確定の写真を園児名へ振り分けよう。':'園児別の写真を確認して見開き編集へ進もう。';
+ if(details)details.open=false;
  const back=$('#photoAssignFlowBack');
- if(back)back.hidden=!albumAiGroupsData?.valid();
- if(scroll){
-  const target=step==='folders'?$('#albumChildFolderPanel'):$('#currentAlbumAiPanel');
-  target?.scrollIntoView?.({behavior:'smooth',block:'start'});
- }
+ if(back){back.hidden=step==='start'||step==='review'||!albumAiGroupsData?.valid();
+  back.textContent=step==='folders'?'‹ 未確定の写真整理に戻る':'‹ 顔の確認に戻る';}
+ const next=$('#photoAssignFlowNext');
+ if(next)next.textContent=step==='pending'?'園児フォルダを確認する ›':'未確定の写真を整理する ›';
+ if(step==='pending'&&albumAiGroupsData?.valid())renderAlbumAiPendingQuick();
+ if(scroll){const target=step==='folders'?$('#albumChildFolderPanel'):
+  step==='pending'?$('#albumAiPendingQuick'):$('#currentAlbumAiPanel');
+  target?.scrollIntoView?.({behavior:'smooth',block:'start'});}
 }
 $('#photoAssignFlowManual')?.addEventListener('click',()=>setPhotoAssignFlowStep('folders',{scroll:true}));
-$('#photoAssignFlowNext')?.addEventListener('click',()=>setPhotoAssignFlowStep('folders',{scroll:true}));
+$('#photoAssignFlowNext')?.addEventListener('click',()=>{
+ const step=document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep;
+ setPhotoAssignFlowStep(step==='review'?'pending':'folders',{scroll:true});
+});
 $('#photoAssignFlowBack')?.addEventListener('click',()=>{
- if(albumAiGroupsData?.valid())setPhotoAssignFlowStep('review',{scroll:true});
+ if(!albumAiGroupsData?.valid())return;
+ const step=document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep;
+ setPhotoAssignFlowStep(step==='folders'?'pending':'review',{scroll:true});
 });
 function clearCurrentAlbumAi(){
  setPhotoAssignFlowStep('start');
