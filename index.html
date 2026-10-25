@@ -3584,6 +3584,32 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  #albumAiSingletonPairs .photoFolderPick{min-height:41px}
 }
 
+
+/* DV: The active reference folder is a wide compact contact sheet.
+   All originals are previewed at once without cropping; candidates stay unchanged. */
+#albumAiSingletonPairs .photoFolderMain{width:100%;max-width:none;margin:7px 0 13px}
+#albumAiSingletonPairs .photoFolderMain .photoFolderCard{
+ width:100%;max-width:none;margin:0;box-sizing:border-box;padding:10px;gap:7px
+}
+#albumAiSingletonPairs .photoFolderMain .photoFolderGallery,
+#albumAiSingletonPairs .photoFolderMain .photoFolderGallery.photoFolderExpanded{
+ display:grid;grid-template-columns:repeat(auto-fill,minmax(95px,1fr));
+ gap:6px;max-height:none;overflow:visible;min-height:0;padding:0;background:transparent
+}
+#albumAiSingletonPairs .photoFolderMain .photoFolderZoom,
+#albumAiSingletonPairs .photoFolderMain .photoFolderGallery.photoFolderExpanded .photoFolderZoom{
+ height:auto;aspect-ratio:4/3;min-height:0;background:#eaf1f8
+}
+#albumAiSingletonPairs .photoFolderMain .photoFolderZoom img{
+ width:100%;height:100%;object-fit:contain
+}
+@media(max-width:540px){
+ #albumAiSingletonPairs .photoFolderMain .photoFolderCard{width:100%;max-width:none;padding:7px}
+ #albumAiSingletonPairs .photoFolderMain .photoFolderGallery{
+  grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:4px
+ }
+}
+
 </style>
 </head>
 <body>
@@ -3644,7 +3670,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DU</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DV</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -7119,7 +7145,7 @@ function renderPhotoFolders(data,host){
  }
  const main=document.createElement('section');main.className='photoFolderMain';
  const title2=document.createElement('h3');title2.textContent='① この写真フォルダを確認';
- const baseCard=tile(focus,6);baseCard.classList.add('photoFolderDropBase');
+ const baseCard=tile(focus,Infinity);baseCard.classList.add('photoFolderDropBase');
  baseCard.dataset.photoFolderDropKey=focus.key;
  const dropHelp=document.createElement('p');dropHelp.className='photoFolderDropHelp';
  dropHelp.textContent='↙ 下の候補をここへドラッグしてまとめることもできます';
