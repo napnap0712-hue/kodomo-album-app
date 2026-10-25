@@ -97,3 +97,66 @@
  #albumAiSingletonPairs .mergeGallery{grid-template-columns:repeat(3,minmax(0,1fr))}
  #albumAiSingletonPairs .mergeEditActions{grid-template-columns:1fr 1fr}
 }
+
+/* EM: Merging may be partial; the second stage is dedicated to photo moving. */
+#albumAiSingletonPairs .mergeContinue{margin:18px 0 8px;background:#fff8e5;border-color:#f2d494}
+#albumAiSingletonPairs .mergeContinue button{font-weight:900;font-size:clamp(15px,2.2vw,19px)}
+#photoFolderMistakePanel .photoMistakeNext{margin:15px 0;padding:12px;border:1px solid #d6e5f2;border-radius:13px;background:#f8fbff}
+#photoFolderMistakePanel .photoMistakeNext .muted{font-size:12px;line-height:1.6;margin:0 0 8px}
+#photoFolderMistakePanel .photoMistakeNext button{min-height:49px;font-weight:850}
+#photoFolderMistakePanel .photoFolderFixer{padding:13px;margin:12px 0 17px;background:#f1faff;
+ border:2px solid #93cae8;border-radius:16px;box-shadow:0 4px 0 #dcecf6}
+#photoFolderMistakePanel .photoFolderFixerHeader{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#photoFolderMistakePanel .photoFolderFixerHeader strong{font-size:clamp(15px,2.4vw,20px);color:#386b88}
+#photoFolderMistakePanel .photoFolderFixerHeader button{min-height:39px;font-size:12px}
+#photoFolderMistakePanel .photoFolderFixer>p{font-size:12px;line-height:1.65;color:#537489}
+#photoFolderMistakePanel .photoFolderFixerGallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:8px;max-height:340px;overflow-y:auto;overscroll-behavior:contain;padding:5px;
+ border-radius:11px;background:#e6f1f8}
+#photoFolderMistakePanel .photoFolderFixerPhoto{min-width:0;display:flex;flex-direction:column;gap:4px;
+ background:white;padding:5px;border:2px solid #d4e5ef;border-radius:10px}
+#photoFolderMistakePanel .photoFolderFixerPhoto.photoFolderPhotoSelected{border-color:#f264a2;background:#fff1f8}
+#photoFolderMistakePanel .photoFolderPhotoChoose{position:relative;border:0;border-radius:8px;
+ padding:0;width:100%;height:112px;background:#edf3f8;overflow:hidden}
+#photoFolderMistakePanel .photoFolderPhotoChoose img{width:100%;height:100%;object-fit:contain}
+#photoFolderMistakePanel .photoFolderBadge{position:absolute;bottom:0;left:0;right:0;padding:5px;
+ background:#4f627bd9;color:white;font-size:11px;font-weight:850}
+#photoFolderMistakePanel .photoFolderPhotoSelected .photoFolderBadge{background:#e8569a}
+#photoFolderMistakePanel .photoFolderFixerZoom,#photoFolderMistakePanel .photoFolderPhotoGrip{
+ min-height:36px;font-size:11px;border-radius:8px;padding:4px 2px}
+#photoFolderMistakePanel .photoFolderPhotoGrip{touch-action:none;user-select:none;
+ -webkit-user-select:none;cursor:grab;border:1px dashed #a0bfce;background:#fff;color:#396783}
+#photoFolderMistakePanel .photoFolderFixerActions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+#photoFolderMistakePanel .photoFolderFixerActions>button{flex:1 1 140px;min-height:43px;font-size:12px}
+#photoFolderMistakePanel .photoFolderAdvancedMove{flex:1 1 100%;padding:8px;border:1px solid #cadeec;
+ border-radius:9px;background:white}
+#photoFolderMistakePanel .photoFolderAdvancedMove summary{font-size:12px;cursor:pointer;color:#446882}
+#photoFolderMistakePanel .photoFolderAdvancedMove[open]{display:grid;gap:8px;grid-template-columns:1fr auto}
+#photoFolderMistakePanel .photoFolderAdvancedMove[open] summary{grid-column:1/-1}
+#photoFolderMistakePanel .photoFolderMoveSelect{min-width:0;min-height:43px;border-radius:9px;
+ border:1px solid #b4d0e0;background:white;padding:6px;font-size:12px}
+#photoFolderMistakePanel .photoFolderAdvancedMove button{min-height:43px;font-size:12px}
+#photoFolderMistakePanel .photoFolderMoveTray{border:1px solid #c9dfee;border-radius:13px;background:#fdfefe;padding:12px}
+#photoFolderMistakePanel .photoFolderMoveTray strong{font-size:15px;color:#416c87}
+#photoFolderMistakePanel .photoFolderMoveHelp{font-size:12px;line-height:1.6;color:#5b7b90;margin:6px 0}
+#photoFolderMistakePanel .photoFolderDropZones{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:8px;padding:4px;max-height:290px;overflow-y:auto;overscroll-behavior:contain}
+#photoFolderMistakePanel .photoFolderDropTarget{min-height:58px;white-space:normal;
+ padding:7px 4px;border:2px dashed #add5ec;border-radius:12px;background:#fff;color:#396b89;font-size:12px;font-weight:850}
+#photoFolderMistakePanel .photoFolderDropTarget.photoFolderDropHover{background:#fff0da;border-color:#eeaf54}
+.screen[data-screen="photoAssign"][data-flow-step="folders"] .assignmentBottomActions{
+ position:static;padding:11px;margin:8px 0 18px;border:2px solid #b5e1ca;border-radius:15px;
+ background:#f7fff9;box-shadow:none}
+.screen[data-screen="photoAssign"][data-flow-step="folders"] .assignmentBottomActions p{
+ font-size:12px;color:#4d7260;line-height:1.7;margin:0 0 8px}
+.screen[data-screen="photoAssign"][data-flow-step="folders"] #finishPhotoAssign{
+ min-height:52px;font-size:17px;font-weight:900}
+@media(max-width:700px){
+ #photoFolderMistakePanel .photoFolderFixerGallery{grid-template-columns:repeat(3,minmax(0,1fr))}
+ #photoFolderMistakePanel .photoFolderDropZones{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:450px){
+ #photoFolderMistakePanel .photoFolderFixerGallery{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #photoFolderMistakePanel .photoFolderFixer{padding:8px}
+ #photoFolderMistakePanel .photoFolderAdvancedMove[open]{grid-template-columns:1fr}
+}
