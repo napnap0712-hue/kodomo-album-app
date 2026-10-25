@@ -3226,6 +3226,19 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 }
 
 
+
+/* DL: face checking has no child-name controls; photo postboxes handle names. */
+#albumAiSingletonPairs .pairAssignModePicker,#albumAiSingletonPairs .pairMergeDestination,#albumAiSingletonPairs .pairReviewChildLabel,#albumAiSingletonPairs .pairAssignSummary,#albumAiSingletonPairs .pairReviewHelp{display:none!important}
+#albumAiSingletonPairs .pairGameCorrections{display:flex;gap:8px;flex-wrap:wrap;margin:11px 0}
+#albumAiSingletonPairs .pairGameCorrections[hidden]{display:none!important}
+#albumAiSingletonPairs .pairGameCorrections button{flex:1 1 165px;min-height:46px;font-size:13px;border-radius:12px;font-weight:800}
+#albumAiSingletonPairs .pairGameCommit{background:#369c7d;border-color:#25886c;color:#fff}
+#albumAiSingletonPairs .pairGameReset{background:white;border-color:#b7d1e4;color:#496b87}
+#albumAiSingletonPairs .pairGameUndo{min-height:41px;font-size:12px;border-radius:12px}
+#albumAiSingletonPairs .pairGameChoices button:disabled{opacity:.48;cursor:not-allowed}
+#albumAiSingletonPairs .pairReviewNavigation{justify-content:space-between;flex-wrap:wrap;gap:8px}
+#albumAiSingletonPairs .pairGameLegacy{min-height:42px;font-size:12px}
+
 /* DK: Face-match mini-game presentation; previous data and operations unchanged. */
 #albumAiSingletonPairs{max-width:1180px}
 #albumAiSingletonPairs .pairGameHero{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 17px;margin:4px 0 12px;border:1px solid #cde2f1;border-radius:19px;background:linear-gradient(112deg,#fff0f7,#fffae5 52%,#e7f7ff)}
@@ -3348,7 +3361,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DK</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DL</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -3457,7 +3470,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DK</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DL</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -6169,7 +6182,7 @@ function renderCurrentAlbumSingletonPairs(){
  const names=document.createElement('h3');names.className='pairReviewNames';
  names.textContent='👀 おなじ子？ べつの子？';
  const gameGuide=document.createElement('p');gameGuide.className='pairGameGuide';
- gameGuide.textContent='↔ 顔カードは左右にドラッグできるよ。違う顔は「候補から外す」。園児名を付けるときは下から選んでね。';
+ gameGuide.textContent='↔ 顔を別候補へお引っ越ししたり、候補から外したりできるよ。修正を確定してから同じ子・べつの子を選ぼう。';
  const feedback=document.createElement('p');feedback.className='pairReviewFeedback muted';
  feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
  const assignPanel=document.createElement('section');assignPanel.className='pairAssignPanel';
@@ -6193,24 +6206,29 @@ function renderCurrentAlbumSingletonPairs(){
  const assignButton=document.createElement('button');assignButton.type='button';
  assignButton.className='primary pairAssignMain';assignButton.textContent='✓ この2つを振り分ける';assignButton.disabled=true;
  const same=document.createElement('button');same.type='button';same.className='secondary';
- same.textContent='💞 おなじ子！';same.classList.add('pairGameSame');same.title='同じ子と仮判断。最後に「まとめる」を押して確定';
+ same.textContent='💞 おなじ子！';same.classList.add('pairGameSame');same.title='顔候補だけをまとめる。園児名はあとで登録';
  const different=document.createElement('button');different.type='button';different.className='secondary';
  different.textContent='↔ べつの子！';different.classList.add('pairGameDifferent');different.title='別々の園児として記録し、名前はあとで指定';
  // The established assign button remains available when children are named.
  const navigation=document.createElement('div');navigation.className='pairReviewNavigation';
  const previous=document.createElement('button');previous.type='button';previous.className='secondary';previous.textContent='‹ 前の候補';
  const later=document.createElement('button');later.type='button';later.className='secondary pairGameLater';later.textContent='🕒 あとで確認';
- navigation.append(previous);
+ 
+ const undoFace=document.createElement('button');undoFace.type='button';undoFace.className='secondary pairGameUndo';undoFace.textContent='↩ 直前の顔修正を戻す';
+ navigation.append(previous,undoFace);
  const gameChoices=document.createElement('div');gameChoices.className='pairGameChoices';
  gameChoices.setAttribute('role','group');gameChoices.setAttribute('aria-label','顔の確認結果');
  gameChoices.append(same,different,later);
- actions.append(assignButton,gameChoices);
+ const correctionActions=document.createElement('div');correctionActions.className='pairGameCorrections';
+ const saveCorrection=document.createElement('button');saveCorrection.type='button';saveCorrection.className='pairGameCommit';saveCorrection.textContent='✅ 顔の修正を確定';
+ const resetCorrection=document.createElement('button');resetCorrection.type='button';resetCorrection.className='pairGameReset';resetCorrection.textContent='↩ 修正をやり直す';
+ correctionActions.append(saveCorrection,resetCorrection);actions.append(correctionActions,gameChoices);
  const note=document.createElement('p');note.className='pairReviewNote';
- note.textContent='💡 選んだ名前に合わせて、この2つのグループを一度に振り分けます。';
+ note.textContent='💡 園児名の振り分けは「写真ポン！」で行うよ。';
  const complete=document.createElement('p');complete.className='pairReviewDone';complete.hidden=true;
  const apply=document.createElement('button');apply.type='button';apply.className='primary wide';
  const extra=document.createElement('details');extra.className='pairReviewExtra';
- const extraTitle=document.createElement('summary');extraTitle.textContent='確認内容を見直す';
+ const extraTitle=document.createElement('summary');extraTitle.textContent='以前の仮判断を見直す';
  const restoreSkipped=document.createElement('button');restoreSkipped.type='button';restoreSkipped.className='secondary wide';
  restoreSkipped.textContent='違う園児にした候補をすべて戻す';
  extra.append(extraTitle,restoreSkipped);
@@ -6288,7 +6306,10 @@ function renderCurrentAlbumSingletonPairs(){
    (!merging&&sameSelected);
   assignButton.textContent=merging?'✓ 2つをまとめて振り分ける':
    (picked[0]&&picked[1]?'✓ 2つを別々に振り分ける':'✓ 選んだグループを振り分ける');
-  same.disabled=conflicts;
+  same.disabled=conflicts||!!(draft.moved.size||draft.excluded.size);
+   different.disabled=!!(draft.moved.size||draft.excluded.size);
+   later.disabled=!!(draft.moved.size||draft.excluded.size);
+   correctionActions.hidden=!(draft.moved.size||draft.excluded.size);
   const count=kept.reduce((sum,part,index)=>sum+((merging||picked[index])?countFacePhotos(part):0),0);
   if(merging){
    const child=children.find(c=>String(c.id)===mergeSelect.value);
@@ -6320,9 +6341,6 @@ function renderCurrentAlbumSingletonPairs(){
   if(!draft||data!==albumAiGroupsData||!data.valid())return false;
   const from=draft.faces.findIndex(part=>part.includes(faceIndex));
   if(from<0||from===toSide||![0,1].includes(toSide))return false;
-  if(draft.faces[from].length<2){
-   feedback.textContent='⚠️ 元の候補を空にできないよ。全て同じ子なら「ひとつにまとめる」を選んでね。';return false;
-  }
   const index=data.samples[faceIndex]?.index;
   if(draft.faces[toSide].some(i=>data.samples[i]?.index===index)){
    feedback.textContent='⚠️ 同じ写真に写る別々の顔は同じグループにできません。';return false;
@@ -6486,6 +6504,62 @@ function renderCurrentAlbumSingletonPairs(){
   }
   updateChoice();
  }
+ 
+ // DL: face grouping only. Source photos, photoAssignments and checkpoint are not written.
+ function stageFaceOnly(action){
+  const draft=pendingPair;if(!draft||data!==albumAiGroupsData||!data.valid())throw Error('顔の候補が変わりました');
+  const source=data.groups.find(g=>g.key===draft.item.sourceKey),target=data.groups.find(g=>g.key===draft.item.targetKey);
+  if(!source||!target||data.confirmed.has(source.key)||data.confirmed.has(target.key))throw Error('顔の候補が変わりました');
+  for(const [n,group] of [[0,source],[1,target]]){
+   const originals=draft.originalFaces[n];
+   if(group.faceIndexes.length!==originals.length||group.faceIndexes.some(i=>!originals.includes(i)))
+    throw Error('顔の候補が変わりました。もう一度確認してね');
+  }
+  const affected=new Set([source.key,target.key]);
+  if([...checked.values()].some(pair=>affected.has(pair.sourceKey)||affected.has(pair.targetKey)))
+   throw Error('旧版の「おなじ子」仮判断が重なっています。先に以前の仮判断を反映してね');
+  let groups=data.groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]})),nextId=data.nextGroupId;
+  for(let n=0;n<2;n++){
+   const g=groups.find(x=>x.key===(n?target.key:source.key));
+   g.faceIndexes=draft.faces[n].filter(i=>!draft.excluded.has(i));
+   const indexes=g.faceIndexes.map(i=>data.samples[i]?.index);
+   if(new Set(g.faceIndexes).size!==g.faceIndexes.length||
+     indexes.some(i=>!Number.isInteger(i))||new Set(indexes).size!==indexes.length)
+    throw Error('同じ写真にある別々の顔は同じ候補に入れられないよ');
+  }
+  groups=groups.filter(g=>g.faceIndexes.length);
+  if(action==='same'){
+   if(!groups.some(g=>g.key===source.key)||!groups.some(g=>g.key===target.key))
+    throw Error('片方の候補が空です。先に「顔の修正を確定」を押してね');
+   groups=data.mergeTeacherAlbumGroups(groups,data.samples,source.key,target.key);
+  }
+  for(const i of draft.excluded){
+   if(!draft.originalFaces.some(part=>part.includes(i)))throw Error('候補にない顔を外すことはできません');
+   groups.push({key:'teacher-recheck-'+(++nextId),faceIndexes:[i]});
+  }
+  const a=data.groups.flatMap(g=>g.faceIndexes).sort((x,y)=>x-y);
+  const b=groups.flatMap(g=>g.faceIndexes).sort((x,y)=>x-y);
+  if(a.length!==b.length||a.some((x,i)=>x!==b[i]))throw Error('顔データの照合に失敗しました');
+  return {groups,nextId,affected};
+ }
+ function commitFaceOnly(action){
+  if(action==='edit'&&!pendingPair?.moved.size&&!pendingPair?.excluded.size)return false;
+  try{
+   const result=stageFaceOnly(action);
+   const snapshot=data.groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
+   data.mergeUndo.push(snapshot);if(data.mergeUndo.length>10)data.mergeUndo.shift();
+   data.groups=result.groups;data.nextGroupId=result.nextId;data.faceGameUndoLatest=true;
+   data.mergeSuggestions=null;data.selections.clear();
+   const affected=id=>{const parts=String(id).split('→');return parts.some(part=>result.affected.has(part))};
+   for(const id of [...checked.keys()])if(affected(id))checked.delete(id);
+   for(const id of [...decisions.keys()])if(affected(id))decisions.delete(id);
+   for(const id of [...seen])if(affected(id))seen.delete(id);
+   for(const id of [...skipped])if(affected(id))skipped.delete(id);
+   $('#currentAlbumAiFeedback').textContent=(action==='same'?'💞 同じ子の候補をまとめたよ！':'✅ 顔の修正を確定したよ！')+' 写真と園児名は変更していないよ。';
+   renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();return true;
+  }catch(e){feedback.textContent='⚠️ '+String(e?.message||e);return false}
+ }
+
  const decide=choice=>{
   if(data!==albumAiGroupsData||!data.valid())return;
   if(position>=candidates.length){position=0;show();return}
@@ -6501,116 +6575,35 @@ function renderCurrentAlbumSingletonPairs(){
   }
   decisions.set(id,choice);seen.add(id);position++;show();
  };
- assignButton.addEventListener('click',()=>{
-  const draft=pendingPair;
-  if(!draft||data!==albumAiGroupsData||!data.valid()){
-   feedback.textContent='候補が更新されました。もう一度開いてね。';return;
-  }
-  const merging=assignmentMode==='merge';
-  const childIds=merging?[mergeSelect.value,mergeSelect.value]:
-   selectForSide.map(select=>select.value);
-  if(!childIds.some(Boolean)){feedback.textContent='園児名を選んでね。';return}
-  const source=data.groups.find(g=>g.key===draft.item.sourceKey);
-  const target=data.groups.find(g=>g.key===draft.item.targetKey);
-  if(!source||!target||data.confirmed.has(source.key)||data.confirmed.has(target.key)||
-   !draft.originalFaces[0].every(i=>source.faceIndexes.includes(i))||
-   !draft.originalFaces[1].every(i=>target.faceIndexes.includes(i))||
-   source.faceIndexes.length!==draft.originalFaces[0].length||
-   target.faceIndexes.length!==draft.originalFaces[1].length){
-   feedback.textContent='候補が更新されたよ。もう一度確認してね。';return;
-  }
-  try{
-   const ids=children.map(c=>String(c.id));
-   if(childIds.some(id=>id&&!ids.includes(id)))throw Error('園児名簿にない名前です');
-   if(!merging&&childIds[0]&&childIds[1]&&childIds[0]===childIds[1])
-    throw Error('同じ子へまとめるときは「ひとつにまとめる」を選んでね');
-   const kept=draft.faces.map(faceIndexes=>faceIndexes.filter(i=>!draft.excluded.has(i)));
-   if(merging&&kept.some(part=>!part.length))
-    throw Error('2つのグループのどちらにも顔を1つ以上残してね');
-   if(childIds.some((id,side)=>id&&!kept[side].length))
-    throw Error('振り分けるグループから顔がすべて外されています');
-   if(draft.excluded.size&&!childIds.every(Boolean))
-    throw Error('顔を外して振り分けるときは、両方の園児名を選んでね');
-   const conflict=[...checked.entries()].some(([id,p])=>id!==pairId(draft.item)&&(
-    p.sourceKey===draft.item.sourceKey||p.sourceKey===draft.item.targetKey||
-    p.targetKey===draft.item.sourceKey||p.targetKey===draft.item.targetKey));
-   if(conflict)throw Error('先に別の候補で同じ子と選ばれているよ。前の確認を見直してね');
-   let next=data.groups.map(group=>({
-    ...group,faceIndexes:group.key===source.key?kept[0]:
-     group.key===target.key?kept[1]:[...group.faceIndexes]
-   })).filter(group=>group.faceIndexes.length);
-   const sameChild=merging;
-   const confirmedKeys=[];
-   let nextAssignments=photoAssignments;
-   if(sameChild&&kept[0].length&&kept[1].length){
-    // Existing merge routine enforces that a group cannot contain 2 faces from one photo.
-    next=draft.moved.size?
-     data.mergeTeacherAlbumGroups(next,data.samples,source.key,target.key):
-     data.mergeTeacherReviewedGroupPairs(next,data.samples,[draft.item]);
-    const merged=next.find(g=>g.key===target.key);
-    if(!merged)throw Error('統合先の候補がありません');
-    nextAssignments=data.assignConfirmedAlbumCluster({
-     photoAssignments:nextAssignments,photoCount:files.length,
-     photoIndexes:albumAiPhotoIndexes(merged,data),childId:childIds[0],validChildIds:ids
-    });
-    confirmedKeys.push(target.key);
-   }else{
-    for(const side of [0,1]){
-     if(!childIds[side])continue;
-     const key=side?target.key:source.key;
-     const group=next.find(g=>g.key===key);
-     if(!group)throw Error('グループ'+(side+1)+'が見つかりません');
-     nextAssignments=data.assignConfirmedAlbumCluster({
-      photoAssignments:nextAssignments,photoCount:files.length,
-      photoIndexes:albumAiPhotoIndexes(group,data),childId:childIds[side],validChildIds:ids
-     });
-     confirmedKeys.push(key);
-    }
-   }
-   let nextId=data.nextGroupId;
-   for(const faceIndex of draft.excluded)
-    next.push({key:'teacher-recheck-'+(++nextId),faceIndexes:[faceIndex]});
-   // Atomic UI update after every merge and both assignments validate.
-   photoAssignments=nextAssignments;
-   data.groups=next;data.nextGroupId=nextId;
-   confirmedKeys.forEach(key=>{data.confirmed.add(key);data.expanded.delete(key)});
-   data.mergeUndo=[];data.mergeSuggestions=null;data.selections.clear();
-   const id=pairId(draft.item);
-   checked.delete(id);decisions.delete(id);skipped.delete(id);seen.add(id);
-   activeAssignmentFolder=String(childIds.find(Boolean));
-   const labels=childIds.map(id=>children.find(c=>String(c.id)===id)?.name).filter(Boolean);
-   const message='✅ '+(labels.length===2?
-    (sameChild?'2つをまとめて'+labels[0]+'さんへ':labels[0]+'さん・'+labels[1]+'さんへそれぞれ'):
-    labels[0]+'さんへ')+'振り分けたよ。'+
-    (draft.excluded.size?'外した顔は未確定に戻したよ。':'')+
-    (draft.moved.size?'仮移動した写真も確定したよ。':'')+' 写真は削除していません。';
-   $('#currentAlbumAiFeedback').textContent=message;
-   $('#currentAlbumAiStatus').textContent=message;
-   renderPhotoAssignmentPage();renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();
-  }catch(error){feedback.textContent='⚠️ '+String(error?.message||error)}
+ 
+ saveCorrection.addEventListener('click',()=>commitFaceOnly('edit'));
+ resetCorrection.addEventListener('click',()=>{
+  if(!pendingPair)return;renderPair();feedback.textContent='↩ 未確定の修正をやり直したよ。';
  });
  same.addEventListener('click',()=>{
-  if(!pendingPair)return;
-  if(pendingPair.excluded.size){
-   feedback.textContent='外した顔を戻してから、名前を付けずにまとめてね。';return;
-  }
-  if(pendingPair.moved.size){feedback.textContent='仮移動は園児名を選んで「振り分ける」で確定してね。';return}
-  if(!window.confirm('同じ園児の候補として仮記録するよ。最後に「まとめる」を押すまでは、顔グループは変更しません。よろしいですか？'))return;
-  decide('same');
+  if(pendingPair?.moved.size||pendingPair?.excluded.size){feedback.textContent='先に顔の修正を確定してね。';return}
+  commitFaceOnly('same');
  });
  different.addEventListener('click',()=>{
-  if(pendingPair?.moved.size&&!window.confirm('仮移動を取り消して次へ進みますか？'))return;
-  if(pendingPair?.excluded.size&&!window.confirm('外した顔は反映されません。違う園児として次へ進みますか？'))return;
+  if(pendingPair?.moved.size||pendingPair?.excluded.size){feedback.textContent='先に顔の修正を確定してね。';return}
   decide('different');
  });
  later.addEventListener('click',()=>{
-  if(pendingPair?.moved.size&&!window.confirm('仮移動を取り消してあとで確認しますか？'))return;
-  if(pendingPair?.excluded.size&&!window.confirm('外した顔はまだ反映されません。この候補をあとで確認しますか？'))return;
+  if(pendingPair?.moved.size||pendingPair?.excluded.size){feedback.textContent='顔の修正を確定するか、やり直してね。';return}
   decide('later');
  });
  previous.addEventListener('click',()=>{
-  if(pendingPair?.moved.size&&!window.confirm('仮移動を取り消して前の候補に戻りますか？'))return;
+  if(pendingPair?.moved.size||pendingPair?.excluded.size){feedback.textContent='顔の修正を確定するか、やり直してね。';return}
   position=Math.max(0,position-1);show();
+ });
+ undoFace.addEventListener('click',()=>{
+  if(!data.faceGameUndoLatest||!data.mergeUndo?.length||!data.valid())return;
+  if(pendingPair?.moved.size||pendingPair?.excluded.size){feedback.textContent='未確定の顔の修正をやり直してから戻してね。';return}
+  const previousGroups=data.mergeUndo.pop();
+  data.groups=previousGroups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
+  data.faceGameUndoLatest=false;data.mergeSuggestions=null;data.selections.clear();
+  $('#currentAlbumAiFeedback').textContent='↩ 直前の顔修正を戻したよ。元写真と園児名は変更していないよ。';
+  renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();
  });
  restoreSkipped.addEventListener('click',()=>{
   if(data!==albumAiGroupsData||!data.valid())return;
@@ -6644,8 +6637,9 @@ function renderCurrentAlbumSingletonPairs(){
   const current=Math.min(position+1,candidates.length);
   progressText.textContent='⭐ '+current+' / '+candidates.length+'組 · あと'+Math.max(0,candidates.length-position-1)+'組';
   progressBar.value=Math.min(position,candidates.length);
-  apply.textContent='✓ 同じ園児と確認した'+checked.size+'組をまとめる';
-  apply.disabled=checked.size===0;apply.hidden=checked.size===0;
+  apply.textContent='✓ 旧版の「おなじ子」仮判断 '+checked.size+'組を反映する';
+  apply.classList.add('pairGameLegacy');apply.disabled=checked.size===0;apply.hidden=checked.size===0;
+  undoFace.hidden=!data.faceGameUndoLatest||!data.mergeUndo?.length;
   restoreSkipped.hidden=skipped.size===0;
   previous.disabled=position===0;
   if(position>=candidates.length){
@@ -6653,7 +6647,7 @@ function renderCurrentAlbumSingletonPairs(){
    complete.hidden=false;previous.disabled=false;
    later.textContent='🕒 あとで確認';
    complete.textContent=checked.size?
-    '🌟 顔あわせおつかれさま！「おなじ子」と仮判断した'+checked.size+'組は、下の「まとめる」を押して確定できるよ。':
+    '🌟 旧版の顔あわせ仮判断が'+checked.size+'組あるよ。下のボタンで反映してね。':
     '🎉 顔あわせクリア！ 次は「写真ポン！」へ進もう。';
    if(!checked.size&&document.querySelector('[data-screen="photoAssign"]')?.dataset.flowStep==='review')
     setPhotoAssignFlowStep('pending',{scroll:true});
