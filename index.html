@@ -3555,6 +3555,35 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  #photoFolderMistakePanel .photoMistakeActions{grid-template-columns:1fr}
 }
 
+
+/* DU: compact at-a-glance folder cards; photo data and click actions unchanged. */
+#albumAiSingletonPairs .photoFolderMain{max-width:100%;margin:7px 0 13px}
+#albumAiSingletonPairs .photoFolderMain .photoFolderCard{max-width:440px;margin:0 auto;padding:9px;gap:6px}
+#albumAiSingletonPairs .photoFolderGallery{min-height:0;gap:3px}
+#albumAiSingletonPairs .photoFolderMain .photoFolderGallery{grid-template-columns:repeat(3,minmax(0,1fr))}
+#albumAiSingletonPairs .photoFolderZoom,
+#albumAiSingletonPairs .photoFolderMain .photoFolderZoom{height:auto;aspect-ratio:1;min-height:0;border-radius:6px}
+#albumAiSingletonPairs .photoFolderZoom img{object-fit:cover}
+#albumAiSingletonPairs .photoFolderGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:9px;overflow-y:auto;overflow-x:hidden;max-height:53vh;padding:5px;scroll-snap-type:none}
+#albumAiSingletonPairs .photoFolderGrid>.photoFolderCard{width:auto;min-width:0;max-width:none;
+ flex:none;scroll-snap-align:none;padding:7px;gap:5px}
+#albumAiSingletonPairs .photoFolderGrid .photoFolderGallery{max-height:none;overflow:visible}
+#albumAiSingletonPairs .photoFolderCard strong{font-size:12px}
+#albumAiSingletonPairs .photoFolderFixButton{min-height:34px;padding:5px;font-size:11px}
+#albumAiSingletonPairs .photoFolderShowAll{min-height:30px;padding:4px;font-size:11px}
+#albumAiSingletonPairs .photoFolderGallery.photoFolderExpanded{max-height:210px;overflow-y:auto}
+#albumAiSingletonPairs .photoFolderGallery.photoFolderExpanded .photoFolderZoom{height:auto}
+@media(max-width:850px){
+ #albumAiSingletonPairs .photoFolderGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:540px){
+ #albumAiSingletonPairs .photoFolderGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ #albumAiSingletonPairs .photoFolderMain .photoFolderCard{max-width:290px}
+ #albumAiSingletonPairs .photoFolderGrid>.photoFolderCard{padding:6px}
+ #albumAiSingletonPairs .photoFolderPick{min-height:41px}
+}
+
 </style>
 </head>
 <body>
@@ -3615,7 +3644,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DT</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DU</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
