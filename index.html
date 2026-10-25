@@ -3383,6 +3383,54 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  #albumAiSingletonPairs .faceBatchChoices button{font-size:10px;min-height:39px}
 }
 
+
+/* DP: photo-folder review. Real original photos, not face-crop cards. */
+#albumAiSingletonPairs .photoFolderHero{
+ padding:17px 19px;border-radius:20px;background:linear-gradient(110deg,#ffedf6,#effaff);
+ border:2px solid #f3c1d6;font-size:clamp(17px,2.5vw,23px);font-weight:900;color:#8a3f72;
+ line-height:1.65;margin:6px 0 11px;
+}
+#albumAiSingletonPairs .photoFolderCounter{font-size:13px;font-weight:800;color:#496780;margin:5px 0 13px}
+#albumAiSingletonPairs .photoFolderMain{max-width:760px;margin:8px auto 20px}
+#albumAiSingletonPairs .photoFolderMain h3,#albumAiSingletonPairs .photoFolderHeading{
+ font-size:clamp(15px,2vw,19px);margin:10px 0;color:#385875;
+}
+#albumAiSingletonPairs .photoFolderCard{display:flex;flex-direction:column;gap:8px;min-width:0;border:2px solid #d2e5f5;border-radius:16px;padding:11px;background:#fff;box-shadow:0 3px 0 #e5ecf4;}
+#albumAiSingletonPairs .photoFolderMain .photoFolderCard{background:#fff2f8;border:3px solid #ff9ec6}
+#albumAiSingletonPairs .photoFolderCard strong{text-align:center;font-size:13px;color:#466680}
+#albumAiSingletonPairs .photoFolderCard small{text-align:center;color:#6e8597;font-size:11px}
+#albumAiSingletonPairs .photoFolderGallery{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;min-height:95px}
+#albumAiSingletonPairs .photoFolderMain .photoFolderGallery{grid-template-columns:repeat(3,minmax(0,1fr))}
+#albumAiSingletonPairs .photoFolderZoom{min-width:0;width:100%;height:clamp(74px,12vw,145px);padding:0;overflow:hidden;border:1px solid #dce4ea;border-radius:10px;background:#eaf1f8}
+#albumAiSingletonPairs .photoFolderMain .photoFolderZoom{height:clamp(105px,18vw,180px)}
+#albumAiSingletonPairs .photoFolderZoom img{width:100%;height:100%;object-fit:contain;display:block}
+#albumAiSingletonPairs .photoFolderGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-height:65vh;overflow-y:auto;overscroll-behavior:contain;padding:5px}
+#albumAiSingletonPairs .photoFolderCard.photoFolderPicked{border-color:#f2559b;background:#fff0f7;box-shadow:0 0 0 2px #ffd4e7}
+#albumAiSingletonPairs .photoFolderPick{width:100%;min-height:46px;font-size:13px;font-weight:900;background:#ffeff7;color:#a13c72;border:2px solid #efa9c8;border-radius:11px;margin-top:auto}
+#albumAiSingletonPairs .photoFolderPicked .photoFolderPick{background:#f2559b;border-color:#f2559b;color:#fff}
+#albumAiSingletonPairs .photoFolderActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:14px;border-radius:15px;background:#f5f9ff;margin:15px 0}
+#albumAiSingletonPairs .photoFolderCount{grid-column:1/-1;font-weight:800;font-size:13px;color:#586e84;margin:0}
+#albumAiSingletonPairs .photoFolderActions button{min-height:53px;border-radius:12px;white-space:normal;font-size:14px;font-weight:850}
+#albumAiSingletonPairs .photoFolderMerge{background:#f2559b;border-color:#f2559b;color:white}
+#albumAiSingletonPairs .photoFolderMerge:disabled{opacity:.5}
+#albumAiSingletonPairs .photoFolderUndo{min-height:43px;font-size:13px;margin-bottom:10px}
+#albumAiSingletonPairs .photoFolderDone{font-size:16px;line-height:1.7;background:#fff8dd;color:#805f36;border-radius:15px;padding:18px;font-weight:850}
+@media(max-width:700px){
+ #albumAiSingletonPairs .photoFolderGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ #albumAiSingletonPairs .photoFolderCard{padding:7px;gap:6px}
+ #albumAiSingletonPairs .photoFolderZoom{height:90px}
+ #albumAiSingletonPairs .photoFolderMain .photoFolderZoom{height:115px}
+ #albumAiSingletonPairs .photoFolderPick{font-size:12px}
+}
+@media(max-width:430px){
+ #albumAiSingletonPairs .photoFolderHero{padding:12px;font-size:16px}
+ #albumAiSingletonPairs .photoFolderGallery{gap:3px}
+ #albumAiSingletonPairs .photoFolderZoom{height:73px}
+ #albumAiSingletonPairs .photoFolderMain .photoFolderZoom{height:92px}
+ #albumAiSingletonPairs .photoFolderActions{grid-template-columns:1fr}
+ #albumAiSingletonPairs .photoFolderActions .photoFolderCount{grid-column:auto}
+}
+
 </style>
 </head>
 <body>
@@ -3477,9 +3525,9 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  <section id="albumAiPendingQuick" class="albumAiPendingQuick pendingGamePanel">
   <div id="pendingGameChooser">
    <div class="pendingGameHeading"><strong>🎮 おもいでポン！ 候補フォルダ</strong><span id="pendingGameOverview">候補を確認中</span></div>
-   <p class="pendingGameIntro">AIが顔でまとめた候補フォルダを選んで、写真を園児ポストへお届けしよう！</p>
+   <p class="pendingGameIntro">さっきまとめた写真フォルダから、メインの園児ポストへ写真をお届けしよう！</p>
    <div id="pendingGameFolderGrid" class="pendingGameFolderGrid"></div>
-   <p class="muted">候補はAIが見つけた顔のまとまり。同じ集合写真が別の候補に関係していても、元写真は1枚だけだよ。</p>
+   <p class="muted">AIの候補をまとめた写真フォルダだよ。集合写真はまずメインの子に登録して、必要なら他の子にも追加できるよ。</p>
   </div>
   <div id="pendingGameDetail" hidden>
    <div class="pendingGameStageTop">
@@ -3513,7 +3561,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  </section>
  <button type="button" class="primary wide" id="photoAssignFlowNext">未確定の写真を整理する ›</button>
 </section>
-<button type="button" class="secondary" id="photoAssignFlowBack">‹ 似ている顔の確認に戻る</button>
+<button type="button" class="secondary" id="photoAssignFlowBack">‹ 写真フォルダまとめに戻る</button>
 <section class="albumChildFolderPanel" id="albumChildFolderPanel">
  <strong>🌷 園児別フォルダ</strong>
  <p class="muted">園児の名前を選ぶと、振り分けた写真を確認できるよ。</p>
@@ -5673,14 +5721,14 @@ function setPhotoAssignFlowStep(step,{scroll=false}={}){
  screen.dataset.flowStep=step;
  const hint=$('#photoAssignFlowHint'),details=$('#albumAiOtherGroups');
  if(hint)hint.textContent=step==='start'?'まずは「写真を整理する」を押してね。':
-  step==='review'?'似ている候補を確認してね。最後に未確定の写真を整理するよ。':
+  step==='review'?'AIが分けた写真フォルダを、メインの園児ごとにまとめよう。':
   step==='pending'?'未確定の写真を園児名へ振り分けよう。':'園児別の写真を確認して見開き編集へ進もう。';
  if(details)details.open=false;
  const back=$('#photoAssignFlowBack');
  if(back){back.hidden=step==='start'||step==='review'||!albumAiGroupsData?.valid();
-  back.textContent=step==='folders'?'‹ 未確定の写真整理に戻る':'‹ 顔の確認に戻る';}
+  back.textContent=step==='folders'?'‹ 写真ポン！に戻る':'‹ 写真フォルダまとめに戻る';}
  const next=$('#photoAssignFlowNext');
- if(next)next.textContent=step==='pending'?'園児フォルダを確認する ›':'未確定の写真を整理する ›';
+ if(next)next.textContent=step==='pending'?'園児フォルダを確認する ›':'写真ポン！へ進む ›';
  if(step==='pending'&&albumAiGroupsData?.valid())renderAlbumAiPendingQuick();
  if(scroll){const target=step==='folders'?$('#albumChildFolderPanel'):
   step==='pending'?$('#albumAiPendingQuick'):$('#currentAlbumAiPanel');
@@ -6005,7 +6053,7 @@ function clearCurrentAlbumSingletonPairs(){
    activeAssignmentFolder=targetId;
    pendingQuickSelected.clear();
    // Keep AI groups, samples, confirmed face decisions and undo records intact.
-   // Remaining faces are still visible through pendingQuickItems().
+   // A photo is considered initially sorted after one main child assignment.
    renderPhotoAssignmentPage();
    renderAlbumAiPendingQuick();
    const postbox=document.querySelector('[data-pending-child="'+targetId+'"]');
@@ -6185,7 +6233,7 @@ function clearCurrentAlbumSingletonPairs(){
    const caption=document.createElement('div');caption.className='pendingQuickCaption';
    const number=document.createElement('span');number.textContent='写真 '+(index+1);
    const waiting=document.createElement('span');
-   waiting.textContent=faces?'あと'+remaining+'人を振り分け':'園児を選んでね';
+   waiting.textContent='メインの園児を選んでね';
    caption.append(number,waiting);
    const currentIds=assignmentPhotoIds(index);
    if(currentIds.length){
