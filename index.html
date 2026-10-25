@@ -3659,6 +3659,14 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  border:1px solid #d0dce7}
 #albumAiSingletonPairs .photoMatchMoveActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:10px 0 6px}
 #albumAiSingletonPairs .photoMatchMoveActions button{white-space:normal;min-height:44px;font-size:12px}
+#albumAiSingletonPairs .photoMatchExtraMoves{margin:9px 0 14px;padding:11px;border:1px solid #dce7f0;
+ border-radius:13px;background:#fbfdff}
+#albumAiSingletonPairs .photoMatchExtraMoves summary{font-size:13px;font-weight:800;color:#496981;cursor:pointer}
+#albumAiSingletonPairs .photoMatchExtraMoves p{font-size:12px;color:#698092;line-height:1.6}
+#albumAiSingletonPairs .photoMatchExtraMoves select{width:100%;min-height:42px;border-radius:10px;
+ border:1px solid #b9d4e6;background:white;font-size:14px;margin-bottom:8px}
+#albumAiSingletonPairs .photoMatchExtraActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:9px 0}
+#albumAiSingletonPairs .photoMatchExtraActions button{min-height:43px;white-space:normal;font-size:12px}
 #albumAiSingletonPairs .photoMatchScore{font-size:12px;color:#617c91;text-align:center;margin:6px 0}
 #albumAiSingletonPairs .photoMatchDecisionActions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:11px 0}
 #albumAiSingletonPairs .photoMatchDecisionActions button{font-size:clamp(17px,3vw,22px);
@@ -3688,6 +3696,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  #albumAiSingletonPairs .photoMatchThumb{flex-basis:68px;height:72px}
  #albumAiSingletonPairs .photoMatchMoveActions{gap:5px}
  #albumAiSingletonPairs .photoMatchMoveActions button{font-size:11px;padding:5px 3px}
+ #albumAiSingletonPairs .photoMatchExtraActions button{font-size:11px;padding:6px 3px}
  #albumAiSingletonPairs .photoMatchDecisionActions{gap:8px}
  #albumAiSingletonPairs .photoMatchDecisionActions button{min-height:62px;font-size:17px}
  #albumAiSingletonPairs .photoMatchNav{grid-template-columns:1fr}
@@ -3757,7 +3766,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DY</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DZ</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -6874,7 +6883,9 @@ function photoFoldersEnsure(data){
  if(!Array.isArray(data.photoFolders))data.photoFolders=data.groups.map(g=>({key:String(g.key),groupKeys:[String(g.key)]}));
  const seen=new Set(),folderIds=new Set();
  for(const folder of data.photoFolders){
-  if(!folder||typeof folder.key!=='string'||folderIds.has(folder.key)||!Array.isArray(folder.groupKeys)||!folder.groupKeys.length)
+  (!(typeof folder?.key==='string'&&folder.key.startsWith('manual-photo-')&&Array.isArray(folder.groupKeys)&&folder.groupKeys.length===0) &&
+ (!folder||typeof folder.key!=='string'||folderIds.has(folder.key)||!Array.isArray(folder.groupKeys)||!folder.groupKeys.length)) ||
+ (folder&&folderIds.has(folder.key))
    throw Error('写真フォルダの記録が不正です。元の写真は変更していないよ');
   folderIds.add(folder.key);
   for(const key of folder.groupKeys){
@@ -6885,7 +6896,8 @@ function photoFoldersEnsure(data){
   const added=folder.addedPhotoIndexes??[],excluded=folder.excludedPhotoIndexes??[];
   const validList=arr=>Array.isArray(arr)&&new Set(arr).size===arr.length&&
    arr.every(i=>Number.isInteger(i)&&i>=0&&i<data.sourceFiles.length);
-  if(!validList(added)||!validList(excluded)||added.some(i=>excluded.includes(i)))
+  if(!validList(added)||!validList(excluded)||added.some(i=>excluded.includes(i))||
+  (!folder.groupKeys.length&&(!added.length||excluded.length)))
    throw Error('保存したフォルダ内の写真修正が一致しません。元写真は変更していないよ');
   folder.addedPhotoIndexes=added;folder.excludedPhotoIndexes=excluded;
  }
@@ -6961,6 +6973,12 @@ function photoFolderEditMembership(data,sourceKey,photoIndexes,targetKey=null){
  if(target)data.photoFolderReviewed.delete(target.key);
  data.photoFolderMistakeReviewed.delete(source.key);
  if(target)data.photoFolderMistakeReviewed.delete(target.key);
+ // Drop an emptied manual photo folder, never any source photo or AI sample.
+ if(!source.groupKeys.length&&!photoFolderIndexes(data,source).length){
+  data.photoFolders=data.photoFolders.filter(f=>f!==source);
+  if(data.photoMatchFocus===source.key)data.photoMatchFocus=target?.key||null;
+  if(data.photoMatchCandidateKey===source.key)data.photoMatchCandidateKey=null;
+ }
  data.photoMatchFinalReviewed=false;
 }
 
@@ -7280,6 +7298,23 @@ function photoMatchMovePhotos(data,from,to,ids){
  data.photoMatchFinalReviewed=false;
  data.photoMatchNotice='📷 '+ids.length+'枚を移動したよ！ 2つのフォルダをもう一度確認してね。';
 }
+function photoMatchSplitPhotos(data,sourceKey,ids){
+ if(data!==albumAiGroupsData||!data.valid())throw Error('写真が切り替わったよ');
+ photoFoldersEnsure(data);
+ const source=data.photoFolders.find(f=>f.key===sourceKey);
+ if(!source||!ids.length||new Set(ids).size!==ids.length||
+  ids.some(i=>!photoFolderIndexes(data,source).includes(i)))
+  throw Error('選んだ写真とフォルダが一致しません');
+ let key;
+ do{key='manual-photo-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9)}
+ while(data.photoFolders.some(f=>f.key===key)||data.groups.some(g=>String(g.key)===key));
+ // One existing undo snapshot covers the removal and addition atomically in memory.
+ photoFolderEditMembership(data,sourceKey,ids,null);
+ data.photoFolders.push({key,groupKeys:[],addedPhotoIndexes:[...ids],excludedPhotoIndexes:[]});
+ if(!data.photoMatchFocus)data.photoMatchFocus=key;
+ data.photoMatchCandidateKey=key;data.photoMatchShowAll=true;data.photoMatchFinalReviewed=false;
+ data.photoMatchNotice='🌷 '+ids.length+'枚を新しい写真フォルダへ分けたよ！';
+}
 function renderPhotoMatching(data,host){
  if(!host||!data?.valid())return;
  host.replaceChildren();
@@ -7510,6 +7545,36 @@ function renderPhotoMatching(data,host){
   moveRow.append(btn('⬅ 選択したBの写真をAへ','secondary',()=>move(B,A,[...selectedB])),
    btn('選択したAの写真をBへ ➡','secondary',()=>move(A,B,[...selectedA])));
   host.append(moveRow);
+  const otherDestinations=folders.filter(f=>f!==A&&f!==B);
+  const extras=document.createElement('details');extras.className='photoMatchExtraMoves';
+  const summary=document.createElement('summary');
+  summary.textContent='📂 第3の子へ分ける・ほかのフォルダへ移動';extras.append(summary);
+  const help=document.createElement('p');help.textContent='AまたはBの写真をタップして選んでから操作してね。';extras.append(help);
+  if(otherDestinations.length){
+   const picker=document.createElement('select');picker.setAttribute('aria-label','ほかの移動先フォルダ');
+   for(const f of otherDestinations){
+    const option=document.createElement('option');option.value=f.key;
+    option.textContent='📁 フォルダ '+(folders.indexOf(f)+1)+'（'+photoFolderIndexes(data,f).length+'枚）';picker.append(option);
+   }
+   extras.append(picker);
+   const moves=document.createElement('div');moves.className='photoMatchExtraActions';
+   moves.append(btn('選んだAの写真を移す','secondary',()=>{
+    const to=byKey.get(picker.value);if(to)move(A,to,[...selectedA]);
+   }),btn('選んだBの写真を移す','secondary',()=>{
+    const to=byKey.get(picker.value);if(to)move(B,to,[...selectedB]);
+   }));
+   extras.append(moves);
+  }
+  function split(from,ids){
+   try{
+    if(!ids.length){data.photoMatchNotice='分けたい写真を先に選んでね。';renderPhotoMatching(data,host);return}
+    photoMatchSplitPhotos(data,from.key,ids);renderPhotoMatching(data,host);
+   }catch(e){data.photoMatchNotice='⚠️ '+String(e?.message||e);renderPhotoMatching(data,host)}
+  }
+  const splits=document.createElement('div');splits.className='photoMatchExtraActions';
+  splits.append(btn('＋ Aから新フォルダへ','secondary',()=>split(A,[...selectedA])),
+   btn('＋ Bから新フォルダへ','secondary',()=>split(B,[...selectedB])));
+  extras.append(splits);host.append(extras);
   const score=document.createElement('p');score.className='photoMatchScore';
   score.textContent=choice.score>=0?'AIの顔比較値 '+choice.score.toFixed(2)+'（正確率ではありません）':'AIの比較値なし・先生の確認が必要';
   host.append(score);
