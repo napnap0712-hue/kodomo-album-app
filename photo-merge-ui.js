@@ -142,7 +142,7 @@ window.omoideMergeRender=function(data,host,api){
   const thumb=el('div','mergeBoxPhoto');
   if(ids.length)thumb.append(image(ids[0],'なかま'+(i+1)+'の写真'));
   else thumb.textContent='＋';
-  box.append(thumb,el('b','',boxLabel(i)),el('small','',ids.length+'枚'+(f&&reviewed.has(f.key)?' · ✅':''));
+  box.append(thumb,el('b','',boxLabel(i)),el('small','',ids.length+'枚'+(f&&reviewed.has(f.key)?' · ✅':'')));
   box.addEventListener('dragover',event=>{
    if(drag?.key&&drag.key!==key){event.preventDefault();box.classList.add('mergeOver')}
   });
