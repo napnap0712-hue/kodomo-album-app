@@ -6227,6 +6227,8 @@ function clearCurrentAlbumSingletonPairs(){
 let faceBatchDetailMode=false;
 let faceBatchFocusKey=null;
 let faceBatchSelectedKeys=new Set();
+let faceBatchActiveData=null;
+let faceBatchUndoJudgments=null;
 function groupedFacePairKeys(a,b){
  const first=String(a),second=String(b);
  return [first+'→'+second,second+'→'+first];
@@ -6276,7 +6278,18 @@ function renderGroupedFaceReview(data,host){
  if(undoAllowed){
   const undo=document.createElement('button');undo.type='button';undo.className='secondary';
   undo.textContent='↩ 直前のまとめを戻す';
-  undo.addEventListener('click',()=>{faceBatchSelectedKeys.clear();faceBatchFocusKey=null;undoLastFaceGameEdit(data)});
+  undo.addEventListener('click',()=>{
+   const prior=faceBatchUndoJudgments?.data===data&&faceBatchUndoJudgments.snapshot===data.faceGameUndoSnapshot?
+    faceBatchUndoJudgments:null;
+   faceBatchSelectedKeys.clear();faceBatchFocusKey=null;
+   if(undoLastFaceGameEdit(data)&&prior){
+    session.decisions.clear();for(const [id,choice] of prior.decisions)session.decisions.set(id,choice);
+    session.seen.clear();for(const id of prior.seen)session.seen.add(id);
+    skipped.clear();for(const id of prior.skipped)skipped.add(id);
+    renderCurrentAlbumSingletonPairs();
+   }
+   faceBatchUndoJudgments=null;
+  });
   utility.append(undo);
  }
  const laterIds=[...session.decisions].filter(([k,v])=>v==='later').map(([k])=>k);
@@ -6396,13 +6409,9 @@ function renderGroupedFaceReview(data,host){
   const later=document.createElement('button');later.type='button';later.className='secondary faceBatchLater';
   later.textContent='🕒 あとで';
   function decide(choice){
-   for(const id of groupedFacePairKeys(focus.key,group.key)){
-    // Use only the canonical key for new judgments, but preserve existing legacy records.
-    if(id===groupedFacePairKeys(focus.key,group.key)[0]){
-     session.decisions.set(id,choice);session.seen.add(id);
-     if(choice==='different')skipped.add(id);
-    }
-   }
+   const id=groupedFacePairKeys(focus.key,group.key)[0];
+   session.decisions.set(id,choice);session.seen.add(id);
+   if(choice==='different')skipped.add(id);
    faceBatchSelectedKeys.delete(key);
    renderCurrentAlbumSingletonPairs();
   }
@@ -6415,6 +6424,11 @@ function renderGroupedFaceReview(data,host){
   if(!faceBatchSelectedKeys.size||data!==albumAiGroupsData||!data.valid())return;
   const selected=[...faceBatchSelectedKeys],all=[focus,...selected.map(k=>byKey.get(k))];
   if(all.some(g=>!g)){renderCurrentAlbumSingletonPairs();return}
+  const involved=new Set(all.map(g=>String(g.key)));
+  if([...session.checked.values()].some(pair=>involved.has(String(pair.sourceKey))||involved.has(String(pair.targetKey)))){
+   status.textContent='⚠️ 以前の「おなじ子」仮判断と重なるよ。「顔を個別に移動・はずす」から先に確認してね。';
+   return;
+  }
   const photoSet=new Set();
   for(const group of all)for(const index of group.faceIndexes){
    const photo=data.samples[index]?.index;
@@ -6428,14 +6442,31 @@ function renderGroupedFaceReview(data,host){
    // Existing atomic batch function validates original-photo overlap again.
    const next=data.mergeTeacherAlbumGroupsBatch(data.groups,data.samples,focus.key,selected);
    const snapshot=data.groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
+   faceBatchUndoJudgments={
+    data,snapshot,decisions:new Map(session.decisions),seen:new Set(session.seen),skipped:new Set(skipped)
+   };
+   // Inherit confirmed different/later judgments when B is merged into A:
+   // B vs C must not be asked again as A vs C. Preserve original keys for undo compatibility.
+   const removedKeys=new Set(selected),mergedKeys=new Set([String(focus.key),...selected]);
+   const inherited=new Map();
+   function inherit(id,choice){
+    const parts=String(id).split('→');
+    if(parts.length!==2||!parts.some(k=>removedKeys.has(k)))return;
+    const remaining=parts.find(k=>!mergedKeys.has(k));
+    if(!remaining)return;
+    const key=groupedFacePairKeys(focus.key,remaining)[0];
+    const previous=inherited.get(key)||session.decisions.get(key)||'';
+    if(choice==='different'||previous!=='different')inherited.set(key,choice);
+   }
+   for(const [id,choice] of session.decisions)if(choice==='different'||choice==='later')inherit(id,choice);
+   for(const id of skipped)if(!session.decisions.has(id))inherit(id,'different');
    data.mergeUndo.push(snapshot);if(data.mergeUndo.length>10)data.mergeUndo.shift();
    data.groups=next;data.faceGameUndoLatest=true;data.faceGameUndoSnapshot=snapshot;
    data.mergeSuggestions=null;data.selections.clear();
-   const removedKeys=new Set(selected);
-   for(const id of [...session.checked.keys()])if(id.split('→').some(k=>removedKeys.has(k)))session.checked.delete(id);
-   for(const id of [...session.decisions.keys()])if(id.split('→').some(k=>removedKeys.has(k)))session.decisions.delete(id);
-   for(const id of [...session.seen])if(id.split('→').some(k=>removedKeys.has(k)))session.seen.delete(id);
-   for(const id of [...skipped])if(id.split('→').some(k=>removedKeys.has(k)))skipped.delete(id);
+   for(const [id,choice] of inherited){
+    session.decisions.set(id,choice);session.seen.add(id);
+    if(choice==='different')skipped.add(id);
+   }
    faceBatchSelectedKeys.clear();faceBatchFocusKey=String(focus.key);
    const message=document.querySelector('#currentAlbumAiFeedback');
    if(message)message.textContent='✅ '+selected.length+'候補の顔をまとめたよ。写真と園児名は変わっていないよ。';
@@ -6453,6 +6484,9 @@ function renderGroupedFaceReview(data,host){
 function renderCurrentAlbumSingletonPairs(){
  const data=albumAiGroupsData,host=$('#albumAiSingletonPairs');
  if(!data?.valid()||!host)return;
+ if(faceBatchActiveData!==data){
+  faceBatchActiveData=data;faceBatchDetailMode=false;faceBatchFocusKey=null;faceBatchSelectedKeys.clear();faceBatchUndoJudgments=null;
+ }
  if(!faceBatchDetailMode){renderGroupedFaceReview(data,host);return}
  host.replaceChildren();
  const goBatch=document.createElement('button');goBatch.type='button';
