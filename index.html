@@ -861,6 +861,62 @@ h1{font-size:26px;line-height:1.4;margin:0 0 8px;font-weight:850}.lead{font-size
 .pendingQuickImageFrame img{display:block;width:100%;height:100%;object-fit:contain}
 .pendingQuickFaceMarker{position:absolute;border:3px solid #f3bc39;border-radius:6px;pointer-events:none}
 
+
+/* DJ: B-style "Photo Pon!" candidate-folder game. CSS confined to PHOTO SORT. */
+#albumAiPendingQuick.pendingGamePanel{background:linear-gradient(160deg,#fff9f5,#f0f9ff 63%,#fffef4);border:1px solid #c9dfec;border-radius:21px;padding:clamp(12px,2vw,23px)}
+.pendingGameHeading{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pendingGameHeading strong{font-size:clamp(17px,2vw,21px);color:#305676}
+.pendingGameHeading span{font-size:12px;font-weight:800;color:#3b6e94;border-radius:18px;background:#e5f4ff;padding:7px 12px}
+.pendingGameIntro{font-size:13px;line-height:1.65;margin:8px 0 16px;color:#566f83}
+.pendingGameFolderGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:14px 0}
+@media(min-width:620px){.pendingGameFolderGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1024px){.pendingGameFolderGrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:1400px){.pendingGameFolderGrid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.pendingGameFolderCard{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;min-height:181px;padding:19px 10px 12px;border:2px solid #ebc9d8;border-radius:18px;background:linear-gradient(180deg,#fff4f8 0%,#fff 75%);color:#344e68;text-align:center;cursor:pointer;box-shadow:0 5px 0 #e7dce6,0 10px 17px #284b5814;transition:transform .17s ease,box-shadow .17s ease}
+.pendingGameFolderCard:nth-child(4n+2){border-color:#e5ce89;background:linear-gradient(180deg,#fff9de,#fff 75%);box-shadow:0 5px 0 #eee1c0,0 10px 17px #284b5814}
+.pendingGameFolderCard:nth-child(4n+3){border-color:#aedaf2;background:linear-gradient(180deg,#e8f7ff,#fff 75%);box-shadow:0 5px 0 #cee8f6,0 10px 17px #284b5814}
+.pendingGameFolderCard:nth-child(4n+4){border-color:#bde6c6;background:linear-gradient(180deg,#efffee,#fff 75%);box-shadow:0 5px 0 #d9eedb,0 10px 17px #284b5814}
+.pendingGameFolderCard::before{content:'';position:absolute;left:13px;top:-8px;height:14px;width:47%;background:inherit;border:2px solid currentColor;border-bottom:0;opacity:.24;border-radius:10px 10px 0 0}
+.pendingGameFolderCard:hover,.pendingGameFolderCard:focus-visible{transform:translateY(-3px);box-shadow:0 8px 0 #e0e5e9,0 14px 18px #284b5824}
+.pendingGameFolderCard .pendingGameFolderCover{width:min(100%,122px);height:76px;display:flex;align-items:center;justify-content:center;margin:2px auto 4px;border-radius:13px;overflow:hidden;background:#ffffffa8;border:2px solid #fff}
+.pendingGameFolderCover img{width:100%;height:100%;object-fit:contain}
+.pendingGameFolderCover span{font-size:39px}
+.pendingGameFolderCard strong{font-size:14px;line-height:1.5}
+.pendingGameFolderCard small{font-size:11px;color:#607b90;line-height:1.5}
+.pendingGameFolderCard progress,.pendingGameStageProgress progress{width:100%;height:9px;accent-color:#f379a8}
+.pendingGameStageLabel{font-size:11px;font-weight:800;color:#a44770}
+.pendingGameFolderCard.pendingGameFinished .pendingGameStageLabel{color:#27946d}
+.pendingGameFolderCard.pendingGameInbox{border-color:#c4d0dc;background:linear-gradient(180deg,#eff4fa,#fff)}
+.pendingGameStageTop{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
+.pendingGameBack{background:white;border:1px solid #b9d6e8;border-radius:12px;padding:9px 12px;min-height:42px;color:#376b91;font-weight:750}
+.pendingGameStageProgress{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 12px;background:#fff;border:1px solid #e0eaf3;border-radius:13px;margin-bottom:12px}
+.pendingGameStageProgress strong{font-size:16px;color:#344c66}
+.pendingGameStageProgress span{font-size:12px;color:#54738a}
+.pendingGameStageProgress progress{flex:1;min-width:75px}
+.pendingGameWorkspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(205px,263px);align-items:start;gap:16px}
+.pendingGamePhotos{min-width:0}
+.pendingGamePostbox{position:sticky;top:8px;align-self:start;border:1px solid #cfe5f4;border-radius:16px;padding:12px;background:linear-gradient(160deg,#f1f9ff,#fff8ee)}
+.pendingGamePostbox h3{margin:0 0 6px;font-size:16px;color:#305c80}
+.pendingGamePostbox p{font-size:12px;line-height:1.55;margin:0;color:#66809a}
+.pendingGamePostbox .pendingQuickDestinations{position:static;display:grid;grid-template-columns:1fr;gap:9px;max-height:58dvh;overflow-y:auto;overflow-x:hidden;margin:8px 0;padding:3px;border:0;background:transparent;box-shadow:none;touch-action:pan-y}
+.pendingGamePostbox .pendingQuickDestinations button{width:100%;max-width:none;min-width:0;min-height:66px;display:flex;align-items:center;justify-content:center;background:linear-gradient(#fff,#fff5f7);border:2px solid #f7bbc9;border-radius:15px;color:#a64a75;font-weight:800;font-size:13px;box-shadow:0 4px 0 #f5d4e0;transition:transform .16s,background .16s}
+.pendingGamePostbox .pendingQuickDestinations button:nth-child(3n+2){background:linear-gradient(#fff,#f0f9ff);border-color:#addbf4;color:#356c9c;box-shadow:0 4px 0 #d5ebfa}
+.pendingGamePostbox .pendingQuickDestinations button:nth-child(3n){background:linear-gradient(#fff,#f7fff2);border-color:#b7e7b0;color:#518345;box-shadow:0 4px 0 #d8eed4}
+.pendingGamePostbox .pendingQuickDestinations button.pendingQuickHover{transform:scale(1.05);background:#ffefb4;border-color:#ffb92e}
+.pendingGamePostbox .pendingQuickDestinations button.pendingGamePop{animation:pendingGameBounce .5s ease}
+.pendingGamePanel .pendingQuickList{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(min-width:1050px){.pendingGamePanel .pendingQuickList{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1460px){.pendingGamePanel .pendingQuickList{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pendingGamePanel .pendingQuickPhoto{transition:transform .15s ease,box-shadow .15s ease;border-radius:13px}
+.pendingGamePanel .pendingQuickPhoto.pendingQuickPicked{transform:translateY(-5px) rotate(-1deg);box-shadow:0 7px 0 #d1e6fb,0 11px 18px #3b8bd02e}
+.pendingGameDone{text-align:center;background:#fffaf0;border:1px solid #f6d8a4;border-radius:16px;padding:20px 12px;margin-top:16px;color:#a66b29}
+.pendingGameDone strong{display:block;font-size:21px;color:#bd6a5a}
+.pendingGameDone button{margin-top:10px;min-height:46px;border-radius:13px}
+.pendingGameFeedback{min-height:18px;font-weight:750;color:#3277ab}
+@keyframes pendingGameBounce{0%{transform:scale(1)}40%{transform:scale(1.09) rotate(-2deg)}75%{transform:scale(.98)}100%{transform:scale(1)}}
+@media(max-width:700px){.pendingGameWorkspace{grid-template-columns:minmax(0,1fr);gap:9px}.pendingGamePostbox{grid-row:1;top:4px;z-index:12;padding:9px}.pendingGamePostbox h3{font-size:13px}.pendingGamePostbox p{display:none}.pendingGamePostbox .pendingQuickDestinations{display:flex;gap:7px;max-height:none;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;padding:5px 3px}.pendingGamePostbox .pendingQuickDestinations button{flex:0 0 110px;min-height:54px;padding:6px 4px;font-size:12px}.pendingGameStageProgress{padding:8px}.pendingGameFolderCard{min-height:168px;padding:18px 7px 9px}.pendingGameFolderCard strong{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.pendingGameFolderCard,.pendingGamePanel .pendingQuickPhoto,.pendingGamePostbox .pendingQuickDestinations button{transition:none!important;animation:none!important}}
+
 /* DI: photo index selection instead of face-group checkboxes. */
 .pendingQuickPhoto{position:relative;overflow:hidden}
 .pendingQuickPhoto.pendingQuickPicked{border-color:#348bd0;box-shadow:0 0 0 3px #bcdfff}
@@ -3250,7 +3306,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DI</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DJ</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -3281,17 +3337,42 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
   <p class="muted">写真全体を見比べて、同じ園児かどうか確認しよう。</p>
   <div id="albumAiSingletonPairs" class="currentAlbumAiGroups"></div>
  </div>
- <section id="albumAiPendingQuick" class="albumAiPendingQuick">
- <div class="pendingQuickHeading"><strong>🌷 未確定の写真を整理しよう</strong><span id="albumAiPendingQuickCount"></span></div>
- <p class="muted">写真をタップすると選択・解除できるよ。顔の黄色い枠はAIの確認情報で、写真そのものは1回だけ表示するよ。</p>
- <div class="pendingQuickToolbar"><span id="albumAiPendingPicked" class="muted">選択 0枚</span>
-  <button id="albumAiPendingSelectVisible" type="button" class="secondary">表示中を全選択</button>
-  <button id="albumAiPendingClear" type="button" class="secondary">選択解除</button></div>
- <p class="muted">複数選んだら園児名をタップ。1枚なら「↗ 移動」をドラッグしてね。拡大は🔍から見られるよ。</p>
- <div id="albumAiPendingDestinations" class="pendingQuickDestinations"></div>
- <p id="albumAiPendingMessage" class="muted" role="status" aria-live="polite"></p>
- <div id="albumAiPendingList" class="pendingQuickList"></div>
- <button id="albumAiPendingMore" type="button" class="secondary wide" hidden>＋ 次の写真を表示</button>
+ <section id="albumAiPendingQuick" class="albumAiPendingQuick pendingGamePanel">
+  <div id="pendingGameChooser">
+   <div class="pendingGameHeading"><strong>🎮 おもいでポン！ 候補フォルダ</strong><span id="pendingGameOverview">候補を確認中</span></div>
+   <p class="pendingGameIntro">AIが顔でまとめた候補フォルダを選んで、写真を園児ポストへお届けしよう！</p>
+   <div id="pendingGameFolderGrid" class="pendingGameFolderGrid"></div>
+   <p class="muted">候補はAIが見つけた顔のまとまり。同じ集合写真が別の候補に関係していても、元写真は1枚だけだよ。</p>
+  </div>
+  <div id="pendingGameDetail" hidden>
+   <div class="pendingGameStageTop">
+    <button type="button" id="pendingGameBack" class="pendingGameBack">‹ 候補フォルダ一覧</button>
+    <span id="albumAiPendingQuickCount" class="muted"></span>
+   </div>
+   <div class="pendingGameStageProgress"><strong id="pendingGameTitle">候補フォルダ</strong><span id="pendingGameProgressText"></span><progress id="pendingGameProgress" max="1" value="0"></progress></div>
+   <div class="pendingGameWorkspace">
+    <div class="pendingGamePhotos">
+     <p class="muted">📷 写真をタップすると選択・もう一度で解除。🔍で拡大できるよ。</p>
+     <div class="pendingQuickToolbar"><span id="albumAiPendingPicked" class="muted">選択 0枚</span>
+      <button id="albumAiPendingSelectVisible" type="button" class="secondary">表示中を全選択</button>
+      <button id="albumAiPendingClear" type="button" class="secondary">選択解除</button>
+     </div>
+     <div id="albumAiPendingList" class="pendingQuickList"></div>
+     <button id="albumAiPendingMore" type="button" class="secondary wide" hidden>＋ 次の写真を表示</button>
+    </div>
+    <aside class="pendingGamePostbox">
+     <h3>📮 園児ポストへポン！</h3>
+     <p>写真を選んで園児名をタップ、または「↗ 移動」をドラッグしてね。</p>
+     <div id="albumAiPendingDestinations" class="pendingQuickDestinations"></div>
+    </aside>
+   </div>
+   <p id="albumAiPendingMessage" class="pendingGameFeedback" role="status" aria-live="polite"></p>
+   <div id="pendingGameDone" class="pendingGameDone" hidden>
+    <strong>🎉 この候補の写真整理が進んだよ！</strong>
+    <p class="muted">ほかの候補や未確定BOXも確認しよう。</p>
+    <button type="button" class="primary" id="pendingGameNext">次の候補フォルダへ ›</button>
+   </div>
+  </div>
  </section>
  <button type="button" class="primary wide" id="photoAssignFlowNext">未確定の写真を整理する ›</button>
 </section>
@@ -3334,7 +3415,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DI</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DJ</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -5654,8 +5735,85 @@ function clearCurrentAlbumSingletonPairs(){
   }
   return items;
  }
+
+ // DJ: Game UI state is display-only and never modifies saved face groups.
+ // Open folder is deliberately not added to the checkpoint schema.
+ const PENDING_GAME_INBOX='__pending-game-inbox__';
+ let pendingGameFolder=null;
+ function pendingGameStages(data){
+  const remaining=pendingQuickItems(data);
+  const groups=data.groups.filter(g=>g.faceIndexes.length).map((g,n)=>{
+   const photoIndexes=albumAiPhotoIndexes(g,data).filter(index=>!isAlbumUnusedPhoto(index));
+   const set=new Set(photoIndexes);
+   const outstanding=remaining.filter(row=>set.has(row.index));
+   return {key:String(g.key),title:'候補フォルダ '+(n+1),photoIndexes,
+    remaining:outstanding,completed:photoIndexes.length-outstanding.length,confirmed:data.confirmed.has(g.key)};
+  }).filter(stage=>stage.photoIndexes.length);
+  const uniqueOutstanding=[...new Set(remaining.map(row=>row.index))];
+  groups.push({key:PENDING_GAME_INBOX,title:'未確定BOX',photoIndexes:uniqueOutstanding,
+   remaining,completed:0,confirmed:false});
+  return groups;
+ }
+ function pendingGameAllowedItems(data){
+  const stage=pendingGameStages(data).find(item=>item.key===pendingGameFolder);
+  return stage?stage.remaining:[];
+ }
+ function pendingGameChoose(key){
+  const data=albumAiGroupsData;
+  if(!data?.valid()||!pendingGameStages(data).some(s=>s.key===key))return;
+  pendingGameFolder=key;pendingQuickSelected.clear();pendingQuickLimit=48;
+  renderAlbumAiPendingQuick();
+  $('#albumAiPendingQuick')?.scrollIntoView?.({behavior:'smooth',block:'start'});
+ }
+ function renderPendingGameFolders(data,stages){
+  const host=$('#pendingGameFolderGrid');
+  if(!host)return;
+  host.replaceChildren();
+  const total=stages.slice(0,-1),finished=total.filter(s=>!s.remaining.length).length;
+  $('#pendingGameOverview').textContent='整理済み '+finished+' / '+total.length+'組';
+  for(const stage of stages){
+   const isInbox=stage.key===PENDING_GAME_INBOX,card=document.createElement('button');
+   card.type='button';card.className='pendingGameFolderCard'+(isInbox?' pendingGameInbox':'')+
+    (!stage.remaining.length?' pendingGameFinished':'');
+   const preview=document.createElement('span');preview.className='pendingGameFolderCover';
+   const photoIndex=stage.photoIndexes[0];
+   if(Number.isInteger(photoIndex)&&files[photoIndex]){
+    const img=document.createElement('img');img.loading='lazy';img.decoding='async';
+    img.src=fileUrl(files[photoIndex]);img.alt='';preview.append(img);
+   }else{
+    const icon=document.createElement('span');icon.textContent=isInbox?'📦':'📁';preview.append(icon);
+   }
+   const name=document.createElement('strong');name.textContent=stage.title;
+   const count=document.createElement('small');count.textContent=isInbox?
+    '残りの写真 '+stage.remaining.length+'枚':
+    '写真 '+stage.photoIndexes.length+'枚';
+   const progress=document.createElement('progress');progress.max=Math.max(1,stage.photoIndexes.length);
+   progress.value=isInbox?0:stage.completed;
+   progress.setAttribute('aria-label','この候補の写真の登録状況');
+   const state=document.createElement('span');state.className='pendingGameStageLabel';
+   state.textContent=isInbox?(stage.remaining.length?'最後にここも確認':'確認する') :
+    !stage.remaining.length?'🌟 一通り整理済み':
+    stage.completed?'🌷 整理中':'✨ これから';
+   card.append(preview,name,count,progress,state);
+   card.addEventListener('click',()=>pendingGameChoose(stage.key));
+   host.append(card);
+  }
+ }
+ function pendingGameGoNext(){
+  const data=albumAiGroupsData;if(!data?.valid())return;
+  const stages=pendingGameStages(data),at=stages.findIndex(s=>s.key===pendingGameFolder);
+  const next=stages.slice(Math.max(0,at+1)).find(s=>s.remaining.length)||
+   stages.slice(0,Math.max(0,at)).find(s=>s.remaining.length);
+  if(next)pendingGameChoose(next.key);
+  else{pendingGameFolder=null;renderAlbumAiPendingQuick();}
+ }
+ $('#pendingGameBack')?.addEventListener('click',()=>{
+  pendingGameFolder=null;pendingQuickSelected.clear();renderAlbumAiPendingQuick();
+ });
+ $('#pendingGameNext')?.addEventListener('click',pendingGameGoNext);
+
  function pendingQuickPruneSelection(data){
-  const allowed=new Set(pendingQuickItems(data).map(item=>item.index));
+  const allowed=new Set(pendingGameAllowedItems(data).map(item=>item.index));
   for(const index of [...pendingQuickSelected])
    if(!allowed.has(index))pendingQuickSelected.delete(index);
  }
@@ -5673,7 +5831,7 @@ function clearCurrentAlbumSingletonPairs(){
  }
  function pendingQuickToggle(index,enabled){
   const data=albumAiGroupsData;
-  if(!data?.valid()||!pendingQuickItems(data).some(item=>item.index===index))return;
+  if(!data?.valid()||!pendingGameAllowedItems(data).some(item=>item.index===index))return;
   if(enabled)pendingQuickSelected.add(index);else pendingQuickSelected.delete(index);
   pendingQuickRefreshSelection();
  }
@@ -5684,7 +5842,7 @@ function clearCurrentAlbumSingletonPairs(){
   if(!kid){status.textContent='⚠️ 園児名簿にない名前です。';return;}
   const requested=only===null?[...pendingQuickSelected]:[only.index];
   if(!requested.length){status.textContent='写真をタップして選んでね。';return;}
-  const available=new Set(pendingQuickItems(data).map(item=>item.index));
+  const available=new Set(pendingGameAllowedItems(data).map(item=>item.index));
   if(requested.some(index=>!Number.isInteger(index)||!available.has(index))){
    status.textContent='⚠️ 写真の状態が変わったよ。振り分けは変更していないよ。';return;
   }
@@ -5709,7 +5867,9 @@ function clearCurrentAlbumSingletonPairs(){
    // Remaining faces are still visible through pendingQuickItems().
    renderPhotoAssignmentPage();
    renderAlbumAiPendingQuick();
-   $('#albumAiPendingMessage').textContent='✅ '+kid.name+'さんへ'+newIndexes.length+
+   const postbox=document.querySelector('[data-pending-child="'+targetId+'"]');
+   if(postbox){postbox.classList.add('pendingGamePop');setTimeout(()=>postbox.classList.remove('pendingGamePop'),650)}
+   $('#albumAiPendingMessage').textContent='📮 ポン！ '+kid.name+'さんへ'+newIndexes.length+
     '枚を登録したよ。まだ振り分けていない顔がある写真は一覧に残っているよ。';
   }catch(error){
    status.textContent='⚠️ 振り分けできません：'+String(error?.message||error)+
@@ -5782,10 +5942,27 @@ function clearCurrentAlbumSingletonPairs(){
   const data=albumAiGroupsData,host=$('#albumAiPendingList'),more=$('#albumAiPendingMore');
   if(!data?.valid()||!host)return;
   if(pendingQuickSource!==data){
-   pendingQuickSource=data;pendingQuickSelected.clear();pendingQuickLimit=48;
+   pendingQuickSource=data;pendingQuickSelected.clear();pendingQuickLimit=48;pendingGameFolder=null;
+  }
+  const stages=pendingGameStages(data);
+  if(pendingGameFolder!==null&&!stages.some(stage=>stage.key===pendingGameFolder))
+   pendingGameFolder=null;
+  $('#pendingGameChooser').hidden=pendingGameFolder!==null;
+  $('#pendingGameDetail').hidden=pendingGameFolder===null;
+  if(pendingGameFolder===null){
+   pendingQuickSelected.clear();
+   renderPendingGameFolders(data,stages);
+   return;
   }
   pendingQuickPruneSelection(data);
-  const all=pendingQuickItems(data),visible=all.slice(0,pendingQuickLimit);
+  const stage=stages.find(s=>s.key===pendingGameFolder);
+  const all=stage.remaining,visible=all.slice(0,pendingQuickLimit);
+  $('#pendingGameTitle').textContent='📁 '+stage.title;
+  $('#pendingGameProgressText').textContent='写真 '+stage.photoIndexes.length+'枚 ／ 未整理 '+all.length+'枚';
+  const progress=$('#pendingGameProgress');
+  progress.max=Math.max(1,stage.photoIndexes.length);
+  progress.value=stage.completed;
+  $('#pendingGameDone').hidden=all.length!==0;
   const counter=$('#albumAiPendingQuickCount');
   if(counter)counter.textContent='未整理 '+all.length+'枚';
   host.replaceChildren();
@@ -5815,7 +5992,7 @@ function clearCurrentAlbumSingletonPairs(){
   }
   if(!all.length){
    const notice=document.createElement('p');notice.className='muted';
-   notice.textContent='✅ 振り分けが必要な写真はありません。園児フォルダの写真を確認してね。';
+   notice.textContent='🎉 この候補で未整理の写真はないよ！';
    host.append(notice);
   }
   // The photo index is the sole row key: multi-person photos appear exactly once.
@@ -5880,7 +6057,7 @@ function clearCurrentAlbumSingletonPairs(){
  }
  $('#albumAiPendingSelectVisible')?.addEventListener('click',()=>{
   const data=albumAiGroupsData;if(!data?.valid())return;
-  for(const row of pendingQuickItems(data).slice(0,pendingQuickLimit))pendingQuickSelected.add(row.index);
+  for(const row of pendingGameAllowedItems(data).slice(0,pendingQuickLimit))pendingQuickSelected.add(row.index);
   pendingQuickRefreshSelection();
  });
  $('#albumAiPendingClear')?.addEventListener('click',()=>{
