@@ -6129,10 +6129,11 @@ function clearCurrentAlbumSingletonPairs(){
 
  // DL: only reverse an immediately preceding face-game commit, never a checkpoint.
  function undoLastFaceGameEdit(data){
-  if(data!==albumAiGroupsData||!data.valid()||!data.faceGameUndoLatest||!data.mergeUndo?.length)return false;
+  if(data!==albumAiGroupsData||!data.valid()||!data.faceGameUndoLatest||!data.mergeUndo?.length||
+   data.mergeUndo[data.mergeUndo.length-1]!==data.faceGameUndoSnapshot)return false;
   const snapshot=data.mergeUndo.pop();
   data.groups=snapshot.map(group=>({...group,faceIndexes:[...group.faceIndexes]}));
-  data.faceGameUndoLatest=false;data.mergeSuggestions=null;data.selections.clear();
+  data.faceGameUndoLatest=false;data.faceGameUndoSnapshot=null;data.mergeSuggestions=null;data.selections.clear();
   $('#currentAlbumAiFeedback').textContent='↩ 直前の顔グループ修正を戻したよ。写真と園児名は変更していないよ。';
   renderCurrentAlbumAiGroups();
   renderCurrentAlbumSingletonPairs();
@@ -6143,7 +6144,7 @@ function renderCurrentAlbumSingletonPairs(){
  const data=albumAiGroupsData,host=$('#albumAiSingletonPairs');
  if(!data?.valid()||!host)return;
  host.replaceChildren();
- const groups=data.groups.filter(g=>!data.confirmed.has(g.key));
+ const groups=data.groups.filter(g=>!data.confirmed.has(g.key)&&!String(g.key).startsWith('teacher-recheck-'));
  const unusedCount=data.unusedPhotoIndexes?.size||0;
  if(unusedCount){
   const restore=document.createElement('button');restore.type='button';
@@ -6162,7 +6163,7 @@ function renderCurrentAlbumSingletonPairs(){
   const empty=document.createElement('p');empty.className='muted';
   empty.textContent='🎉 顔あわせクリア！ 次は「写真ポン！」へ進めるよ。';
   host.append(empty);
-  if(data.faceGameUndoLatest&&data.mergeUndo?.length){
+  if(data.faceGameUndoLatest&&data.mergeUndo?.length&&data.mergeUndo[data.mergeUndo.length-1]===data.faceGameUndoSnapshot){
    const undo=document.createElement('button');undo.type='button';undo.className='secondary wide';
    undo.textContent='↩ 直前の顔修正を戻す';
    undo.addEventListener('click',()=>undoLastFaceGameEdit(data));
@@ -6223,7 +6224,7 @@ function renderCurrentAlbumSingletonPairs(){
  const assignHint=document.createElement('p');assignHint.className='pairReviewHelp muted';
  const assignSummary=document.createElement('p');assignSummary.className='pairAssignSummary';
  assignSummary.setAttribute('role','status');
- assignPanel.append(modePicker,assignPhotos,mergeDestination,assignSummary,assignHint);
+ assignPanel.append(assignPhotos); // Only face cards are visible in this stage.
  const actions=document.createElement('div');actions.className='pairReviewDecisions';
  const assignButton=document.createElement('button');assignButton.type='button';
  assignButton.className='primary pairAssignMain';assignButton.textContent='✓ この2つを振り分ける';assignButton.disabled=true;
@@ -6254,7 +6255,7 @@ function renderCurrentAlbumSingletonPairs(){
  const restoreSkipped=document.createElement('button');restoreSkipped.type='button';restoreSkipped.className='secondary wide';
  restoreSkipped.textContent='違う園児にした候補をすべて戻す';
  extra.append(extraTitle,restoreSkipped);
- card.append(names,gameGuide,assignPanel,feedback,actions,navigation,note,complete);
+ card.append(names,gameGuide,assignPanel,feedback,actions,navigation,complete);
  host.append(gameHero,intro,progress,card,apply,extra);
  let pendingPair=null,assignmentMode='separate';
  const children=getChildren(data.classId);
@@ -6521,7 +6522,7 @@ function renderCurrentAlbumSingletonPairs(){
     expand.textContent=expanded?'閉じる ›':'▣ 写真をくわしく見る';
     expand.setAttribute('aria-expanded',String(expanded));
    });
-   group.append(title,gallery,label,expand);
+   group.append(title,gallery,expand); // Child selection happens in Photo Pon.
    assignPhotos.append(group);
   }
   updateChoice();
@@ -6571,6 +6572,7 @@ function renderCurrentAlbumSingletonPairs(){
    const snapshot=data.groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
    data.mergeUndo.push(snapshot);if(data.mergeUndo.length>10)data.mergeUndo.shift();
    data.groups=result.groups;data.nextGroupId=result.nextId;data.faceGameUndoLatest=true;
+   data.faceGameUndoSnapshot=snapshot;
    data.mergeSuggestions=null;data.selections.clear();
    const affected=id=>{const parts=String(id).split('→');return parts.some(part=>result.affected.has(part))};
    for(const id of [...checked.keys()])if(affected(id))checked.delete(id);
@@ -6657,7 +6659,8 @@ function renderCurrentAlbumSingletonPairs(){
   progressBar.value=Math.min(position,candidates.length);
   apply.textContent='✓ 旧版の「おなじ子」仮判断 '+checked.size+'組を反映する';
   apply.classList.add('pairGameLegacy');apply.disabled=checked.size===0;apply.hidden=checked.size===0;
-  undoFace.hidden=!data.faceGameUndoLatest||!data.mergeUndo?.length;
+  undoFace.hidden=!data.faceGameUndoLatest||!data.mergeUndo?.length||
+    data.mergeUndo[data.mergeUndo.length-1]!==data.faceGameUndoSnapshot;
   restoreSkipped.hidden=skipped.size===0;
   previous.disabled=position===0;
   if(position>=candidates.length){
