@@ -3721,6 +3721,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 .screen[data-screen="photoAssign"][data-flow-step="check"] #photoAssignFlowNext{display:none!important}
 
 </style>
+<link rel="stylesheet" href="./photo-merge.css">
 </head>
 <body>
 <main class="app">
@@ -3780,13 +3781,13 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EH</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EI</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
 </div>
 <div id="photoAssignFlowGuide" class="photoAssignFlowGuide" aria-label="ゲームの3ステップ">
- <span data-flow-index="review">① 💕 マッチング</span>
+ <span data-flow-index="review">① 🎮 おもいでマージ</span>
  <span data-flow-index="check">② 🔎 最終チェック</span>
  <span data-flow-index="pending">③ 🏠 園児登録</span>
 </div>
@@ -5690,6 +5691,7 @@ function photoSortCheckpointCaptureAI(data){
   photoMatchActive:!!data.photoMatchActive,
   photoMatchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
   photoMatchFolderChild:{...(data.photoMatchFolderChild||{})},
+  photoMergeSlots:[...(data.photoMergeSlots||[])],
   photoMatchFocus:data.photoMatchFocus||null,
   photoMatchCandidateKey:data.photoMatchCandidateKey||null,
   photoMatchOriginalCount:data.photoMatchOriginalCount||data.groups.length,
@@ -5987,6 +5989,7 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
     photoMatchActive:!!snapshot.photoMatchActive,
     photoMatchDifferent:Array.isArray(snapshot.photoMatchDifferent)?snapshot.photoMatchDifferent.map(pair=>({...pair})):[],
     photoMatchFolderChild:{...(snapshot.photoMatchFolderChild||{})},
+    photoMergeSlots:Array.isArray(snapshot.photoMergeSlots)?[...snapshot.photoMergeSlots]:[],
     photoMatchFocus:snapshot.photoMatchFocus||null,
     photoMatchCandidateKey:snapshot.photoMatchCandidateKey||null,
     photoMatchOriginalCount:Number(snapshot.photoMatchOriginalCount)||snapshot.groups.length,
@@ -6120,7 +6123,7 @@ function setPhotoAssignFlowStep(step,{scroll=false}={}){
  screen.dataset.flowStep=step;
  const hint=$('#photoAssignFlowHint'),details=$('#albumAiOtherGroups');
  if(hint)hint.textContent=step==='start'?'まずは「写真を整理する」を押してね。':
-  step==='review'?'💕 2つの写真フォルダを比較して「同じ」か「別々」を選ぼう。':
+  step==='review'?'💕 AIカードを選んで、なかまボックスに集めよう。':
   step==='check'?'🕵️ 元写真を見て、違う子が混ざっていないか確かめよう。':
   step==='pending'?'🏠 園児名のおうちへ写真を届けよう。':'園児別の写真を確認して見開き編集へ！';
  if(details)details.open=false;
@@ -7102,6 +7105,7 @@ function photoFolderSnapshot(data){
   excludedPhotoIndexes:[...(f.excludedPhotoIndexes||[])]})),reviewed:[...data.photoFolderReviewed],mistakeReviewed:[...data.photoFolderMistakeReviewed],
   matchDifferent:(data.photoMatchDifferent||[]).map(pair=>({...pair})),
   matchFolderChild:{...(data.photoMatchFolderChild||{})},
+  mergeSlots:[...(data.photoMergeSlots||[])],
   matchFocus:data.photoMatchFocus||null,matchCandidate:data.photoMatchCandidateKey||null,
   matchFinal:!!data.photoMatchFinalReviewed};
 }
@@ -7113,6 +7117,7 @@ function photoFolderRestoreSnapshot(data,snapshot){
  data.photoFolderMistakeReviewed=new Set(snapshot.mistakeReviewed||[]);
  data.photoMatchDifferent=(snapshot.matchDifferent||[]).map(pair=>({...pair}));
  data.photoMatchFolderChild={...(snapshot.matchFolderChild||{})};
+ data.photoMergeSlots=[...(snapshot.mergeSlots||[])];
  data.photoMatchFocus=snapshot.matchFocus||null;
  data.photoMatchCandidateKey=snapshot.matchCandidate||null;
  data.photoMatchFinalReviewed=!!snapshot.matchFinal;
@@ -7898,7 +7903,15 @@ function renderPhotoMatching(data,host){
 }
 
 function renderPhotoFolders(data,host){
- return renderPhotoMatching(data,host);
+ return window.omoideMergeRender?window.omoideMergeRender(data,host,{
+  valid:()=>data===albumAiGroupsData&&data.valid(),current:()=>albumAiGroupsData,
+  ensure:photoFoldersEnsure,indexes:photoFolderIndexes,snapshot:photoFolderSnapshot,
+  restore:photoFolderRestoreSnapshot,merge:photoMatchMergeFolders,
+  move:photoMatchMovePhotos,add:photoMatchAddPhotos,split:photoMatchSplitPhotos,
+  url:fileUrl,openPhoto:openAlbumAssignedPhoto,progress:renderPhotoSortGameProgress,
+  next:setPhotoAssignFlowStep,faces:photoMatchFaceSamples,score:photoMatchScore,
+  signature:photoMatchSignature,boxCount:getChildren(selected.id).length
+ }):renderPhotoMatching(data,host);
  host.replaceChildren();renderPhotoSortGameProgress();
  let folders;
  try{folders=photoFoldersEnsure(data)}catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
@@ -12768,6 +12781,7 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
 })();
 
 </script>
+<script src="./photo-merge-ui.js"></script>
 <script type="module" src="./face-recognition/auraface-probe.mjs"></script>
 <script type="module" src="./face-recognition/auraface-batch.mjs"></script>
 </body>
