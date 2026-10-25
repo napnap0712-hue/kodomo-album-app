@@ -3338,6 +3338,51 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  #albumAiSingletonPairs .pairFaceTools .pairExcludeToggle{font-size:10px;padding:5px 2px}
 }
 
+
+/* DN: grouped, tap-first face comparison. Detailed DL/DM controls remain accessible. */
+#albumAiSingletonPairs .faceBatchHero{padding:14px 16px;margin:8px 0;border:1px solid #f2c5d9;border-radius:18px;background:linear-gradient(110deg,#fff0f6,#f0faff)}
+#albumAiSingletonPairs .faceBatchHero strong{font-size:clamp(18px,3vw,23px);color:#87507c}
+#albumAiSingletonPairs .faceBatchHero p{font-size:13px;color:#526d84;margin:5px 0 0}
+#albumAiSingletonPairs .faceBatchProgress{font-size:13px;font-weight:800;color:#4e6e8b;padding:7px 3px;margin:0}
+#albumAiSingletonPairs .faceBatchUtilities{display:flex;gap:7px;flex-wrap:wrap;margin:2px 0 12px}
+#albumAiSingletonPairs .faceBatchUtilities button{flex:1 1 210px;min-height:43px;border-radius:11px;font-size:12px;font-weight:750}
+#albumAiSingletonPairs .faceBatchLegacy{padding:11px;border-radius:11px;background:#fff8e1;color:#866123;font-size:12px}
+#albumAiSingletonPairs .faceBatchInstruction{padding:11px;border-radius:12px;background:#f0f8ff;font-size:13px;color:#376383;font-weight:750;line-height:1.6}
+#albumAiSingletonPairs .faceBatchBase{margin:10px auto 18px;max-width:400px}
+#albumAiSingletonPairs .faceBatchBase .faceBatchTile{background:#fff1f7;border:3px solid #f6aecb}
+#albumAiSingletonPairs .faceBatchHeading{font-size:16px;color:#385d7d;margin:14px 0 10px}
+#albumAiSingletonPairs .faceBatchCandidates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-height:660px;overflow-y:auto;overscroll-behavior:contain;padding:4px}
+#albumAiSingletonPairs .faceBatchTile{min-width:0;display:flex;flex-direction:column;gap:7px;border:2px solid #d2e6f4;border-radius:15px;padding:10px;background:#fff;box-shadow:0 3px 0 #e9f0f6}
+#albumAiSingletonPairs .faceBatchTile.faceBatchSelected{border-color:#ff56a1;background:#fff0f7;box-shadow:0 0 0 2px #f9cbe0}
+#albumAiSingletonPairs .faceBatchPortraitRow{display:flex;gap:4px;justify-content:center;min-height:98px}
+#albumAiSingletonPairs .faceBatchPortrait{width:100%;max-width:116px;aspect-ratio:1;flex:1;min-width:0;position:relative;overflow:hidden;border-radius:11px;background:#e7eef5;border:1px solid #e0e8f0}
+#albumAiSingletonPairs .faceBatchPortrait img{position:absolute;width:100%;height:auto;max-width:none;top:0;left:0;display:block}
+#albumAiSingletonPairs .faceBatchFaceCount{font-size:12px;color:#496681;text-align:center}
+#albumAiSingletonPairs .faceBatchOriginal{min-height:34px;font-size:11px;border-radius:8px;padding:5px}
+#albumAiSingletonPairs .faceBatchChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:auto}
+#albumAiSingletonPairs .faceBatchChoices button{min-height:41px;border-radius:9px;padding:6px 3px;font-size:11px;font-weight:800;line-height:1.3;white-space:normal}
+#albumAiSingletonPairs .faceBatchSame{grid-column:1/-1;border:1px solid #f1a6c8;color:#9d356e;background:#ffedf6}
+#albumAiSingletonPairs .faceBatchSelected .faceBatchSame{background:#f9539b;color:#fff;border-color:#dc3c82}
+#albumAiSingletonPairs .faceBatchDifferent{background:#eef7ff;color:#366b8b;border-color:#bedcf0}
+#albumAiSingletonPairs .faceBatchLater{background:#fff8e1;color:#8c6c2c;border-color:#f1e0aa}
+#albumAiSingletonPairs .faceBatchFooter{display:flex;gap:8px;flex-direction:column;margin:15px 0;padding:13px;border:1px solid #e5eaf0;border-radius:15px;background:#f9fbff}
+#albumAiSingletonPairs .faceBatchStatus{font-size:13px;font-weight:750;color:#6e4c69;margin:0}
+#albumAiSingletonPairs .faceBatchMerge{min-height:54px;font-weight:850;font-size:16px;background:#f9539b;border-color:#f9539b;color:#fff;border-radius:13px}
+#albumAiSingletonPairs .faceBatchMerge:disabled{opacity:.48}
+#albumAiSingletonPairs .faceBatchSkip{min-height:43px;font-size:13px;border-radius:12px}
+#albumAiSingletonPairs .faceBatchComplete{padding:20px 14px;margin:14px 0;border-radius:14px;background:#fff9dd;font-weight:750;font-size:15px;line-height:1.7}
+#albumAiSingletonPairs .faceBatchReturn{min-height:47px;margin:8px 0 14px;border-radius:12px;font-size:13px}
+@media(max-width:750px){
+ #albumAiSingletonPairs .faceBatchCandidates{grid-template-columns:repeat(2,minmax(0,1fr));max-height:600px}
+}
+@media(max-width:430px){
+ #albumAiSingletonPairs .faceBatchCandidates{gap:7px;padding:2px}
+ #albumAiSingletonPairs .faceBatchTile{padding:7px;gap:5px}
+ #albumAiSingletonPairs .faceBatchPortraitRow{min-height:80px}
+ #albumAiSingletonPairs .faceBatchChoices{gap:4px}
+ #albumAiSingletonPairs .faceBatchChoices button{font-size:10px;min-height:39px}
+}
+
 </style>
 </head>
 <body>
@@ -3398,7 +3443,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DM</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DN</p><h1>園児別の写真を確認</h1><p class="lead">画面に表示される順番に進めるだけで、写真を整理できます。</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -3507,7 +3552,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DM</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">ALBUM EDITOR · 2026-10-25 DN</p><h1>見開き編集</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -6177,10 +6222,244 @@ function clearCurrentAlbumSingletonPairs(){
   return true;
  }
 
+
+// DN: Group-review UI. The photo/AI record and checkpoint schema are unchanged.
+let faceBatchDetailMode=false;
+let faceBatchFocusKey=null;
+let faceBatchSelectedKeys=new Set();
+function groupedFacePairKeys(a,b){
+ const first=String(a),second=String(b);
+ return [first+'→'+second,second+'→'+first];
+}
+function buildGroupedFaceOptions(data,groups,session,skipped,similarity){
+ const edges=[];
+ for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){
+  const a=groups[i],b=groups[j],keys=groupedFacePairKeys(a.key,b.key);
+  // Keep earlier judgments (including DL's directional keys) without changing their format.
+  if(keys.some(k=>session.decisions.has(k)||session.checked.has(k)||session.seen.has(k)||skipped.has(k)))continue;
+  const aPhotoIndexes=new Set(a.faceIndexes.map(n=>data.samples[n]?.index));
+  if(b.faceIndexes.some(n=>aPhotoIndexes.has(data.samples[n]?.index)))continue;
+  const scores=[];
+  for(const ai of a.faceIndexes)for(const bi of b.faceIndexes){
+   const left=data.samples[ai]?.embedding,right=data.samples[bi]?.embedding;
+   if(!left||!right)continue;
+   const value=similarity(left,right);
+   if(Number.isFinite(value))scores.push(value);
+  }
+  if(!scores.length)continue;
+  scores.sort((x,y)=>y-x);
+  const score=scores.length>1?.75*scores[0]+.25*scores[1]:scores[0];
+  if(score>=.60)edges.push({a:a.key,b:b.key,score});
+ }
+ edges.sort((a,b)=>b.score-a.score);
+ return edges;
+}
+function renderGroupedFaceReview(data,host){
+ host.replaceChildren();
+ const groups=data.groups.filter(g=>!data.confirmed.has(g.key)&&!String(g.key).startsWith('teacher-recheck-'));
+ if(!data.skippedSingletonPairs)data.skippedSingletonPairs=new Set();
+ if(!data.pairReviewSession)data.pairReviewSession={checked:new Map(),decisions:new Map(),seen:new Set()};
+ const session=data.pairReviewSession,skipped=data.skippedSingletonPairs;
+ const edges=buildGroupedFaceOptions(data,groups,session,skipped,faceEmbeddingSimilarity);
+ const byKey=new Map(groups.map(g=>[String(g.key),g]));
+ const title=document.createElement('section');title.className='faceBatchHero';
+ title.innerHTML='<strong>🎮 おもいで顔あわせ！</strong><p>基準の顔を見て、同じ子だと思う顔をまとめて選ぼう！</p>';
+ host.append(title);
+ const info=document.createElement('p');info.className='faceBatchProgress';
+ info.textContent='🔎 確認する組み合わせ：残り '+edges.length+'組';host.append(info);
+ const utility=document.createElement('div');utility.className='faceBatchUtilities';
+ const details=document.createElement('button');details.type='button';details.className='secondary';
+ details.textContent='🧩 顔を個別に移動・はずす';
+ details.addEventListener('click',()=>{faceBatchDetailMode=true;faceBatchSelectedKeys.clear();renderCurrentAlbumSingletonPairs()});
+ utility.append(details);
+ const undoAllowed=!!(data.faceGameUndoLatest&&data.mergeUndo?.length&&data.mergeUndo.at(-1)===data.faceGameUndoSnapshot);
+ if(undoAllowed){
+  const undo=document.createElement('button');undo.type='button';undo.className='secondary';
+  undo.textContent='↩ 直前のまとめを戻す';
+  undo.addEventListener('click',()=>{faceBatchSelectedKeys.clear();faceBatchFocusKey=null;undoLastFaceGameEdit(data)});
+  utility.append(undo);
+ }
+ const laterIds=[...session.decisions].filter(([k,v])=>v==='later').map(([k])=>k);
+ if(laterIds.length){
+  const retry=document.createElement('button');retry.type='button';retry.className='secondary';
+  retry.textContent='🕒 あとでの候補を見直す（'+laterIds.length+'組）';
+  retry.addEventListener('click',()=>{
+   for(const id of laterIds){session.decisions.delete(id);session.seen.delete(id);skipped.delete(id)}
+   faceBatchFocusKey=null;faceBatchSelectedKeys.clear();renderCurrentAlbumSingletonPairs();
+  });
+  utility.append(retry);
+ }
+ host.append(utility);
+ if(data.pairReviewSession.checked.size){
+  const old=document.createElement('p');old.className='faceBatchLegacy';
+  old.textContent='📌 前の版で仮判断した「おなじ子」が'+session.checked.size+'組残っているよ。個別修正から確認できるよ。';
+  host.append(old);
+ }
+ if(data.unusedPhotoIndexes?.size){
+  const restore=document.createElement('button');restore.type='button';restore.className='secondary pairRestoreUnused';
+  restore.textContent='↩ 使わない写真を1枚戻す（除外中 '+data.unusedPhotoIndexes.size+'枚）';
+  restore.addEventListener('click',()=>restoreLastUnusedAlbumPhoto(data));host.append(restore);
+ }
+ if(!edges.length){
+  faceBatchFocusKey=null;faceBatchSelectedKeys.clear();
+  const finished=document.createElement('div');finished.className='faceBatchComplete';
+  finished.textContent='🎉 いま確認する似た顔候補はないよ！ 迷った顔は「あとでの候補を見直す」から戻せるよ。';
+  host.append(finished);
+  const next=document.createElement('button');next.type='button';next.className='primary wide';
+  next.textContent='📸 写真ポン！へ進む ›';next.addEventListener('click',()=>setPhotoAssignFlowStep('pending',{scroll:true}));
+  host.append(next);return;
+ }
+ const connected=new Map();
+ for(const edge of edges)for(const key of [edge.a,edge.b]){
+  const id=String(key);if(!connected.has(id))connected.set(id,[]);
+  connected.get(id).push(edge);
+ }
+ // Prefer one well-connected or already enlarged group: a single review replaces repeated pairs.
+ if(!connected.has(String(faceBatchFocusKey))){
+  faceBatchFocusKey=[...connected.keys()].sort((a,b)=>
+   connected.get(b).length-connected.get(a).length||
+   (byKey.get(b)?.faceIndexes.length||0)-(byKey.get(a)?.faceIndexes.length||0)||
+   Math.max(...connected.get(b).map(e=>e.score))-Math.max(...connected.get(a).map(e=>e.score)))[0];
+  faceBatchSelectedKeys.clear();
+ }
+ const focus=byKey.get(String(faceBatchFocusKey));
+ const linked=connected.get(String(faceBatchFocusKey)).map(e=>({
+  group:byKey.get(String(e.a)===String(faceBatchFocusKey)?String(e.b):String(e.a)),score:e.score
+ })).filter(item=>item.group).sort((a,b)=>b.score-a.score);
+ const allowed=new Set(linked.map(item=>String(item.group.key)));
+ for(const key of [...faceBatchSelectedKeys])if(!allowed.has(String(key)))faceBatchSelectedKeys.delete(key);
+ const instruction=document.createElement('p');instruction.className='faceBatchInstruction';
+ instruction.textContent='① 上の基準の顔を確認 → ② 下から同じ子を選択 → ③ まとめる！';
+ host.append(instruction);
+ function tile(group,mode){
+  const holder=document.createElement('article');holder.className='faceBatchTile';
+  const portraitRow=document.createElement('div');portraitRow.className='faceBatchPortraitRow';
+  for(const faceIndex of group.faceIndexes.slice(0,3)){
+   const sample=data.samples[faceIndex],file=data.sourceFiles[sample?.index];
+   const portrait=document.createElement('span');portrait.className='faceBatchPortrait';
+   const img=document.createElement('img');img.alt='顔のアップ';img.loading='lazy';img.draggable=false;
+   if(file){
+    img.addEventListener('load',()=>{
+     const width=img.naturalWidth,height=img.naturalHeight;
+     if(!width||!height||!Array.isArray(sample?.box)||sample.box.length<4)return;
+     const scale=Math.min(1,1200/Math.max(width,height));
+     const [x,y,w,h]=sample.box.map(Number).map(value=>value/scale);
+     if(![x,y,w,h].every(Number.isFinite)||w<=0||h<=0)return;
+     const size=Math.max(1,Math.min(width,height,Math.max(w,h)*1.6));
+     const left=Math.max(0,Math.min(width-size,x+w/2-size/2)),top=Math.max(0,Math.min(height-size,y+h/2-size/2));
+     img.style.width=width/size*100+'%';img.style.left=-left/size*100+'%';img.style.top=-top/size*100+'%';
+    });
+    img.src=fileUrl(file);
+   }
+   portrait.append(img);portraitRow.append(portrait);
+  }
+  const count=document.createElement('strong');count.className='faceBatchFaceCount';
+  count.textContent=(mode==='base'?'🌷 基準の顔':'👀 似ている候補')+' · 顔'+group.faceIndexes.length+'個';
+  const open=document.createElement('button');open.type='button';open.className='secondary faceBatchOriginal';
+  open.textContent='🔍 元写真を見る';
+  open.addEventListener('click',()=>openAlbumAssignedPhoto(data.samples[group.faceIndexes[0]]?.index));
+  holder.append(portraitRow,count,open);
+  return holder;
+ }
+ const base=document.createElement('div');base.className='faceBatchBase';base.append(tile(focus,'base'));host.append(base);
+ const heading=document.createElement('h3');heading.className='faceBatchHeading';
+ heading.textContent='👇 同じ子だと思う顔を選んでね（'+linked.length+'候補）';
+ host.append(heading);
+ const cards=document.createElement('div');cards.className='faceBatchCandidates';host.append(cards);
+ const footer=document.createElement('div');footer.className='faceBatchFooter';
+ const status=document.createElement('p');status.className='faceBatchStatus';
+ const merge=document.createElement('button');merge.type='button';merge.className='primary faceBatchMerge';
+ const skip=document.createElement('button');skip.type='button';skip.className='secondary faceBatchSkip';
+ skip.textContent='🕒 この基準はいったんあとで';
+ footer.append(status,merge,skip);host.append(footer);
+ function updateSelected(){
+  status.textContent='💞 同じ子として選択中：'+faceBatchSelectedKeys.size+'候補';
+  merge.textContent='💞 '+faceBatchSelectedKeys.size+'候補をまとめる！';
+  merge.disabled=!faceBatchSelectedKeys.size;
+  for(const item of cards.querySelectorAll('[data-batch-key]')){
+   const on=faceBatchSelectedKeys.has(item.dataset.batchKey);
+   item.classList.toggle('faceBatchSelected',on);
+   const control=item.querySelector('.faceBatchSame');
+   if(control){control.textContent=on?'✅ 同じ子を選択中':'💞 おなじ子！';control.setAttribute('aria-pressed',String(on))}
+  }
+ }
+ for(const {group,score} of linked){
+  const key=String(group.key),entry=tile(group,'candidate');entry.dataset.batchKey=key;
+  const choices=document.createElement('div');choices.className='faceBatchChoices';
+  const same=document.createElement('button');same.type='button';same.className='faceBatchSame';
+  same.addEventListener('click',()=>{
+   if(faceBatchSelectedKeys.has(key))faceBatchSelectedKeys.delete(key);else faceBatchSelectedKeys.add(key);
+   updateSelected();
+  });
+  const different=document.createElement('button');different.type='button';different.className='secondary faceBatchDifferent';
+  different.textContent='↔ べつの子';
+  const later=document.createElement('button');later.type='button';later.className='secondary faceBatchLater';
+  later.textContent='🕒 あとで';
+  function decide(choice){
+   for(const id of groupedFacePairKeys(focus.key,group.key)){
+    // Use only the canonical key for new judgments, but preserve existing legacy records.
+    if(id===groupedFacePairKeys(focus.key,group.key)[0]){
+     session.decisions.set(id,choice);session.seen.add(id);
+     if(choice==='different')skipped.add(id);
+    }
+   }
+   faceBatchSelectedKeys.delete(key);
+   renderCurrentAlbumSingletonPairs();
+  }
+  different.addEventListener('click',()=>decide('different'));
+  later.addEventListener('click',()=>decide('later'));
+  choices.append(same,different,later);entry.append(choices);cards.append(entry);
+ }
+ updateSelected();
+ merge.addEventListener('click',()=>{
+  if(!faceBatchSelectedKeys.size||data!==albumAiGroupsData||!data.valid())return;
+  const selected=[...faceBatchSelectedKeys],all=[focus,...selected.map(k=>byKey.get(k))];
+  if(all.some(g=>!g)){renderCurrentAlbumSingletonPairs();return}
+  const photoSet=new Set();
+  for(const group of all)for(const index of group.faceIndexes){
+   const photo=data.samples[index]?.index;
+   if(!Number.isSafeInteger(photo)||photoSet.has(photo)){
+    status.textContent='⚠️ 同じ写真の別々の顔が混ざるため、まとめられないよ。選択を減らしてね。';return;
+   }
+   photoSet.add(photo);
+  }
+  if(!window.confirm('選んだ'+selected.length+'候補を基準の顔とまとめますか？ 元写真や園児名は変更しません。'))return;
+  try{
+   // Existing atomic batch function validates original-photo overlap again.
+   const next=data.mergeTeacherAlbumGroupsBatch(data.groups,data.samples,focus.key,selected);
+   const snapshot=data.groups.map(g=>({...g,faceIndexes:[...g.faceIndexes]}));
+   data.mergeUndo.push(snapshot);if(data.mergeUndo.length>10)data.mergeUndo.shift();
+   data.groups=next;data.faceGameUndoLatest=true;data.faceGameUndoSnapshot=snapshot;
+   data.mergeSuggestions=null;data.selections.clear();
+   const removedKeys=new Set(selected);
+   for(const id of [...session.checked.keys()])if(id.split('→').some(k=>removedKeys.has(k)))session.checked.delete(id);
+   for(const id of [...session.decisions.keys()])if(id.split('→').some(k=>removedKeys.has(k)))session.decisions.delete(id);
+   for(const id of [...session.seen])if(id.split('→').some(k=>removedKeys.has(k)))session.seen.delete(id);
+   for(const id of [...skipped])if(id.split('→').some(k=>removedKeys.has(k)))skipped.delete(id);
+   faceBatchSelectedKeys.clear();faceBatchFocusKey=String(focus.key);
+   const message=document.querySelector('#currentAlbumAiFeedback');
+   if(message)message.textContent='✅ '+selected.length+'候補の顔をまとめたよ。写真と園児名は変わっていないよ。';
+   renderCurrentAlbumAiGroups();renderCurrentAlbumSingletonPairs();
+  }catch(error){status.textContent='⚠️ '+String(error?.message||error)}
+ });
+ skip.addEventListener('click',()=>{
+  for(const {group} of linked)for(const id of groupedFacePairKeys(focus.key,group.key).slice(0,1)){
+   session.decisions.set(id,'later');session.seen.add(id);
+  }
+  faceBatchFocusKey=null;faceBatchSelectedKeys.clear();renderCurrentAlbumSingletonPairs();
+ });
+}
+
 function renderCurrentAlbumSingletonPairs(){
  const data=albumAiGroupsData,host=$('#albumAiSingletonPairs');
  if(!data?.valid()||!host)return;
+ if(!faceBatchDetailMode){renderGroupedFaceReview(data,host);return}
  host.replaceChildren();
+ const goBatch=document.createElement('button');goBatch.type='button';
+ goBatch.className='secondary wide faceBatchReturn';
+ goBatch.textContent='‹ まとめて顔あわせに戻る';
+ goBatch.addEventListener('click',()=>{faceBatchDetailMode=false;renderCurrentAlbumSingletonPairs()});
+ host.append(goBatch);
  const groups=data.groups.filter(g=>!data.confirmed.has(g.key)&&!String(g.key).startsWith('teacher-recheck-'));
  const unusedCount=data.unusedPhotoIndexes?.size||0;
  if(unusedCount){
