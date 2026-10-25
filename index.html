@@ -7445,8 +7445,15 @@ function renderPhotoFolderMistakes(data,host){
  try{folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length)}
  catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
  const reviewed=data.photoFolderMistakeReviewed;
+ const slots=data.photoMergeSlots||[];
+ folders.sort((a,b)=>{
+  const aSlot=slots.indexOf(a.key),bSlot=slots.indexOf(b.key);
+  return (aSlot<0?10000+data.photoFolders.indexOf(a):aSlot)-
+   (bSlot<0?10000+data.photoFolders.indexOf(b):bSlot);
+ });
  if(!folders.some(f=>f.key===mistakeFocusKey))
-  mistakeFocusKey=folders.find(f=>!reviewed.has(f.key))?.key||folders[0]?.key||null;
+  mistakeFocusKey=folders.find(f=>slots.includes(f.key)&&!reviewed.has(f.key))?.key||
+   folders.find(f=>!reviewed.has(f.key))?.key||folders[0]?.key||null;
  const btn=(label,cls,fn)=>{const el=document.createElement('button');el.type='button';
   el.className=cls;el.textContent=label;el.addEventListener('click',fn);return el};
  const header=document.createElement('div');header.className='photoFolderHero';
@@ -7455,7 +7462,8 @@ function renderPhotoFolderMistakes(data,host){
  header.append(title,text);host.append(header);
  const n=folders.filter(f=>reviewed.has(f.key)).length;
  const count=document.createElement('p');count.className='photoFolderCounter';
- count.textContent='確認済み '+n+' / '+folders.length+'組';host.append(count);
+ count.textContent='確認済み '+n+' / '+folders.length+'組　·　仮仕分けに残したカード '+folders.filter(f=>!slots.includes(f.key)).length+'組';
+ host.append(count);
  if(data.photoFolderUndo.length)host.append(btn('↩ 直前の操作を戻す','secondary',()=>{
   const old=data.photoFolderUndo.pop();if(old){photoFolderRestoreSnapshot(data,old);renderPhotoFolderMistakes(data,host)}
  }));
@@ -7465,12 +7473,6 @@ function renderPhotoFolderMistakes(data,host){
   ()=>setPhotoAssignFlowStep('pending',{scroll:true})));renderPhotoSortGameProgress();return}
  const select=document.createElement('select');select.className='photoMistakePicker';
  select.setAttribute('aria-label','確認するフォルダを選ぶ');
- const slots=data.photoMergeSlots||[];
- folders.sort((a,b)=>{
-  const aSlot=slots.indexOf(a.key),bSlot=slots.indexOf(b.key);
-  return (aSlot<0?10000+data.photoFolders.indexOf(a):aSlot)-
-   (bSlot<0?10000+data.photoFolders.indexOf(b):bSlot);
- });
  folders.forEach((f,i)=>{const o=document.createElement('option');o.value=f.key;
   o.textContent=(reviewed.has(f.key)?'✅ ':'🔎 ')+photoSortFolderLabel(data,f,i)+' · '+photoFolderIndexes(data,f).length+'枚';select.append(o)});
  select.value=mistakeFocusKey;
