@@ -3501,6 +3501,16 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 #albumAiSingletonPairs .photoFolderPhotoGrip:active{cursor:grabbing}
 @media(max-width:500px){#albumAiSingletonPairs .photoFolderDropZones{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+/* DS: A compact alternative keeps the existing select-based move accessible. */
+#albumAiSingletonPairs .photoFolderAdvancedMove{grid-column:1/-1;padding:6px 10px;border:1px solid #dae8f2;
+ border-radius:10px;background:#fff;color:#58748d}
+#albumAiSingletonPairs .photoFolderAdvancedMove summary{font-size:12px;font-weight:700;cursor:pointer;padding:5px 0}
+#albumAiSingletonPairs .photoFolderAdvancedMove[open]{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+#albumAiSingletonPairs .photoFolderAdvancedMove[open] summary{grid-column:1/-1}
+#albumAiSingletonPairs .photoFolderAdvancedMove .photoFolderMoveSelect{min-height:42px}
+#albumAiSingletonPairs .photoFolderAdvancedMove .photoFolderMove{min-height:42px}
+
 </style>
 </head>
 <body>
@@ -6751,7 +6761,10 @@ function photoFolderOpenFixer(data,host,folder){
  move.textContent='➡️ 選んだ先へ移動';
  const clear=document.createElement('button');clear.type='button';clear.className='secondary';
  clear.textContent='選択を解除';clear.addEventListener('click',()=>{chosen.clear();refresh()});
- controls.append(remove,moveSelect,move,clear);
+ const advanced=document.createElement('details');advanced.className='photoFolderAdvancedMove';
+ const advancedLabel=document.createElement('summary');advancedLabel.textContent='リストから移動先を指定（別の操作方法）';
+ advanced.append(advancedLabel,moveSelect,move);
+ controls.append(remove,clear,advanced);
  const availableDestinations=data.photoFolders.filter(f=>f!==folder);
  for(const target of availableDestinations){
   const n=data.photoFolders.indexOf(target);
@@ -6844,6 +6857,8 @@ function photoFolderOpenFixer(data,host,folder){
     ghost.textContent='📷 '+payload().length+'枚を移動中';document.body.append(ghost);
    }
    ghost.style.left=event.clientX+'px';ghost.style.top=event.clientY+'px';
+   if(event.clientY<82)window.scrollBy?.(0,-14);
+   else if(event.clientY>window.innerHeight-82)window.scrollBy?.(0,14);
    const target=document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('[data-photo-folder-target]');
    clearHover();
    if(target&&dropZones.contains(target))target.classList.add('photoFolderDropHover');
@@ -7006,6 +7021,8 @@ function renderPhotoFolders(data,host){
     ghost.textContent='📁 このフォルダをまとめる';document.body.append(ghost);
    }
    ghost.style.left=event.clientX+'px';ghost.style.top=event.clientY+'px';
+   if(event.clientY<82)window.scrollBy?.(0,-14);
+   else if(event.clientY>window.innerHeight-82)window.scrollBy?.(0,14);
    baseCard.classList.toggle('photoFolderDropActive',overBase(event.clientX,event.clientY));
   });
   grip.addEventListener('pointerup',event=>{
