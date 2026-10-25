@@ -3610,6 +3610,18 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
  }
 }
 
+
+/* DW: grab photo candidate cards directly without disabling normal page scroll. */
+#albumAiSingletonPairs .photoFolderGrid>.photoFolderCard{
+ cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none
+}
+#albumAiSingletonPairs .photoFolderGrid>.photoFolderCard img{
+ -webkit-user-drag:none;user-select:none;-webkit-user-select:none;pointer-events:none
+}
+#albumAiSingletonPairs .photoFolderGrid>.photoFolderCard.photoFolderDragging{
+ cursor:grabbing;border-color:#f48dbe;box-shadow:0 0 0 3px #ffd7e9
+}
+#albumAiSingletonPairs .photoFolderGrid>.photoFolderCard .photoFolderZoom{cursor:zoom-in}
 </style>
 </head>
 <body>
@@ -3670,7 +3682,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DV</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 DW</p><h1>おもいでゲームで写真整理</h1><p class="lead">なかま集め → まちがいさがし → 園児のおうちへ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -7180,50 +7192,67 @@ function renderPhotoFolders(data,host){
   const pick=button('💞 同じ子として選択','photoFolderPick',()=>{
    if(selected.has(folder.key))selected.delete(folder.key);else selected.add(folder.key);update();
   });
-  const grip=button('↗ 基準へドラッグ','secondary photoFolderGrip',()=>{});
-  grip.setAttribute('aria-label','この写真フォルダを基準フォルダへドラッグしてまとめる');
-  grip.draggable=true;
-  grip.addEventListener('dragstart',event=>{
-   draggedFolderKey=folder.key;
+  const grip=button('↗ カードをつかんで移動','secondary photoFolderGrip',()=>{});
+  grip.setAttribute('aria-label','このカード全体を基準フォルダへドラッグ');
+  card.title='カードをドラッグして統合。iPhoneでは長押しで移動できるよ';
+  // DW: The full candidate card is now a drag source; all click actions remain.
+  card.draggable=true;
+  card.querySelectorAll('img').forEach(img=>{img.draggable=false});
+  card.addEventListener('dragstart',event=>{
+   draggedFolderKey=folder.key;card.classList.add('photoFolderDragging');
    if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','omoide-folder-'+folder.key)}
   });
-  grip.addEventListener('dragend',()=>{draggedFolderKey=null;baseCard.classList.remove('photoFolderDropActive')});
-  let touch=null,ghost=null;
-  const clearTouch=()=>{
-   touch=null;ghost?.remove();ghost=null;baseCard.classList.remove('photoFolderDropActive');
-  };
-  const overBase=(x,y)=>{
-   const rect=baseCard.getBoundingClientRect();
-   return x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom;
-  };
-  grip.addEventListener('pointerdown',event=>{
-   if(event.pointerType==='mouse'||event.button!==0)return;
-   event.preventDefault();
-   touch={pointerId:event.pointerId,x:event.clientX,y:event.clientY,moved:false};
-   try{grip.setPointerCapture(event.pointerId)}catch{}
+  card.addEventListener('dragend',()=>{
+   draggedFolderKey=null;card.classList.remove('photoFolderDragging');
+   baseCard.classList.remove('photoFolderDropActive');
   });
-  grip.addEventListener('pointermove',event=>{
-   if(!touch||touch.pointerId!==event.pointerId)return;
-   event.preventDefault();
-   if(Math.hypot(event.clientX-touch.x,event.clientY-touch.y)>9)touch.moved=true;
-   if(!touch.moved)return;
-   if(!ghost){
+  const overBase=(x,y)=>{
+   const r=baseCard.getBoundingClientRect();
+   return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom;
+  };
+  // Hold for 320ms to grab on touchscreens. A normal swipe still scrolls.
+  let touch=null,ghost=null;
+  const endTouch=()=>{
+   if(touch)clearTimeout(touch.timer);
+   touch=null;ghost?.remove();ghost=null;
+   card.classList.remove('photoFolderDragging');
+   baseCard.classList.remove('photoFolderDropActive');
+  };
+  const finger=(touches,id)=>[...touches].find(t=>t.identifier===id);
+  card.addEventListener('touchstart',event=>{
+   if(touch||event.touches.length!==1)return;
+   const t=event.touches[0];
+   touch={id:t.identifier,ox:t.clientX,oy:t.clientY,x:t.clientX,y:t.clientY,active:false,moved:false,timer:null};
+   touch.timer=setTimeout(()=>{
+    if(!touch||touch.id!==t.identifier)return;
+    touch.active=true;card.classList.add('photoFolderDragging');
     ghost=document.createElement('div');ghost.className='photoFolderDragGhost';
     ghost.textContent='📁 このフォルダをまとめる';document.body.append(ghost);
-   }
-   ghost.style.left=event.clientX+'px';ghost.style.top=event.clientY+'px';
-   if(event.clientY<82)window.scrollBy?.(0,-14);
-   else if(event.clientY>window.innerHeight-82)window.scrollBy?.(0,14);
-   baseCard.classList.toggle('photoFolderDropActive',overBase(event.clientX,event.clientY));
-  });
-  grip.addEventListener('pointerup',event=>{
-   if(!touch||touch.pointerId!==event.pointerId)return;
-   const shouldMerge=touch.moved&&overBase(event.clientX,event.clientY);
-   try{grip.releasePointerCapture(event.pointerId)}catch{}
-   clearTouch();
-   if(shouldMerge){event.preventDefault();mergePicked([folder.key])}
-  });
-  grip.addEventListener('pointercancel',clearTouch);
+    ghost.style.left=touch.x+'px';ghost.style.top=touch.y+'px';
+   },320);
+  },{passive:true});
+  card.addEventListener('touchmove',event=>{
+   if(!touch)return;
+   const t=finger(event.touches,touch.id);
+   if(!t){endTouch();return}
+   const distance=Math.hypot(t.clientX-touch.ox,t.clientY-touch.oy);
+   if(!touch.active){if(distance>9)endTouch();return}
+   if(event.cancelable)event.preventDefault();
+   touch.x=t.clientX;touch.y=t.clientY;
+   if(distance>9)touch.moved=true;
+   if(ghost){ghost.style.left=touch.x+'px';ghost.style.top=touch.y+'px'}
+   if(touch.y<82)window.scrollBy?.(0,-14);
+   else if(touch.y>window.innerHeight-82)window.scrollBy?.(0,14);
+   baseCard.classList.toggle('photoFolderDropActive',overBase(touch.x,touch.y));
+  },{passive:false});
+  card.addEventListener('touchend',event=>{
+   if(!touch)return;
+   const t=finger(event.changedTouches,touch.id);if(!t)return;
+   const active=touch.active,merge=active&&touch.moved&&overBase(t.clientX,t.clientY);
+   if(active&&event.cancelable)event.preventDefault();
+   endTouch();if(merge)mergePicked([folder.key]);
+  },{passive:false});
+  card.addEventListener('touchcancel',endTouch,{passive:true});
   card.append(pick,grip);
   card.addEventListener('click',event=>{if(!event.target.closest('button'))pick.click()});
   grid.append(card);
