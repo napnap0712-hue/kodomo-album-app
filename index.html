@@ -3352,7 +3352,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
    <div class="pendingGameStageProgress"><strong id="pendingGameTitle">候補フォルダ</strong><span id="pendingGameProgressText"></span><progress id="pendingGameProgress" max="1" value="0"></progress></div>
    <div class="pendingGameWorkspace">
     <div class="pendingGamePhotos">
-     <p class="muted">📷 写真をタップすると選択・もう一度で解除。🔍で拡大できるよ。</p>
+     <p class="muted">📷 写真をタップすると選択・もう一度で解除。🔍で拡大できるよ。複数選んで「↗ 移動」をドラッグするとまとめてお届け！</p>
      <div class="pendingQuickToolbar"><span id="albumAiPendingPicked" class="muted">選択 0枚</span>
       <button id="albumAiPendingSelectVisible" type="button" class="secondary">表示中を全選択</button>
       <button id="albumAiPendingClear" type="button" class="secondary">選択解除</button>
@@ -5840,7 +5840,7 @@ function clearCurrentAlbumSingletonPairs(){
   if(!data?.valid()){status.textContent='⚠️ 写真の状態が変わりました。元データは変更していないよ。';return;}
   const kids=getChildren(data.classId),kid=kids.find(c=>String(c.id)===String(childId));
   if(!kid){status.textContent='⚠️ 園児名簿にない名前です。';return;}
-  const requested=only===null?[...pendingQuickSelected]:[only.index];
+  const requested=only===null?[...pendingQuickSelected]:(Array.isArray(only.indices)?only.indices:[only.index]);
   if(!requested.length){status.textContent='写真をタップして選んでね。';return;}
   const available=new Set(pendingGameAllowedItems(data).map(item=>item.index));
   if(requested.some(index=>!Number.isInteger(index)||!available.has(index))){
@@ -5876,10 +5876,13 @@ function clearCurrentAlbumSingletonPairs(){
     '。写真・保存済みデータは変更していません。';
   }
  }
+ function pendingGameDragPayload(index){
+  return {index,indices:pendingQuickSelected.has(index)&&pendingQuickSelected.size>1?[...pendingQuickSelected]:[index]};
+ }
  function pendingQuickAttachDrag(grip,index){
   grip.draggable=true;
   grip.addEventListener('dragstart',event=>{
-   pendingQuickDrag={index};
+   pendingQuickDrag=pendingGameDragPayload(index);
    if(event.dataTransfer){
     event.dataTransfer.effectAllowed='move';
     event.dataTransfer.setData('text/plain','omoide-pending-photo-'+index);
@@ -5907,7 +5910,7 @@ function clearCurrentAlbumSingletonPairs(){
    if(!gesture.moved)return;
    if(!ghost){
     ghost=document.createElement('div');ghost.className='pendingQuickGhost';
-    ghost.textContent='📷 写真を移動中';document.body.append(ghost);
+    ghost.textContent='📷 '+pendingGameDragPayload(index).indices.length+'枚をお届け中';document.body.append(ghost);
    }
    ghost.style.left=event.clientX+'px';ghost.style.top=event.clientY+'px';
    const target=document.elementFromPoint?.(event.clientX,event.clientY)?.closest?.('[data-pending-child]');
@@ -5932,7 +5935,7 @@ function clearCurrentAlbumSingletonPairs(){
    clearDrag();
    if(moved){
     event.preventDefault();
-    if(target)pendingQuickCommit(target.dataset.pendingChild,{index});
+    if(target)pendingQuickCommit(target.dataset.pendingChild,pendingGameDragPayload(index));
     else $('#albumAiPendingMessage').textContent='園児名ボタンの上で指を離してね。';
    }
   });
