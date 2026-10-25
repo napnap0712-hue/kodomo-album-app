@@ -7164,6 +7164,8 @@ function photoFolderEditMembership(data,sourceKey,photoIndexes,targetKey=null){
  // Drop an emptied manual photo folder, never any source photo or AI sample.
  if(!source.groupKeys.length&&!photoFolderIndexes(data,source).length){
   data.photoFolders=data.photoFolders.filter(f=>f!==source);
+  if(Array.isArray(data.photoMergeSlots))
+   data.photoMergeSlots=data.photoMergeSlots.map(k=>k===source.key?null:k);
   if(data.photoMatchFocus===source.key)data.photoMatchFocus=target?.key||null;
   if(data.photoMatchCandidateKey===source.key)data.photoMatchCandidateKey=null;
   if(data.photoMatchFolderChild)delete data.photoMatchFolderChild[source.key];
@@ -7196,6 +7198,21 @@ function photoFolderAddMembership(data,sourceKey,photoIndexes,targetKey){
  return toAdd.length;
 }
 
+// EM: Display a real child name for a folder assigned to a merge slot.
+// Unknown AI groups remain explicitly unfinished, not silently reassigned.
+function photoSortFolderLabel(data,folder,index=0){
+ const slots=Array.isArray(data.photoMergeSlots)?data.photoMergeSlots:[];
+ const slot=slots.indexOf(folder.key);
+ const id=slot>=0?String(data.photoMergeChildIds?.[slot]||''):
+  String(data.photoMatchFolderChild?.[folder.key]||'');
+ if(id){
+  const child=getChildren(data.classId).find(k=>String(k.id)===id);
+  if(child)return '🌷 '+child.name;
+  return '⚠️ 園児名簿を確認';
+ }
+ if(slot>=0)return 'なかま '+(slot+1);
+ return '📦 未仕分けカード '+(index+1);
+}
 // DQ: Optional photo correction screen. Selecting a photo never changes AI identity.
 function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
  host.querySelector('.photoFolderFixer')?.remove();
@@ -7203,7 +7220,8 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
  const photos=photoFolderIndexes(data,folder),chosen=new Set();
  const panel=document.createElement('section');panel.className='photoFolderFixer';
  const header=document.createElement('div');header.className='photoFolderFixerHeader';
- const title=document.createElement('strong');title.textContent='📷 フォルダ内の写真を修正';
+ const title=document.createElement('strong');
+ title.textContent='📷 '+photoSortFolderLabel(data,folder,data.photoFolders.indexOf(folder))+' の写真を移動';
  const close=document.createElement('button');close.type='button';close.className='secondary';
  close.textContent='閉じる ×';close.addEventListener('click',()=>panel.remove());
  header.append(title,close);
@@ -7213,7 +7231,7 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
  const moveTray=document.createElement('section');moveTray.className='photoFolderMoveTray';
  const moveTrayHeader=document.createElement('strong');moveTrayHeader.textContent='📁 写真のおひっこし';
  const moveTrayHelp=document.createElement('p');moveTrayHelp.className='photoFolderMoveHelp';
- moveTrayHelp.textContent='写真を選んで移動先を押す、または写真の「↗ 移動」を移動先へドラッグ。';
+ moveTrayHelp.textContent='写真をタップで選び、下の園児名を押すだけで移動できるよ。ドラッグも使えるよ。';
  const dropZones=document.createElement('div');dropZones.className='photoFolderDropZones';
  moveTray.append(moveTrayHeader,moveTrayHelp,dropZones);
  let dragPhotoIndexes=null;
@@ -7223,10 +7241,24 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
  const moveSelect=document.createElement('select');moveSelect.className='photoFolderMoveSelect';
  moveSelect.setAttribute('aria-label','移動先の写真フォルダ');
  const empty=document.createElement('option');empty.value='';empty.textContent='移動先を選ぶ';moveSelect.append(empty);
+ // The fast destinations are registered children, including empty child boxes.
+ // All other raw AI folders remain available through this detailed picker.
+ const slotRows=(data.photoMergeChildIds||[]).map((id,slot)=>{
+  const child=getChildren(data.classId).find(k=>String(k.id)===String(id));
+  return {slot,child,key:data.photoMergeSlots?.[slot]||null};
+ }).filter(row=>row.child&&row.key!==folder.key);
+ const emptySlotKey=slot=>'__merge-empty-slot:'+slot;
+ for(const row of slotRows){
+  const option=document.createElement('option');
+  option.value=row.key||emptySlotKey(row.slot);
+  option.textContent='🌷 '+row.child.name+'（'+(row.key?
+   photoFolderIndexes(data,data.photoFolders.find(f=>f.key===row.key)).length:0)+'枚）';
+  moveSelect.append(option);
+ }
  data.photoFolders.forEach((target,n)=>{
-  if(target===folder)return;
+  if(target===folder||(data.photoMergeSlots||[]).includes(target.key))return;
   const option=document.createElement('option');option.value=target.key;
-  option.textContent='📁 フォルダ '+(n+1)+'（'+photoFolderIndexes(data,target).length+'枚）';
+  option.textContent=photoSortFolderLabel(data,target,n)+'（'+photoFolderIndexes(data,target).length+'枚）';
   moveSelect.append(option);
  });
  const move=document.createElement('button');move.type='button';move.className='secondary photoFolderMove';
@@ -7237,14 +7269,14 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
  const advancedLabel=document.createElement('summary');advancedLabel.textContent='リストから移動先を指定（別の操作方法）';
  advanced.append(advancedLabel,moveSelect,move);
  controls.append(remove,clear,advanced);
- const availableDestinations=data.photoFolders.filter(f=>f!==folder);
- for(const target of availableDestinations){
-  const n=data.photoFolders.indexOf(target);
+ for(const row of slotRows){
+  const dest=row.key||emptySlotKey(row.slot);
   const drop=document.createElement('button');drop.type='button';
-  drop.className='secondary photoFolderDropTarget';drop.dataset.photoFolderTarget=target.key;
-  drop.textContent='📁 フォルダ '+(n+1)+'（'+photoFolderIndexes(data,target).length+'枚）';
-  drop.setAttribute('aria-label','写真を候補フォルダ'+(n+1)+'へ移動');
-  drop.addEventListener('click',()=>perform(target.key));
+  drop.className='secondary photoFolderDropTarget';drop.dataset.photoFolderTarget=dest;
+  drop.textContent='🌷 '+row.child.name+'（'+(row.key?
+   photoFolderIndexes(data,data.photoFolders.find(f=>f.key===row.key)).length:0)+'枚）';
+  drop.setAttribute('aria-label',row.child.name+'さんのフォルダへ移動');
+  drop.addEventListener('click',()=>perform(dest));
   drop.addEventListener('dragover',event=>{
    if(!dragPhotoIndexes?.length)return;
    event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';
@@ -7255,10 +7287,14 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
    if(!dragPhotoIndexes?.length)return;
    event.preventDefault();
    const indices=[...dragPhotoIndexes];dragPhotoIndexes=null;
-   drop.classList.remove('photoFolderDropHover');
-   perform(target.key,indices);
+   drop.classList.remove('photoFolderDropHover');perform(dest,indices);
   });
   dropZones.append(drop);
+ }
+ if(!slotRows.length){
+  const help=document.createElement('p');help.className='muted';
+  help.textContent='移動先の園児ボックスがまだないよ。先にマージ画面でボックスに写真を入れるか、下のリストから移動先を選んでね。';
+  dropZones.append(help);
  }
  function refresh(){
   remove.disabled=chosen.size===0;move.disabled=!chosen.size||!moveSelect.value;
@@ -7278,10 +7314,21 @@ function photoFolderOpenFixer(data,host,folder,{onChange=null,scroll=true}={}){
   if(targetKey!==null&&!targetKey){status.textContent='移動先を選んでね';return}
   const n=indexes.length;
   try{
-   photoFolderEditMembership(data,folder.key,indexes,targetKey);
+   const emptyTarget=typeof targetKey==='string'?/^__merge-empty-slot:(\d+)$/.exec(targetKey):null;
+   if(emptyTarget){
+    const slot=Number(emptyTarget[1]);
+    if(!data.photoMergeChildIds?.[slot]||data.photoMergeSlots?.[slot])
+     throw Error('園児の移動先が更新されています。いったん開き直してね');
+    const previous=new Set(data.photoFolders.map(f=>f.key));
+    // Existing split performs one safe, undoable membership change.
+    photoMatchSplitPhotos(data,folder.key,indexes);
+    const created=data.photoFolders.find(f=>!previous.has(f.key));
+    if(!created)throw Error('移動先フォルダを作れませんでした');
+    data.photoMergeSlots[slot]=created.key;
+   }else photoFolderEditMembership(data,folder.key,indexes,targetKey);
    data.photoFolderNotice=targetKey?
-    '✅ '+n+'枚を別の写真フォルダへ移動しました。':
-    '✅ '+n+'枚をこの候補フォルダから外しました。元写真は変更していません。';
+    '✅ '+n+'枚を移動したよ。移動先の写真も次に確認してね。':
+    '✅ '+n+'枚をこの候補フォルダから外したよ。元写真は変更していないよ。';
    if(onChange)onChange();else renderPhotoFolders(data,host);
   }catch(error){status.textContent='⚠️ '+String(error?.message||error)}
  }
