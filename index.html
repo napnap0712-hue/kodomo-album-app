@@ -7683,7 +7683,7 @@ function renderPhotoFolderMistakes(data,host){
  host.append(header);
  const n=folders.filter(f=>reviewed.has(f.key)).length;
  const count=make('p','photoFolderCounter',
-  '確認済み '+n+' / '+folders.length+'組　·　未仕分けカード '+folders.filter(f=>!slots.includes(f.key)).length+'組');
+  '✅ 確認済み '+n+' / '+folders.length+'　·　📦 未振り分け '+photoSortInboxIndexes(data).length+'枚');
  host.append(count);
  function appendReviewFinish(){
  const next=make('section','photoMistakeNext');
@@ -7700,8 +7700,8 @@ function renderPhotoFolderMistakes(data,host){
   summary.append(make('span','',kid.name+' '+set.size+'枚'));
  }
  next.append(summary,make('p','muted',remaining?
-  '🔎 未確認のフォルダが'+remaining+'組あるよ。確認したら見開き編集へ！':
-  '✅ 確認完了！ 未仕分け写真がなければ見開き編集へ進めるよ。'));
+  '🔎 あと'+remaining+'組。未振り分けが残っても先生の判断で進めるよ。':
+  '✅ 確認完了！ 未振り分けが残っていても内容を確認して進めるよ。'));
  next.append(btn('✅ 振り分け完了！見開き編集へ ›','primary wide',finishPhotoSortFromCheck));
  host.append(next);
  }
@@ -7717,7 +7717,7 @@ function renderPhotoFolderMistakes(data,host){
   renderPhotoSortGameProgress();return;
  }
  const picker=document.createElement('select');picker.className='photoMistakePicker';
- picker.setAttribute('aria-label','園児名順で確認するフォルダを選ぶ');
+ picker.setAttribute('aria-label','未振り分けから名簿の登録順に確認するフォルダを選ぶ');
  const placeholder=document.createElement('option');
  placeholder.value='';
  placeholder.textContent='📂 '+(folders.every(f=>reviewed.has(f.key))?
@@ -7978,7 +7978,12 @@ function renderPhotoFolderMistakes(data,host){
  host.append(gallery,showMore,notice);
  addPhotos();
  const actions=make('div','photoMistakeActions');
- actions.append(btn(reviewed.has(folder.key)?'↩ 確認を取り消す':'✅ このフォルダを確認済みにする','primary wide',()=>{
+ actions.append(btn(reviewed.has(folder.key)?'↩ 確認を取り消す':
+  folder.key===PHOTO_SORT_UNPLACED?'✅ 未振り分けを確認して次へ':'✅ この園児を確定して次へ',
+  'primary wide',()=>{
+  if(!reviewed.has(folder.key)&&folder.key===PHOTO_SORT_UNPLACED&&photoSortInboxIndexes(data).length&&
+   !window.confirm('📷 未振り分け写真が'+photoSortInboxIndexes(data).length+
+    '枚残っています。\n写真は消えません。このまま園児の確認へ進む？'))return;
   if(reviewed.has(folder.key)){
    reviewed.delete(folder.key);
    mistakeNeverAutoOpen.delete(folder.key);
@@ -7987,7 +7992,7 @@ function renderPhotoFolderMistakes(data,host){
   }else{
    reviewed.add(folder.key);
    mistakeNeverAutoOpen.add(folder.key);
-   // Advance only to another never-reviewed folder in child-name order.
+   // Advance to the next unconfirmed child in roster order.
    // When none remain, show a summary rather than reopening this folder.
    mistakeFocusKey=null;mistakeManualFocusKey=null;
   }
