@@ -7712,9 +7712,22 @@ function renderPhotoFolderMistakes(data,host){
  if(data.photoFolderNotice){
   const note=make('p','photoFolderNotice',data.photoFolderNotice);note.setAttribute('role','status');host.append(note);
  }
+ // Photos set aside for this album can be restored individually.
+ if(data.unusedPhotoOrder?.length){
+  const excluded=[...data.unusedPhotoOrder].filter(i=>data.unusedPhotoIndexes.has(i));
+  const details=make('details','photoMoveExcluded');
+  details.append(make('summary','','🗑 使わない写真 '+excluded.length+'枚（元に戻せるよ）'));
+  const list=make('div','photoMoveExcludedList');
+  for(const index of excluded){
+   list.append(btn('↩ '+String(data.sourceFiles[index]?.name||'写真'+(index+1))+' を戻す','secondary',()=>{
+    photoSortRestoreExcludedForCheck(data,index);renderPhotoFolderMistakes(data,host);
+   }));
+  }
+  details.append(list);host.append(details);
+ }
  if(!folders.length){
-  host.append(make('p','photoFolderNotice','整理する写真がまだないよ。取り込み内容を確認してね。'));
-  renderPhotoSortGameProgress();return;
+  host.append(make('p','photoFolderNotice','今確認する写真はないよ。必要なら「使わない写真」を戻せるよ。'));
+  appendReviewFinish();renderPhotoSortGameProgress();return;
  }
  const picker=document.createElement('select');picker.className='photoMistakePicker';
  picker.setAttribute('aria-label','未振り分けから名簿の登録順に確認するフォルダを選ぶ');
@@ -7764,7 +7777,10 @@ function renderPhotoFolderMistakes(data,host){
   addMode.setAttribute('aria-pressed',String(transferMode==='add'));
  });
  addMode.setAttribute('aria-pressed','false');
- toolbar.append(selectedText,selectVisible,clear,addMode);
+ const removeSelected=btn('🗑 選択写真を使わない','secondary photoMoveExclude',()=>{
+  if(photoSortExcludeForCheck(data,[...selected]))renderPhotoFolderMistakes(data,host);
+ });
+ toolbar.append(selectedText,selectVisible,clear,addMode,removeSelected);
  host.append(toolbar);
  // Keep destinations in this same view and within reach during scrolling.
  const tray=make('section','photoMoveInlineTray');
@@ -7830,6 +7846,7 @@ function renderPhotoFolderMistakes(data,host){
  function syncSelection(){
   selectedText.textContent=selected.size?'✅ '+selected.size+'枚を選択中':'写真をタップして選択しよう';
   clear.disabled=selected.size===0;
+  removeSelected.disabled=selected.size===0;
   selectVisible.disabled=gallery.children.length===0;
   notice.textContent=selected.size?
    '選択した'+selected.size+'枚を、移動先の園児名でまとめて移動できるよ。':'写真を選択してね';
@@ -7857,6 +7874,9 @@ function renderPhotoFolderMistakes(data,host){
    img.loading='lazy';img.decoding='async';img.alt='写真'+(index+1)+'の全体';
    pick.append(img,make('span','photoMoveInlineBadge','○ 選ぶ'));
    const zoom=btn('🔎 全体を見る','secondary photoMoveInlineZoom',()=>openAlbumAssignedPhoto(index));
+   const removeOne=btn('🗑 使わない','secondary photoMoveRemoveOne',()=>{
+    if(photoSortExcludeForCheck(data,[index]))renderPhotoFolderMistakes(data,host);
+   });
    const grip=btn('↗ 移動','secondary photoMoveInlineGrip',()=>{});
    grip.draggable=true;grip.setAttribute('aria-label','写真'+(index+1)+'を園児フォルダへドラッグ');
    grip.addEventListener('dragstart',event=>{
@@ -7968,7 +7988,7 @@ function renderPhotoFolderMistakes(data,host){
     }
    },{passive:false});
    row.addEventListener('touchcancel',endFingerDrag,{passive:true});
-   row.append(pick,zoom,grip);gallery.append(row);
+   row.append(pick,zoom,grip,removeOne);gallery.append(row);
   }
   shown=end;
   showMore.hidden=shown>=indexes.length;
@@ -8000,7 +8020,7 @@ function renderPhotoFolderMistakes(data,host){
  }));
  host.append(actions);
  appendReviewFinish();
- host.append(make('p','muted','移動後にもう一度確認できるよ。残したAIカードも消えないよ。途中保存は画面上のボタンから。'));
+ host.append(make('p','muted','確定済みの園児は自動で開き直さないよ。見直すときは上の一覧から選んでね。'));
  renderPhotoSortGameProgress();
 }
 
