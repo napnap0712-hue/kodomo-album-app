@@ -7902,6 +7902,7 @@ function renderPhotoMatching(data,host){
  });
 }
 
+function photoMergeRosterCount(){return getChildren(selected.id).length}
 function renderPhotoFolders(data,host){
  return window.omoideMergeRender?window.omoideMergeRender(data,host,{
   valid:()=>data===albumAiGroupsData&&data.valid(),current:()=>albumAiGroupsData,
@@ -7910,7 +7911,7 @@ function renderPhotoFolders(data,host){
   move:photoMatchMovePhotos,add:photoMatchAddPhotos,split:photoMatchSplitPhotos,
   url:fileUrl,openPhoto:openAlbumAssignedPhoto,progress:renderPhotoSortGameProgress,
   next:setPhotoAssignFlowStep,faces:photoMatchFaceSamples,score:photoMatchScore,
-  signature:photoMatchSignature,boxCount:getChildren(selected.id).length
+  signature:photoMatchSignature,boxCount:photoMergeRosterCount()
  }):renderPhotoMatching(data,host);
  host.replaceChildren();renderPhotoSortGameProgress();
  let folders;
