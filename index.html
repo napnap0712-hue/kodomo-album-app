@@ -6667,7 +6667,8 @@ function openAlbumAssignedPhoto(index){
   const indexes=single||[...assignmentBatchSelected];
   if(!kid){status.textContent='⚠️ 園児名が見つかりません。変更していません。';return;}
   if(!indexes.length){status.textContent='先に写真を選んでね。';return;}
-  if(String(activeAssignmentFolder)!=='unassigned'||indexes.some(i=>
+  if(!Array.isArray(photoAssignments)||photoAssignments.length!==files.length||
+    String(activeAssignmentFolder)!=='unassigned'||indexes.some(i=>
     !Number.isInteger(i)||i<0||i>=files.length||isAlbumUnusedPhoto(i)||assignmentPhotoIds(i).length)){
    status.textContent='⚠️ 写真の状態が変わりました。変更していません。';return;
   }
@@ -6677,7 +6678,9 @@ function openAlbumAssignedPhoto(index){
   photoAssignments=staged;
   assignmentBatchSelected.clear();
   renderPhotoAssignmentPage();
-  $('#assignmentBatchMessage').textContent='✅ '+kid.name+'さんへ'+indexes.length+'枚振り分けたよ。途中なら上の「ここまで保存」を押してね。';
+  const success='✅ '+kid.name+'さんへ'+indexes.length+'枚振り分けたよ。途中なら上の「ここまで保存」を押してね。';
+  $('#assignmentBatchMessage').textContent=success;
+  if($('#assignmentBatchPanel').hidden)$('#assignmentFolderHint').textContent=success;
  }
  $('#assignmentBatchSelectVisible')?.addEventListener('click',()=>{
   if(String(activeAssignmentFolder)!=='unassigned')return;
