@@ -3780,7 +3780,7 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-25 EG</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 EH</p><h1>💕 おもいでマッチング！</h1><p class="lead">AIの候補を見て「同じ」「別々」でおかたづけ！</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
@@ -7694,8 +7694,13 @@ function renderPhotoMatching(data,host){
   }
   col.append(hero);
   const row=document.createElement('div');row.className='photoMatchThumbnails';
-  const previewMax=18;
-  for(const index of ids.slice(0,previewMax)){
+  // EH: Keep the teacher inside matching when reviewing more than 18 photos.
+  // The next batch is loaded only when requested; no original is modified.
+  let shown=0;
+  const more=btn('','secondary photoMatchMore',()=>appendNextPhotos());
+  function appendNextPhotos(){
+   const next=Math.min(ids.length,shown+18);
+   for(const index of ids.slice(shown,next)){
    const entry=document.createElement('div');entry.className='photoMatchThumb';
    entry.dataset.photo=String(index);
    const select=btn('','photoMatchSelect',()=>{
@@ -7759,12 +7764,14 @@ function renderPhotoMatching(data,host){
    },{passive:false});
    select.addEventListener('touchcancel',cleanup);
    entry.append(select,zoom);row.append(entry);
+   }
+   shown=next;
+   more.hidden=shown>=ids.length;
+   more.textContent='＋ 写真をもっと見る（'+shown+' / '+ids.length+'枚）';
   }
+  appendNextPhotos();
   col.append(row);
-  if(ids.length>previewMax)col.append(btn('＋ 残り'+(ids.length-previewMax)+'枚も見る','secondary photoMatchMore',()=>{
-   // Opening the existing correction gallery avoids 100 full-size DOM images.
-   photoFolderOpenFixer(data,host,folder,{scroll:false,onChange:()=>renderPhotoMatching(data,host)});
-  }));
+  if(ids.length>18)col.append(more);
   col.addEventListener('dragover',event=>{
    if(desktopDrag&&desktopDrag.from!==folder.key){
     event.preventDefault();
