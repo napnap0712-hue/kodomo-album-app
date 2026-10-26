@@ -436,11 +436,22 @@ window.omoideMergeGameRender=function(data,host,api){
  catch(err){host.textContent='⚠️ '+String(err?.message||err);return}
  const byKey=new Map(folders.map(f=>[f.key,f]));
  const all=folders.slice().sort((a,b)=>api.indexes(data,b).length-api.indexes(data,a).length);
- const pages=Math.max(1,Math.ceil(all.length/12));
- st.page=Math.max(0,Math.min(pages-1,st.page));
- const board=all.slice(st.page*12,st.page*12+12);
+ const rosterCount=Array.isArray(api.children)?api.children.filter(k=>k&&k.id&&k.name).length:12;
+ const autoSize=rosterCount<=8?9:rosterCount<=12?12:rosterCount<=16?16:rosterCount<=20?20:rosterCount<=24?24:30;
+ const allowed=[9,12,16,20,24,30];
+ const boardSize=allowed.includes(st.boardSize)?st.boardSize:autoSize;
+ // UI-only stable board ordering: no photo assignments or persisted merge slots change.
+ if(!Array.isArray(st.boardKeys))st.boardKeys=[];
+ st.boardKeys=st.boardKeys.filter(k=>byKey.has(k));
+ const onBoard=new Set(st.boardKeys);
+ for(const folder of all){if(st.boardKeys.length>=boardSize)break;
+  if(!onBoard.has(folder.key)){st.boardKeys.push(folder.key);onBoard.add(folder.key)}
+ }
+ if(st.boardKeys.length>boardSize)st.boardKeys.length=boardSize;
+ const board=st.boardKeys.map(k=>byKey.get(k)).filter(Boolean);
  const boardKeys=new Set(board.map(f=>f.key));
  const waiting=all.filter(f=>!boardKeys.has(f.key));
+ const pages=1;st.page=0;
  const waitingPages=Math.max(1,Math.ceil(waiting.length/8));
  st.waiting=Math.max(0,Math.min(waitingPages-1,st.waiting));
  if(st.selected&&!byKey.has(st.selected))st.selected=null;
@@ -478,6 +489,8 @@ window.omoideMergeGameRender=function(data,host,api){
    data.photoMergeFocusBoxKey=target;
    st.selected=null;st.checked.clear();st.confirm=null;
    st.effectTarget=target;st.celebrate=true;
+   st.boardKeys=st.boardKeys.filter(k=>!sources.includes(k));
+   if(!st.boardKeys.includes(target))st.boardKeys.unshift(target);
    const result=api.ensure(data).find(f=>f.key===target);
    st.notice='✨ MERGE! '+sources.length+'組を合体！ '+(result?api.indexes(data,result).length:0)+'枚になったよ！';
    redraw();
@@ -577,12 +590,12 @@ window.omoideMergeGameRender=function(data,host,api){
  hero.append(make('h2','','🌙 おもいでマージ！'),make('p','','同じ子の写真ピースを重ねて、ひとつにしよう！'));
  host.append(hero);
  if(st.celebrate){st.celebrate=false;setTimeout(()=>{host.querySelectorAll('.galaxyTileMergeFx').forEach(e=>e.remove());st.effectTarget=null},1300)}
- host.append(make('p','galaxyGameStats','🧩 写真グループ '+all.length+'組　·　🎮 12マスボード　·　✨ 同じ子を先生が確認して合体'));
+ host.append(make('p','galaxyGameStats','🧩 写真グループ '+all.length+'組　·　🎮 '+boardSize+'マスボード　·　🚀 待機 '+waiting.length+'組'));
  const note=make('p','galaxyGameNotice',st.notice||'写真ピースを1つ選んで、合体する相手をタップ！ 長押しドラッグでもOK。');
  note.setAttribute('role','status');host.append(note);
  if(data.photoFolderUndo?.length)host.append(button('↩ ひとつ戻す','secondary galaxyUndo',()=>{
   const snap=data.photoFolderUndo.pop();if(!snap)return;
-  api.restore(data,snap);st.selected=null;st.checked.clear();st.effectTarget=null;st.notice='↩ 元に戻したよ！';redraw();
+  api.restore(data,snap);st.selected=null;st.checked.clear();st.boardKeys=[];st.effectTarget=null;st.notice='↩ 元に戻したよ！';redraw();
  }));
  if(st.confirm){
   const pair=st.confirm;
@@ -611,16 +624,18 @@ window.omoideMergeGameRender=function(data,host,api){
  batchBar.append(batchBtn,button('チェック解除','secondary',()=>{st.checked.clear();st.mergeTarget=null;redraw()}));
  host.append(batchBar);
  const heading=make('div','galaxyGameHead');
- heading.append(make('strong','','🪐 おほしさまボード'),make('span','','4 × 3 マス'));
+ heading.append(make('strong','','🪐 おほしさまボード'));
+ const sizePicker=make('select','galaxyBoardSize');sizePicker.setAttribute('aria-label','ボードのマス数');
+ allowed.forEach(n=>{const option=make('option','',n+'マス');option.value=String(n);sizePicker.append(option)});
+ sizePicker.value=String(boardSize);
+ sizePicker.addEventListener('change',()=>{st.boardSize=Number(sizePicker.value);st.boardKeys=[];st.checked.clear();st.selected=null;redraw()});
+ heading.append(sizePicker);
  host.append(heading);
  const stage=make('div','galaxyGameBoard');
  board.forEach(f=>stage.append(card(f,'galaxyTile')));
- for(let i=board.length;i<12;i++)stage.append(make('div','galaxyTile galaxyEmpty','＋'));
+ for(let i=board.length;i<boardSize;i++)stage.append(make('div','galaxyTile galaxyEmpty','＋'));
  host.append(stage);
- const nav=make('div','galaxyGameNav');
- const back=button('◀ 前の12組','secondary',()=>{st.page--;st.selected=null;redraw()});back.disabled=st.page===0;
- const next=button('次の12組 ▶','secondary',()=>{st.page++;st.selected=null;redraw()});next.disabled=st.page>=pages-1;
- nav.append(back,make('strong','',st.page+1+' / '+pages+' ページ'),next);host.append(nav);
+
  const sub=make('div','galaxyGameHead');
  sub.append(make('strong','','🚀 なかま待ちピース'),make('span','',waiting.length+'組'));host.append(sub);
  const wait=make('div','galaxyWaiting');
