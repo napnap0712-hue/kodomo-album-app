@@ -7698,8 +7698,7 @@ function renderPhotoFolderMistakes(data,host){
   return element;
  };
  const header=make('div','photoFolderHero');
- header.append(make('strong','','📷 STEP 2｜写真のおひっこし！'),
-  make('p','','写真をタップで選択。長押しでドラッグ、または園児名をタップで移動できるよ。'));
+ header.append(make('strong','','🔎 まちがいさがし！'));
  host.append(header);
  const n=folders.filter(f=>reviewed.has(f.key)).length;
  const count=make('p','photoFolderCounter',
@@ -7770,11 +7769,23 @@ function renderPhotoFolderMistakes(data,host){
  host.append(picker);
  if(!mistakeFocusKey){
   const pending=folders.filter(f=>!reviewed.has(f.key)).length;
-  const message=make('p','photoFolderNotice',pending?
-   '🔎 再確認が必要なフォルダが'+pending+'組あるよ。確認済みのフォルダは自動で開かないので、園児名一覧から選んでね。':
-   '🎉 全フォルダの確認が終わったよ！ 必要なら園児名を選んで見直せるよ。');
-  host.append(message);
-  appendReviewFinish();
+  if(!pending&&photoSortInboxIndexes(data).length===0){
+   const finish=make('section','omoideGalaxyClear');
+   finish.append(make('div','omoideGalaxyOrbit','🪐　✨　🌟　🪐'),
+    make('h2','','🎉 おつかれさまでした！'),
+    make('h3','','おもいで銀河、完成！'),
+    make('p','','みんなのおもいでを整理できたよ！'),
+    make('div','omoideGalaxySummary','📸 '+data.sourceFiles.length+'枚　🌷 '+kids.length+'人　✅ '+n+'/'+folders.length),
+    btn('📖 見開き編集へすすむ！','primary wide',finishPhotoSortFromCheck),
+    btn('↩ 写真の振り分けを見直す','secondary wide',()=>{
+     mistakeFocusKey=folders[0]?.key||null;mistakeManualFocusKey=mistakeFocusKey;
+     renderPhotoFolderMistakes(data,host);
+    }));
+   host.append(finish);
+  }else{
+   host.append(make('p','photoFolderNotice','🔎 あと'+pending+'組・未振り分け'+photoSortInboxIndexes(data).length+'枚'));
+   appendReviewFinish();
+  }
   renderPhotoSortGameProgress();
   return;
  }
