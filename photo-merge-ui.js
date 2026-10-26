@@ -632,6 +632,7 @@ window.omoideMergeGameRender=function(data,host,api){
  heading.append(sizePicker);
  host.append(heading);
  const stage=make('div','galaxyGameBoard');
+ stage.style.gridTemplateColumns='repeat('+(boardSize===9?3:boardSize===30?5:4)+',minmax(0,1fr))';
  board.forEach(f=>stage.append(card(f,'galaxyTile')));
  for(let i=board.length;i<boardSize;i++)stage.append(make('div','galaxyTile galaxyEmpty','＋'));
  host.append(stage);
