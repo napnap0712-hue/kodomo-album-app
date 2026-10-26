@@ -682,7 +682,7 @@ window.omoideMergeGameRender=function(data,host,api){
   if(!st.selected.size){st.notice='先に候補ピースをチェックしてね';redraw();return}
   const kid=kids.find(k=>String(k.id)===String(id));
   if(!kid)return;
-  if(!window.confirm('🌷 '+kid.name+'さんへ、'+st.selected.size+'組の候補をマージする？\\n別の園児が混ざっていてもSTEP2で修正できるよ。'))return;
+  // STEP1 is one-tap assignment. Mistakes can be corrected in STEP2 or undone here.
   try{
    const done=api.assignChild(data,String(id),[...st.selected]);
    st.selected.clear();st.effect=id;
@@ -698,6 +698,15 @@ window.omoideMergeGameRender=function(data,host,api){
  host.append(stats);
  const notice=make('p','galaxyGameNotice',st.notice||'下の候補ピースを複数チェックして、園児のマスをタップ！');
  notice.setAttribute('role','status');host.append(notice);
+ if(data.photoFolderUndo?.length)host.append(btn('←戻す','secondary galaxyUndo',()=>{
+  const snapshot=data.photoFolderUndo.pop();
+  if(!snapshot)return;
+  api.restore(data,snapshot);
+  // Assignments are preserved; never silently erase photos from a child's album.
+  st.selected.clear();st.effect=null;
+  st.notice='↩ 直前のマージを戻したよ。園児別の登録内容も確認してね。';
+  redraw();
+ }));
  const board=make('div','galaxyGameBoard galaxyChildBoard');
  board.style.gridTemplateColumns='repeat('+(kids.length<=9?3:4)+',minmax(0,1fr))';
  for(const kid of kids){
