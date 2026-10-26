@@ -3,6 +3,7 @@
 'use strict';
 window.omoideMergeRender=function(data,host,api){
  if(!data||!api.valid()||!host)return;
+ if(window.omoideMergeGameRender){window.omoideMergeGameRender(data,host,api);return;}
  const oldScroll=host.querySelector('.mergeSlots')?.scrollLeft||0;
  // Cache photo membership only for this render. It is invalidated after merges.
  const photoIndexesCache=new Map();
@@ -414,4 +415,168 @@ window.omoideMergeRender=function(data,host,api){
   }
  });
 };
+
+/* ET: Real 12-tile photo merge board. Uses ER merge/snapshot/undo APIs;
+   no AI, file, persistence or STEP2 transfer logic is replaced. */
+const omoideGameSessions=new WeakMap();
+window.omoideMergeGameRender=function(data,host,api){
+ if(!data||!api.valid()||!host)return;
+ const make=(tag,cls,value)=>{
+  const e=document.createElement(tag);if(cls)e.className=cls;
+  if(value!==undefined)e.textContent=value;return e;
+ };
+ const button=(label,cls,fn)=>{
+  const b=make('button',cls,label);b.type='button';b.addEventListener('click',fn);return b;
+ };
+ let st=omoideGameSessions.get(data);
+ if(!st){st={page:0,waiting:0,selected:null,notice:'',dragging:null};omoideGameSessions.set(data,st)}
+ let folders;
+ try{folders=api.ensure(data).filter(f=>api.indexes(data,f).length)}
+ catch(err){host.textContent='⚠️ '+String(err?.message||err);return}
+ const byKey=new Map(folders.map(f=>[f.key,f]));
+ const all=folders.slice().sort((a,b)=>api.indexes(data,b).length-api.indexes(data,a).length);
+ const pages=Math.max(1,Math.ceil(all.length/12));
+ st.page=Math.max(0,Math.min(pages-1,st.page));
+ const board=all.slice(st.page*12,st.page*12+12);
+ const boardKeys=new Set(board.map(f=>f.key));
+ const waiting=all.filter(f=>!boardKeys.has(f.key));
+ const waitingPages=Math.max(1,Math.ceil(waiting.length/8));
+ st.waiting=Math.max(0,Math.min(waitingPages-1,st.waiting));
+ if(st.selected&&!byKey.has(st.selected))st.selected=null;
+ function redraw(){window.omoideMergeRender(data,host,api)}
+ function announce(message){st.notice=message;redraw()}
+ function photo(f){
+  const i=api.indexes(data,f)[0],img=make('img','');
+  try{img.src=api.url(data.sourceFiles[i]);}catch(e){}
+  img.alt='AI仮グループの代表写真';img.loading='lazy';img.decoding='async';img.draggable=false;
+  return img;
+ }
+ function integrateSlots(target,source){
+  const slots=data.photoMergeSlots;
+  if(!Array.isArray(slots))return;
+  const t=slots.indexOf(target),src=slots.indexOf(source);
+  if(src>=0&&t<0)slots[src]=target;
+  else if(src>=0&&t>=0)slots[src]=null;
+  else if(t<0){const empty=slots.findIndex(x=>!x);if(empty>=0)slots[empty]=target}
+ }
+ function doMerge(source,target){
+  if(!source||!target||source===target){st.selected=null;redraw();return}
+  if(!byKey.has(source)||!byKey.has(target)){announce('カードが更新されたよ。もう一度選んでね。');return}
+  const old=api.snapshot(data),previous=[...(data.photoFolderUndo||[])];
+  try{
+   api.merge(data,target,source);
+   integrateSlots(target,source);
+   if(!Array.isArray(data.photoFolderUndo))data.photoFolderUndo=[];
+   data.photoFolderUndo=previous.concat([old]).slice(-10);
+   data.photoFolderReviewed?.delete(target);
+   data.photoFolderMistakeReviewed?.delete(target);
+   data.photoMatchFinalReviewed=false;
+   data.photoMergeFocusBoxKey=target;
+   st.selected=null;
+   const result=api.ensure(data).find(f=>f.key===target);
+   st.notice='✨ MERGE! '+(result?api.indexes(data,result).length:0)+'枚のなかまになったよ！';
+   redraw();
+  }catch(err){
+   api.restore(data,old);data.photoFolderUndo=previous;
+   announce('⚠️ '+String(err?.message||err));
+  }
+ }
+ function choose(key){
+  if(st.selected===key){st.selected=null;redraw();return}
+  if(!st.selected){st.selected=key;redraw();return}
+  doMerge(st.selected,key);
+ }
+ function card(f,cls){
+  const ids=api.indexes(data,f),tile=button('',cls+(st.selected===f.key?' galaxySelected':''),()=>choose(f.key));
+  tile.dataset.key=f.key;tile.setAttribute('aria-label','写真グループ '+ids.length+'枚');
+  const view=make('span','galaxyTileImage');view.append(photo(f));
+  tile.append(view,make('strong','',ids.length+'枚'),make('small','','タップして選ぶ'));
+  tile.draggable=true;
+  tile.addEventListener('dragstart',e=>{st.dragging=f.key;
+   if(e.dataTransfer){e.dataTransfer.setData('text/plain',f.key);e.dataTransfer.effectAllowed='move'}});
+  tile.addEventListener('dragover',e=>{if(st.dragging&&st.dragging!==f.key){e.preventDefault();tile.classList.add('galaxyHover')}});
+  tile.addEventListener('dragleave',()=>tile.classList.remove('galaxyHover'));
+  tile.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();tile.classList.remove('galaxyHover');
+   const source=st.dragging||e.dataTransfer?.getData('text/plain');st.dragging=null;
+   if(source&&source!==f.key)doMerge(source,f.key)});
+  tile.addEventListener('dragend',()=>{st.dragging=null;tile.classList.remove('galaxyHover')});
+  // iPhone: long-press to drag without stealing ordinary vertical scrolling.
+  let hold=null;
+  tile.addEventListener('touchstart',e=>{
+   if(e.touches.length!==1)return;
+   const t=e.touches[0];hold={x:t.clientX,y:t.clientY,active:false};
+   hold.timer=setTimeout(()=>{
+    if(!hold)return;hold.active=true;st.dragging=f.key;
+    tile.classList.add('galaxyDragging');
+   },360);
+  },{passive:true});
+  tile.addEventListener('touchmove',e=>{
+   if(!hold)return;
+   const t=e.touches[0];
+   if(!hold.active&&Math.hypot(t.clientX-hold.x,t.clientY-hold.y)>10){
+    clearTimeout(hold.timer);hold=null;return;
+   }
+   if(hold.active){
+    if(e.cancelable)e.preventDefault();
+    document.querySelectorAll('.galaxyHover').forEach(x=>x.classList.remove('galaxyHover'));
+    document.elementFromPoint(t.clientX,t.clientY)?.closest('.galaxyTile')?.classList.add('galaxyHover');
+   }
+  },{passive:false});
+  tile.addEventListener('touchend',e=>{
+   if(!hold)return;
+   clearTimeout(hold.timer);const active=hold.active;
+   const t=e.changedTouches[0],dest=active?document.elementFromPoint(t.clientX,t.clientY)?.closest('.galaxyTile'):null;
+   hold=null;st.dragging=null;tile.classList.remove('galaxyDragging');
+   document.querySelectorAll('.galaxyHover').forEach(x=>x.classList.remove('galaxyHover'));
+   if(active){e.preventDefault();tile.dataset.suppressClick=String(Date.now()+800);
+    if(dest?.dataset.key&&dest.dataset.key!==f.key)doMerge(f.key,dest.dataset.key)}
+  },{passive:false});
+  tile.addEventListener('touchcancel',()=>{if(hold)clearTimeout(hold.timer);hold=null;st.dragging=null;tile.classList.remove('galaxyDragging')});
+  tile.addEventListener('click',e=>{if(Number(tile.dataset.suppressClick||0)>Date.now()){e.preventDefault();e.stopImmediatePropagation()}},true);
+  return tile;
+ }
+ host.replaceChildren();
+ const hero=make('div','galaxyGameHero');
+ hero.append(make('h2','','🌙 おもいでマージ！'),make('p','','同じ子の写真ピースを重ねて、ひとつにしよう！'));
+ host.append(hero);
+ host.append(make('p','galaxyGameStats','🧩 写真グループ '+all.length+'組　·　🎮 12マスボード　·　✨ 同じ子を先生が確認して合体'));
+ const note=make('p','galaxyGameNotice',st.notice||'写真ピースを1つ選んで、合体する相手をタップ！ 長押しドラッグでもOK。');
+ note.setAttribute('role','status');host.append(note);
+ if(data.photoFolderUndo?.length)host.append(button('↩ ひとつ戻す','secondary galaxyUndo',()=>{
+  const snap=data.photoFolderUndo.pop();if(!snap)return;
+  api.restore(data,snap);st.selected=null;st.notice='↩ 元に戻したよ！';redraw();
+ }));
+ const heading=make('div','galaxyGameHead');
+ heading.append(make('strong','','🪐 おほしさまボード'),make('span','','4 × 3 マス'));
+ host.append(heading);
+ const stage=make('div','galaxyGameBoard');
+ board.forEach(f=>stage.append(card(f,'galaxyTile')));
+ for(let i=board.length;i<12;i++)stage.append(make('div','galaxyTile galaxyEmpty','＋'));
+ host.append(stage);
+ const nav=make('div','galaxyGameNav');
+ const back=button('◀ 前の12組','secondary',()=>{st.page--;st.selected=null;redraw()});back.disabled=st.page===0;
+ const next=button('次の12組 ▶','secondary',()=>{st.page++;st.selected=null;redraw()});next.disabled=st.page>=pages-1;
+ nav.append(back,make('strong','',st.page+1+' / '+pages+' ページ'),next);host.append(nav);
+ const sub=make('div','galaxyGameHead');
+ sub.append(make('strong','','🚀 なかま待ちピース'),make('span','',waiting.length+'組'));host.append(sub);
+ const wait=make('div','galaxyWaiting');
+ waiting.slice(st.waiting*8,st.waiting*8+8).forEach(f=>wait.append(card(f,'galaxyTile galaxyWaitingTile')));
+ if(!waiting.length)wait.append(make('p','','このページ以外のカードはないよ'));
+ host.append(wait);
+ const waitNav=make('div','galaxyGameNav');
+ const prev=button('◀ 前','secondary',()=>{st.waiting--;redraw()});prev.disabled=st.waiting===0;
+ const nxt=button('次 ▶','secondary',()=>{st.waiting++;redraw()});nxt.disabled=st.waiting>=waitingPages-1;
+ waitNav.append(prev,make('strong','',st.waiting+1+' / '+waitingPages),nxt);host.append(waitNav);
+ const footer=make('section','galaxyGameFinal');
+ footer.append(make('strong','','📸 次は「写真のおひっこし！」'));
+ footer.append(make('p','','ここで全部を合体させなくても大丈夫。残ったグループも次の画面で確認できるよ。'));
+ footer.append(button('🚀 写真のおひっこしへ進む','primary wide',()=>{
+  if(data!==api.current()||!api.valid())return;
+  data.photoMergeSelected=[];data.photoMatchFinalReviewed=false;
+  api.next('check',{scroll:true});
+ }));
+ host.append(footer);
+ api.progress();
+};
+
 })();
