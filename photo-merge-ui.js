@@ -503,26 +503,31 @@ window.omoideMergeGameRender=function(data,host,api){
   doMergeBatch(pair.keys,pair.target);
  }
  function card(f,cls){
-  const ids=api.indexes(data,f),tile=button('',cls+(st.selected===f.key?' galaxySelected':''),event=>{
-   if(event.target.closest('.galaxyCheck')){
-    if(st.checked.has(f.key))st.checked.delete(f.key);
-    else st.checked.add(f.key);
-    if(!st.checked.has(st.mergeTarget))st.mergeTarget=null;
-    st.selected=null;redraw();return;
-   }
-   choose(f.key);
+  const ids=api.indexes(data,f);
+  // Independent controls: no nested buttons, no synthetic click target guessing.
+  const tile=make('div',cls+(st.selected===f.key?' galaxySelected':''));
+  tile.dataset.key=f.key;
+  const view=button('','galaxyTileImage galaxyPhotoOpen',()=>{
+   st.selected=null;st.checked.clear();
+   data.photoMergeInspectorKey=f.key;
+   // Open the group's source photos in the existing inspector when available.
+   api.openPhoto(ids[0]);
   });
-  tile.dataset.key=f.key;tile.setAttribute('aria-label','写真グループ '+ids.length+'枚');
-  const view=make('span','galaxyTileImage');view.append(photo(f));
-  tile.append(view,make('strong','',ids.length+'枚'),make('small','','タップして選ぶ'));
-  const check=make('span','galaxyCheck',st.checked.has(f.key)?'☑':'□');
-  check.setAttribute('role','checkbox');check.setAttribute('aria-checked',String(st.checked.has(f.key)));
-  check.setAttribute('aria-label','このピースを一括マージ候補にする');
+  view.setAttribute('aria-label',ids.length+'枚の写真グループを確認');
+  view.append(photo(f));
+  tile.append(view,make('strong','',ids.length+'枚'),make('small','','写真で中身を確認'));
+  const check=button(st.checked.has(f.key)?'✓':'','galaxyCheck'+(st.checked.has(f.key)?' isChecked':''),()=>{
+   if(st.checked.has(f.key))st.checked.delete(f.key);else st.checked.add(f.key);
+   if(!st.checked.has(st.mergeTarget))st.mergeTarget=null;
+   st.selected=null;redraw();
+  });
+  check.setAttribute('aria-pressed',String(st.checked.has(f.key)));
+  check.setAttribute('aria-label','この写真グループを'+(st.checked.has(f.key)?'選択解除':'複数選択'));
   tile.append(check);
   if(st.checked.has(f.key))tile.classList.add('galaxyChecked');
   if(st.mergeTarget===f.key)tile.classList.add('galaxyMergeTarget');
   if(st.effectTarget===f.key){tile.classList.add('galaxyMergePop');
-   const fx=make('span','galaxyTileMergeFx','✨ MERGE! 💕');tile.append(fx);}
+   tile.append(make('span','galaxyTileMergeFx','✨ MERGE! 💕'));}
   tile.draggable=true;
   tile.addEventListener('dragstart',e=>{st.dragging=f.key;
    if(e.dataTransfer){e.dataTransfer.setData('text/plain',f.key);e.dataTransfer.effectAllowed='move'}});
