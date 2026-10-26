@@ -7772,7 +7772,9 @@ function renderPhotoFolderMistakes(data,host){
   mistakeManualFocusKey=mistakeFocusKey;
   renderPhotoFolderMistakes(data,host);
  });
- host.append(picker);
+ // Advance through pending and recheck planets automatically.
+ // Only show the manual picker after all folders have been reviewed.
+ if(folders.every(item=>reviewed.has(item.key)))host.append(picker);
  if(!mistakeFocusKey){
   const pending=folders.filter(f=>!reviewed.has(f.key)).length;
   if(!pending&&photoSortInboxIndexes(data).length===0){
