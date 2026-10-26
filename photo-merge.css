@@ -558,3 +558,34 @@
  #albumAiSingletonPairs .galaxyMergePop,
  #albumAiSingletonPairs .galaxyTileMergeFx{animation:none}
 }
+
+/* EW: real, independently tappable round select control. */
+#albumAiSingletonPairs .galaxyTile{position:relative}
+#albumAiSingletonPairs .galaxyTile .galaxyPhotoOpen{
+ display:block;width:100%;padding:0;border:0;min-height:0;
+ background:#f7edff;box-shadow:none;cursor:pointer;
+ touch-action:manipulation;overflow:hidden
+}
+#albumAiSingletonPairs .galaxyTile .galaxyPhotoOpen img{width:100%;height:100%;object-fit:cover}
+#albumAiSingletonPairs .galaxyTile .galaxyCheck{
+ position:absolute;top:3px;right:3px;z-index:5;
+ display:grid;place-items:center;flex:none;
+ width:30px;height:30px;min-height:30px;padding:0;
+ border:2px solid #8d68b8;border-radius:50%;
+ background:#fffefa;color:#70418b;
+ font-size:19px;line-height:1;font-weight:900;
+ box-shadow:0 2px 7px #39225750;
+ touch-action:manipulation;-webkit-tap-highlight-color:transparent
+}
+#albumAiSingletonPairs .galaxyTile .galaxyCheck.isChecked{
+ background:#ffe387;border-color:#e9a62f;color:#6e3d83
+}
+#albumAiSingletonPairs .galaxyTile .galaxyCheck:focus-visible,
+#albumAiSingletonPairs .galaxyTile .galaxyPhotoOpen:focus-visible{
+ outline:3px solid #ffca62;outline-offset:2px
+}
+@media(max-width:600px){
+ #albumAiSingletonPairs .galaxyTile .galaxyCheck{
+ width:27px;height:27px;min-height:27px;font-size:17px
+ }
+}
