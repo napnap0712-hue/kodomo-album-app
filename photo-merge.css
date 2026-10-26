@@ -619,3 +619,78 @@
 @media(prefers-reduced-motion:reduce){
  #albumAiSingletonPairs .galaxyTileMergeFx,#albumAiSingletonPairs .galaxyMergePop{animation:none!important}
 }
+
+/* EY: STEP2 galaxy background cleanup — presentation only.
+   Existing photo assignment, confirmation, and save handlers unchanged. */
+.screen[data-screen="photoAssign"][data-flow-step="check"] #currentAlbumAiPanel,
+.screen[data-screen="photoAssign"][data-flow-step="check"] #photoFolderMistakePanel,
+.screen[data-screen="photoAssign"][data-flow-step="check"] #albumAiSingletonReview {
+ background:transparent!important;border-color:transparent!important;
+ box-shadow:none!important;color:#fff7ff;
+}
+.screen[data-screen="photoAssign"][data-flow-step="check"] #currentAlbumAiPanel{
+ padding:8px!important;
+}
+.screen[data-screen="photoAssign"][data-flow-step="check"] #photoFolderMistakePanel{
+ padding:6px 0!important;
+}
+#photoFolderMistakePanel .photoFolderHero{
+ background:linear-gradient(125deg,#ffcee9,#d6cdff 52%,#b6f4ef)!important;
+ border:2px solid #fff9ff!important;color:#644582!important;
+ border-radius:23px;padding:12px 14px;
+ box-shadow:0 5px 0 #39255e66!important
+}
+#photoFolderMistakePanel .photoFolderHero strong{color:#664084!important}
+#photoFolderMistakePanel .photoFolderHero p{color:#634b7b!important}
+#photoFolderMistakePanel .photoFolderCounter{
+ color:#fff2bc!important;text-shadow:0 2px 4px #312254;
+ font-weight:900;line-height:1.5
+}
+#photoFolderMistakePanel .photoMistakePicker{
+ background:#fff9ff!important;color:#59377e!important;
+ border:2px solid #e1c2ff!important;border-radius:16px!important
+}
+#photoFolderMistakePanel .photoMoveInlineToolbar{
+ background:#ffffff1f;border:1px solid #ffffff52;
+ padding:10px;border-radius:18px
+}
+#photoFolderMistakePanel .photoMoveInlineToolbar strong{color:#fff8ff!important}
+#photoFolderMistakePanel .photoMoveInlineTray{
+ position:sticky;top:8px;
+ background:linear-gradient(130deg,#e8dcfffa,#d2f4fafa)!important;
+ border:2px solid #fff!important;
+ border-radius:23px;box-shadow:0 6px 0 #34235a65!important;
+ color:#5f4485
+}
+#photoFolderMistakePanel .photoMoveInlineTray>strong{color:#6a438f!important}
+#photoFolderMistakePanel .photoMoveInlineTray>.muted{color:#604d7e!important}
+#photoFolderMistakePanel .photoMoveInlineTarget{
+ background:linear-gradient(170deg,#fff9ff,#ecd9ff)!important;
+ border:2px solid #fff!important;
+ border-radius:20px!important;
+ color:#624081!important;box-shadow:0 4px 0 #7153a06e!important;
+}
+#photoFolderMistakePanel .photoMoveInlineTarget b,
+#photoFolderMistakePanel .photoMoveInlineTarget small{color:#624081!important}
+#photoFolderMistakePanel .photoMistakeGallery{
+ border:2px solid #d8cbff!important;background:#f3ebff!important;
+ border-radius:18px
+}
+#photoFolderMistakePanel .photoMoveInlineItem{background:#fff9ff;color:#574073}
+#photoFolderMistakePanel .photoMoveInlineStatus,
+#photoFolderMistakePanel .photoFolderNotice{
+ color:#5b4481;background:#fff8f9;
+ border-radius:15px;border:1px solid #efd7ff;padding:9px 12px
+}
+#photoFolderMistakePanel .photoMistakeNext,
+#photoFolderMistakePanel .photoMoveExcluded{
+ background:linear-gradient(135deg,#fff2fa,#e9e9ff);
+ color:#65477f;border:2px solid #f2d9ff;border-radius:20px
+}
+#photoFolderMistakePanel .photoMistakeNext strong,
+#photoFolderMistakePanel .photoMistakeNext .muted{color:#63477c}
+@media(max-width:600px){
+ .screen[data-screen="photoAssign"][data-flow-step="check"] #currentAlbumAiPanel{padding:4px!important}
+ #photoFolderMistakePanel .photoFolderHero{padding:10px 12px}
+ #photoFolderMistakePanel .photoMoveInlineTray{padding:9px;top:5px}
+}
