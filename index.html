@@ -7652,8 +7652,11 @@ function renderPhotoFolderMistakes(data,host){
  try{
   folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
   const missing=photoSortInboxIndexes(data),named=photoSortChildLinks(data);
-  folders=folders.filter(f=>named.has(f.key));
-  if(missing.length)folders.unshift({key:PHOTO_SORT_UNPLACED,groupKeys:[],addedPhotoIndexes:missing,excludedPhotoIndexes:[]});
+  // Keep every STEP1 provisional group, even before a child name is linked.
+  // The inbox is reserved for photos absent from every provisional group.
+  const grouped=new Set(folders.flatMap(folder=>photoFolderIndexes(data,folder)));
+  const trulyUnplaced=missing.filter(index=>!grouped.has(index));
+  if(trulyUnplaced.length)folders.unshift({key:PHOTO_SORT_UNPLACED,groupKeys:[],addedPhotoIndexes:trulyUnplaced,excludedPhotoIndexes:[]});
  }catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
  const reviewed=data.photoFolderMistakeReviewed;
  const slots=data.photoMergeSlots||[];
@@ -7772,6 +7775,58 @@ function renderPhotoFolderMistakes(data,host){
   return;
  }
  const folder=folders.find(f=>f.key===mistakeFocusKey),indexes=photoFolderIndexes(data,folder);
+ // Big planet: a STEP1 group is linked to a real roster child here.
+ const planet=make('section','photoBigPlanet');
+ const globe=make('div','photoBigPlanetOrb');
+ const image=document.createElement('img');
+ image.loading='lazy';image.decoding='async';
+ if(indexes.length&&data.sourceFiles[indexes[0]])image.src=fileUrl(data.sourceFiles[indexes[0]]);
+ image.alt='この惑星の代表写真';
+ globe.append(image,make('span','photoPlanetCount',indexes.length+'枚'));
+ const planetInfo=make('div','photoBigPlanetInfo');
+ const position=folders.findIndex(item=>item.key===folder.key)+1;
+ planetInfo.append(make('strong','','🪐 惑星 '+position+' / '+folders.length),
+  make('p','','この惑星の写真を確認して、園児名を登録しよう！'));
+ const linkedId=String(links.get(folder.key)||'');
+ if(folder.key!==PHOTO_SORT_UNPLACED){
+  const namePicker=make('select','photoPlanetName');
+  namePicker.setAttribute('aria-label','この惑星と紐付ける園児名');
+  namePicker.append(new Option('🌷 この惑星はだれ？',''));
+  for(const kid of kids)namePicker.append(new Option(kid.name+'さん',String(kid.id)));
+  namePicker.value=linkedId;
+  const bind=btn(linkedId?'✅ 園児名を確認':'💕 この子の惑星にする','primary photoPlanetBind',()=>{
+   const kid=kids.find(k=>String(k.id)===namePicker.value);
+   if(!kid){data.photoFolderNotice='⚠️ 園児名を選んでね。';renderPhotoFolderMistakes(data,host);return}
+   const id=String(kid.id);
+   if(linkedId&&linkedId!==id){
+    data.photoFolderNotice='⚠️ 別の園児への変更は、登録済み写真を誤って残さないようにするため、この画面ではできないよ。写真を別の惑星へ移動してね。';
+    renderPhotoFolderMistakes(data,host);return;
+   }
+   if(!Array.isArray(photoAssignments)||photoAssignments.length!==files.length){
+    data.photoFolderNotice='⚠️ 写真の振り分け状態を確認できないよ。';renderPhotoFolderMistakes(data,host);return;
+   }
+   const affected=photoFolderIndexes(data,folder);
+   const missingIds=affected.filter(index=>!assignmentPhotoIds(index).includes(id));
+   const other=Object.entries(data.photoMatchFolderChild||{}).find(([key,value])=>key!==folder.key&&String(value)===id);
+   if(other&&!window.confirm(kid.name+'さんには別の惑星もあるよ。両方を同じ園児に登録する？'))return;
+   if(!window.confirm(kid.name+'さんへ'+affected.length+'枚を紐付ける？（追加登録 '+missingIds.length+'枚）\\n元の写真は削除しないよ。'))return;
+   try{
+    const updated=missingIds.length?data.assignConfirmedAlbumCluster({
+     photoAssignments,photoCount:files.length,photoIndexes:missingIds,
+     childId:id,validChildIds:kids.map(k=>k.id)}):photoAssignments;
+    photoAssignments=updated;
+    data.photoMatchFolderChild[folder.key]=id;
+    data.photoFolderMistakeReviewed.delete(folder.key);
+    data.photoMatchFinalReviewed=false;
+    data.photoFolderNotice='✅ '+kid.name+'さんの惑星に登録したよ！';
+    renderPhotoFolderMistakes(data,host);
+   }catch(error){
+    data.photoFolderNotice='⚠️ '+String(error?.message||error);renderPhotoFolderMistakes(data,host);
+   }
+  });
+  planetInfo.append(namePicker,bind);
+ }else planetInfo.append(make('p','','未振り分け写真を整理しよう'));
+ planet.append(globe,planetInfo);host.append(planet);
  const selected=new Set(),gallery=make('div','photoMistakeGallery photoMoveInlineGallery');
  gallery.setAttribute('aria-label','このフォルダの写真を選ぶ');
  const toolbar=make('div','photoMoveInlineToolbar');
@@ -7800,7 +7855,7 @@ function renderPhotoFolderMistakes(data,host){
  const hint=make('p','muted','園児名をタップ、または写真を長押しで移動。集合写真は「追加」をONに。');
  const targets=make('div','photoMoveInlineTargets');
  tray.append(trayTitle,hint,targets);
- host.append(tray);
+ // Display destination planets below the opened photo gallery.
  const notice=make('p','photoMoveInlineStatus','写真を選択してね');
  notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
  function photoPayload(index){return selected.has(index)?[...selected]:[index]}
@@ -7842,7 +7897,19 @@ function renderPhotoFolderMistakes(data,host){
  if(!slotRows.length)tray.append(make('p','muted','移動先の園児ボックスがまだないよ。下の「ほかの候補へ移動」から選べるよ。'));
  // Other provisional AI groups remain accessible, but do not flood the main controls.
  const otherFolders=data.photoFolders.filter(f=>f.key!==folder.key&&!slots.includes(f.key)&&photoFolderIndexes(data,f).length);
- if(otherFolders.length){
+ // Every unlinked STEP1 group remains a valid destination planet.
+ for(const other of otherFolders){
+  const destination=btn('','photoMoveInlineTarget photoProvisionalPlanet',()=>perform(other.key,[...selected]));
+  destination.append(make('b','',photoSortFolderLabel(data,other,data.photoFolders.indexOf(other))),
+   make('small','',photoFolderIndexes(data,other).length+'枚'));
+  destination.dataset.inlineMoveTarget=other.key;
+  destination.addEventListener('dragover',event=>{if(!activeDrag?.length)return;event.preventDefault();destination.classList.add('photoMoveInlineHover')});
+  destination.addEventListener('dragleave',()=>destination.classList.remove('photoMoveInlineHover'));
+  destination.addEventListener('drop',event=>{if(!activeDrag?.length)return;event.preventDefault();
+   const payload=[...activeDrag];activeDrag=null;clearHighlights();perform(other.key,payload)});
+  targets.append(destination);
+ }
+ if(false&&otherFolders.length){
   const more=make('details','photoMoveInlineOther');
   more.append(make('summary','','📦 ほかの未仕分けカードへ移動する'));
   const otherPicker=document.createElement('select');
@@ -8019,7 +8086,7 @@ function renderPhotoFolderMistakes(data,host){
   showMore.textContent='＋ 残りの写真を見る（'+shown+' / '+indexes.length+'枚）';
   syncSelection();
  }
- host.append(gallery,showMore,notice);
+ host.append(gallery,showMore,tray,notice);
  addPhotos();
  const actions=make('div','photoMistakeActions');
  actions.append(btn(reviewed.has(folder.key)?'↩ 確認を取り消す':
@@ -8028,6 +8095,9 @@ function renderPhotoFolderMistakes(data,host){
   if(!reviewed.has(folder.key)&&folder.key===PHOTO_SORT_UNPLACED&&photoSortInboxIndexes(data).length&&
    !window.confirm('📷 未振り分け写真が'+photoSortInboxIndexes(data).length+
     '枚残っています。\n写真は消えません。このまま園児の確認へ進む？'))return;
+  if(!reviewed.has(folder.key)&&folder.key!==PHOTO_SORT_UNPLACED&&!photoSortChildLinks(data).has(folder.key)){
+   data.photoFolderNotice='🌷 この惑星の園児名を登録してから確定してね。';renderPhotoFolderMistakes(data,host);return;
+  }
   if(reviewed.has(folder.key)){
    reviewed.delete(folder.key);
    mistakeNeverAutoOpen.delete(folder.key);
