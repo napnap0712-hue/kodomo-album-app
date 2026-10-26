@@ -518,3 +518,43 @@
  100%{transform:scale(1);opacity:1}
 }
 @media(prefers-reduced-motion:reduce){#albumAiSingletonPairs .galaxyCelebrate{animation:none}}
+
+/* EV: checkbox multi-merge and piece-local success effect */
+#albumAiSingletonPairs .galaxyTile{position:relative;overflow:visible}
+#albumAiSingletonPairs .galaxyCheck{
+ position:absolute;right:3px;top:3px;display:grid;place-items:center;
+ width:28px;height:28px;border-radius:50%;border:2px solid #a887d3;
+ background:#fff9ff;color:#8755a8;font-size:21px;font-weight:900;
+ z-index:3;box-shadow:0 2px 6px #50377044;
+}
+#albumAiSingletonPairs .galaxyChecked{border-color:#ffcb54;background:linear-gradient(#fff7dc,#ffe2f0)}
+#albumAiSingletonPairs .galaxyChecked .galaxyCheck{background:#ffe68d;border-color:#edb12d;color:#754a82}
+#albumAiSingletonPairs .galaxyMergeTarget{outline:3px solid #fff08a}
+#albumAiSingletonPairs .galaxyBatchBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+ margin:11px 0;padding:10px;border:2px solid #e7ccfc;border-radius:17px;background:#f6e9ff}
+#albumAiSingletonPairs .galaxyBatchBar strong{color:#704689;flex:1;font-size:13px}
+#albumAiSingletonPairs .galaxyBatchBar button{min-height:41px;font-size:12px;border-radius:12px}
+#albumAiSingletonPairs .galaxyBatchBar button:disabled{opacity:.55}
+#albumAiSingletonPairs .galaxyConfirmPreviews{grid-template-columns:repeat(auto-fill,minmax(85px,1fr));
+ max-height:38vh;overflow:auto}
+#albumAiSingletonPairs .galaxyTileMergeFx{position:absolute;z-index:7;
+ left:50%;top:45%;transform:translate(-50%,-50%);pointer-events:none;
+ white-space:nowrap;font-size:clamp(11px,2.3vw,20px);font-weight:1000;
+ color:#ffed8c;text-shadow:0 2px 4px #663a90,0 0 9px #9d65d8;
+ animation:galaxyTileEffect 1.15s ease forwards}
+#albumAiSingletonPairs .galaxyMergePop{z-index:4;animation:galaxyTilePop .55s ease}
+@keyframes galaxyTileEffect{
+ 0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}
+ 35%{opacity:1;transform:translate(-50%,-60%) scale(1.15)}
+ 100%{opacity:0;transform:translate(-50%,-115%) scale(1)}
+}
+@keyframes galaxyTilePop{0%{transform:scale(.94)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
+@media(max-width:600px){
+ #albumAiSingletonPairs .galaxyBatchBar{display:grid;grid-template-columns:1fr 1fr}
+ #albumAiSingletonPairs .galaxyBatchBar strong{grid-column:1/-1}
+ #albumAiSingletonPairs .galaxyCheck{width:25px;height:25px;font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+ #albumAiSingletonPairs .galaxyMergePop,
+ #albumAiSingletonPairs .galaxyTileMergeFx{animation:none}
+}
