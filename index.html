@@ -7675,10 +7675,10 @@ function renderPhotoFolderMistakes(data,host){
   return ai-bi;
  });
  if(mistakeFocusData!==data){
-  mistakeFocusData=data;mistakeFocusKey=null;mistakeManualFocusKey=null;mistakeNeverAutoOpen=new Set([...(data.photoFolderConfirmedOnce||[]),...reviewed]);
+  mistakeFocusData=data;mistakeFocusKey=null;mistakeManualFocusKey=null;mistakeNeverAutoOpen=new Set([...reviewed]);
  }
- // If an already-checked folder changes, it still needs rechecking,
- // but never pops up on its own. The teacher opens it from the picker.
+ // Automatically re-open a confirmed child when its photo membership changes.
+ for(const key of [...mistakeNeverAutoOpen])if(!reviewed.has(key))mistakeNeverAutoOpen.delete(key);
  for(const folder of folders)if(reviewed.has(folder.key))mistakeNeverAutoOpen.add(folder.key);
  data.photoFolderConfirmedOnce=new Set(mistakeNeverAutoOpen);
  const focused=folders.find(f=>f.key===mistakeFocusKey);
@@ -7703,7 +7703,7 @@ function renderPhotoFolderMistakes(data,host){
  host.append(header);
  const n=folders.filter(f=>reviewed.has(f.key)).length;
  const count=make('p','photoFolderCounter',
-  '✅ 確認済み '+n+' / '+folders.length+'　·　📦 未振り分け '+photoSortInboxIndexes(data).length+'枚');
+  '🪐 '+n+' / '+folders.length+'　·　📦 '+photoSortInboxIndexes(data).length+'枚');
  host.append(count);
  function appendReviewFinish(){
  const next=make('section','photoMistakeNext');
@@ -7719,9 +7719,9 @@ function renderPhotoFolderMistakes(data,host){
   summary.append(make('span','',kid.name+' '+set.size+'枚'));
  }
  next.append(summary,make('p','muted',remaining?
-  '🔎 あと'+remaining+'組。未振り分けが残っても先生の判断で進めるよ。':
-  '✅ 確認完了！ 未振り分けが残っていても内容を確認して進めるよ。'));
- next.append(btn('✅ 振り分け完了！見開き編集へ ›','primary wide',finishPhotoSortFromCheck));
+  '🪐 あと'+remaining+'組！':
+  '✨ おもいで銀河、完成！'));
+ if(!remaining)next.append(btn('📖 見開き編集へすすむ！','primary wide',finishPhotoSortFromCheck));
  host.append(next);
  }
  if(data.photoFolderUndo.length)host.append(btn('↩ 直前の移動を戻す','secondary',()=>{
@@ -7796,8 +7796,7 @@ function renderPhotoFolderMistakes(data,host){
  globe.append(image,make('span','photoPlanetCount',indexes.length+'枚'));
  const planetInfo=make('div','photoBigPlanetInfo');
  const position=folders.findIndex(item=>item.key===folder.key)+1;
- planetInfo.append(make('strong','','🪐 惑星 '+position+' / '+folders.length),
-  make('p','','🌷 この子はだーれ？ 園児名を選んでから写真をおひっこししよう！'));
+ planetInfo.append(make('strong','','🪐 '+position+' / '+folders.length));
  const linkedId=String(links.get(folder.key)||'');
  if(folder.key!==PHOTO_SORT_UNPLACED&&linkedId){
   const existingKid=kids.find(k=>String(k.id)===linkedId);
@@ -7894,7 +7893,7 @@ function renderPhotoFolderMistakes(data,host){
  }
  planet.append(globe,planetInfo);host.append(planet);
  const steps=make('div','photoPlanetSteps');
- steps.append(make('strong','',stageState.phase==='name'?'① 🌷 園児名を確認しよう':'② 📸 写真を確認 → 必要ならおひっこし → ✅ 確定'));
+ steps.append(make('strong','',stageState.phase==='name'?'① 🌷 園児名を確認しよう':'🔎 まちがいさがし！'));
  host.append(steps);
  const selected=new Set(),gallery=make('div','photoMistakeGallery photoMoveInlineGallery');
  gallery.setAttribute('aria-label','このフォルダの写真を選ぶ');
@@ -8189,7 +8188,7 @@ function renderPhotoFolderMistakes(data,host){
  addPhotos();
  const actions=make('div','photoMistakeActions');
  actions.append(btn(reviewed.has(folder.key)?'↩ 確認を取り消す':
-  folder.key===PHOTO_SORT_UNPLACED?'✅ 未振り分けを確認して次へ':'✅ この惑星を確定して次へ',
+  folder.key===PHOTO_SORT_UNPLACED?'✅ 未振り分けを確認して次へ':'✨ この惑星はOK！',
   'primary wide',()=>{
   if(!reviewed.has(folder.key)&&folder.key===PHOTO_SORT_UNPLACED&&photoSortInboxIndexes(data).length&&
    !window.confirm('📷 未振り分け写真が'+photoSortInboxIndexes(data).length+
@@ -8211,11 +8210,15 @@ function renderPhotoFolderMistakes(data,host){
    mistakeFocusKey=null;mistakeManualFocusKey=null;
    stageState.key=null;stageState.phase='photos';
   }
-  renderPhotoFolderMistakes(data,host);
+  if(reviewed.has(folder.key)){
+   const flash=document.createElement('div');
+   flash.className='omoidePlanetPerfect';flash.textContent='✨ PERFECT! ✨';
+   flash.setAttribute('role','status');host.append(flash);
+   setTimeout(()=>renderPhotoFolderMistakes(data,host),850);
+  }else renderPhotoFolderMistakes(data,host);
  }));
  host.append(actions);
  appendReviewFinish();
- host.append(make('p','muted','確定済みの園児は自動で開き直さないよ。見直すときは上の一覧から選んでね。'));
  renderPhotoSortGameProgress();
 }
 
