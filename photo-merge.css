@@ -416,3 +416,65 @@
  #albumAiSingletonPairs .mergeBox,
  #photoFolderMistakePanel .photoMoveInlineTarget{transition:none!important}
 }
+
+/* ET: 12-piece merge GAME in the already approved yumekawa galaxy theme. */
+#albumAiSingletonPairs .galaxyGameHero{
+ padding:13px 16px;border-radius:23px;
+ background:linear-gradient(115deg,#ffd0e9,#e2d9ff 54%,#bdf3f7);
+ border:3px solid #fff;box-shadow:0 6px 0 #3324506b;
+}
+#albumAiSingletonPairs .galaxyGameHero h2{font-size:clamp(23px,3.5vw,32px);font-weight:900;color:#683a94;margin:0}
+#albumAiSingletonPairs .galaxyGameHero p{font-size:13px;color:#634777;line-height:1.5;margin:5px 0}
+#albumAiSingletonPairs .galaxyGameStats{color:#fff3c5;font-size:13px;font-weight:850;text-align:center}
+#albumAiSingletonPairs .galaxyGameNotice{background:#fff4ff;color:#654885;font-size:13px;font-weight:750;
+ padding:10px 12px;border-radius:14px}
+#albumAiSingletonPairs .galaxyGameHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 2px 9px;color:#fff}
+#albumAiSingletonPairs .galaxyGameHead strong{font-size:19px;font-weight:900}
+#albumAiSingletonPairs .galaxyGameHead span{font-size:12px;color:#fff4c9}
+#albumAiSingletonPairs .galaxyGameBoard{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;
+ padding:12px;background:linear-gradient(140deg,#b9b3fa,#d8c6ff 53%,#b4e9fb);
+ border:3px solid #fff4ff;border-radius:23px;box-shadow:0 8px 0 #44316c77;
+}
+#albumAiSingletonPairs .galaxyTile{
+ min-width:0;min-height:120px;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:3px;padding:7px 5px;
+ border-radius:17px;border:2px solid #ffd2f1;
+ color:#603f7e;background:linear-gradient(#fff9ff,#f8dafa);
+ box-shadow:0 4px 0 #7556a85a;touch-action:pan-y;
+ user-select:none;-webkit-user-select:none;cursor:grab;
+ transition:transform .18s,box-shadow .18s;
+}
+#albumAiSingletonPairs .galaxyTile:active{transform:scale(1.035)}
+#albumAiSingletonPairs .galaxyTile.galaxySelected{border:3px solid #ffe171;background:#fff2c4;box-shadow:0 0 0 3px #fff9db99}
+#albumAiSingletonPairs .galaxyTile.galaxyHover{transform:scale(1.045);border:3px solid #ffc054;background:#fff2bf}
+#albumAiSingletonPairs .galaxyTile.galaxyDragging{opacity:.75}
+#albumAiSingletonPairs .galaxyTileImage{display:block;width:100%;aspect-ratio:1.2;max-height:120px;overflow:hidden;
+ background:#f7edff;border-radius:11px}
+#albumAiSingletonPairs .galaxyTileImage img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+#albumAiSingletonPairs .galaxyTile strong{color:#65458c;font-size:13px}
+#albumAiSingletonPairs .galaxyTile small{color:#7c638f;font-size:10px}
+#albumAiSingletonPairs .galaxyEmpty{font-size:30px;color:#9e85bd;background:#ffffff77;border-style:dashed;box-shadow:none}
+#albumAiSingletonPairs .galaxyGameNav{display:flex;justify-content:center;align-items:center;gap:12px;margin:13px 0}
+#albumAiSingletonPairs .galaxyGameNav button{min-height:42px;border-radius:12px;font-size:13px}
+#albumAiSingletonPairs .galaxyGameNav strong{color:#fff;font-size:13px}
+#albumAiSingletonPairs .galaxyWaiting{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+ background:#fff8ffbf;border:2px solid #e7d8ff;border-radius:19px;padding:10px}
+#albumAiSingletonPairs .galaxyWaitingTile{background:linear-gradient(#fff,#e6edff);border-color:#d8c9f4}
+#albumAiSingletonPairs .galaxyGameFinal{padding:14px;border-radius:20px;background:linear-gradient(#ffecf8,#fff9e7);
+ border:2px solid #f5ceeb;color:#79537c;margin-top:18px}
+#albumAiSingletonPairs .galaxyGameFinal strong{font-size:17px}
+#albumAiSingletonPairs .galaxyGameFinal p{font-size:12px;line-height:1.6}
+#albumAiSingletonPairs .galaxyUndo{margin:4px 0;font-size:12px}
+@media(max-width:600px){
+ #albumAiSingletonPairs .galaxyGameBoard{gap:5px;padding:7px}
+ #albumAiSingletonPairs .galaxyTile{min-height:96px;padding:4px 2px;border-radius:12px}
+ #albumAiSingletonPairs .galaxyTileImage{max-height:69px;border-radius:8px}
+ #albumAiSingletonPairs .galaxyTile strong{font-size:11px}
+ #albumAiSingletonPairs .galaxyTile small{font-size:9px}
+ #albumAiSingletonPairs .galaxyWaiting{gap:5px;padding:7px}
+ #albumAiSingletonPairs .galaxyGameHead strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+ #albumAiSingletonPairs .galaxyTile{transition:none}
+}
