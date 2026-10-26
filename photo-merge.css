@@ -740,3 +740,34 @@
  #photoFolderMistakePanel .photoPlanetName{max-width:100%}
 }
 @media(prefers-reduced-motion:reduce){#photoFolderMistakePanel .photoBigPlanetOrb{animation:none}}
+
+/* FA: planet-first flow: big planet -> close destination moons -> photo gallery. */
+#photoFolderMistakePanel .photoBigPlanet{margin-bottom:8px!important}
+#photoFolderMistakePanel .photoBigPlanet + .photoMoveInlineTray{
+ margin:0 0 18px!important;top:4px!important;
+ border-radius:25px!important;position:sticky!important;z-index:12;
+}
+#photoFolderMistakePanel .photoBigPlanet + .photoMoveInlineTray .photoMoveInlineTargets{
+ display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x proximity;
+ -webkit-overflow-scrolling:touch;padding:8px 3px 12px
+}
+#photoFolderMistakePanel .photoMoveInlineTarget{
+ position:relative;flex:0 0 108px;min-width:108px;max-width:122px;
+ min-height:112px;padding:51px 7px 8px!important;
+ text-align:center;display:flex;align-items:center;justify-content:center;flex-direction:column;
+ border-radius:22px!important;white-space:normal;overflow-wrap:anywhere;
+}
+#photoFolderMistakePanel .photoMoveInlineTarget::before{
+ content:'🪐'!important;position:absolute!important;top:7px!important;
+ left:50%!important;transform:translateX(-50%)!important;
+ width:54px;height:43px;display:grid;place-items:center;
+ font-size:35px!important;line-height:1!important;
+ filter:drop-shadow(0 3px 3px #6c50a466)
+}
+#photoFolderMistakePanel .photoMoveInlineTarget b{font-size:12px;line-height:1.25}
+#photoFolderMistakePanel .photoMoveInlineTarget small{font-size:11px}
+#photoFolderMistakePanel .photoMoveInlineToolbar{margin:13px 0 7px}
+@media(max-width:600px){
+ #photoFolderMistakePanel .photoBigPlanet + .photoMoveInlineTray{position:sticky!important;top:4px!important}
+ #photoFolderMistakePanel .photoMoveInlineTarget{flex-basis:104px;min-width:104px;min-height:108px}
+}
