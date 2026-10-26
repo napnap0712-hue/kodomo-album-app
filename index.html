@@ -7798,7 +7798,11 @@ function renderPhotoFolderMistakes(data,host){
  planetInfo.append(make('strong','','🪐 惑星 '+position+' / '+folders.length),
   make('p','','🌷 この子はだーれ？ 園児名を選んでから写真をおひっこししよう！'));
  const linkedId=String(links.get(folder.key)||'');
- if(folder.key!==PHOTO_SORT_UNPLACED){
+ if(folder.key!==PHOTO_SORT_UNPLACED&&linkedId){
+  const existingKid=kids.find(k=>String(k.id)===linkedId);
+  planetInfo.append(make('div','photoPlanetConfirmedName','✅ '+(existingKid?.name||'登録済み園児')+'さん'));
+ }
+ if(folder.key!==PHOTO_SORT_UNPLACED&&!linkedId){
   const namePicker=make('select','photoPlanetName');
   namePicker.setAttribute('aria-label','この惑星と紐付ける園児名');
   namePicker.append(new Option('🌷 この惑星はだれ？',''));
@@ -7830,7 +7834,7 @@ function renderPhotoFolderMistakes(data,host){
     if(linkedSlot>=0&&Array.isArray(data.photoMergeChildIds))data.photoMergeChildIds[linkedSlot]=id;
     data.photoFolderMistakeReviewed.delete(folder.key);
     data.photoMatchFinalReviewed=false;
-    data.photoFolderNotice='✅ '+kid.name+'さんのお名前を登録したよ。次は写真を確認しよう！';
+    data.photoFolderNotice='✅ '+kid.name+'さんのお名前を確定したよ！';
     stageState.phase='photos';
     renderPhotoFolderMistakes(data,host);
    }catch(error){
@@ -7884,8 +7888,34 @@ function renderPhotoFolderMistakes(data,host){
   if(!photoIndexes.length){notice.textContent='先に移動する写真を選んでね。';return}
   try{
    const moved=photoSortMoveInlinePhotos(data,folder.key,photoIndexes,dest,transferMode);
-   data.photoFolderNotice='✅ '+moved+'枚を'+(transferMode==='add'?'追加':'移動')+'したよ。移動先の写真も確認してね。';
-   renderPhotoFolderMistakes(data,host);
+   // Keep scroll position, current planet and already loaded thumbnails.
+   // Update only the affected photo cards, selection and counters.
+   if(transferMode==='move'){
+    for(const index of photoIndexes){
+     gallery.querySelector('[data-photo-index="'+index+'"]')?.remove();
+     selected.delete(index);
+    }
+    const left=photoFolderIndexes(data,folder).length;
+    globe.querySelector('.photoPlanetCount').textContent=left+'枚';
+    if(left){
+     const first=photoFolderIndexes(data,folder)[0];
+     image.src=fileUrl(data.sourceFiles[first]);
+    }else image.removeAttribute('src');
+    indexes.splice(0,indexes.length,...photoFolderIndexes(data,folder));
+    shown=Math.min(shown,indexes.length);
+    showMore.hidden=shown>=indexes.length;
+    showMore.textContent='＋ 残りの写真を見る（'+shown+' / '+indexes.length+'枚）';
+   }else selected.clear();
+   for(const childPlanet of targets.querySelectorAll('[data-child-id]')){
+    const kidId=childPlanet.dataset.childId;
+    const kidCount=new Set(data.photoFolders.filter(item=>photoSortChildLinks(data).get(item.key)===kidId)
+     .flatMap(item=>photoFolderIndexes(data,item))).size;
+    const countLabel=childPlanet.querySelector('small');
+    if(countLabel)countLabel.textContent=kidCount+'枚';
+   }
+   syncSelection();
+   notice.textContent='✅ '+moved+'枚を'+(transferMode==='add'?'追加':'移動')+'したよ！';
+   data.photoFolderNotice=notice.textContent;
   }catch(error){notice.textContent='⚠️ '+String(error?.message||error)}
  }
  // Small planets are the registered children, never unnamed STEP1 groups.
@@ -7926,6 +7956,7 @@ function renderPhotoFolderMistakes(data,host){
   target.append(make('b','',kid.name),make('small','',number+'枚'));
   target.disabled=current||!dest;
   target.dataset.inlineMoveTarget=dest||'';
+  target.dataset.childId=id;
   target.setAttribute('aria-label',kid.name+'さんの惑星'+(current?'（確認中）':'へ移動'));
   target.addEventListener('dragover',event=>{
    if(current||!dest||!activeDrag?.length)return;
