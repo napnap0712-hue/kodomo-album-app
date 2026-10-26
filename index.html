@@ -7653,9 +7653,10 @@ function renderPhotoFolderMistakes(data,host){
  try{
   folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
   const missing=photoSortInboxIndexes(data),named=photoSortChildLinks(data);
-  // Keep every STEP1 provisional group, even before a child name is linked.
-  // The inbox is reserved for photos absent from every provisional group.
+  // STEP2 examines the teacher-assigned child folders, not anonymous STEP1 candidates.
+  const confirmedLinks=new Map(Object.entries(data.photoMatchFolderChild||{}).filter(([key,id])=>getChildren(data.classId).some(k=>String(k.id)===String(id))));
   const grouped=new Set(folders.flatMap(folder=>photoFolderIndexes(data,folder)));
+  folders=folders.filter(folder=>confirmedLinks.has(folder.key));
   const trulyUnplaced=missing.filter(index=>!grouped.has(index));
   if(trulyUnplaced.length)folders.unshift({key:PHOTO_SORT_UNPLACED,groupKeys:[],addedPhotoIndexes:trulyUnplaced,excludedPhotoIndexes:[]});
  }catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
@@ -7663,7 +7664,7 @@ function renderPhotoFolderMistakes(data,host){
  let stageState=photoPlanetStageSessions.get(data);
  if(!stageState){stageState={key:null,phase:'name'};photoPlanetStageSessions.set(data,stageState)}
  const slots=data.photoMergeSlots||[];
- const kids=getChildren(data.classId),links=photoSortChildLinks(data);
+ const kids=getChildren(data.classId),links=new Map(Object.entries(data.photoMatchFolderChild||{}).map(([key,id])=>[key,String(id)]));
  // Inbox first; children follow the roster registration order, not kana order.
  folders.sort((a,b)=>{
   if(a.key===PHOTO_SORT_UNPLACED)return -1;
@@ -7778,7 +7779,7 @@ function renderPhotoFolderMistakes(data,host){
   return;
  }
  const folder=folders.find(f=>f.key===mistakeFocusKey),indexes=photoFolderIndexes(data,folder);
- if(stageState.key!==folder.key){stageState.key=folder.key;stageState.phase='name'}
+ if(stageState.key!==folder.key){stageState.key=folder.key;stageState.phase='photos'}
  if(folder.key===PHOTO_SORT_UNPLACED)stageState.phase='photos';
  host.dataset.planetPhase=stageState.phase;
  function openPlanetPhotos(){
@@ -8193,7 +8194,7 @@ function renderPhotoFolderMistakes(data,host){
   if(!reviewed.has(folder.key)&&folder.key===PHOTO_SORT_UNPLACED&&photoSortInboxIndexes(data).length&&
    !window.confirm('📷 未振り分け写真が'+photoSortInboxIndexes(data).length+
     '枚残っています。\n写真は消えません。このまま園児の確認へ進む？'))return;
-  if(!reviewed.has(folder.key)&&folder.key!==PHOTO_SORT_UNPLACED&&!photoSortChildLinks(data).has(folder.key)){
+  if(!reviewed.has(folder.key)&&folder.key!==PHOTO_SORT_UNPLACED&&!links.has(folder.key)){
    data.photoFolderNotice='🌷 この惑星の園児名を登録してから確定してね。';renderPhotoFolderMistakes(data,host);return;
   }
   if(reviewed.has(folder.key)){
@@ -8208,7 +8209,7 @@ function renderPhotoFolderMistakes(data,host){
    // Advance to the next unconfirmed child in roster order.
    // When none remain, show a summary rather than reopening this folder.
    mistakeFocusKey=null;mistakeManualFocusKey=null;
-   stageState.key=null;stageState.phase='name';
+   stageState.key=null;stageState.phase='photos';
   }
   renderPhotoFolderMistakes(data,host);
  }));
