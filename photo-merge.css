@@ -860,3 +860,17 @@
 @media(prefers-reduced-motion:reduce){
  #photoFolderMistakePanel .photoBigPlanetOrb,#photoFolderMistakePanel .omoidePlanetPerfect{animation:none}
 }
+
+#photoFolderMistakePanel .omoideGalaxyClear{
+ position:relative;overflow:hidden;margin:20px 0;padding:34px 16px 28px;text-align:center;
+ border:3px solid #ffddff;border-radius:32px;
+ background:radial-gradient(ellipse at 50% 30%,#9c73d9,#5e428a 70%,#463275);
+ color:white;box-shadow:0 9px 0 #3d2b66,0 0 32px #fccbff55
+}
+#photoFolderMistakePanel .omoideGalaxyClear h2{font-size:clamp(25px,7vw,38px);margin:10px 0;color:#fff6c1;text-shadow:0 3px 0 #7844a8}
+#photoFolderMistakePanel .omoideGalaxyClear h3{font-size:clamp(23px,6vw,34px);color:#ffe0f8;text-shadow:0 3px 0 #613d9a;margin:5px 0 13px}
+#photoFolderMistakePanel .omoideGalaxyClear p{font-weight:800}
+#photoFolderMistakePanel .omoideGalaxyOrbit{font-size:39px;letter-spacing:10px;animation:omoidePlanetFloat 4s ease-in-out infinite}
+#photoFolderMistakePanel .omoideGalaxySummary{font-size:clamp(14px,4vw,20px);font-weight:900;background:#ffffff32;border-radius:19px;padding:18px 6px;margin:22px 0}
+#photoFolderMistakePanel .omoideGalaxyClear button{margin-top:13px;min-height:58px;border-radius:22px}
+@media(prefers-reduced-motion:reduce){#photoFolderMistakePanel .omoideGalaxyOrbit{animation:none}}
