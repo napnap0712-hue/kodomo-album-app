@@ -7685,7 +7685,7 @@ function renderPhotoFolderMistakes(data,host){
  if(!focused||
    (mistakeNeverAutoOpen.has(focused.key)&&mistakeManualFocusKey!==focused.key)||
    (reviewed.has(focused.key)&&mistakeManualFocusKey!==focused.key)){
-  mistakeFocusKey=folders.find(f=>!reviewed.has(f.key)&&!mistakeNeverAutoOpen.has(f.key))?.key||null;
+  mistakeFocusKey=folders.find(f=>!reviewed.has(f.key))?.key||null;
   mistakeManualFocusKey=null;
  }
  const btn=(label,cls,callback)=>{
@@ -7697,6 +7697,7 @@ function renderPhotoFolderMistakes(data,host){
   if(value!==undefined)element.textContent=value;
   return element;
  };
+ host.classList.add('omoideGameSimple');
  const header=make('div','photoFolderHero');
  header.append(make('strong','','🔎 まちがいさがし！'));
  host.append(header);
@@ -7720,6 +7721,11 @@ function renderPhotoFolderMistakes(data,host){
  next.append(summary,make('p','muted',remaining?
   '🪐 あと'+remaining+'組！':
   '✨ おもいで銀河、完成！'));
+ if(!remaining){
+  const win=make('div','omoideGalaxyWin');
+  win.append(make('div','omoideGalaxyStars','⭐ ✨ 🪐 ✨ ⭐'),make('h2','','🎉 おつかれさまでした！'),make('strong','','おもいで銀河、完成！'),make('p','','みんなのおもいでが集まったよ！'));
+  next.prepend(win);
+ }
  if(!remaining)next.append(btn('📖 見開き編集へすすむ！','primary wide',finishPhotoSortFromCheck));
  host.append(next);
  }
@@ -7944,6 +7950,12 @@ function renderPhotoFolderMistakes(data,host){
   if(!photoIndexes.length){notice.textContent='先に移動する写真を選んでね。';return}
   try{
    const moved=photoSortMoveInlinePhotos(data,folder.key,photoIndexes,dest,transferMode);
+   // A previously checked destination must be checked again after receiving photos.
+   const destinationFolder=photoFoldersEnsure(data).find(item=>item.key===dest);
+   if(destinationFolder&&reviewed.has(destinationFolder.key)){
+    reviewed.delete(destinationFolder.key);
+    mistakeNeverAutoOpen.delete(destinationFolder.key);
+   }
    // Keep scroll position, current planet and already loaded thumbnails.
    // Update only the affected photo cards, selection and counters.
    if(transferMode==='move'){
