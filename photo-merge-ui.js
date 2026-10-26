@@ -719,10 +719,6 @@ window.omoideMergeGameRender=function(data,host,api){
   board.append(tile);
  }
  host.append(make('div','galaxyGameHead','🌷 園児のおほしさまボード'),board);
- const picker=make('div','galaxyBatchBar');
- picker.append(make('strong','',st.selected.size+'組を選択中'));
- picker.append(btn('チェック解除','secondary',()=>{st.selected.clear();redraw()}));
- host.append(picker);
  const waiting=make('div','galaxyWaiting galaxyCandidates');
  const size=12,pages=Math.max(1,Math.ceil(unassigned.length/size));
  st.page=Math.min(Math.max(0,st.page),pages-1);
