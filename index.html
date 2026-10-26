@@ -7800,7 +7800,52 @@ function renderPhotoFolderMistakes(data,host){
  const linkedId=String(links.get(folder.key)||'');
  if(folder.key!==PHOTO_SORT_UNPLACED&&linkedId){
   const existingKid=kids.find(k=>String(k.id)===linkedId);
-  planetInfo.append(make('div','photoPlanetConfirmedName','✅ '+(existingKid?.name||'登録済み園児')+'さん'));
+  const fixed=make('div','photoPlanetConfirmedName');
+  fixed.append(make('strong','','✅ '+(existingKid?.name||'登録済み園児')+'さん'));
+  const correction=btn('✏️ 訂正','secondary photoPlanetCorrect',()=>{
+   if(!window.confirm('園児名を訂正する？ すでに写真を追加した園児がいる場合は、登録を守りながら訂正するよ。'))return;
+   const select=make('select','photoPlanetName');
+   select.setAttribute('aria-label','訂正する園児名');
+   for(const kid of kids)select.append(new Option(kid.name+'さん',String(kid.id)));
+   select.value=linkedId;
+   const commit=btn('✅ この名前に変更','primary',()=>{
+    const newId=String(select.value);
+    if(!newId||newId===linkedId){fixed.replaceWith(make('div','photoPlanetConfirmedName','✅ '+(existingKid?.name||'登録済み園児')+'さん'));return}
+    const kid=kids.find(k=>String(k.id)===newId);
+    if(!kid||!Array.isArray(photoAssignments)||photoAssignments.length!==files.length)return;
+    const photos=photoFolderIndexes(data,folder);
+    const others=photoFoldersEnsure(data).filter(other=>other.key!==folder.key&&photoSortChildLinks(data).get(other.key)===linkedId);
+    const protectedIds=new Set(others.flatMap(other=>photoFolderIndexes(data,other)));
+    const uncertain=photos.filter(i=>assignmentPhotoIds(i).includes(linkedId)&&!protectedIds.has(i));
+    if(!window.confirm('「'+(existingKid?.name||'以前の園児')+'」から「'+kid.name+'」に訂正する？\\n写真'+photos.length+'枚を新しい園児に登録するよ。以前の園児への既存登録は安全のため保持するので、不要なら写真のおひっこし画面で確認してね。'))return;
+    const before=photoAssignments.map(ids=>[...(ids||[])]);
+    const previousLink=data.photoMatchFolderChild[folder.key];
+    const slot=(data.photoMergeSlots||[]).indexOf(folder.key);
+    const oldSlotId=slot>=0?data.photoMergeChildIds[slot]:null;
+    try{
+     const missing=photos.filter(index=>!assignmentPhotoIds(index).includes(newId));
+     photoAssignments=missing.length?data.assignConfirmedAlbumCluster({
+      photoAssignments,photoCount:files.length,photoIndexes:missing,
+      childId:newId,validChildIds:kids.map(k=>k.id)}):photoAssignments;
+     data.photoMatchFolderChild[folder.key]=newId;
+     if(slot>=0)data.photoMergeChildIds[slot]=newId;
+     data.photoFolderMistakeReviewed.delete(folder.key);
+     data.photoMatchFinalReviewed=false;
+     data.photoFolderNotice='✅ '+kid.name+'さんに訂正したよ。写真の所属を確認してね。';
+     stageState.phase='photos';
+     renderPhotoFolderMistakes(data,host);
+    }catch(error){
+     photoAssignments=before;
+     if(previousLink===undefined)delete data.photoMatchFolderChild[folder.key];
+     else data.photoMatchFolderChild[folder.key]=previousLink;
+     if(slot>=0)data.photoMergeChildIds[slot]=oldSlotId;
+     window.alert('⚠️ 訂正できなかったよ：'+String(error?.message||error));
+    }
+   });
+   const cancel=btn('やめる','secondary',()=>{renderPhotoFolderMistakes(data,host)});
+   fixed.replaceChildren(select,commit,cancel);
+  });
+  fixed.append(correction);planetInfo.append(fixed);
  }
  if(folder.key!==PHOTO_SORT_UNPLACED&&!linkedId){
   const namePicker=make('select','photoPlanetName');
