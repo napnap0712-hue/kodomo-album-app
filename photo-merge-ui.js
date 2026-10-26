@@ -659,4 +659,94 @@ window.omoideMergeGameRender=function(data,host,api){
  api.progress();
 };
 
+/* FG: roster-first sorting game. Original game preserved above for migration safety. */
+const namedMergeSessions=new WeakMap();
+window.omoideMergeGameRender=function(data,host,api){
+ if(!data||!api.valid()||!host)return;
+ let st=namedMergeSessions.get(data);
+ if(!st){st={selected:new Set(),page:0,notice:'',effect:null};namedMergeSessions.set(data,st)}
+ let groups;try{groups=api.ensure(data).filter(f=>api.indexes(data,f).length)}
+ catch(error){host.textContent='⚠️ '+String(error?.message||error);return}
+ const kids=(api.children||[]).filter(k=>k.id&&k.name);
+ const links=new Map();
+ for(const [key,id] of Object.entries(data.photoMatchFolderChild||{}))
+  if(kids.some(k=>String(k.id)===String(id)))links.set(key,String(id));
+ (data.photoMergeSlots||[]).forEach((key,i)=>{
+  const id=String(data.photoMergeChildIds?.[i]||'');
+  if(key&&kids.some(k=>String(k.id)===id)&&!links.has(key))links.set(key,id);
+ });
+ const unassigned=groups.filter(f=>!links.has(f.key));
+ for(const key of [...st.selected])if(!unassigned.some(f=>f.key===key))st.selected.delete(key);
+ const make=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e};
+ const btn=(label,cls,fn)=>{const e=make('button',cls,label);e.type='button';e.addEventListener('click',fn);return e};
+ const image=(f)=>{const e=make('img');const i=api.indexes(data,f)[0];if(i!==undefined)try{e.src=api.url(data.sourceFiles[i])}catch(error){}e.alt='候補グループの代表写真';e.loading='lazy';e.draggable=false;return e};
+ const redraw=()=>window.omoideMergeRender(data,host,api);
+ function assign(id){
+  if(!st.selected.size){st.notice='先に候補ピースをチェックしてね';redraw();return}
+  const kid=kids.find(k=>String(k.id)===String(id));
+  if(!kid)return;
+  if(!window.confirm('🌷 '+kid.name+'さんへ、'+st.selected.size+'組の候補をマージする？\\n別の園児が混ざっていてもSTEP2で修正できるよ。'))return;
+  try{
+   const done=api.assignChild(data,String(id),[...st.selected]);
+   st.selected.clear();st.effect=id;
+   st.notice='✨ MERGE! '+kid.name+'さんに'+done.photos+'枚！';
+   redraw();setTimeout(()=>{if(st.effect===id)st.effect=null},1300);
+  }catch(error){st.notice='⚠️ '+String(error?.message||error);redraw()}
+ }
+ host.replaceChildren();
+ const hero=make('div','galaxyGameHero');
+ hero.append(make('h2','','🌙 おもいでマージ！'),make('p','','候補ピースを選んで、園児名のボードにマージしよう！'));
+ host.append(hero);
+ const stats=make('p','galaxyGameStats','🌷 登録園児 '+kids.length+'名　·　🚀 なかま待ち '+unassigned.length+'組');
+ host.append(stats);
+ const notice=make('p','galaxyGameNotice',st.notice||'下の候補ピースを複数チェックして、園児のマスをタップ！');
+ notice.setAttribute('role','status');host.append(notice);
+ const board=make('div','galaxyGameBoard galaxyChildBoard');
+ board.style.gridTemplateColumns='repeat('+(kids.length<=9?3:4)+',minmax(0,1fr))';
+ for(const kid of kids){
+  const id=String(kid.id);
+  const associated=groups.filter(f=>links.get(f.key)===id);
+  const count=new Set(associated.flatMap(f=>api.indexes(data,f))).size;
+  const tile=btn('','galaxyChildTile'+(st.effect===id?' galaxyMergePop':''),()=>assign(id));
+  tile.append(make('strong','',kid.name+'さん'),make('span','',count+'枚'));
+  const preview=make('span','galaxyChildPreview');
+  if(associated.length)preview.append(image(associated[0]));else preview.textContent='🪐';
+  tile.prepend(preview);
+  if(st.effect===id)tile.append(make('span','galaxyTileMergeFx','✨ MERGE! ✨'));
+  board.append(tile);
+ }
+ host.append(make('div','galaxyGameHead','🌷 園児のおほしさまボード'),board);
+ const picker=make('div','galaxyBatchBar');
+ picker.append(make('strong','',st.selected.size+'組を選択中'));
+ picker.append(btn('チェック解除','secondary',()=>{st.selected.clear();redraw()}));
+ host.append(picker);
+ const waiting=make('div','galaxyWaiting galaxyCandidates');
+ const size=12,pages=Math.max(1,Math.ceil(unassigned.length/size));
+ st.page=Math.min(Math.max(0,st.page),pages-1);
+ for(const folder of unassigned.slice(st.page*size,(st.page+1)*size)){
+  const tile=make('div','galaxyTile'+(st.selected.has(folder.key)?' galaxyChecked':''));
+  tile.append(image(folder),make('strong','',api.indexes(data,folder).length+'枚'));
+  const check=btn(st.selected.has(folder.key)?'✓':'','galaxyCheck'+(st.selected.has(folder.key)?' isChecked':''),()=>{
+   if(st.selected.has(folder.key))st.selected.delete(folder.key);else st.selected.add(folder.key);redraw();
+  });
+  check.setAttribute('aria-pressed',String(st.selected.has(folder.key)));
+  check.setAttribute('aria-label','候補ピースを選択');
+  tile.append(check);
+  tile.addEventListener('click',e=>{if(e.target.closest('button'))return;
+   if(st.selected.has(folder.key))st.selected.delete(folder.key);else st.selected.add(folder.key);redraw()});
+  waiting.append(tile);
+ }
+ host.append(make('div','galaxyGameHead','🚀 なかま待ちピース'),waiting);
+ const nav=make('div','galaxyGameNav');
+ const prev=btn('◀ 前','secondary',()=>{st.page--;redraw()});prev.disabled=st.page===0;
+ const next=btn('次 ▶','secondary',()=>{st.page++;redraw()});next.disabled=st.page>=pages-1;
+ nav.append(prev,make('strong','',st.page+1+' / '+pages),next);host.append(nav);
+ const footer=make('section','galaxyGameFinal');
+ footer.append(make('p','','残りの候補は「間違い探し」で確認できるよ。'));
+ footer.append(btn('🔎 おもいで間違い探しへ','primary wide',()=>{
+  data.photoMergeSelected=[];data.photoMatchFinalReviewed=false;api.next('check',{scroll:true});
+ }));
+ host.append(footer);api.progress();
+};
+
 })();
