@@ -671,10 +671,7 @@ window.omoideMergeGameRender=function(data,host,api){
  const links=new Map();
  for(const [key,id] of Object.entries(data.photoMatchFolderChild||{}))
   if(kids.some(k=>String(k.id)===String(id)))links.set(key,String(id));
- (data.photoMergeSlots||[]).forEach((key,i)=>{
-  const id=String(data.photoMergeChildIds?.[i]||'');
-  if(key&&kids.some(k=>String(k.id)===id)&&!links.has(key))links.set(key,id);
- });
+ // No automatic child naming from old slot positions: only teacher-confirmed links count.
  const unassigned=groups.filter(f=>!links.has(f.key));
  for(const key of [...st.selected])if(!unassigned.some(f=>f.key===key))st.selected.delete(key);
  const make=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e};
