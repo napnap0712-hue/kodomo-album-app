@@ -7645,6 +7645,7 @@ function renderPhotoSortGameProgress(){
    window.alert('見開き編集への移動を完了できませんでした：'+String(error?.message||error));
   }
  }
+const photoPlanetStageSessions=new WeakMap();
 function renderPhotoFolderMistakes(data,host){
  if(!host||!data?.valid())return;
  host.replaceChildren();
@@ -7659,6 +7660,8 @@ function renderPhotoFolderMistakes(data,host){
   if(trulyUnplaced.length)folders.unshift({key:PHOTO_SORT_UNPLACED,groupKeys:[],addedPhotoIndexes:trulyUnplaced,excludedPhotoIndexes:[]});
  }catch(e){host.textContent='⚠️ '+String(e?.message||e);return}
  const reviewed=data.photoFolderMistakeReviewed;
+ let stageState=photoPlanetStageSessions.get(data);
+ if(!stageState){stageState={key:null,phase:'name'};photoPlanetStageSessions.set(data,stageState)}
  const slots=data.photoMergeSlots||[];
  const kids=getChildren(data.classId),links=photoSortChildLinks(data);
  // Inbox first; children follow the roster registration order, not kana order.
@@ -7775,6 +7778,13 @@ function renderPhotoFolderMistakes(data,host){
   return;
  }
  const folder=folders.find(f=>f.key===mistakeFocusKey),indexes=photoFolderIndexes(data,folder);
+ if(stageState.key!==folder.key){stageState.key=folder.key;stageState.phase='name'}
+ if(folder.key===PHOTO_SORT_UNPLACED)stageState.phase='photos';
+ host.dataset.planetPhase=stageState.phase;
+ function openPlanetPhotos(){
+  stageState.phase='photos';
+  renderPhotoFolderMistakes(data,host);
+ }
  // Big planet: a STEP1 group is linked to a real roster child here.
  const planet=make('section','photoBigPlanet');
  const globe=make('div','photoBigPlanetOrb');
@@ -7820,7 +7830,8 @@ function renderPhotoFolderMistakes(data,host){
     if(linkedSlot>=0&&Array.isArray(data.photoMergeChildIds))data.photoMergeChildIds[linkedSlot]=id;
     data.photoFolderMistakeReviewed.delete(folder.key);
     data.photoMatchFinalReviewed=false;
-    data.photoFolderNotice='✅ '+kid.name+'さんの惑星に登録したよ！';
+    data.photoFolderNotice='✅ '+kid.name+'さんのお名前を登録したよ。次は写真を確認しよう！';
+    stageState.phase='photos';
     renderPhotoFolderMistakes(data,host);
    }catch(error){
     data.photoFolderNotice='⚠️ '+String(error?.message||error);renderPhotoFolderMistakes(data,host);
@@ -7828,7 +7839,13 @@ function renderPhotoFolderMistakes(data,host){
   });
   planetInfo.append(namePicker,bind);
  }else planetInfo.append(make('p','','未振り分け写真を整理しよう'));
+ if(linkedId&&stageState.phase==='name'){
+  planetInfo.append(btn('📸 名前はOK！写真を確認する','primary photoPlanetNext',openPlanetPhotos));
+ }
  planet.append(globe,planetInfo);host.append(planet);
+ const steps=make('div','photoPlanetSteps');
+ steps.append(make('strong','',stageState.phase==='name'?'① 🌷 園児名を確認しよう':'② 📸 写真を確認 → 必要ならおひっこし → ✅ 確定'));
+ host.append(steps);
  const selected=new Set(),gallery=make('div','photoMistakeGallery photoMoveInlineGallery');
  gallery.setAttribute('aria-label','このフォルダの写真を選ぶ');
  const toolbar=make('div','photoMoveInlineToolbar');
@@ -7926,6 +7943,7 @@ function renderPhotoFolderMistakes(data,host){
  }
  function syncSelection(){
   selectedText.textContent=selected.size?'✅ '+selected.size+'枚を選択中':'写真をタップして選択しよう';
+  host.classList.toggle('photoPlanetHasSelection',selected.size>0);
   clear.disabled=selected.size===0;
   removeSelected.disabled=selected.size===0;
   selectVisible.disabled=gallery.children.length===0;
@@ -8115,6 +8133,7 @@ function renderPhotoFolderMistakes(data,host){
    // Advance to the next unconfirmed child in roster order.
    // When none remain, show a summary rather than reopening this folder.
    mistakeFocusKey=null;mistakeManualFocusKey=null;
+   stageState.key=null;stageState.phase='name';
   }
   renderPhotoFolderMistakes(data,host);
  }));
