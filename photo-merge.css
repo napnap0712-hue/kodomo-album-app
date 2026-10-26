@@ -771,3 +771,25 @@
  #photoFolderMistakePanel .photoBigPlanet + .photoMoveInlineTray{position:sticky!important;top:4px!important}
  #photoFolderMistakePanel .photoMoveInlineTarget{flex-basis:104px;min-width:104px;min-height:108px}
 }
+
+/* FB: STEP2 four-step progression, reveal photo correction only after name confirmation. */
+#photoFolderMistakePanel .photoPlanetSteps{
+ margin:10px 0;padding:11px 14px;border:2px solid #f6d6ff;
+ border-radius:18px;background:linear-gradient(120deg,#ffe8f7,#ddd9ff);
+ color:#69448b;font-size:14px;text-align:center;
+}
+#photoFolderMistakePanel .photoPlanetNext{width:100%;min-height:46px;border-radius:16px}
+#photoFolderMistakePanel[data-planet-phase="name"] .photoMoveInlineTray,
+#photoFolderMistakePanel[data-planet-phase="name"] .photoMoveInlineToolbar,
+#photoFolderMistakePanel[data-planet-phase="name"] .photoMistakeGallery,
+#photoFolderMistakePanel[data-planet-phase="name"] .photoMoveInlineMore,
+#photoFolderMistakePanel[data-planet-phase="name"] .photoMoveInlineStatus,
+#photoFolderMistakePanel[data-planet-phase="name"] .photoMistakeActions{
+ display:none!important;
+}
+#photoFolderMistakePanel[data-planet-phase="photos"]:not(.photoPlanetHasSelection)>.photoMoveInlineTray{
+ display:none!important;
+}
+#photoFolderMistakePanel[data-planet-phase="photos"] .photoMistakeActions{
+ margin-top:14px;position:relative;z-index:2;
+}
