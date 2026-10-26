@@ -473,6 +473,7 @@ window.omoideMergeGameRender=function(data,host,api){
    data.photoMatchFinalReviewed=false;
    data.photoMergeFocusBoxKey=target;
    st.selected=null;
+   st.celebrate=true;
    const result=api.ensure(data).find(f=>f.key===target);
    st.notice='✨ MERGE! '+(result?api.indexes(data,result).length:0)+'枚のなかまになったよ！';
    redraw();
@@ -484,7 +485,17 @@ window.omoideMergeGameRender=function(data,host,api){
  function choose(key){
   if(st.selected===key){st.selected=null;redraw();return}
   if(!st.selected){st.selected=key;redraw();return}
-  doMerge(st.selected,key);
+  // Preview both groups before committing: this protects against accidental
+  // cross-child merging and makes a missed tap visibly actionable.
+  st.confirm={source:st.selected,target:key};
+  redraw();
+ }
+ function confirmMerge(){
+  const pair=st.confirm;st.confirm=null;
+  if(!pair||!byKey.has(pair.source)||!byKey.has(pair.target)){
+   announce('カードが変わったので、もう一度選んでね。');return;
+  }
+  doMerge(pair.source,pair.target);
  }
  function card(f,cls){
   const ids=api.indexes(data,f),tile=button('',cls+(st.selected===f.key?' galaxySelected':''),()=>choose(f.key));
@@ -539,6 +550,7 @@ window.omoideMergeGameRender=function(data,host,api){
  const hero=make('div','galaxyGameHero');
  hero.append(make('h2','','🌙 おもいでマージ！'),make('p','','同じ子の写真ピースを重ねて、ひとつにしよう！'));
  host.append(hero);
+ if(st.celebrate){const banner=make('div','galaxyCelebrate','✨ MERGE! 💕');host.append(banner);st.celebrate=false}
  host.append(make('p','galaxyGameStats','🧩 写真グループ '+all.length+'組　·　🎮 12マスボード　·　✨ 同じ子を先生が確認して合体'));
  const note=make('p','galaxyGameNotice',st.notice||'写真ピースを1つ選んで、合体する相手をタップ！ 長押しドラッグでもOK。');
  note.setAttribute('role','status');host.append(note);
@@ -546,6 +558,25 @@ window.omoideMergeGameRender=function(data,host,api){
   const snap=data.photoFolderUndo.pop();if(!snap)return;
   api.restore(data,snap);st.selected=null;st.notice='↩ 元に戻したよ！';redraw();
  }));
+ if(st.confirm){
+  const pair=st.confirm;
+  const source=byKey.get(pair.source),target=byKey.get(pair.target);
+  if(source&&target){
+   const dialog=make('section','galaxyConfirm');
+   dialog.append(make('strong','','💕 この2つの写真グループを合体する？'));
+   const previews=make('div','galaxyConfirmPreviews');
+   for(const f of [source,target]){
+    const frame=make('div','galaxyConfirmFace');
+    frame.append(photo(f),make('span','',api.indexes(data,f).length+'枚'));
+    previews.append(frame);
+   }
+   dialog.append(previews,make('p','','同じ園児だと確認できたら「合体する」を押してね。'));
+   const actions=make('div','galaxyConfirmActions');
+   actions.append(button('やめる','secondary',()=>{st.confirm=null;st.selected=null;redraw()}),
+    button('✨ 合体する！','primary',confirmMerge));
+   dialog.append(actions);host.append(dialog);
+  }else st.confirm=null;
+ }
  const heading=make('div','galaxyGameHead');
  heading.append(make('strong','','🪐 おほしさまボード'),make('span','','4 × 3 マス'));
  host.append(heading);
