@@ -694,3 +694,49 @@
  #photoFolderMistakePanel .photoFolderHero{padding:10px 12px}
  #photoFolderMistakePanel .photoMoveInlineTray{padding:9px;top:5px}
 }
+
+/* EZ STEP2 one-planet-at-a-time: large representative planet + carousel destinations */
+#photoFolderMistakePanel .photoBigPlanet{
+ display:flex;align-items:center;justify-content:center;gap:16px;
+ padding:18px 12px;margin:10px 0 18px;border-radius:30px;
+ background:radial-gradient(ellipse at 25% 20%,#c3b6ff88,transparent 60%),linear-gradient(130deg,#4e3388,#7253a6 55%,#456d9b);
+ border:2px solid #ffffff9c;box-shadow:0 8px 0 #291a496b,0 12px 24px #28184a4b;
+ color:#fff8ff
+}
+#photoFolderMistakePanel .photoBigPlanetOrb{
+ width:clamp(134px,29vw,225px);height:clamp(134px,29vw,225px);
+ flex-shrink:0;position:relative;overflow:hidden;border-radius:50%;
+ border:7px solid #f8ddff;box-shadow:inset 0 0 20px #5b3c8055,0 0 0 8px #e4c5ff45,0 8px 24px #130b3366;
+ background:linear-gradient(125deg,#ffb7df,#a5c9ff);
+ animation:photoPlanetFloat 3.4s ease-in-out infinite
+}
+#photoFolderMistakePanel .photoBigPlanetOrb img{width:100%;height:100%;object-fit:cover;display:block}
+#photoFolderMistakePanel .photoPlanetCount{
+ position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
+ border-radius:100px;background:#37245ccf;color:#fff;
+ padding:5px 12px;white-space:nowrap;font-size:13px;font-weight:900
+}
+#photoFolderMistakePanel .photoBigPlanetInfo{display:flex;flex-direction:column;gap:9px;min-width:0;max-width:360px;flex:1}
+#photoFolderMistakePanel .photoBigPlanetInfo strong{font-size:clamp(19px,4vw,26px);color:#fff1b9;text-shadow:0 2px 3px #392567}
+#photoFolderMistakePanel .photoBigPlanetInfo p{font-size:13px;line-height:1.6;color:#fffaff;margin:0}
+#photoFolderMistakePanel .photoPlanetName{
+ width:100%;max-width:340px;min-height:48px;padding:9px;
+ border:2px solid #f5d5ff;border-radius:16px;
+ background:#fff8ff;color:#664385;font-size:15px;font-weight:900
+}
+#photoFolderMistakePanel .photoPlanetBind{min-height:46px;border-radius:16px;font-weight:900}
+#photoFolderMistakePanel .photoMoveInlineTargets .photoProvisionalPlanet{
+ background:linear-gradient(155deg,#ffe5f7,#e2dcff)!important;
+ border:2px solid #fff6c7!important;
+}
+#photoFolderMistakePanel .photoMoveInlineTargets{scroll-snap-type:x proximity}
+#photoFolderMistakePanel .photoMoveInlineTarget{scroll-snap-align:start}
+#photoFolderMistakePanel .photoMoveInlineTarget::before{content:'🪐';font-size:31px;line-height:1;display:block}
+@keyframes photoPlanetFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@media(max-width:600px){
+ #photoFolderMistakePanel .photoBigPlanet{flex-direction:column;text-align:center;gap:9px;padding:15px 12px}
+ #photoFolderMistakePanel .photoBigPlanetOrb{width:170px;height:170px}
+ #photoFolderMistakePanel .photoBigPlanetInfo{width:100%;max-width:100%;align-items:stretch}
+ #photoFolderMistakePanel .photoPlanetName{max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){#photoFolderMistakePanel .photoBigPlanetOrb{animation:none}}
