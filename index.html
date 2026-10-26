@@ -7665,10 +7665,10 @@ function renderPhotoFolderMistakes(data,host){
  folders.sort((a,b)=>{
   if(a.key===PHOTO_SORT_UNPLACED)return -1;
   if(b.key===PHOTO_SORT_UNPLACED)return 1;
-  const ia=kids.findIndex(k=>String(k.id)===links.get(a.key));
-  const ib=kids.findIndex(k=>String(k.id)===links.get(b.key));
-  if(ia!==ib)return (ia<0?1e6:ia)-(ib<0?1e6:ib);
-  return slots.indexOf(a.key)-slots.indexOf(b.key);
+  // STEP1 provisional order stays stable when teachers assign child names.
+  const ai=data.photoFolders.findIndex(f=>f.key===a.key);
+  const bi=data.photoFolders.findIndex(f=>f.key===b.key);
+  return ai-bi;
  });
  if(mistakeFocusData!==data){
   mistakeFocusData=data;mistakeFocusKey=null;mistakeManualFocusKey=null;mistakeNeverAutoOpen=new Set([...(data.photoFolderConfirmedOnce||[]),...reviewed]);
@@ -7786,7 +7786,7 @@ function renderPhotoFolderMistakes(data,host){
  const planetInfo=make('div','photoBigPlanetInfo');
  const position=folders.findIndex(item=>item.key===folder.key)+1;
  planetInfo.append(make('strong','','🪐 惑星 '+position+' / '+folders.length),
-  make('p','','この惑星の写真を確認して、園児名を登録しよう！'));
+  make('p','','🌷 この子はだーれ？ 園児名を選んでから写真をおひっこししよう！'));
  const linkedId=String(links.get(folder.key)||'');
  if(folder.key!==PHOTO_SORT_UNPLACED){
   const namePicker=make('select','photoPlanetName');
@@ -7854,7 +7854,7 @@ function renderPhotoFolderMistakes(data,host){
  // Keep destinations in this same view and within reach during scrolling.
  const tray=make('section','photoMoveInlineTray');
  const trayTitle=make('strong','','🌷 おひっこし先');
- const hint=make('p','muted','園児名をタップ、または写真を長押しで移動。集合写真は「追加」をONに。');
+ const hint=make('p','muted','下の写真を選択して、小さな惑星をタップでおひっこし！集合写真は「追加」をONに。');
  const targets=make('div','photoMoveInlineTargets');
  tray.append(trayTitle,hint,targets);
  // Display destination planets below the opened photo gallery.
@@ -8088,11 +8088,14 @@ function renderPhotoFolderMistakes(data,host){
   showMore.textContent='＋ 残りの写真を見る（'+shown+' / '+indexes.length+'枚）';
   syncSelection();
  }
- host.append(gallery,showMore,tray,notice);
+ // Destinations stay beside the big planet, not below the entire photo gallery.
+ host.append(gallery,showMore,notice);
+ planet.after(tray);
+ gallery.before(toolbar);
  addPhotos();
  const actions=make('div','photoMistakeActions');
  actions.append(btn(reviewed.has(folder.key)?'↩ 確認を取り消す':
-  folder.key===PHOTO_SORT_UNPLACED?'✅ 未振り分けを確認して次へ':'✅ この園児を確定して次へ',
+  folder.key===PHOTO_SORT_UNPLACED?'✅ 未振り分けを確認して次へ':'✅ この惑星を確定して次へ',
   'primary wide',()=>{
   if(!reviewed.has(folder.key)&&folder.key===PHOTO_SORT_UNPLACED&&photoSortInboxIndexes(data).length&&
    !window.confirm('📷 未振り分け写真が'+photoSortInboxIndexes(data).length+
