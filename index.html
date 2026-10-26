@@ -8690,6 +8690,45 @@ function renderPhotoMatching(data,host){
  });
 }
 
+function assignMergeCandidatesToChild(data,childId,keys){
+ if(data!==albumAiGroupsData||!data.valid())throw Error('アルバムが切り替わったよ');
+ const kids=getChildren(data.classId),kid=kids.find(k=>String(k.id)===String(childId));
+ if(!kid)throw Error('園児名簿を確認してね');
+ const sourceKeys=[...new Set(keys)].filter(Boolean);
+ const initial=photoFolderSnapshot(data),oldUndo=[...data.photoFolderUndo];
+ const oldAssignments=photoAssignments.map(ids=>[...(ids||[])]);
+ try{
+  let folders=photoFoldersEnsure(data),links=photoSortChildLinks(data);
+  const candidates=sourceKeys.map(key=>folders.find(f=>f.key===key));
+  if(!candidates.length||candidates.some(f=>!f))throw Error('候補フォルダが変わったよ');
+  if(sourceKeys.some(key=>links.has(key)&&links.get(key)!==String(childId)))
+   throw Error('別の園児に登録済みの候補は選べないよ');
+  const target=folders.find(f=>links.get(f.key)===String(childId))?.key||sourceKeys[0];
+  for(const key of sourceKeys){if(key!==target)photoMatchMergeFolders(data,target,key)}
+  folders=photoFoldersEnsure(data);
+  const folder=folders.find(f=>f.key===target);
+  if(!folder)throw Error('合体したフォルダが見つからないよ');
+  // Explicit teacher assignment is the only source of the child link.
+  data.photoMatchFolderChild[target]=String(childId);
+  if(!Array.isArray(data.photoMergeSlots))data.photoMergeSlots=[];
+  if(!Array.isArray(data.photoMergeChildIds))data.photoMergeChildIds=[];
+  let slot=data.photoMergeChildIds.findIndex(id=>String(id)===String(childId));
+  if(slot<0){slot=data.photoMergeChildIds.length;data.photoMergeChildIds.push(String(childId));data.photoMergeSlots.push(null)}
+  data.photoMergeSlots[slot]=target;
+  const indices=photoFolderIndexes(data,folder);
+  const missing=indices.filter(index=>!assignmentPhotoIds(index).includes(String(childId)));
+  if(missing.length)photoAssignments=data.assignConfirmedAlbumCluster({
+   photoAssignments,photoCount:files.length,photoIndexes:missing,
+   childId:String(childId),validChildIds:kids.map(k=>k.id)});
+  data.photoFolderMistakeReviewed.delete(target);
+  data.photoMatchFinalReviewed=false;
+  data.photoFolderUndo=[...oldUndo,initial].slice(-10);
+  return {target,photos:indices.length,assigned:missing.length};
+ }catch(error){
+  photoFolderRestoreSnapshot(data,initial);photoAssignments=oldAssignments;
+  data.photoFolderUndo=oldUndo;throw error;
+ }
+}
 function renderPhotoFolders(data,host){
  const roster=getChildren(data.classId).map(k=>({id:String(k.id),name:String(k.name||'').trim()}));
  return window.omoideMergeRender?window.omoideMergeRender(data,host,{
@@ -8699,7 +8738,7 @@ function renderPhotoFolders(data,host){
   move:photoMatchMovePhotos,add:photoMatchAddPhotos,split:photoMatchSplitPhotos,
   url:fileUrl,openPhoto:openAlbumAssignedPhoto,progress:renderPhotoSortGameProgress,
   next:setPhotoAssignFlowStep,faces:photoMatchFaceSamples,score:photoMatchScore,
-  signature:photoMatchSignature,boxCount:roster.length,children:roster
+  signature:photoMatchSignature,assignChild:assignMergeCandidatesToChild,boxCount:roster.length,children:roster
  }):renderPhotoMatching(data,host);
  host.replaceChildren();renderPhotoSortGameProgress();
  let folders;
