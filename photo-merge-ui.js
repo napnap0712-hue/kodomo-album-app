@@ -503,7 +503,15 @@ window.omoideMergeGameRender=function(data,host,api){
   doMergeBatch(pair.keys,pair.target);
  }
  function card(f,cls){
-  const ids=api.indexes(data,f),tile=button('',cls+(st.selected===f.key?' galaxySelected':''),()=>choose(f.key));
+  const ids=api.indexes(data,f),tile=button('',cls+(st.selected===f.key?' galaxySelected':''),event=>{
+   if(event.target.closest('.galaxyCheck')){
+    if(st.checked.has(f.key))st.checked.delete(f.key);
+    else st.checked.add(f.key);
+    if(!st.checked.has(st.mergeTarget))st.mergeTarget=null;
+    st.selected=null;redraw();return;
+   }
+   choose(f.key);
+  });
   tile.dataset.key=f.key;tile.setAttribute('aria-label','写真グループ '+ids.length+'枚');
   const view=make('span','galaxyTileImage');view.append(photo(f));
   tile.append(view,make('strong','',ids.length+'枚'),make('small','','タップして選ぶ'));
