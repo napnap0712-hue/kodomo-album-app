@@ -699,12 +699,9 @@ window.omoideMergeGameRender=function(data,host,api){
  const notice=make('p','galaxyGameNotice',st.notice||'下の候補ピースを複数チェックして、園児のマスをタップ！');
  notice.setAttribute('role','status');host.append(notice);
  if(data.photoFolderUndo?.length)host.append(btn('←戻す','secondary galaxyUndo',()=>{
-  const snapshot=data.photoFolderUndo.pop();
-  if(!snapshot)return;
-  api.restore(data,snapshot);
-  // Assignments are preserved; never silently erase photos from a child's album.
+  if(!api.undoChild?.(data)){st.notice='戻せるマージがないよ。';redraw();return}
   st.selected.clear();st.effect=null;
-  st.notice='↩ 直前のマージを戻したよ。園児別の登録内容も確認してね。';
+  st.notice='← 直前のマージと園児への写真登録を元に戻したよ！';
   redraw();
  }));
  const board=make('div','galaxyGameBoard galaxyChildBoard');
