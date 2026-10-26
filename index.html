@@ -8699,7 +8699,7 @@ function assignMergeCandidatesToChild(data,childId,keys){
  const initial=photoFolderSnapshot(data),oldUndo=[...data.photoFolderUndo];
  const oldAssignments=photoAssignments.map(ids=>[...(ids||[])]);
  try{
-  let folders=photoFoldersEnsure(data),links=photoSortChildLinks(data);
+  let folders=photoFoldersEnsure(data),links=new Map(Object.entries(data.photoMatchFolderChild||{}).map(([key,id])=>[key,String(id)]));
   const candidates=sourceKeys.map(key=>folders.find(f=>f.key===key));
   if(!candidates.length||candidates.some(f=>!f))throw Error('候補フォルダが変わったよ');
   if(sourceKeys.some(key=>links.has(key)&&links.get(key)!==String(childId)))
