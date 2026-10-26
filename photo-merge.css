@@ -793,3 +793,12 @@
 #photoFolderMistakePanel[data-planet-phase="photos"] .photoMistakeActions{
  margin-top:14px;position:relative;z-index:2;
 }
+
+/* FC: child identity becomes a fixed label after confirmation. */
+#photoFolderMistakePanel .photoPlanetConfirmedName{
+ display:block;width:100%;padding:13px 15px;
+ border:2px solid #fff2b7;border-radius:18px;
+ background:linear-gradient(115deg,#fff0bd,#ffe1f6);
+ color:#674182;font-size:clamp(18px,4.5vw,24px);font-weight:900;
+ text-align:center;box-shadow:0 3px 0 #6f579356
+}
