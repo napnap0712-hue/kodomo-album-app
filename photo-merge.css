@@ -478,3 +478,43 @@
 @media(prefers-reduced-motion:reduce){
  #albumAiSingletonPairs .galaxyTile{transition:none}
 }
+
+/* EU: remove inherited light cards behind galaxy STEP1 and restore legibility. */
+.screen[data-screen="photoAssign"][data-flow-step="review"] #currentAlbumAiPanel,
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonReview,
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonPairs{
+ background:transparent!important;border-color:transparent!important;
+ box-shadow:none!important;color:#fff8ff;
+}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #currentAlbumAiPanel{
+ padding:8px!important;
+}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonPairs .muted,
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonPairs .mergeSectionTitle small{
+ color:#fff1ff!important;
+}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonPairs .galaxyGameStats{
+ color:#fff6d5!important;text-shadow:0 1px 3px #352354;
+}
+#albumAiSingletonPairs .galaxyConfirm{
+ padding:14px;margin:12px 0;border:3px solid #fff4b5;
+ border-radius:21px;background:linear-gradient(130deg,#fff5ff,#e3e2ff 55%,#d0f7fa);
+ color:#633d86;box-shadow:0 6px 0 #3c286b70;
+}
+#albumAiSingletonPairs .galaxyConfirm>strong{display:block;text-align:center;font-size:17px;color:#633d86}
+#albumAiSingletonPairs .galaxyConfirmPreviews{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+#albumAiSingletonPairs .galaxyConfirmFace{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;
+ padding:7px;border:2px solid #debaf6;border-radius:16px;background:#fff9ff}
+#albumAiSingletonPairs .galaxyConfirmFace img{width:100%;height:clamp(100px,22vw,180px);object-fit:contain;border-radius:12px}
+#albumAiSingletonPairs .galaxyConfirmFace span{font-size:13px;font-weight:850}
+#albumAiSingletonPairs .galaxyConfirm>p{text-align:center;color:#62457c;font-size:13px}
+#albumAiSingletonPairs .galaxyConfirmActions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#albumAiSingletonPairs .galaxyConfirmActions button{min-height:48px;border-radius:14px;font-weight:900}
+#albumAiSingletonPairs .galaxyCelebrate{margin:8px auto;text-align:center;font-size:24px;font-weight:900;
+ color:#ffe895;text-shadow:0 2px 0 #5f4289;animation:galaxyMergePop .55s ease both}
+@keyframes galaxyMergePop{
+ 0%{transform:scale(.6);opacity:0}
+ 55%{transform:scale(1.16);opacity:1}
+ 100%{transform:scale(1);opacity:1}
+}
+@media(prefers-reduced-motion:reduce){#albumAiSingletonPairs .galaxyCelebrate{animation:none}}
