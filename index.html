@@ -8691,6 +8691,16 @@ function renderPhotoMatching(data,host){
  });
 }
 
+const namedMergeUndoSnapshots=new WeakMap();
+function undoNamedMergeAssignment(data){
+ const history=namedMergeUndoSnapshots.get(data)||[];
+ const last=history.pop();if(!last)return false;
+ photoFolderRestoreSnapshot(data,last.folder);
+ photoAssignments=last.assignments.map(ids=>[...ids]);
+ data.photoFolderUndo=[...last.undo];
+ data.photoMatchFinalReviewed=false;
+ return true;
+}
 function assignMergeCandidatesToChild(data,childId,keys){
  if(data!==albumAiGroupsData||!data.valid())throw Error('アルバムが切り替わったよ');
  const kids=getChildren(data.classId),kid=kids.find(k=>String(k.id)===String(childId));
@@ -8724,6 +8734,9 @@ function assignMergeCandidatesToChild(data,childId,keys){
   data.photoFolderMistakeReviewed.delete(target);
   data.photoMatchFinalReviewed=false;
   data.photoFolderUndo=[...oldUndo,initial].slice(-10);
+  const history=namedMergeUndoSnapshots.get(data)||[];
+  history.push({folder:initial,assignments:oldAssignments,undo:oldUndo});
+  namedMergeUndoSnapshots.set(data,history.slice(-10));
   return {target,photos:indices.length,assigned:missing.length};
  }catch(error){
   photoFolderRestoreSnapshot(data,initial);photoAssignments=oldAssignments;
@@ -8739,7 +8752,7 @@ function renderPhotoFolders(data,host){
   move:photoMatchMovePhotos,add:photoMatchAddPhotos,split:photoMatchSplitPhotos,
   url:fileUrl,openPhoto:openAlbumAssignedPhoto,progress:renderPhotoSortGameProgress,
   next:setPhotoAssignFlowStep,faces:photoMatchFaceSamples,score:photoMatchScore,
-  signature:photoMatchSignature,assignChild:assignMergeCandidatesToChild,boxCount:roster.length,children:roster
+  signature:photoMatchSignature,assignChild:assignMergeCandidatesToChild,undoChild:undoNamedMergeAssignment,boxCount:roster.length,children:roster
  }):renderPhotoMatching(data,host);
  host.replaceChildren();renderPhotoSortGameProgress();
  let folders;
