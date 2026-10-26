@@ -7816,6 +7816,8 @@ function renderPhotoFolderMistakes(data,host){
      childId:id,validChildIds:kids.map(k=>k.id)}):photoAssignments;
     photoAssignments=updated;
     data.photoMatchFolderChild[folder.key]=id;
+    const linkedSlot=(data.photoMergeSlots||[]).indexOf(folder.key);
+    if(linkedSlot>=0&&Array.isArray(data.photoMergeChildIds))data.photoMergeChildIds[linkedSlot]=id;
     data.photoFolderMistakeReviewed.delete(folder.key);
     data.photoMatchFinalReviewed=false;
     data.photoFolderNotice='✅ '+kid.name+'さんの惑星に登録したよ！';
