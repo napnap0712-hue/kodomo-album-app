@@ -3830,6 +3830,20 @@ body:has(.screen[data-screen="classDetail"].active){background:radial-gradient(c
 .screen[data-screen="classDetail"] #manageChildEditor .manageEditorBox{max-width:500px;margin:0 auto}
 .screen[data-screen="classDetail"] .settingsForm>label.field,.screen[data-screen="classDetail"] #saveManagedClass,.screen[data-screen="classDetail"] #manageClassStatus{display:none!important}
 @media(max-width:520px){.screen[data-screen="classDetail"] #manageChildList{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}.screen[data-screen="classDetail"] #manageChildList .manageCardFace{width:77px!important;height:77px!important}}
+
+/* COLOR JOURNEY: floating round children and mobile-friendly edit panel */
+.screen[data-screen="classDetail"] #manageChildList{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:24px 8px!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:8px 2px!important;gap:9px!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard .manageCardFace{width:clamp(90px,16vw,118px)!important;height:clamp(90px,16vw,118px)!important;border-width:6px!important;box-shadow:0 9px 20px #407b8b24,0 0 0 4px #ffffffc9!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard>b{font-size:clamp(13px,2vw,17px)!important;line-height:1.5;text-align:center;max-width:100%}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard>small{display:none!important}
+.screen[data-screen="classDetail"] #manageToggleBatch{position:fixed!important;right:calc(16px + env(safe-area-inset-right));bottom:calc(18px + env(safe-area-inset-bottom));z-index:25;width:68px!important;height:68px!important;min-width:68px!important;min-height:68px!important;border-radius:50%!important;padding:0!important;font-size:0!important;box-shadow:0 12px 30px #3f948b50!important}
+.screen[data-screen="classDetail"] #manageToggleBatch::before{content:"+";font-size:43px!important;font-weight:500;line-height:1;color:#fff}
+.screen[data-screen="classDetail"] #manageToggleBatch:disabled{opacity:.48!important}
+.screen[data-screen="classDetail"] #manageChildEditor:not([hidden]){position:fixed!important;z-index:35;inset:0!important;background:#293e5273!important;border-radius:0!important;display:flex!important;align-items:flex-end;justify-content:center;padding:10px 10px 0!important;box-shadow:none!important}
+.screen[data-screen="classDetail"] #manageChildEditor:not([hidden]) .manageEditorBox{width:min(100%,550px)!important;max-height:88dvh!important;overflow:auto!important;-webkit-overflow-scrolling:touch;background:#fff;border-radius:28px 28px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -14px 35px #29435b2b}
+.screen[data-screen="classDetail"] #manageBatchPanel:not([hidden]){position:relative;z-index:26;margin-top:15px;margin-bottom:110px;max-height:65dvh;overflow:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:520px){.screen[data-screen="classDetail"] #manageChildList{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:24px 12px!important}.screen[data-screen="classDetail"] #manageChildList>.manageChildCard .manageCardFace{width:clamp(105px,32vw,130px)!important;height:clamp(105px,32vw,130px)!important}.screen[data-screen="classDetail"] #manageChildEditor:not([hidden]) .manageEditorBox{padding:18px 14px calc(22px + env(safe-area-inset-bottom))}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
