@@ -4842,6 +4842,26 @@ function renderHome(){
  $('#settingsButton').onclick=()=>show('settings');
  $('#homeYearButton').onclick=()=>show('yearManagement');
 }
+/* Color Journey bridge: keep the original app state inside its closure. */
+window.cjOriginalApp={
+ enterClass(cls){
+  selected=classes.find(c=>c.id===cls.id)||classes[1];
+  $('#classTitle').textContent=displayClassName(selected);
+  $('#savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
+  return {name:displayClassName(selected),year:activeYear()+'年度',flower:selected.flower};
+ },
+ navigate(kind){
+  if(kind==='albums'||kind==='spread'||kind==='finish'||kind==='merge'||kind==='check'){show('classProjects');return;}
+  if(kind==='kids'){show('classDetail');return;}
+  if(kind==='new'){$('#createNew').click();return;}
+  if(kind==='cover'){openCoverEditor();return;}
+  if(kind==='growth'){openGrowthEditor();return;}
+  if(kind==='message'){openMessageEditor();return;}
+  if(kind==='back'){openBackCoverEditor();return;}
+  if(kind==='home'){show('home');return;}
+  if(kind==='map'){show('cjJourney');return;}
+ }
+};
 async function renderSaved(){try{const items=(await getAllDrafts()).filter(item=>item.classId===selected.id&&draftInYear(item));$('#savedList').innerHTML=items.length?items.map(item=>'<article class="savedItem"><span><b>'+escapeText(item.title||'無題のアルバム')+'</b><br><small class="muted">'+new Date(item.updatedAt).toLocaleDateString('ja-JP')+' ・ '+item.photos.length+'枚</small></span><button class="secondary" data-open-draft="'+escapeText(item.id)+'">開く</button></article>').join(''):'<div class="empty">このクラスの保存済みアルバムはまだありません。</div>';document.querySelectorAll('[data-open-draft]').forEach(btn=>btn.addEventListener('click',()=>loadDraft(btn.dataset.openDraft)));}catch(error){$('#savedList').innerHTML='<div class="empty">保存済み一覧を読み込めませんでした。このブラウザの保存機能を確認してください。</div>';}}
 function escapeText(value){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
 document.querySelectorAll('[data-back]').forEach(btn=>btn.addEventListener('click',()=>show(btn.dataset.back)));
@@ -13785,9 +13805,7 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
   const rect=$g('cjGateIcon').getBoundingClientRect(),color=getComputedStyle(gate).getPropertyValue('--cjColor').trim()||'#83dccc';
   transit(rect.left+rect.width/2,rect.top+rect.height/2,color,()=>{
    try {
-    selected=candidate;
-    document.getElementById('classTitle').textContent=displayClassName(selected);
-    document.getElementById('savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
+    const session=window.cjOriginalApp.enterClass(candidate);
     gate.classList.remove('open');
     gate.style.display='none';
     candidate=null;
@@ -13795,10 +13813,10 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
     const page=document.getElementById('cjJourney');
     if(!page)throw new Error('マップ画面が見つかりません');
     document.querySelectorAll('.screen').forEach(screen=>screen.classList.toggle('active',screen===page));
-    document.getElementById('cjClassTitle').textContent=displayClassName(selected);
-    document.getElementById('cjYear').textContent=activeYear()+'年度';
+    document.getElementById('cjClassTitle').textContent=session.name;
+    document.getElementById('cjYear').textContent=session.year;
     const flower=document.createElement('img');
-    flower.src='./'+selected.flower;flower.alt='';
+    flower.src='./'+session.flower;flower.alt='';
     document.getElementById('cjHeadFlower').replaceChildren(flower);
     window.scrollTo(0,0);
    }catch(error){
@@ -13816,30 +13834,10 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
 /* Navigation only: the pre-existing class, album, sorting and special-page editors remain the source of truth. */
 (function(){
 const $id=id=>document.getElementById(id);
-function updateJourney(){
- if(typeof selected==='undefined'||!selected)return;
- $id('cjClassTitle').textContent=displayClassName(selected);
- $id('cjYear').textContent=activeYear()+'年度';
- const img=document.createElement('img');img.src='./'+selected.flower;img.alt='';
- $id('cjHeadFlower').replaceChildren(img);
-}
-function jump(kind){
- const notice=$id('cjNotice');
- if(kind==='map'){updateJourney();show('cjJourney');return;}
- if(kind==='albums'||kind==='spread'||kind==='finish'){show('classProjects');return;}
- if(kind==='kids'){show('classDetail');return;}
- if(kind==='new'){document.getElementById('createNew').click();return;}
- if(kind==='merge'||kind==='check'){
-  notice.textContent='写真整理はアルバム単位だよ。既存アルバムの一覧から続きのページを選ぶか、写真追加から始めてね。';
-  show('classProjects');return;
- }
- if(kind==='cover'){openCoverEditor();return;}
- if(kind==='growth'){openGrowthEditor();return;}
- if(kind==='message'){openMessageEditor();return;}
- if(kind==='back'){openBackCoverEditor();return;}
-}
+function updateJourney(){ /* Data is supplied by the original app when class login succeeds. */ }
+function jump(kind){if(kind==='map'){window.cjOriginalApp.navigate('map');return}window.cjOriginalApp.navigate(kind)}
 document.querySelectorAll('#cjJourney [data-jump]').forEach(btn=>btn.addEventListener('click',()=>jump(btn.dataset.jump)));
-$id('cjSwitch').addEventListener('click',()=>show('home'));
+$id('cjSwitch').addEventListener('click',()=>window.cjOriginalApp.navigate('home'));
 const observer=new MutationObserver(()=>{if($id('cjJourney').classList.contains('active'))updateJourney()});
 observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
 })();
