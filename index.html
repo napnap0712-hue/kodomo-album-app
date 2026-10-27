@@ -3806,6 +3806,30 @@ body:has(#cjJourney.active){background:linear-gradient(165deg,#eafbff,#f6fcf6 52
 #cjJourney .cjStage strong{position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);width:max-content;max-width:155px;font-size:13px!important;line-height:1.25!important;white-space:normal;background:#ffffffde;border-radius:14px;padding:5px 9px;box-shadow:0 4px 12px #42627819;color:#35546b!important}
 #cjJourney .cjPath{gap:35px!important;padding-bottom:34px!important}
 @media(max-width:440px){#cjJourney .cjStage strong{font-size:12px!important;max-width:130px}#cjJourney .cjPath{gap:38px!important}}
+
+/* COLOR JOURNEY: class-only student roster redesign; existing roster/photo persistence unchanged. */
+body:has(.screen[data-screen="classDetail"].active){background:radial-gradient(circle at 9% 13%,#dffaf5,transparent 30%),radial-gradient(circle at 89% 40%,#e6eeff,transparent 30%),linear-gradient(165deg,#f0fcff,#f6fcf8)!important}
+.screen[data-screen="classDetail"]{max-width:830px;margin:auto;padding-bottom:90px}
+.screen[data-screen="classDetail"]>.top{align-items:center;margin-bottom:18px}
+.screen[data-screen="classDetail"]>.topText h1{font-size:clamp(24px,5vw,32px);color:#3f697b}
+.screen[data-screen="classDetail"] .settingsForm{background:transparent;border:none;box-shadow:none;padding:0}
+.screen[data-screen="classDetail"] .settingsForm>h2{margin:16px 0;color:#3d7785;font-size:20px}
+.screen[data-screen="classDetail"] #manageChildList{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px!important;padding:12px 0 20px}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard{position:relative;background:#ffffffd9!important;border:2px solid #e4f1ef!important;border-radius:25px!important;padding:14px 7px!important;display:flex!important;flex-direction:column;gap:8px;align-items:center;box-shadow:0 9px 20px #467b8e15!important;min-width:0!important;transform:none}
+.screen[data-screen="classDetail"] #manageChildList .manageCardFace{display:grid!important;place-items:center!important;width:83px!important;height:83px!important;border-radius:50%!important;background:#e6f6f1!important;border:5px solid #88dac9!important;box-shadow:0 8px 17px #6ba6a233!important;overflow:hidden!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard:nth-child(6n+2) .manageCardFace{border-color:#ffc38a!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard:nth-child(6n+3) .manageCardFace{border-color:#b7abf3!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard:nth-child(6n+4) .manageCardFace{border-color:#87c7f5!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard:nth-child(6n+5) .manageCardFace{border-color:#ffb2ca!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard:nth-child(6n+6) .manageCardFace{border-color:#bedc89!important}
+.screen[data-screen="classDetail"] #manageChildList .manageCardFace img{width:100%!important;height:100%!important;border-radius:50%!important;object-fit:cover!important}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard>b{font-size:15px!important;color:#34596c;overflow-wrap:anywhere}
+.screen[data-screen="classDetail"] #manageChildList>.manageChildCard>small{color:#87a1a8;font-size:11px}
+.screen[data-screen="classDetail"] #manageToggleBatch{border-radius:23px!important;background:linear-gradient(120deg,#75d6c5,#53bcae)!important;color:white!important;box-shadow:0 8px 21px #61b9a13d;border:none}
+.screen[data-screen="classDetail"] #manageBatchPanel,#manageChildEditor{background:#fff;border-radius:24px;padding:16px;box-shadow:0 10px 28px #406a8118}
+.screen[data-screen="classDetail"] #manageChildEditor .manageEditorBox{max-width:500px;margin:0 auto}
+.screen[data-screen="classDetail"] .settingsForm>label.field,.screen[data-screen="classDetail"] #saveManagedClass,.screen[data-screen="classDetail"] #manageClassStatus{display:none!important}
+@media(max-width:520px){.screen[data-screen="classDetail"] #manageChildList{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}.screen[data-screen="classDetail"] #manageChildList .manageCardFace{width:77px!important;height:77px!important}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -4861,7 +4885,7 @@ window.cjOriginalApp={
  },
  navigate(kind){
   if(kind==='albums'||kind==='spread'||kind==='finish'||kind==='merge'||kind==='check'){show('classProjects');return;}
-  if(kind==='kids'){show('classDetail');return;}
+  if(kind==='kids'){$('[data-screen="classDetail"] .back').dataset.back='cjJourney';show('classDetail');return;}
   if(kind==='new'){$('#createNew').click();return;}
   if(kind==='cover'){openCoverEditor();return;}
   if(kind==='growth'){openGrowthEditor();return;}
