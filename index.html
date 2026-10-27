@@ -3893,6 +3893,31 @@ body:has(.screen[data-screen="photoPick"].active){background:radial-gradient(cir
 .screen[data-screen="photoPick"] #continueEdit{border-radius:24px;background:linear-gradient(120deg,#83d7c8,#69bfc7);box-shadow:0 8px 18px #60b5b342}
 @media(max-width:520px){.screen[data-screen="photoPick"] .cjPhotoDrop{min-height:245px}.screen[data-screen="photoPick"] .cjPhotoOrb{width:104px;height:104px;font-size:68px}}
 @media(prefers-reduced-motion:reduce){.screen[data-screen="photoPick"] .cjPhotoDots span,.screen[data-screen="photoPick"] .cjPhotoOrb{animation:none}}
+
+/* Color Journey: photo-import-to-analysis launch screen only. Existing AI/run/resume untouched. */
+body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){background:radial-gradient(circle at 15% 12%,#e3fff2,transparent 34%),linear-gradient(165deg,#ebfaff,#f4fff9 75%,#fff5ec)!important}
+.app:has(>.screen[data-screen="photoAssign"].active[data-flow-step="start"]){max-width:830px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"]{background:transparent!important;border:0!important;box-shadow:none!important;padding:12px 4px 65px!important;color:#486e80}
+.screen[data-screen="photoAssign"][data-flow-step="start"]>.top{background:transparent!important;border:0!important;box-shadow:none!important;padding:8px 0!important;margin-bottom:14px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"]>.top .brand{font-size:10px!important;color:#65b9ad!important;letter-spacing:.09em}
+.screen[data-screen="photoAssign"][data-flow-step="start"]>.top h1{font-size:clamp(22px,5.5vw,28px)!important;color:#426b81!important;text-shadow:none!important;line-height:1.35}
+.screen[data-screen="photoAssign"][data-flow-step="start"]>.top .lead{color:#79a0a8!important;font-size:13px!important;line-height:1.5!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] .photoSortSaveBar{background:#ffffffba!important;border:1px solid #d6eee8!important;box-shadow:none!important;border-radius:20px!important;padding:11px!important;margin-bottom:13px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] .photoSortSaveBar .primary{background:#e3f7ef!important;color:#408f82!important;box-shadow:none!important;border-radius:15px!important;font-size:13px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] .photoSortSaveBar .muted{color:#7a9aa0!important;font-size:11px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #photoAssignFlowGuide{background:#ffffffae!important;border:1px solid #dfefec!important;border-radius:20px!important;box-shadow:none!important;padding:8px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #photoAssignFlowGuide span{color:#7b9aa1!important;font-size:12px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #photoSortGameProgress{background:transparent!important;color:#638e99!important;text-shadow:none!important;text-align:center;font-size:13px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #photoAssignFlowHint{color:#8ba5ab!important;text-align:center;font-size:12px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel{position:relative;overflow:hidden;background:#ffffffc9!important;border:3px solid #fff!important;border-radius:32px!important;box-shadow:0 12px 28px #67aab41e!important;text-align:center!important;padding:24px 15px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel::before{content:"🟠　🟣　🟢　🔵";display:block;letter-spacing:6px;font-size:21px;margin:1px 0 19px;animation:cjSortDotsBob 3.4s ease-in-out infinite}
+@keyframes cjSortDotsBob{50%{transform:translateY(-5px)}}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel>strong{display:block;font-size:19px!important;color:#4a8290!important;margin:0 0 10px!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel>p{color:#86a2a7!important;font-size:12px!important;line-height:1.6!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #analyzeCurrentAlbum{background:linear-gradient(130deg,#8fdfcc,#67bec8)!important;border:5px solid white!important;border-radius:28px!important;box-shadow:0 8px 0 #a6dbd4,0 12px 20px #77b4b542!important;color:#fff!important;font-size:20px!important;min-height:75px!important;padding:14px 22px!important;max-width:100%!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #analyzeCurrentAlbum:active{transform:translateY(4px);box-shadow:0 4px 0 #a6dbd4!important}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #photoAssignFlowManual{color:#67999c!important;font-size:12px!important;margin-top:15px!important}
+@media(prefers-reduced-motion:reduce){.screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel::before{animation:none}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -3972,7 +3997,7 @@ body:has(.screen[data-screen="photoPick"].active){background:radial-gradient(cir
 </section>
 <section class="screen" data-screen="photoAssign" data-flow-step="start">
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
-<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">PHOTO SORT · 2026-10-26 ER</p><h1>💕 おもいでマージ！</h1><p class="lead">AIのカードを、なかまボックスに集めよう！</p></div></div>
+<div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">COLOR JOURNEY · STAGE 01</p><h1>✨ 写真を整理しよう！</h1><p class="lead">AIが写真のなかまを見つけるよ 🌷</p></div></div>
 <div class="photoSortSaveBar">
  <button type="button" class="primary" id="savePhotoSortProgress">💾 ここまで保存</button>
  <span class="muted" id="photoSortProgressSaveStatus" role="status" aria-live="polite">途中でも保存できるよ（この端末内のみ）。</span>
