@@ -3756,6 +3756,26 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 #cjGateActions button{padding:15px 9px;border-radius:18px;border:0;font:inherit;font-weight:800;cursor:pointer;background:#eaf4f1;color:#34536a}
 #cjGateActions button:last-child{background:var(--cjColor,#83dccc);color:#274458}
 @media(prefers-reduced-motion:reduce){#cjWipe{transition:none!important}#cjGateIcon{animation:none!important}}
+
+/* COLOR JOURNEY STEP 3: airy pastel start screen, no data or navigation changes */
+body:has(.screen[data-screen="home"].active){background:radial-gradient(circle at 10% 15%,#e1f8f6 0%,transparent 35%),radial-gradient(circle at 86% 25%,#e4f2ff 0%,transparent 38%),linear-gradient(165deg,#edfaff 0%,#f3fffb 52%,#eaf4ff 100%)!important}
+.app:has(>.screen[data-screen="home"].active){max-width:1100px!important;background:transparent!important;padding-top:calc(28px + env(safe-area-inset-top))!important}
+.screen[data-screen="home"]{min-height:calc(100dvh - 90px)!important;padding:24px 12px 42px!important;background:transparent!important;border:0!important;box-shadow:none!important;overflow:hidden!important}
+.screen[data-screen="home"]::before{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;background:radial-gradient(circle at 13% 29%,#80dcca42 0 11px,transparent 12px),radial-gradient(circle at 89% 18%,#ffcb8552 0 8px,transparent 9px),radial-gradient(circle at 81% 68%,#c5aff959 0 13px,transparent 14px),radial-gradient(circle at 16% 81%,#8bc9fc59 0 7px,transparent 8px),radial-gradient(circle at 53% 12%,#ffc5d250 0 6px,transparent 7px),radial-gradient(circle at 48% 87%,#8bd8ac4a 0 10px,transparent 11px)}
+.screen[data-screen="home"] .homeHeader{background:transparent!important;padding:0 14px!important;margin-bottom:36px!important}
+.screen[data-screen="home"] .homeTitleBlock .brand{color:#84aeb8!important;letter-spacing:.22em!important}
+.screen[data-screen="home"] .homeTitleBlock h1{color:#315a72!important}
+.screen[data-screen="home"] .homeClassGuide{border:0!important;background:transparent!important;box-shadow:none!important;text-align:center!important;padding:4px 0 14px!important;margin:0 auto 16px!important}
+.screen[data-screen="home"] .homeClassGuide strong{font-size:17px!important;color:#438b91!important}
+.screen[data-screen="home"] .homeClassGuide small{display:block!important;margin-top:6px!important;color:#86a4b0!important}
+.screen[data-screen="home"] #flowerGrid{position:relative;z-index:1;gap:30px 16px!important}
+.screen[data-screen="home"] #flowerGrid>.tile{border-radius:50%!important}
+@media(max-width:600px){
+ .screen[data-screen="home"]{padding-top:10px!important}
+ .screen[data-screen="home"] .homeHeader{margin-bottom:25px!important}
+ .screen[data-screen="home"] #flowerGrid{gap:34px 8px!important}
+}
+@media(prefers-reduced-motion:reduce){.screen[data-screen="home"]::before{animation:none!important}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
