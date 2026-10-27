@@ -13803,12 +13803,19 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
   function finish(){
    if(finished)return;finished=true;
    try{next()}catch(error){console.error('Color Journey transition:',error)}
-   layer.style.transition=reduced?'none':'opacity .42s ease-out';
-   layer.style.opacity='0';
+   // Give Safari a painted frame with the destination already in place.
+   // The same fade is used for both the class selection and password success.
+   layer.style.transition='none';
+   layer.style.opacity='1';
+   void layer.offsetWidth;
+   requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    layer.style.transition=reduced?'none':'opacity .55s ease-in-out';
+    layer.style.opacity='0';
+   }));
    setTimeout(()=>{
     // Remove the composited node altogether: no lingering layer to repaint.
     layer.remove();
-   },reduced?0:460);
+   },reduced?0:680);
   }
   if(reduced){requestAnimationFrame(finish);return}
   requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -13838,6 +13845,8 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
    try {
     const session=window.cjOriginalApp.enterClass(candidate);
     gate.classList.remove('open');
+    // Keep the new map behind the expanded circle until the same fade-out as step 1.
+    // Do not forcibly keep the password gate hidden after the transition.
     gate.style.display='none';
     candidate=null;
     // Safely activate the new map, without relying on old screen-router side effects.
