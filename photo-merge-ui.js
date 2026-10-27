@@ -692,11 +692,11 @@ window.omoideMergeGameRender=function(data,host,api){
  }
  host.replaceChildren();
  const hero=make('div','galaxyGameHero');
- hero.append(make('h2','','🌙 おもいでマージ！'),make('p','','候補ピースを選んで、園児名のボードにマージしよう！'));
+ hero.append(make('div','cjMergeDecor','🌼　⭐　🫧　🌷'),make('h2','','🧩 おもいでマージ！'),make('p','','写真ピースをえらんで、園児にぽんっ！ ✨'));
  host.append(hero);
- const stats=make('p','galaxyGameStats','🌷 登録園児 '+kids.length+'名　·　🚀 なかま待ち '+unassigned.length+'組');
+ const stats=make('p','galaxyGameStats','🌟 なかまあつめ　'+(groups.length-unassigned.length)+' / '+groups.length+' 組　・　あと '+unassigned.length+' 組');
  host.append(stats);
- const notice=make('p','galaxyGameNotice',st.notice||'下の候補ピースを複数チェックして、園児のマスをタップ！');
+ const notice=make('p','galaxyGameNotice',st.notice||'① 写真カードをえらぶ　② 園児の丸い写真をタップ！');
  notice.setAttribute('role','status');host.append(notice);
  if(data.photoFolderUndo?.length)host.append(btn('←戻す','secondary galaxyUndo',()=>{
   if(!api.undoChild?.(data)){st.notice='戻せるマージがないよ。';redraw();return}
@@ -704,7 +704,7 @@ window.omoideMergeGameRender=function(data,host,api){
   st.notice='← 直前のマージと園児への写真登録を元に戻したよ！';
   redraw();
  }));
- const board=make('div','galaxyGameBoard galaxyChildBoard');
+ const board=make('div','galaxyGameBoard galaxyChildBoard cjMergeBoard');
  board.style.gridTemplateColumns='repeat('+(kids.length<=9?3:4)+',minmax(0,1fr))';
  for(const kid of kids){
   const id=String(kid.id);
@@ -724,7 +724,7 @@ window.omoideMergeGameRender=function(data,host,api){
   if(st.effect===id)tile.append(make('span','galaxyTileMergeFx','✨ MERGE! ✨'));
   board.append(tile);
  }
- host.append(make('div','galaxyGameHead','🌷 園児のおほしさまボード'),board);
+ host.append(make('div','galaxyGameHead','🌼 だれのおもいで？'),board);
  const waiting=make('div','galaxyWaiting galaxyCandidates');
  const size=12,pages=Math.max(1,Math.ceil(unassigned.length/size));
  st.page=Math.min(Math.max(0,st.page),pages-1);
@@ -741,7 +741,7 @@ window.omoideMergeGameRender=function(data,host,api){
    if(st.selected.has(folder.key))st.selected.delete(folder.key);else st.selected.add(folder.key);redraw()});
   waiting.append(tile);
  }
- host.append(make('div','galaxyGameHead','🚀 なかま待ちピース'),waiting);
+ host.append(make('div','galaxyGameHead','🧩 なかまをさがそう！'),waiting);
  const nav=make('div','galaxyGameNav');
  const prev=btn('◀ 前','secondary',()=>{st.page--;redraw()});prev.disabled=st.page===0;
  const next=btn('次 ▶','secondary',()=>{st.page++;redraw()});next.disabled=st.page>=pages-1;
