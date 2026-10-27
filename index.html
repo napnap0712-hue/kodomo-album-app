@@ -3776,6 +3776,27 @@ body:has(.screen[data-screen="home"].active){background:radial-gradient(circle a
  .screen[data-screen="home"] #flowerGrid{gap:34px 8px!important}
 }
 @media(prefers-reduced-motion:reduce){.screen[data-screen="home"]::before{animation:none!important}}
+
+/* COLOR JOURNEY STEP 4: optional adventure map, existing editing/save engines preserved */
+body:has(#cjJourney.active){background:linear-gradient(165deg,#eafbff,#f6fcf6 52%,#eef6ff)!important}
+#cjJourney{max-width:760px;margin:auto;padding:16px 16px 45px;background:transparent;min-height:100vh}
+.cjHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cjHeadClass{display:flex;align-items:center;gap:12px}
+.cjHeadFlower{display:grid;place-items:center;width:65px;height:65px;border:5px solid #fff;border-radius:50%;background:#e3f8f4;box-shadow:0 8px 22px #508ca025;overflow:hidden}
+.cjHeadFlower img{width:86%;height:86%;object-fit:contain}
+.cjHead small{font-size:11px;color:#72a6b2;font-weight:800;letter-spacing:.1em}
+.cjHead h1{margin:3px 0;color:#35536f;font-size:clamp(20px,5vw,27px)}
+.cjQuiet{border:0;background:#ffffffcf;padding:11px;border-radius:20px;color:#597b89;font-weight:800;box-shadow:0 6px 19px #405a7411}
+.cjWelcome{text-align:center;margin:30px 0 8px}.cjWelcome h2{font-size:21px;margin:0;color:#3e7182}.cjWelcome p{color:#7ea2ae;font-size:13px}
+.cjPath{position:relative;max-width:400px;margin:15px auto 0;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 0}
+.cjLine{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.92}
+.cjStage{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;border:5px solid white;border-radius:50%;width:99px;height:99px;flex:none;background:var(--stage);box-shadow:0 9px 23px #47688931,inset 0 6px 12px #ffffff65;transform:translateX(var(--offset));color:#29485b;cursor:pointer;transition:scale .18s}
+.cjStage:active{scale:1.10}.cjStage b{font-size:11px;opacity:.67}.cjStage span{font-size:29px;line-height:1.2}.cjStage strong{font-size:10px;line-height:1.15;max-width:95px;text-align:center;color:#29485b}
+.cjNav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;position:sticky;bottom:8px;margin:20px auto 0;background:#ffffffed;border-radius:25px;padding:9px;box-shadow:0 8px 20px #52788722;z-index:2}
+.cjNav button{padding:12px 3px;border:0;border-radius:18px;background:transparent;color:#718b94;font-size:13px;font-weight:800}
+.cjNav button.active{background:#dff8ef;color:#3d8f82}
+.cjExplain{text-align:center;color:#7899a3;font-size:12px;margin:12px 0}
+@media(max-width:440px){#cjJourney{padding:12px 8px 24px}.cjStage{height:92px;width:92px}.cjPath{gap:16px}.cjStage[style*="81px"]{--offset:69px!important}.cjStage[style*="-83px"]{--offset:-68px!important}.cjStage[style*="66px"]{--offset:60px!important}.cjStage[style*="-65px"]{--offset:-60px!important}.cjStage[style*="70px"]{--offset:63px!important}.cjStage[style*="-75px"]{--offset:-66px!important}.cjStage[style*="60px"]{--offset:58px!important}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -3789,6 +3810,24 @@ body:has(.screen[data-screen="home"].active){background:radial-gradient(circle a
 <div class="homeClassGuide"><strong>🌷 クラスをえらぼう</strong><small>花のカードを押すと、アルバムのページが開くよ。</small></div>
 <div class="flowerGrid" id="flowerGrid" aria-label="クラスを選択"></div>
 </section>
+<section class="screen" data-screen="cjJourney" id="cjJourney">
+ <header class="cjHead"><div class="cjHeadClass"><span class="cjHeadFlower" id="cjHeadFlower">🌼</span><div><small>COLOR JOURNEY · <span id="cjYear"></span></small><h1 id="cjClassTitle">おもいでのぼうけん</h1></div></div><button class="cjQuiet" type="button" id="cjSwitch">クラス切替</button></header>
+ <div class="cjWelcome"><h2>さあ、おもいでをつくろう！</h2><p>好きなステージからはじめよう 🌈</p></div>
+ <div class="cjPath" id="cjPath">
+ <svg class="cjLine" viewBox="0 0 360 1080" preserveAspectRatio="none" aria-hidden="true"><path d="M180 42 C290 82 290 150 180 166 S48 245 155 288 S292 385 186 411 S50 507 172 538 S291 625 182 665 S47 745 172 787 S289 864 181 916 S91 990 180 1035" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round"/><path d="M180 42 C290 82 290 150 180 166 S48 245 155 288 S292 385 186 411 S50 507 172 538 S291 625 182 665 S47 745 172 787 S289 864 181 916 S91 990 180 1035" fill="none" stroke="#c5e7e4" stroke-width="7" stroke-dasharray="2 16" stroke-linecap="round"/></svg>
+ <button class="cjStage" data-jump="new" style="--stage:#77cfc2;--offset:0px"><b>01</b><span>📸</span><strong>写真を追加</strong></button>
+ <button class="cjStage" data-jump="merge" style="--stage:#ffc87d;--offset:81px"><b>02</b><span>🧩</span><strong>おもいでマージ！</strong></button>
+ <button class="cjStage" data-jump="check" style="--stage:#b2a4ec;--offset:-83px"><b>03</b><span>🔎</span><strong>間違い探し！</strong></button>
+ <button class="cjStage" data-jump="cover" style="--stage:#ff9cb8;--offset:66px"><b>04</b><span>🌸</span><strong>表紙</strong></button>
+ <button class="cjStage" data-jump="spread" style="--stage:#8ec8f1;--offset:-65px"><b>05</b><span>📖</span><strong>見開き12枠</strong></button>
+ <button class="cjStage" data-jump="growth" style="--stage:#a5cf79;--offset:70px"><b>06</b><span>📏</span><strong>成長記録</strong></button>
+ <button class="cjStage" data-jump="message" style="--stage:#c4a5ff;--offset:-75px"><b>07</b><span>💌</span><strong>先生のメッセージ</strong></button>
+ <button class="cjStage" data-jump="back" style="--stage:#f7b276;--offset:60px"><b>08</b><span>🌻</span><strong>裏表紙</strong></button>
+ <button class="cjStage" data-jump="finish" style="--stage:#ffc95d;--offset:0px"><b>09</b><span>🏆</span><strong>アルバム完成</strong></button>
+ </div>
+ <nav class="cjNav" aria-label="カラージャーニー"><button class="active" data-jump="map">🗺️ ぼうけん</button><button data-jump="kids">🌼 クラス園児</button><button data-jump="albums">📚 アルバム一覧</button></nav>
+ <p class="cjExplain" id="cjNotice" role="status">ステージは好きな順に開けるよ。保存済みのページはそのまま残るよ。</p>
+ </section>
 <section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS · CE</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><section class="cdProgressPanel" aria-label="クラスの制作進捗"><div class="cdProgressTop"><strong>🌷 クラスの完成状況</strong><b id="cdProgressPercent">0%</b></div><progress id="cdProgressBar" max="16" value="0"></progress><p id="cdProgressSummary" class="muted">仕上げ済み 0 / 16ページ</p><button id="cdCompleteClass" type="button" class="primary" disabled>✅ アルバムを完了する</button><p id="cdCompleteStatus" class="muted" role="status">各ページを仕上げ済みにすると、完了できるようになります。</p></section><dialog id="cdFinishDialog" class="cdFinishDialog" aria-labelledby="cdFinishTitle" aria-modal="true"><div class="cdFinishCard"><h2 id="cdFinishTitle">🌷 アルバムを完成にしますか？</h2><p id="cdFinishCounts"></p><p id="cdFinishExplanation"></p><p>使用中の元写真・編集内容・既存バックアップは保持されます。完了後も自由に編集でき、削除した写真を再利用する場合は追加アップロードが必要です。</p><div class="cdFinishActions"><button type="button" id="cdFinishCancel" class="secondary">キャンセル</button><button type="button" id="cdFinishConfirm" class="primary">未使用写真を削除して完了</button></div></div></dialog><div id="projectGrid" class="projectGrid"></div><div class="cdStatusLegend" aria-label="仕上げ状態の見方"><span><i class="cdLegendDot ready" aria-hidden="true">✓</i>仕上げ済み</span><span><i class="cdLegendDot updated" aria-hidden="true">!</i>更新あり</span><span><i class="cdLegendDot" aria-hidden="true"></i>編集中</span><span><i class="cdLegendDot" aria-hidden="true">＋</i>未作成</span></div><section class="cdPageChecklist" aria-label="ページごとの仕上げ管理"><strong>✅ 各ページの仕上げ確認</strong><p class="muted">各ページの保存が終わったら「仕上げ済み」にしてね。あとから何度でも編集できます。</p><div id="cdPageChecklistRows" class="cdPageChecklistRows"></div></section><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><div id="splitTrashList" hidden style="margin-top:16px"><strong>🗑 分離保存アルバムのゴミ箱</strong><div id="splitTrashCards" style="display:grid;gap:8px;margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
 <div class="top"><button class="back" data-back="home" aria-label="戻る">‹</button><div class="topText"><p class="brand">CLASS</p><h1 id="classTitle">クラス</h1><p class="lead">何をするか選んでね。</p></div></div>
 <div class="actionList">
@@ -13748,11 +13787,43 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
    selected=candidate;
    document.getElementById('classTitle').textContent=displayClassName(selected);
    document.getElementById('savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
-   gate.classList.remove('open');candidate=null;show('classProjects');busy=false;
+   gate.classList.remove('open');candidate=null;show('cjJourney');busy=false;
   });
  }
  $g('cjGateEnter').addEventListener('click',enter);
  $g('cjPassword').addEventListener('keydown',e=>{if(e.key==='Enter')enter()});
+})();
+</script>
+<script>
+/* Navigation only: the pre-existing class, album, sorting and special-page editors remain the source of truth. */
+(function(){
+const $id=id=>document.getElementById(id);
+function updateJourney(){
+ if(typeof selected==='undefined'||!selected)return;
+ $id('cjClassTitle').textContent=displayClassName(selected);
+ $id('cjYear').textContent=activeYear()+'年度';
+ const img=document.createElement('img');img.src='./'+selected.flower;img.alt='';
+ $id('cjHeadFlower').replaceChildren(img);
+}
+function jump(kind){
+ const notice=$id('cjNotice');
+ if(kind==='map'){updateJourney();show('cjJourney');return;}
+ if(kind==='albums'||kind==='spread'||kind==='finish'){show('classProjects');return;}
+ if(kind==='kids'){show('classDetail');return;}
+ if(kind==='new'){document.getElementById('createNew').click();return;}
+ if(kind==='merge'||kind==='check'){
+  notice.textContent='写真整理はアルバム単位だよ。既存アルバムの一覧から続きのページを選ぶか、写真追加から始めてね。';
+  show('classProjects');return;
+ }
+ if(kind==='cover'){openCoverEditor();return;}
+ if(kind==='growth'){openGrowthEditor();return;}
+ if(kind==='message'){openMessageEditor();return;}
+ if(kind==='back'){openBackCoverEditor();return;}
+}
+document.querySelectorAll('#cjJourney [data-jump]').forEach(btn=>btn.addEventListener('click',()=>jump(btn.dataset.jump)));
+$id('cjSwitch').addEventListener('click',()=>show('home'));
+const observer=new MutationObserver(()=>{if($id('cjJourney').classList.contains('active'))updateJourney()});
+observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
 })();
 </script>
 </body>
