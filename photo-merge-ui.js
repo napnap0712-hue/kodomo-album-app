@@ -713,7 +713,13 @@ window.omoideMergeGameRender=function(data,host,api){
   const tile=btn('','galaxyChildTile'+(st.effect===id?' galaxyMergePop':''),()=>assign(id));
   tile.append(make('strong','',kid.name+'さん'),make('span','',count+'枚'));
   const preview=make('span','galaxyChildPreview');
-  if(associated.length)preview.append(image(associated[0]));else preview.textContent='🪐';
+  // The roster portrait is decorative only; it never identifies or assigns AI groups.
+  if(typeof kid.facePhoto==='string'&&kid.facePhoto.startsWith('data:image/')){
+   const portrait=make('img');portrait.src=kid.facePhoto;
+   portrait.alt='';portrait.loading='lazy';portrait.decoding='async';
+   portrait.addEventListener('error',()=>{portrait.remove();preview.textContent='🪐'},{once:true});
+   preview.append(portrait);
+  }else preview.textContent='🪐';
   tile.prepend(preview);
   if(st.effect===id)tile.append(make('span','galaxyTileMergeFx','✨ MERGE! ✨'));
   board.append(tile);
