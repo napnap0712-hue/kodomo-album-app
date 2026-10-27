@@ -8949,7 +8949,7 @@ function assignMergeCandidatesToChild(data,childId,keys){
  }
 }
 function renderPhotoFolders(data,host){
- const roster=getChildren(data.classId).map(k=>({id:String(k.id),name:String(k.name||'').trim()}));
+ const roster=getChildren(data.classId).map(k=>({id:String(k.id),name:String(k.name||'').trim(),facePhoto:typeof k.facePhoto==='string'?k.facePhoto:''}));
  return window.omoideMergeRender?window.omoideMergeRender(data,host,{
   valid:()=>data===albumAiGroupsData&&data.valid(),current:()=>albumAiGroupsData,
   ensure:photoFoldersEnsure,indexes:photoFolderIndexes,snapshot:photoFolderSnapshot,
