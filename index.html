@@ -3799,7 +3799,7 @@ body:has(#cjJourney.active){background:linear-gradient(165deg,#eafbff,#f6fcf6 52
 @media(max-width:440px){#cjJourney{padding:12px 8px 24px}.cjStage{height:92px;width:92px}.cjPath{gap:16px}.cjStage[style*="81px"]{--offset:69px!important}.cjStage[style*="-83px"]{--offset:-68px!important}.cjStage[style*="66px"]{--offset:60px!important}.cjStage[style*="-65px"]{--offset:-60px!important}.cjStage[style*="70px"]{--offset:63px!important}.cjStage[style*="-75px"]{--offset:-66px!important}.cjStage[style*="60px"]{--offset:58px!important}}
 
 /* Color Journey polish: full-screen circular wipe and anchored bottom navigation */
-#cjWipe{position:fixed!important;z-index:999!important;will-change:transform,opacity;transform-origin:center center;transition:transform .78s cubic-bezier(.22,.7,.16,1),opacity .28s ease!important}
+#cjWipe{position:fixed!important;z-index:999!important;will-change:transform,opacity;transform-origin:center center;transition:transform .78s cubic-bezier(.22,.7,.16,1),opacity .34s ease}
 #cjJourney.active{padding-bottom:calc(118px + env(safe-area-inset-bottom))!important}
 #cjJourney .cjNav{position:fixed!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;left:50%;transform:translateX(-50%);width:min(calc(100vw - 24px),560px);margin:0!important;z-index:20!important}
 #cjJourney .cjStage{overflow:visible!important}
@@ -13787,15 +13787,35 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
  let candidate=null,busy=false;
  const $g=id=>document.getElementById(id), gate=$g('cjGate'),wipe=$g('cjWipe');
  function transit(x,y,color,next){
-  wipe.style.background=color;wipe.style.display='block';wipe.classList.remove('bloom');
+  // A reusable full-screen wipe. Fully hide the overlay before resetting its opacity/scale;
+  // otherwise Safari may leave color at the top or bottom after the transition.
+  wipe.style.transition='none';
+  wipe.style.opacity='1';
+  wipe.style.display='block';
+  wipe.style.background=color;
+  wipe.classList.remove('bloom');
   wipe.style.left=x+'px';wipe.style.top=y+'px';
-  const distance=Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y));
-  // Scale is relative to the 100px circle radius (50px), not its diameter.
-  // Add a generous overscan for iOS Safari dynamic toolbars and viewport changes.
-  wipe.style.setProperty('--cjScale',String(Math.ceil(distance/50*1.32)));
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const width=window.innerWidth,height=window.innerHeight;
+  const distance=Math.hypot(Math.max(x,width-x),Math.max(y,height-y));
+  wipe.style.setProperty('--cjScale',String(Math.ceil(distance/50*1.45)));
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  void wipe.offsetWidth;
+  wipe.style.transition=reduced?'none':'transform .78s cubic-bezier(.22,.7,.16,1), opacity .34s ease';
   requestAnimationFrame(()=>requestAnimationFrame(()=>wipe.classList.add('bloom')));
-  setTimeout(()=>{next();wipe.style.opacity='0';setTimeout(()=>{wipe.style.display='none';wipe.style.opacity='1';wipe.classList.remove('bloom')},180)},reduced?30:720);
+  setTimeout(()=>{
+   try { next(); }
+   finally {
+    wipe.style.opacity='0';
+    setTimeout(()=>{
+     wipe.style.display='none';
+     wipe.style.transition='none';
+     wipe.classList.remove('bloom');
+     wipe.style.opacity='1';
+     wipe.style.removeProperty('--cjScale');
+     wipe.style.transition='';
+    },reduced?0:370);
+   }
+  },reduced?40:820);
  }
  window.cjStartLogin=function(cls,btn){
   if(busy)return;busy=true;candidate=cls;
