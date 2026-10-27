@@ -13771,7 +13771,7 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
   const all=Array.from(document.querySelectorAll('#flowerGrid>.tile'));
   const idx=all.indexOf(btn),color=palettes[(idx<0?0:idx)%palettes.length];
   const rect=btn.querySelector('.flower').getBoundingClientRect();
-  gate.style.setProperty('--cjColor',color);
+  gate.style.display='';gate.style.setProperty('--cjColor',color);
   $g('cjGateIcon').innerHTML='<img src="./'+cls.flower+'" alt="">';
   $g('cjGateName').textContent=typeof displayClassName==='function'?displayClassName(cls):cls.name;
   $g('cjPassword').value='';$g('cjPasswordError').textContent='';
@@ -13784,10 +13784,28 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
   busy=true;
   const rect=$g('cjGateIcon').getBoundingClientRect(),color=getComputedStyle(gate).getPropertyValue('--cjColor').trim()||'#83dccc';
   transit(rect.left+rect.width/2,rect.top+rect.height/2,color,()=>{
-   selected=candidate;
-   document.getElementById('classTitle').textContent=displayClassName(selected);
-   document.getElementById('savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
-   gate.classList.remove('open');candidate=null;show('cjJourney');busy=false;
+   try {
+    selected=candidate;
+    document.getElementById('classTitle').textContent=displayClassName(selected);
+    document.getElementById('savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
+    gate.classList.remove('open');
+    gate.style.display='none';
+    candidate=null;
+    // Safely activate the new map, without relying on old screen-router side effects.
+    const page=document.getElementById('cjJourney');
+    if(!page)throw new Error('マップ画面が見つかりません');
+    document.querySelectorAll('.screen').forEach(screen=>screen.classList.toggle('active',screen===page));
+    document.getElementById('cjClassTitle').textContent=displayClassName(selected);
+    document.getElementById('cjYear').textContent=activeYear()+'年度';
+    const flower=document.createElement('img');
+    flower.src='./'+selected.flower;flower.alt='';
+    document.getElementById('cjHeadFlower').replaceChildren(flower);
+    window.scrollTo(0,0);
+   }catch(error){
+    console.error('Color Journey login:',error);
+    gate.style.display='';gate.classList.add('open');
+    document.getElementById('cjPasswordError').textContent='画面の切り替えに失敗しました。もう一度試してね。';
+   }finally{busy=false;}
   });
  }
  $g('cjGateEnter').addEventListener('click',enter);
