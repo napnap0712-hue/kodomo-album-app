@@ -13787,35 +13787,35 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
  let candidate=null,busy=false;
  const $g=id=>document.getElementById(id), gate=$g('cjGate'),wipe=$g('cjWipe');
  function transit(x,y,color,next){
-  // A reusable full-screen wipe. Fully hide the overlay before resetting its opacity/scale;
-  // otherwise Safari may leave color at the top or bottom after the transition.
-  wipe.style.transition='none';
-  wipe.style.opacity='1';
-  wipe.style.display='block';
-  wipe.style.background=color;
-  wipe.classList.remove('bloom');
-  wipe.style.left=x+'px';wipe.style.top=y+'px';
+  // Create a disposable layer for each transition. On iOS Safari, reusing a
+  // heavily scaled composited circle can leave afterimages when it is hidden.
+  const layer=document.createElement('div');
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const width=window.innerWidth,height=window.innerHeight;
   const distance=Math.hypot(Math.max(x,width-x),Math.max(y,height-y));
-  wipe.style.setProperty('--cjScale',String(Math.ceil(distance/50*1.45)));
-  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  void wipe.offsetWidth;
-  wipe.style.transition=reduced?'none':'transform .96s cubic-bezier(.22,1,.36,1), opacity .52s ease-in-out';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>wipe.classList.add('bloom')));
-  setTimeout(()=>{
-   try { next(); }
-   finally {
-    wipe.style.opacity='0';
-    setTimeout(()=>{
-     wipe.style.display='none';
-     wipe.style.transition='none';
-     wipe.classList.remove('bloom');
-     wipe.style.opacity='1';
-     wipe.style.removeProperty('--cjScale');
-     wipe.style.transition='';
-    },reduced?0:560);
-   }
-  },reduced?40:1000);
+  const scale=Math.ceil(distance/50*1.45);
+  layer.setAttribute('aria-hidden','true');
+  layer.style.cssText='position:fixed;z-index:9999;pointer-events:none;width:100px;height:100px;border-radius:50%;will-change:transform,opacity;transform-origin:center center;opacity:1;';
+  layer.style.left=x+'px';layer.style.top=y+'px';layer.style.background=color;
+  layer.style.transform='translate(-50%,-50%) scale(0)';
+  document.body.appendChild(layer);
+  let finished=false;
+  function finish(){
+   if(finished)return;finished=true;
+   try{next()}catch(error){console.error('Color Journey transition:',error)}
+   layer.style.transition=reduced?'none':'opacity .42s ease-out';
+   layer.style.opacity='0';
+   setTimeout(()=>{
+    // Remove the composited node altogether: no lingering layer to repaint.
+    layer.remove();
+   },reduced?0:460);
+  }
+  if(reduced){requestAnimationFrame(finish);return}
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   layer.style.transition='transform .92s cubic-bezier(.22,1,.36,1)';
+   layer.style.transform='translate(-50%,-50%) scale('+scale+')';
+  }));
+  setTimeout(finish,990);
  }
  window.cjStartLogin=function(cls,btn){
   if(busy)return;busy=true;candidate=cls;
