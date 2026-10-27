@@ -3733,6 +3733,29 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 @keyframes cjFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @media(max-width:420px){.screen[data-screen="home"] #flowerGrid{gap:16px 7px!important}.screen[data-screen="home"] #flowerGrid>.tile .flower{max-width:99px!important;border-width:4px!important;padding:6px!important}}
 @media(prefers-reduced-motion:reduce){.screen[data-screen="home"] #flowerGrid>.tile{animation:none!important}}
+
+/* COLOR JOURNEY STEP 2: colored rings and password transition; presentation only. */
+.screen[data-screen="home"] #flowerGrid>.tile:nth-child(6n+1) .flower{border-color:#83dccc!important;box-shadow:0 0 0 4px #fff,0 10px 20px #67cabb53!important}
+.screen[data-screen="home"] #flowerGrid>.tile:nth-child(6n+2) .flower{border-color:#ffbd83!important;box-shadow:0 0 0 4px #fff,0 10px 20px #e9ab7f53!important}
+.screen[data-screen="home"] #flowerGrid>.tile:nth-child(6n+3) .flower{border-color:#b5a5f7!important;box-shadow:0 0 0 4px #fff,0 10px 20px #9d8bee53!important}
+.screen[data-screen="home"] #flowerGrid>.tile:nth-child(6n+4) .flower{border-color:#93caff!important;box-shadow:0 0 0 4px #fff,0 10px 20px #85bbee53!important}
+.screen[data-screen="home"] #flowerGrid>.tile:nth-child(6n+5) .flower{border-color:#ffd078!important;box-shadow:0 0 0 4px #fff,0 10px 20px #e7bd6c53!important}
+.screen[data-screen="home"] #flowerGrid>.tile:nth-child(6n+6) .flower{border-color:#ff9bbb!important;box-shadow:0 0 0 4px #fff,0 10px 20px #df89ad53!important}
+#cjWipe{position:fixed;left:0;top:0;width:100px;height:100px;border-radius:50%;z-index:500;pointer-events:none;transform:translate(-50%,-50%) scale(0);transition:transform .7s cubic-bezier(.25,.7,.18,1);display:none}
+#cjWipe.bloom{transform:translate(-50%,-50%) scale(var(--cjScale,40))}
+#cjGate{position:fixed;inset:0;z-index:490;background:#f7fbfa;display:none;align-items:center;justify-content:center;padding:24px;overflow:auto}
+#cjGate.open{display:flex}
+#cjGateCard{text-align:center;width:min(100%,380px);background:white;border-radius:30px;padding:27px 22px;box-shadow:0 15px 45px #23445a1a}
+#cjGateIcon{width:104px;height:104px;border:7px solid var(--cjColor,#83dccc);border-radius:50%;background:#fafffb;display:grid;place-items:center;margin:0 auto 15px;overflow:hidden;animation:cjFloat 3.6s ease-in-out infinite}
+#cjGateIcon img{width:85%;height:85%;object-fit:contain}
+#cjGate h2{font-size:24px;margin:8px 0}
+#cjGate p{font-size:13px;color:#718a99}
+#cjPassword{display:block;width:100%;font-size:24px;text-align:center;letter-spacing:.26em;border:2px solid #d9e9e6;border-radius:18px;padding:14px;margin:19px 0 10px}
+#cjPasswordError{min-height:22px;color:#d75f7e;font-size:13px;font-weight:700}
+#cjGateActions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#cjGateActions button{padding:15px 9px;border-radius:18px;border:0;font:inherit;font-weight:800;cursor:pointer;background:#eaf4f1;color:#34536a}
+#cjGateActions button:last-child{background:var(--cjColor,#83dccc);color:#274458}
+@media(prefers-reduced-motion:reduce){#cjWipe{transition:none!important}#cjGateIcon{animation:none!important}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -4754,10 +4777,8 @@ function renderHome(){
  $('#homeActiveYear').textContent=activeYear()+'年度';
  grid.innerHTML=classes.map(c=>'<button type="button" class="tile" data-class="'+c.id+'" aria-label="'+escapeText(displayClassName(c))+'を開く"><span class="flower"><img src="./'+c.flower+'" alt="" loading="eager"></span><span class="homeClassLabel">'+escapeText(displayClassName(c))+'</span></button>').join('');
  grid.querySelectorAll('[data-class]').forEach(btn=>btn.addEventListener('click',()=>{
-  selected=classes.find(c=>c.id===btn.dataset.class)||classes[1];
-  $('#classTitle').textContent=displayClassName(selected);
-  $('#savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
-  show('classProjects');
+  const cls=classes.find(c=>c.id===btn.dataset.class)||classes[1];
+  cjStartLogin(cls,btn);
  }));
  $('#settingsButton').onclick=()=>show('settings');
  $('#homeYearButton').onclick=()=>show('yearManagement');
@@ -13667,5 +13688,52 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
 <script src="./photo-merge-ui.js"></script>
 <script type="module" src="./face-recognition/auraface-probe.mjs"></script>
 <script type="module" src="./face-recognition/auraface-batch.mjs"></script>
+<div id="cjWipe" aria-hidden="true"></div>
+<div id="cjGate" role="dialog" aria-modal="true" aria-label="クラスのパスワード入力">
+ <div id="cjGateCard"><div id="cjGateIcon"></div><h2 id="cjGateName">クラス</h2><p>パスワードを入力してね 🌈<br>開発テスト用：1234</p><input type="password" id="cjPassword" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" autocomplete="off" aria-label="4桁のパスワード"><div id="cjPasswordError" role="status"></div><div id="cjGateActions"><button type="button" id="cjGateBack">もどる</button><button type="button" id="cjGateEnter">すすむ →</button></div></div>
+</div>
+<script>
+/* Visual-only class gate. Fixed test code 1234 is NOT real access control. */
+(function(){
+ const palettes=['#83dccc','#ffbd83','#b5a5f7','#93caff','#ffd078','#ff9bbb'];
+ let candidate=null,busy=false;
+ const $g=id=>document.getElementById(id), gate=$g('cjGate'),wipe=$g('cjWipe');
+ function transit(x,y,color,next){
+  wipe.style.background=color;wipe.style.display='block';wipe.classList.remove('bloom');
+  wipe.style.left=x+'px';wipe.style.top=y+'px';
+  const distance=Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y));
+  wipe.style.setProperty('--cjScale',String((distance*2/100)*1.14));
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>wipe.classList.add('bloom')));
+  setTimeout(()=>{next();wipe.style.opacity='0';setTimeout(()=>{wipe.style.display='none';wipe.style.opacity='1';wipe.classList.remove('bloom')},180)},reduced?30:720);
+ }
+ window.cjStartLogin=function(cls,btn){
+  if(busy)return;busy=true;candidate=cls;
+  const all=Array.from(document.querySelectorAll('#flowerGrid>.tile'));
+  const idx=all.indexOf(btn),color=palettes[(idx<0?0:idx)%palettes.length];
+  const rect=btn.querySelector('.flower').getBoundingClientRect();
+  gate.style.setProperty('--cjColor',color);
+  $g('cjGateIcon').innerHTML='<img src="./'+cls.flower+'" alt="">';
+  $g('cjGateName').textContent=typeof displayClassName==='function'?displayClassName(cls):cls.name;
+  $g('cjPassword').value='';$g('cjPasswordError').textContent='';
+  transit(rect.left+rect.width/2,rect.top+rect.height/2,color,()=>{gate.classList.add('open');busy=false;});
+ };
+ $g('cjGateBack').addEventListener('click',()=>{gate.classList.remove('open');candidate=null;});
+ function enter(){
+  if(!candidate||busy)return;
+  if($g('cjPassword').value!=='1234'){$g('cjPasswordError').textContent='パスワードが違うよ';$g('cjPassword').select();return}
+  busy=true;
+  const rect=$g('cjGateIcon').getBoundingClientRect(),color=getComputedStyle(gate).getPropertyValue('--cjColor').trim()||'#83dccc';
+  transit(rect.left+rect.width/2,rect.top+rect.height/2,color,()=>{
+   selected=candidate;
+   document.getElementById('classTitle').textContent=displayClassName(selected);
+   document.getElementById('savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
+   gate.classList.remove('open');candidate=null;show('classProjects');busy=false;
+  });
+ }
+ $g('cjGateEnter').addEventListener('click',enter);
+ $g('cjPassword').addEventListener('keydown',e=>{if(e.key==='Enter')enter()});
+})();
+</script>
 </body>
 </html>
