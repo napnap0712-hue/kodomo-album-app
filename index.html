@@ -13841,15 +13841,20 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
   if($g('cjPassword').value!=='1234'){$g('cjPasswordError').textContent='パスワードが違うよ';$g('cjPassword').select();return}
   busy=true;
   const rect=$g('cjGateIcon').getBoundingClientRect(),color=getComputedStyle(gate).getPropertyValue('--cjColor').trim()||'#83dccc';
-  transit(rect.left+rect.width/2,rect.top+rect.height/2,color,()=>{
+  // Password success uses an opaque full-screen fade instead of a scaled circle.
+  // iOS Safari can retain strips of a very large transformed layer at viewport edges.
+  const fade=document.createElement('div');
+  fade.setAttribute('aria-hidden','true');
+  fade.style.cssText='position:fixed;inset:0;z-index:10000;pointer-events:none;opacity:0;background:'+color+';transition:opacity .36s ease-in-out';
+  document.body.appendChild(fade);
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{fade.style.opacity='1'}));
+  setTimeout(()=>{
    try {
     const session=window.cjOriginalApp.enterClass(candidate);
     gate.classList.remove('open');
-    // Keep the new map behind the expanded circle until the same fade-out as step 1.
-    // Do not forcibly keep the password gate hidden after the transition.
     gate.style.display='none';
     candidate=null;
-    // Safely activate the new map, without relying on old screen-router side effects.
     const page=document.getElementById('cjJourney');
     if(!page)throw new Error('マップ画面が見つかりません');
     document.querySelectorAll('.screen').forEach(screen=>screen.classList.toggle('active',screen===page));
@@ -13863,8 +13868,11 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
     console.error('Color Journey login:',error);
     gate.style.display='';gate.classList.add('open');
     document.getElementById('cjPasswordError').textContent='画面の切り替えに失敗しました。もう一度試してね。';
-   }finally{busy=false;}
-  });
+   }finally{
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{fade.style.transition=reduced?'none':'opacity .55s ease-out';fade.style.opacity='0'}));
+    setTimeout(()=>{fade.remove();busy=false},reduced?30:650);
+   }
+  },reduced?35:420);
  }
  $g('cjGateEnter').addEventListener('click',enter);
  $g('cjPassword').addEventListener('keydown',e=>{if(e.key==='Enter')enter()});
