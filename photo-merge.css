@@ -899,3 +899,51 @@
  #photoFolderMistakePanel .omoideGalaxyStars,
  #photoFolderMistakePanel .photoBigPlanetOrb{animation:none}
 }
+
+
+/* Color Journey demo V3: soft dot-game skin for STEP 02. Visual styles only. */
+body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]){background:linear-gradient(166deg,#eafaff,#f6fff4 65%,#fff8ee)!important}
+body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .app{background:transparent!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"]{background:transparent!important;border:0!important;box-shadow:none!important;color:#456575!important;padding:10px 4px 65px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"]>.top{background:transparent!important;box-shadow:none!important;border:0!important;padding:6px 0!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"]>.top .brand{color:#75a6a8!important;font-size:10px!important;letter-spacing:.07em}
+.screen[data-screen="photoAssign"][data-flow-step="review"]>.top h1{color:#486c83!important;font-size:clamp(20px,5.1vw,27px)!important;text-shadow:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"]>.top .lead{font-size:12px!important;color:#84a2a9!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar{background:#ffffffc9!important;border:1px solid #d4eae7!important;box-shadow:none!important;border-radius:22px!important;padding:11px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar .primary{background:#dff5ee!important;color:#438c82!important;border-radius:16px!important;box-shadow:none!important;font-size:13px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar .muted{color:#829ba5!important;font-size:11px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowGuide{background:#ffffffc7!important;border:1px solid #dcece9!important;border-radius:20px!important;padding:8px!important;box-shadow:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowGuide span{color:#74959b!important;font-size:12px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowGuide span[data-flow-index="review"]{background:#ffeec6!important;color:#886731!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #photoSortGameProgress{color:#5a8290!important;background:transparent!important;font-size:12px!important;text-shadow:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonPairs,
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonPairs *{color:inherit}
+.screen[data-screen="photoAssign"][data-flow-step="review"] #albumAiSingletonPairs .galaxyGameHero{position:relative;overflow:hidden;text-align:center;background:linear-gradient(120deg,#ffebf4,#e1f6ff 55%,#e9ffe9)!important;border:3px solid #fff!important;border-radius:32px!important;padding:18px 12px!important;box-shadow:0 9px 20px #8eb7b123!important;color:#526b80!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyGameHero h2{color:#607aa0!important;text-shadow:none!important;font-size:clamp(22px,6vw,31px)!important;margin:4px 0 6px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyGameHero p{font-size:13px!important;color:#79969c!important;text-shadow:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .cjMergeDecor{font-size:20px;letter-spacing:8px;animation:cjMergeFloat 4s ease-in-out infinite}
+@keyframes cjMergeFloat{50%{transform:translateY(-6px)}}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyGameStats{color:#679198!important;text-shadow:none!important;font-size:14px!important;text-align:center!important;padding:10px!important;background:transparent!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyGameNotice{background:#fffaf0!important;color:#678a90!important;border:1px solid #f4e9d4!important;border-radius:18px!important;box-shadow:none!important;font-size:12px!important;text-align:center!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyGameHead{color:#628b92!important;text-shadow:none!important;font-size:17px!important;margin:20px 2px 10px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyChildBoard{background:transparent!important;border:0!important;box-shadow:none!important;gap:10px!important;padding:5px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyChildTile{min-height:120px!important;border-radius:24px!important;background:linear-gradient(150deg,#fff9fa,#eaf9ff)!important;border:2px solid #fff!important;box-shadow:0 6px 0 #d8e7ea,0 9px 15px #8fb6bb1d!important;color:#607889!important;text-shadow:none!important;padding:10px 3px!important;transition:transform .18s!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyChildTile:active{transform:scale(.95)!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyChildTile strong{color:#516e82!important;font-size:clamp(10px,2.6vw,13px)!important;line-height:1.3!important;text-shadow:none!important;overflow-wrap:anywhere!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyChildTile span{color:#72919b!important;text-shadow:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyChildPreview{width:61px!important;height:61px!important;background:linear-gradient(135deg,#ffe8d9,#e0f7f1)!important;border:4px solid #fff!important;border-radius:50%!important;box-shadow:0 5px 11px #8cbfc34a!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyChildPreview img{width:100%!important;height:100%!important;object-fit:cover!important;border-radius:50%!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyCandidates{background:transparent!important;border:0!important;box-shadow:none!important;gap:12px!important;padding:5px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyCandidates .galaxyTile{background:linear-gradient(145deg,#ffffff,#f2f8ff)!important;border:3px solid #fff!important;border-radius:24px!important;box-shadow:0 6px 0 #dbe7ed,0 10px 20px #88aeb72b!important;color:#587a89!important;overflow:hidden!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyCandidates .galaxyTile.galaxyChecked{border-color:#ffb7a4!important;box-shadow:0 5px 0 #f4c2ae,0 0 0 3px #ffe9d8!important;transform:scale(.97)!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyCandidates .galaxyTile strong{color:#52798b!important;text-shadow:none!important;font-size:13px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyCandidates .galaxyTile img{border-radius:17px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyCheck{background:#f4d5df!important;color:#a9547b!important;border-radius:50%!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyCheck.isChecked{background:#71cbb8!important;color:white!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyGameNav button{background:#e3f6f2!important;color:#4e8983!important;border-radius:18px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyGameFinal{background:#ffffffbd!important;border-radius:22px!important;border:1px solid #e1eae7!important;color:#618391!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyGameFinal .primary{background:#76cdbf!important;color:white!important;border-radius:23px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyMergePop{animation:cjMergePop .65s cubic-bezier(.2,1.7,.5,1)!important}
+@keyframes cjMergePop{0%{transform:scale(.75)}55%{transform:scale(1.14)}100%{transform:scale(1)}}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .galaxyTileMergeFx{color:#ee8aab!important;text-shadow:0 2px #fff!important}
+@media(prefers-reduced-motion:reduce){.screen[data-screen="photoAssign"] .cjMergeDecor,.screen[data-screen="photoAssign"] .galaxyMergePop{animation:none!important}}
