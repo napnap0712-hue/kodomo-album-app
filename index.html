@@ -3861,6 +3861,38 @@ body:has(.screen[data-screen="classDetail"].active){background:radial-gradient(c
 .screen[data-screen="classDetail"] #manageToggleBatch::before{font-size:44px!important}
 .screen[data-screen="classDetail"] #manageBatchPanel:not([hidden]){margin-bottom:20px!important}
 
+
+/* COLOR JOURNEY STAGE 01: visual-only refresh. Keep photoInput and resume actions intact. */
+body:has(.screen[data-screen="photoPick"].active){background:radial-gradient(circle at 12% 14%,#e0fbf1 0,transparent 37%),linear-gradient(165deg,#eaf9ff 0%,#f3fff9 100%)!important}
+.app:has(>.screen[data-screen="photoPick"].active){max-width:830px!important}
+.screen[data-screen="photoPick"]{position:relative;isolation:isolate;background:transparent!important;border:0!important;box-shadow:none!important;padding:14px 5px 70px!important}
+.screen[data-screen="photoPick"] .cjPhotoHead{align-items:center!important;margin:0 0 7px!important}
+.screen[data-screen="photoPick"] .cjPhotoHead .brand{color:#67b8aa;font-size:10px;letter-spacing:.13em;margin:0 0 4px}
+.screen[data-screen="photoPick"] .cjPhotoHead h1{font-size:clamp(21px,5vw,27px);line-height:1.35;color:#385e78;margin:0 0 4px}
+.screen[data-screen="photoPick"] .cjPhotoHead .lead{font-size:13px;color:#6d98a0;margin:0}
+.screen[data-screen="photoPick"] .cjPhotoDots{display:flex;justify-content:center;align-items:center;gap:11px;padding:14px 0 18px}
+.screen[data-screen="photoPick"] .cjPhotoDots span{width:13px;height:13px;border-radius:50%;background:#ffc6a0;box-shadow:0 3px 8px #5f809420;animation:cjPhotoBob 3.2s ease-in-out infinite}
+.screen[data-screen="photoPick"] .cjPhotoDots span:nth-child(2){background:#88d8c6;animation-delay:.2s;width:17px;height:17px}
+.screen[data-screen="photoPick"] .cjPhotoDots span:nth-child(3){background:#b8aafa;animation-delay:.4s;width:21px;height:21px}
+.screen[data-screen="photoPick"] .cjPhotoDots span:nth-child(4){background:#ffb5d2;animation-delay:.6s;width:17px;height:17px}
+.screen[data-screen="photoPick"] .cjPhotoDots span:nth-child(5){background:#8bcbf2;animation-delay:.8s}
+@keyframes cjPhotoBob{50%{transform:translateY(-5px)}}
+.screen[data-screen="photoPick"] .cjPhotoDrop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;overflow:hidden;min-height:262px;max-width:500px;margin:0 auto;border:3px dashed #b4e5df!important;border-radius:36px!important;background:#ffffffd9!important;box-shadow:0 14px 33px #4e96a41a!important;padding:30px 18px!important}
+.screen[data-screen="photoPick"] .cjPhotoDrop:active{transform:scale(.985)}
+.screen[data-screen="photoPick"] .cjPhotoOrb{display:grid;place-items:center;width:116px;height:116px;border-radius:50%;color:white;font-size:76px;font-weight:300;line-height:1;background:linear-gradient(145deg,#8ee1ce,#63c3c8);border:7px solid #fff;box-shadow:0 12px 22px #60b9b344,inset 0 5px 9px #ffffff60;animation:cjPhotoBob 3.4s ease-in-out infinite}
+.screen[data-screen="photoPick"] .cjPhotoDrop strong{font-size:20px;color:#43748b;margin:0}
+.screen[data-screen="photoPick"] .cjPhotoDrop p{font-size:13px;line-height:1.5;margin:0;color:#7da0a9}
+.screen[data-screen="photoPick"] .cjPhotoDrop #photoInput{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;margin:0;opacity:0;cursor:pointer}
+.screen[data-screen="photoPick"] .cjPhotoFreshNote{text-align:center;color:#7b9ea7;font-size:12px;line-height:1.6;margin:12px 0 23px}
+.screen[data-screen="photoPick"] #photoSortResumeBox:not([hidden]){background:#fffef9;border:2px solid #ffdfac;border-radius:23px;padding:18px;margin:20px 0;box-shadow:0 8px 20px #5c8b9a14}
+.screen[data-screen="photoPick"] #approvedPhotoImportPanel{border:1px solid #d5e9e8!important;background:#ffffffb8!important;border-radius:20px!important;padding:15px!important}
+.screen[data-screen="photoPick"] #approvedPhotoImportPanel>summary{color:#668e9c;font-size:12px;font-weight:700}
+.screen[data-screen="photoPick"] #photoPreviews{gap:11px}
+.screen[data-screen="photoPick"] #photoPreviews img{border-radius:18px;box-shadow:0 5px 13px #6891a029}
+.screen[data-screen="photoPick"] #photoCount{font-size:13px;text-align:center;color:#658f9a}
+.screen[data-screen="photoPick"] #continueEdit{border-radius:24px;background:linear-gradient(120deg,#83d7c8,#69bfc7);box-shadow:0 8px 18px #60b5b342}
+@media(max-width:520px){.screen[data-screen="photoPick"] .cjPhotoDrop{min-height:245px}.screen[data-screen="photoPick"] .cjPhotoOrb{width:104px;height:104px;font-size:68px}}
+@media(prefers-reduced-motion:reduce){.screen[data-screen="photoPick"] .cjPhotoDots span,.screen[data-screen="photoPick"] .cjPhotoOrb{animation:none}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -3899,8 +3931,8 @@ body:has(.screen[data-screen="classDetail"].active){background:radial-gradient(c
 <button class="action saved" id="openSaved"><span class="actionIcon">▤</span><span><b>保存済みを見る</b><small>作成済みのアルバムを開く</small></span><span class="arrow">›</span></button>
 </div></section>
 <section class="screen" data-screen="photoPick">
-<div class="top"><button class="back" data-back="classProjects">‹</button><div class="topText"><p class="brand">NEW ALBUM</p><h1>写真を選ぶ</h1><p class="lead">このアルバムで使う新しい写真を選んでね。以前のアルバムの写真を毎回追加する必要はありません。</p></div></div>
-<label class="drop" for="photoInput"><strong>📷 このアルバムの新しい写真を選ぶ</strong><p>普段はこちらから。園児別の写真は、このアルバムで新しく振り分けます。以前のアルバムの写真は勝手に追加されません。</p><input id="photoInput" type="file" accept="image/*" multiple></label>
+<div class="top cjPhotoHead"><button class="back" data-back="classProjects" aria-label="戻る">‹</button><div class="topText"><p class="brand">COLOR JOURNEY · STAGE 01</p><h1>📸 写真をあつめよう！</h1><p class="lead">アルバムに入れたい写真をえらんでね 🌈</p></div></div><div class="cjPhotoDots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+<label class="drop cjPhotoDrop" for="photoInput"><span class="cjPhotoOrb" aria-hidden="true">＋</span><strong>写真をえらぶ</strong><p>タップしてまとめて追加 📷</p><input id="photoInput" type="file" accept="image/*" multiple aria-label="このアルバムに写真をまとめて追加"></label><p class="cjPhotoFreshNote">🌱 新しいアルバムでは、今回えらんだ写真だけを使うよ。</p>
 <details id="approvedPhotoImportPanel" style="border:1px solid #dce4ef;background:#f7fbff;border-radius:14px;padding:13px;margin:16px 0">
  <summary style="cursor:pointer;font-weight:750">📂 以前に保存した写真と振り分けを開く（必要なときだけ）</summary>
  <span style="display:block;font-size:11px;color:#65758a;margin:9px 0">新規アルバム写真連携 2026-10-22 AV</span>
