@@ -3720,6 +3720,19 @@ body:has(>.app>.screen[data-screen="photoAssign"].active){
 .screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowNext,
 .screen[data-screen="photoAssign"][data-flow-step="check"] #photoAssignFlowNext{display:none!important}
 
+
+/* COLOR JOURNEY FIRST STEP 2026-10-27: class selection only, non-destructive */
+.screen[data-screen="home"] #flowerGrid{max-width:690px!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:22px 13px!important;margin-inline:auto!important}
+.screen[data-screen="home"] #flowerGrid>.tile{background:transparent!important;border:0!important;box-shadow:none!important;padding:7px 4px!important;gap:9px!important;overflow:visible!important;animation:cjFloat 3.9s ease-in-out infinite}
+.screen[data-screen="home"] #flowerGrid>.tile:nth-child(2n){animation-delay:-1.25s}
+.screen[data-screen="home"] #flowerGrid>.tile:nth-child(3n){animation-delay:-2.5s}
+.screen[data-screen="home"] #flowerGrid>.tile .flower{width:min(100%,122px)!important;min-height:0!important;height:auto!important;aspect-ratio:1!important;max-width:122px!important;border-radius:50%!important;border:5px solid #fff!important;background:linear-gradient(145deg,#fdfefa,#f0faf8)!important;box-shadow:0 12px 23px #5b849a27,inset 0 5px 12px #fff9!important;margin:0 auto!important;display:grid!important;place-items:center!important;padding:10px!important;overflow:hidden!important}
+.screen[data-screen="home"] #flowerGrid>.tile .flower img{width:100%!important;height:100%!important;max-height:100%!important;object-fit:contain!important;border-radius:50%!important}
+.screen[data-screen="home"] #flowerGrid>.tile .homeClassLabel{font-weight:800!important;font-size:clamp(12px,2.4vw,16px)!important;color:#35506a!important;margin-top:6px!important}
+.screen[data-screen="home"] #flowerGrid>.tile:active .flower{transform:scale(1.13);transition:transform .16s ease}
+@keyframes cjFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@media(max-width:420px){.screen[data-screen="home"] #flowerGrid{gap:16px 7px!important}.screen[data-screen="home"] #flowerGrid>.tile .flower{max-width:99px!important;border-width:4px!important;padding:6px!important}}
+@media(prefers-reduced-motion:reduce){.screen[data-screen="home"] #flowerGrid>.tile{animation:none!important}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
