@@ -874,12 +874,17 @@ window.omoideMergeGameRender=function(data,host,api){
  else board.append(make('div','catchComplete','🎉 なかま探しクリア！'));
  kids.forEach((k,i)=>{
   const p=button('','catchKid',()=>send(k,p));
-  const inner=kids.length>12?Math.min(8,Math.floor(kids.length*.4)):kids.length;
-  const isInner=i<inner,ringIndex=isInner?i:i-inner,ringCount=isInner?inner:kids.length-inner;
-  const angle=-Math.PI/2+2*Math.PI*ringIndex/Math.max(1,ringCount)+(isInner?0:Math.PI/Math.max(1,ringCount));
-  const radius=isInner?(kids.length>12?23:35):43;
-  p.style.left=(50+Math.cos(angle)*radius)+'%';p.style.top=(50+Math.sin(angle)*radius)+'%';
-  p.classList.add(isInner?'catchInner':'catchOuter');
+  // Five columns, two rows above and below the central photo.
+  // Keep a stable order; for other roster sizes fill rows automatically.
+  const upperCount=Math.ceil(kids.length/2),lowerCount=kids.length-upperCount;
+  const upper=i<upperCount,sectionIndex=upper?i:i-upperCount;
+  const columns=5,row=Math.floor(sectionIndex/columns),column=sectionIndex%columns;
+  const sectionCount=upper?upperCount:lowerCount;
+  const rowCount=Math.ceil(sectionCount/columns),itemsInRow=Math.min(columns,sectionCount-row*columns);
+  const x=(column+1)/(itemsInRow+1)*100;
+  const y=upper?(rowCount===1?12:8+row*13):(rowCount===1?88:78+row*13);
+  p.style.left=x+'%';p.style.top=y+'%';
+  p.classList.add('catchGridKid',upper?'catchUpper':'catchLower');
   p.style.transform='translate(-50%,-50%)';
   p.append(portrait(k),make('small','',displayName(k)));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
  });
