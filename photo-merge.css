@@ -1079,3 +1079,9 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 .screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid{width:min(var(--catchKidWidth,60px),17vw)!important}
 .screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid .catchPortrait{width:min(var(--catchAvatar,52px),15vw)!important;height:min(var(--catchAvatar,52px),15vw)!important}
 }
+
+/* Allow large faces for small classes; limit size only when a row has many children. */
+@media(max-width:390px){
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid{width:min(var(--catchKidWidth,60px),calc(90vw / var(--catchColumns,5)))!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid .catchPortrait{width:min(var(--catchAvatar,52px),calc(88vw / var(--catchColumns,5) - 6px))!important;height:min(var(--catchAvatar,52px),calc(88vw / var(--catchColumns,5) - 6px))!important}
+}
