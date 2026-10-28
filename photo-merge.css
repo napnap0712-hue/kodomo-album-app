@@ -1070,3 +1070,12 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 .screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchFolder{top:49%!important;width:143px!important;height:143px!important}
 .screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchMainPhoto{width:76px!important;height:76px!important}
 @media(max-width:390px){.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid{width:54px!important}.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid .catchPortrait{width:46px!important;height:46px!important}.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:510px!important}}
+
+/* Catch adaptive faces: fill unused space by scaling portraits, never shrinking the game board. */
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid{width:var(--catchKidWidth,60px)!important;max-width:var(--catchKidWidth,60px)!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid .catchPortrait{width:var(--catchAvatar,52px)!important;height:var(--catchAvatar,52px)!important;border-width:3px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid small{max-width:100%!important;font-size:clamp(10px,2.7vw,13px)!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+@media(max-width:390px){
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid{width:min(var(--catchKidWidth,60px),17vw)!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid .catchPortrait{width:min(var(--catchAvatar,52px),15vw)!important;height:min(var(--catchAvatar,52px),15vw)!important}
+}
