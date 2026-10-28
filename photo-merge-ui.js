@@ -868,7 +868,7 @@ window.omoideMergeGameRender=function(data,host,api){
  kids.forEach((k,i)=>{
   const p=button('','catchKid',()=>send(k,p));
   const angle=(-Math.PI/2)+(2*Math.PI*i/Math.max(1,kids.length));
-  p.style.left=(50+Math.cos(angle)*43)+'%';p.style.top=(50+Math.sin(angle)*43)+'%';
+  p.style.left=(50+Math.cos(angle)*35)+'%';p.style.top=(50+Math.sin(angle)*35)+'%';
   p.style.transform='translate(-50%,-50%)';
   p.append(portrait(k),make('small','',k.name+'さん'));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
  });
