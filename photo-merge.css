@@ -1013,3 +1013,20 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 .screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar #savePhotoSortProgress{flex:0 0 auto;min-height:36px!important;padding:7px 12px!important;border-radius:15px!important;font-size:12px!important;white-space:nowrap}
 .screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar #photoSortProgressSaveStatus{font-size:11px!important;line-height:1.35!important;color:#476e7c!important;min-width:0;max-height:42px;overflow:auto;overflow-wrap:anywhere}
 @media(max-width:390px){.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:430px!important}.screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar{padding:5px 7px!important}}
+
+/* Adaptive double-ring Catch: fixed dots, one temporary connection */
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:clamp(460px,74vh,640px)!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchKid{animation:none!important;translate:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchInner{z-index:3!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchOuter{z-index:2!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchKid{width:49px!important;max-width:49px}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchPortrait{width:39px!important;height:39px!important;border-width:2px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchKid small{font-size:8px!important;max-width:58px;line-height:1.1!important;padding:2px 3px}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchFolder{width:116px!important;height:116px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchMainPhoto{width:54px;height:54px}
+.catchConnect{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible}
+.catchConnect path{fill:none;stroke:#f39fc8;stroke-width:6;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;filter:drop-shadow(0 2px 4px #e795b466)}
+.catchConnect.active path{animation:catchLineDraw .48s cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes catchLineDraw{to{stroke-dashoffset:0}}
+@media(max-width:390px){.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:510px!important}}
+@media(prefers-reduced-motion:reduce){.catchConnect path{stroke-dashoffset:0!important;animation:none!important}}
