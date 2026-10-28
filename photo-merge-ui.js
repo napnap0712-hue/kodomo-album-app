@@ -817,4 +817,75 @@ window.omoideMergeGameRender=function(data,host,api){
  host.append(root);api.progress();
 };
 
+
+/* Catch game: UI-only replacement for stage 02; uses existing save/undo APIs. */
+const catchSessions=new WeakMap();
+window.omoideMergeGameRender=function(data,host,api){
+ if(!data||!api.valid()||!host)return;
+ const make=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n};
+ const button=(label,cls,fn)=>{const n=make('button',cls,label);n.type='button';n.addEventListener('click',fn);return n};
+ let st=catchSessions.get(data);if(!st){st={cursor:0,kidPage:0,skipped:new Set(),notice:'',busy:false,inspect:false};catchSessions.set(data,st)}
+ let groups;try{groups=api.ensure(data).filter(f=>api.indexes(data,f).length)}catch(err){host.textContent='⚠️ '+String(err?.message||err);return}
+ const kids=(api.children||[]).filter(k=>k&&k.id&&k.name),ids=new Set(kids.map(k=>String(k.id)));
+ const linked=data.photoMatchFolderChild||{};
+ const unassigned=groups.filter(f=>!ids.has(String(linked[f.key]||'')));
+ for(const key of [...st.skipped])if(!unassigned.some(f=>f.key===key))st.skipped.delete(key);
+ const sorted=unassigned.slice().sort((a,b)=>api.indexes(data,b).length-api.indexes(data,a).length);
+ const available=sorted.filter(f=>!st.skipped.has(f.key));
+ let focus=available[st.cursor]||available[0]||null;
+ if(!focus&&sorted.length){st.skipped.clear();st.cursor=0;focus=sorted[0];}
+ const currentIndex=Math.max(0,sorted.indexOf(focus)),kidPages=Math.max(1,Math.ceil(kids.length/7));
+ st.kidPage=Math.min(st.kidPage,kidPages-1);
+ const redraw=()=>window.omoideMergeRender(data,host,api);
+ const portrait=k=>{const n=make('span','catchPortrait','🌼');if(typeof k?.facePhoto==='string'&&k.facePhoto.startsWith('data:image/')){const im=make('img');im.src=k.facePhoto;im.alt='';im.onerror=()=>n.textContent='🌼';n.replaceChildren(im)}return n};
+ const pic=i=>{const image=make('img');try{image.src=api.url(data.sourceFiles[i])}catch(err){}image.alt='';image.loading='lazy';image.decoding='async';return image};
+ function send(k,element){
+  if(!focus||st.busy)return;
+  st.busy=true;
+  const board=host.querySelector('.catchBoard'),from=host.querySelector('.catchFolder');
+  const start=from?.getBoundingClientRect(),end=element.getBoundingClientRect();
+  const fly=make('div','catchFly');fly.append(pic(api.indexes(data,focus)[0]));
+  if(start&&end&&board){const rect=board.getBoundingClientRect();fly.style.left=(start.left+start.width/2-rect.left)+'px';fly.style.top=(start.top+start.height/2-rect.top)+'px';fly.style.setProperty('--catchDx',(end.left+end.width/2-start.left-start.width/2)+'px');fly.style.setProperty('--catchDy',(end.top+end.height/2-start.top-start.height/2)+'px');board.append(fly);requestAnimationFrame(()=>fly.classList.add('fly'));}
+  const finish=()=>{
+   try{const result=api.assignChild(data,String(k.id),[focus.key]);st.notice='✨ CATCH! '+k.name+'さんへ '+result.photos+'枚！';st.cursor=0;}
+   catch(err){st.notice='⚠️ '+String(err?.message||err)}
+   st.busy=false;redraw();
+  };
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)finish();else setTimeout(finish,520);
+ }
+ host.replaceChildren();
+ const root=make('section','catchRoot');
+ root.append(make('h2','catchTitle','🫧 おもいでキャッチ！'),make('p','catchLead','まんなかの写真は、だれのおもいで？'));
+ const stat=make('div','catchStat');stat.append(make('strong','',(groups.length-unassigned.length)+' / '+groups.length+' 組'),make('span','','🌟 なかまを集めよう'));root.append(stat);
+ const track=make('div','catchTrack');const bar=make('span');bar.style.width=(groups.length?(groups.length-unassigned.length)/groups.length*100:100)+'%';track.append(bar);root.append(track);
+ const board=make('div','catchBoard');
+ for(const x of ['✦','✧','✦'])board.append(make('span','catchStar',x));
+ const folder=button('','catchFolder',()=>{st.inspect=true;redraw()});
+ if(focus){const photo=make('span','catchMainPhoto');photo.append(pic(api.indexes(data,focus)[0]));folder.append(photo,make('strong','','AI仮フォルダ'),make('small','',api.indexes(data,focus).length+'枚の写真'));board.append(folder);}
+ else board.append(make('div','catchComplete','🎉 なかま探しクリア！'));
+ kids.slice(st.kidPage*7,st.kidPage*7+7).forEach((k,i)=>{
+  const p=button('','catchKid catchPos'+i,()=>send(k,p));
+  p.append(portrait(k),make('small','',k.name+'さん'));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
+ });
+ root.append(board);
+ const notice=make('p','catchNotice',st.notice||(focus?'園児をタップしてキャッチ！':'すべての仮フォルダを確認したよ'));notice.setAttribute('role','status');root.append(notice);
+ const actions=make('div','catchActions');
+ const undo=button('↶ 戻す','',()=>{if(api.undoChild?.(data)){st.skipped.clear();st.cursor=0;st.notice='ひとつ前に戻したよ';redraw()}});
+ undo.disabled=!data.photoFolderUndo?.length;
+ actions.append(undo,button('🔍 写真を確認','',()=>{if(focus){st.inspect=true;redraw()}}));
+ const skip=button('あとで確認 ›','catchSkip',()=>{if(!focus)return;st.skipped.add(focus.key);st.cursor=0;st.notice='あとで確認するよ';redraw()});
+ skip.disabled=!focus;actions.append(skip);root.append(actions);
+ if(kidPages>1){const nav=make('div','catchPages');const prev=button('‹ 園児','',()=>{st.kidPage--;redraw()});prev.disabled=st.kidPage===0;const next=button('園児 ›','',()=>{st.kidPage++;redraw()});next.disabled=st.kidPage>=kidPages-1;nav.append(prev,make('span','',st.kidPage+1+' / '+kidPages),next);root.append(nav)}
+ if(st.skipped.size){root.append(button('🫧 後回しの写真をもう一度見る（'+st.skipped.size+'組）','catchReview',()=>{st.skipped.clear();st.cursor=0;st.notice='後回しのフォルダを表示したよ';redraw()}))}
+ root.append(button('🔎 写真の間違い探しへ','catchNext',()=>{if(st.busy)return;data.photoMergeSelected=[];data.photoMatchFinalReviewed=false;api.next('check',{scroll:true})}));
+ if(st.inspect&&focus){
+  const modal=make('div','catchModal');const content=make('section','catchModalCard');
+  content.append(make('h3','','📸 フォルダの中身'),make('p','','写真を確認して、園児を選ぼう'));
+  const grid=make('div','catchPhotoGrid');
+  api.indexes(data,focus).forEach(i=>{const cell=make('span');cell.append(pic(i));grid.append(cell)});
+  content.append(grid,button('確認できた！','catchClose',()=>{st.inspect=false;redraw()}));modal.append(content);root.append(modal);
+ }
+ host.append(root);api.progress();
+};
+
 })();
