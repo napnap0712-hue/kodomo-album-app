@@ -13222,7 +13222,7 @@ async function saveNewSplitAlbum(){
 // Direct, verified save bridge for the Stage 04 exit overlay.
 // The original split save and regular save routines remain unchanged.
 window.cjEditorTopSaveRevision=null;
-document.addEventListener('cj-editor-saved',()=>{if(document.querySelector('[data-screen="editor"]')?.classList.contains('active'))window.cjEditorTopSaveRevision=editorSaveRevision});
+document.addEventListener('cj-editor-saved',event=>{if(event.detail?.kind==='draft'&&document.querySelector('[data-screen="editor"]')?.classList.contains('active'))window.cjEditorTopSaveRevision=editorSaveRevision});
 window.cjEditorExitSaveBridge=async function(){
  if(newAlbumSplitSelected){
   if(newAlbumSplitSaveBusy)throw Error('保存処理が進行中です。完了してからもう一度試してね。');
