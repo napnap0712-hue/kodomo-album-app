@@ -6127,6 +6127,7 @@ async function saveCurrentPhotoSortCheckpoint(){
  finally{photoSortCheckpointBusy=false;button.disabled=false}
 }
 $('#savePhotoSortProgress')?.addEventListener('click',saveCurrentPhotoSortCheckpoint);
+window.omoideCatchSaveHome=async function(){const ok=await saveCurrentPhotoSortCheckpoint();if(ok)show('cjJourney');return ok===true;};
 // Rebuild face embeddings in memory on reopening: neither embeddings nor model
 // descriptors are included in checkpoints, synced, or sent over the network.
 async function photoSortRestoreFaceSamples(saved,loadedFiles,updateStatus,check){
