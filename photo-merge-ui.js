@@ -926,7 +926,36 @@ window.omoideMergeGameRender=function(data,host,api){
  skip.disabled=!focus;actions.append(skip);root.append(actions);
 
  if(st.skipped.size){root.append(button('🫧 後回しの写真をもう一度見る（'+st.skipped.size+'組）','catchReview',()=>{st.skipped.clear();st.cursor=0;st.notice='後回しのフォルダを表示したよ';redraw()}))}
+ if(!unassigned.length){
+  const finish=make('div','catchFinishLayer'),card=make('section','catchFinishCard');
+  card.append(make('div','catchFinishSparkle','🌟 🫧 ✨'),make('h2','','🎉 ALL CATCH!'),make('p','','写真のなかまが、みんな見つかったよ！'),make('div','catchFinishScore',groups.length+'組の写真をキャッチ！'));
+  const status=make('p','catchFinishStatus','ここまでの整理を保存して休むこともできるよ。');status.setAttribute('role','status');
+  let locked=false;
+  const next=button('🔎 間違い探しへ進む','catchFinishNext',()=>{
+   if(locked)return;
+   finish.replaceChildren();
+   const tutorial=make('section','catchCheckTutorial');
+   tutorial.append(make('h2','','🔎 おもいで間違い探し！'),make('p','','次は写真をよく見て、違う園児が混ざっていないか確認しよう！'));
+   const demo=make('div','catchCheckDemo');
+   demo.append(make('span','catchCheckPhoto','📸'),make('span','catchCheckGlass','🔍'),make('span','catchCheckCorrect','✅'));
+   tutorial.append(demo,make('p','catchCheckTip','写真を見つける → まちがいを直す → 確認完了！'));
+   tutorial.append(button('🎮 やってみよう！','catchFinishNext',()=>{
+    data.photoMergeSelected=[];data.photoMatchFinalReviewed=false;api.next('check',{scroll:true});
+   }));
+   tutorial.append(button('‹ クリア画面へ','catchFinishBack',redraw));
+   finish.append(tutorial);
+  });
+  const save=button('💾 ここまで保存してホームへ','catchFinishSave',async()=>{
+   if(locked)return;
+   locked=true;save.disabled=true;next.disabled=true;status.textContent='💾 写真と振り分け結果を保存中…';
+   try{const ok=await window.omoideCatchSaveHome?.();
+    if(!ok){status.textContent=document.getElementById('photoSortProgressSaveStatus')?.textContent||'⚠️ 保存できなかったよ。もう一度試してね。';locked=false;save.disabled=false;next.disabled=false;}
+   }catch(err){status.textContent='⚠️ 保存できませんでした：'+String(err?.message||err);locked=false;save.disabled=false;next.disabled=false;}
+  });
+  card.append(next,save,status);finish.append(card);root.append(finish);
+ }else{
  root.append(button('🔎 写真の間違い探しへ','catchNext',()=>{if(st.busy)return;data.photoMergeSelected=[];data.photoMatchFinalReviewed=false;api.next('check',{scroll:true})}));
+ }
  if(st.editNames){
   const overlay=make('div','catchModal');const panel=make('section','catchModalCard');
   panel.append(make('h3','','✏️ 園児の表示名'),make('p','','ゲームで使う名前だけ変更します。登録名は変わりません。'));
