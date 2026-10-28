@@ -3950,7 +3950,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 }
 .screen[data-screen="photoPick"] .cjWorkflowNav button,.screen[data-screen="photoAssign"] .cjWorkflowNav button{font-size:clamp(10px,3vw,13px)!important;min-height:48px!important;white-space:nowrap}
 .screen[data-screen="photoPick"] .cjWorkflowNav button.active,.screen[data-screen="photoAssign"] .cjWorkflowNav button.active{background:#dff8ef!important;color:#3d8f82!important}
-#cjJourney .cjStage[data-jump="spread"]{display:none!important}
+#cjJourney .cjStage[data-jump="spread"]{display:flex!important}
 
 .screen[data-screen="saved"]{padding-bottom:calc(128px + env(safe-area-inset-bottom))!important}
 .screen[data-screen="saved"]>.top>.back{display:none!important}
@@ -4022,9 +4022,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
  <button class="cjStage" data-jump="new" style="--stage:#77cfc2;--offset:0px"><b>01</b><span>📸</span><strong>写真を追加</strong></button>
  <button class="cjStage" data-jump="merge" style="--stage:#ffc87d;--offset:81px"><b>02</b><span>🧩</span><strong>おもいでマージ！</strong></button>
  <button class="cjStage" data-jump="check" style="--stage:#b2a4ec;--offset:-83px"><b>03</b><span>🔎</span><strong>間違い探し！</strong></button>
- <button class="cjStage" data-jump="cover" style="--stage:#ff9cb8;--offset:66px"><b>04</b><span>🌸</span><strong>表紙</strong></button>
- <button class="cjStage" data-jump="spread" style="--stage:#8ec8f1;--offset:-65px"><b>05</b><span>📖</span><strong>見開き12枠</strong></button>
- <button class="cjStage" data-jump="growth" style="--stage:#a5cf79;--offset:70px"><b>06</b><span>📏</span><strong>成長記録</strong></button>
+ <button class="cjStage" data-jump="spread" style="--stage:#8ec8f1;--offset:-65px"><b>04</b><span>📖</span><strong>見開き編集</strong></button> <button class="cjStage" data-jump="cover" style="--stage:#ff9cb8;--offset:66px"><b>05</b><span>🌸</span><strong>表紙</strong></button> <button class="cjStage" data-jump="growth" style="--stage:#a5cf79;--offset:70px"><b>06</b><span>📏</span><strong>成長記録</strong></button>
  <button class="cjStage" data-jump="message" style="--stage:#c4a5ff;--offset:-75px"><b>07</b><span>💌</span><strong>先生のメッセージ</strong></button>
  <button class="cjStage" data-jump="back" style="--stage:#f7b276;--offset:60px"><b>08</b><span>🌻</span><strong>裏表紙</strong></button>
  <button class="cjStage" data-jump="finish" style="--stage:#ffc95d;--offset:0px"><b>09</b><span>🏆</span><strong>アルバム完成</strong></button>
@@ -5075,11 +5073,25 @@ window.cjOriginalApp={
   }catch(error){return {ok:false,message:'保存を確認できなかったよ：'+String(error?.message||error)};}
   finally{db?.close();}
  },
+ async openRecentSpread(){
+  const result=await this.openRecentMerge({preferSaved:true});
+  if(!result?.ok)return result;
+  const data=albumAiGroupsData;
+  if(!data?.valid()||!data.photoMatchFinalReviewed||!files.length){
+   show('cjJourney');return {ok:false,message:'写真整理がまだ完了していないよ。間違い探しをクリアしてね。'};
+  }
+  try{
+   photoSortSkipStrictFinish=true;
+   try{startEditingWithSelectedPhotos()}finally{photoSortSkipStrictFinish=false}
+   if(!document.querySelector('[data-screen="editor"]')?.classList.contains('active'))throw Error('編集画面を開けませんでした');
+   return {ok:true};
+  }catch(e){photoSortSkipStrictFinish=false;show('cjJourney');return {ok:false,message:'見開きを開けなかったよ：'+String(e?.message||e)}}
+ },
  navigate(kind){
   if(kind==='albums'){show('saved');return;}
   if(kind==='merge'){return this.openRecentMerge();}
   if(kind==='check'){return this.openRecentMerge({preferSaved:true}).then(result=>{if(result?.ok){show('photoAssign');setPhotoAssignFlowStep('check',{scroll:true});renderCurrentAlbumSingletonPairs();}return result;});}
-  if(kind==='spread'||kind==='finish'){show('saved');return;}
+  if(kind==='spread'){return this.openRecentSpread();} if(kind==='finish'){show('saved');return;}
   if(kind==='kids'){$('[data-screen="classDetail"] .back').dataset.back='cjJourney';show('classDetail');return;}
   if(kind==='new'){$('#createNew').click();return;}
   if(kind==='cover'){openCoverEditor();return;}
@@ -14263,7 +14275,7 @@ const $id=id=>document.getElementById(id);
 function updateJourney(){ /* Data is supplied by the original app when class login succeeds. */ }
 function jump(kind){
  if(kind==='merge'){window.cjOpenMergeIntro('map');return}
- if(kind==='check'){window.cjOpenCheckIntro();return}
+ if(kind==='check'){window.cjOpenCheckIntro();return} if(kind==='spread'){window.cjOpenSpreadIntro();return}
  if(kind==='map'){window.cjOriginalApp.navigate('map');return}
  window.cjOriginalApp.navigate(kind)
 }
@@ -14437,6 +14449,35 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
    if(result?.ok){close();return;}
    notice.textContent=result?.message||'保存データを読み込めなかったよ。';
   }catch(e){notice.textContent='⚠️ '+String(e?.message||e)}
+  finally{start.disabled=false}
+ });
+})();
+</script>
+<style>
+#cjSpreadMapIntro{display:none;position:fixed;inset:0;z-index:100006;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 50% 20%,#fffbe3,#e7f9f4 50%,#e7e9ff)}
+#cjSpreadMapIntro.open{display:flex}
+#cjSpreadMapIntro .cjSpreadCard{box-sizing:border-box;width:min(100%,440px);padding:26px 20px;border:4px solid white;border-radius:33px;background:#ffffffec;box-shadow:0 15px 45px #799bb53a;text-align:center;color:#365d70}
+#cjSpreadMapIntro h2{font-size:clamp(23px,6vw,30px)}
+#cjSpreadMapIntro p{font-size:14px;font-weight:800;color:#507382}
+.cjSpreadBook{font-size:75px;margin:14px auto;animation:cjSpreadTurn 1.8s ease-in-out infinite}
+@keyframes cjSpreadTurn{50%{transform:perspective(450px) rotateY(-32deg) scale(1.09)}}
+.cjSpreadActions{display:flex;gap:10px}
+.cjSpreadActions button{flex:1;min-height:55px;border:0;border-radius:19px;font-size:15px;font-weight:900;background:#edf5f8;color:#2a5663}
+#cjSpreadStart{background:linear-gradient(110deg,#8cdac3,#aadcf0)}
+#cjSpreadNotice{min-height:30px}
+@media(prefers-reduced-motion:reduce){.cjSpreadBook{animation:none}}
+</style>
+<div id="cjSpreadMapIntro" role="dialog" aria-modal="true" aria-labelledby="cjSpreadTitle" aria-hidden="true"><section class="cjSpreadCard"><h2 id="cjSpreadTitle">📖 見開き編集</h2><div class="cjSpreadBook" aria-hidden="true">📖✨</div><p>おもいでのページをひらこう！</p><p id="cjSpreadNotice" role="status" aria-live="polite"></p><div class="cjSpreadActions"><button type="button" id="cjSpreadBack">もどる</button><button type="button" id="cjSpreadStart">やってみよう！</button></div></section></div>
+<script>
+(function(){
+ const root=document.getElementById('cjSpreadMapIntro'),start=document.getElementById('cjSpreadStart'),notice=document.getElementById('cjSpreadNotice');
+ const close=()=>{root.classList.remove('open');root.setAttribute('aria-hidden','true')};
+ window.cjOpenSpreadIntro=()=>{start.disabled=false;notice.textContent='';root.classList.add('open');root.setAttribute('aria-hidden','false')};
+ document.getElementById('cjSpreadBack').addEventListener('click',close);
+ start.addEventListener('click',async()=>{
+  if(start.disabled)return;start.disabled=true;notice.textContent='📖 直近の保存を読み込んでいるよ…';
+  try{const result=await window.cjOriginalApp.navigate('spread');if(result?.ok){close();return}notice.textContent=result?.message||'保存データを開けなかったよ。';}
+  catch(e){notice.textContent='⚠️ '+String(e?.message||e)}
   finally{start.disabled=false}
  });
 })();
