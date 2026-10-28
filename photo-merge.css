@@ -1061,3 +1061,12 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 .catchRoot .catchModal .catchModalCard .catchClose{background:#83dac4!important;color:#224b50!important;-webkit-text-fill-color:#224b50!important}
 .catchRoot .catchModal .catchModalCard .catchNameCancel{background:#eaf0f4!important;color:#375769!important;-webkit-text-fill-color:#375769!important}
 .catchRoot .catchModal .catchModalCard .catchPhotoGrid{color:#294e60!important}
+
+/* Catch roster: up to 10 children above and 10 below, 5 columns per row. */
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:clamp(480px,70vh,620px)!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid{animation:none!important;translate:none!important;width:60px!important;max-width:60px!important;z-index:3!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid .catchPortrait{width:52px!important;height:52px!important;border:3px solid white!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid small{font-size:10px!important;line-height:1.2!important;max-width:66px;padding:3px 4px!important;color:#315d70!important;background:#fff!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchFolder{top:49%!important;width:143px!important;height:143px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchMainPhoto{width:76px!important;height:76px!important}
+@media(max-width:390px){.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid{width:54px!important}.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid .catchPortrait{width:46px!important;height:46px!important}.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:510px!important}}
