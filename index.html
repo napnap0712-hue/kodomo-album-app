@@ -5077,9 +5077,22 @@ window.cjOriginalApp={
   const result=await this.openRecentMerge({preferSaved:true});
   if(!result?.ok)return result;
   const data=albumAiGroupsData;
-  if(!data?.valid()||!data.photoMatchFinalReviewed||!files.length){
+  if(!data?.valid()||!files.length){
+   show('cjJourney');return {ok:false,message:'保存した写真を確認できなかったよ。'};
+  }
+  // Older clear checkpoints were saved just before the finalReviewed flag was set.
+  // Revalidate the actual groups and all photos instead of relying on that flag.
+  const kids=new Set(getChildren(data.classId).map(k=>String(k.id)));
+  const folders=photoFoldersEnsure(data).filter(f=>photoFolderIndexes(data,f).length);
+  const links=photoSortChildLinks(data);
+  const checked=folders.every(f=>kids.has(String(links.get(f.key)||''))&&data.photoFolderMistakeReviewed.has(f.key));
+  const inbox=photoSortInboxIndexes(data);
+  const covered=new Set(folders.flatMap(f=>photoFolderIndexes(data,f)));
+  const missing=files.some((_,i)=>!data.unusedPhotoIndexes.has(i)&&!covered.has(i));
+  if(!folders.length||!checked||inbox.length||missing){
    show('cjJourney');return {ok:false,message:'写真整理がまだ完了していないよ。間違い探しをクリアしてね。'};
   }
+  data.photoMatchFinalReviewed=true;
   try{
    photoSortSkipStrictFinish=true;
    try{startEditingWithSelectedPhotos()}finally{photoSortSkipStrictFinish=false}
