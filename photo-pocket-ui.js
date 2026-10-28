@@ -11,7 +11,7 @@ window.omoidePocketRender=function(data,host,api){
  const byKid=new Map(kids.map(k=>[String(k.id),[]]));
  folders.forEach(f=>{const id=String(links.get(f.key)||'');if(byKid.has(id))byKid.get(id).push(f)});
  const inbox=api.inbox(data);
- const name=k=>{const value=String(k.name||'').trim().split(/[\s\u3000]+/);return value.at(-1)||k.name};
+ const name=k=>{let labels={};try{labels=JSON.parse(localStorage.getItem('omoide-catch-display-names-v1')||'{}')||{}}catch{}const custom=String(labels[String(k.id)]||'').trim();if(custom)return custom;const value=String(k.name||'').trim().replace(/(さん|ちゃん|くん)$/,'').split(/[\s\u3000]+/);return value.at(-1)||k.name};
  const photo=i=>{const e=m('img');e.src=api.url(data.sourceFiles[i]);e.alt='';e.loading='lazy';return e};
  const idsOf=k=>[...new Set((byKid.get(String(k.id))||[]).flatMap(f=>api.indexes(data,f)))];
  const complete=k=>(byKid.get(String(k.id))||[]).every(f=>reviewed.has(f.key));
