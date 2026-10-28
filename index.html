@@ -3937,6 +3937,20 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjSortClear.exit .cjClearWipe{animation:cjWipeMap 1s ease-in-out forwards}
 @keyframes cjWipeMap{0%{transform:translateY(100%)}55%{transform:translateY(0);border-radius:0}100%{transform:translateY(-105%);border-radius:0}}
 @media(prefers-reduced-motion:reduce){#cjSortClear .cjClearDots i{animation:none}}
+
+/* Color Journey consistent lower tabs for photo adding and photo sorting. */
+.screen[data-screen="photoPick"],.screen[data-screen="photoAssign"]{padding-bottom:calc(128px + env(safe-area-inset-bottom))!important}
+.screen[data-screen="photoPick"]>.top>.back,.screen[data-screen="photoAssign"]>.top>.back{display:none!important}
+.screen[data-screen="photoPick"] .cjWorkflowNav,.screen[data-screen="photoAssign"] .cjWorkflowNav{
+ position:fixed!important;left:50%;bottom:calc(10px + env(safe-area-inset-bottom))!important;
+ transform:translateX(-50%);width:min(calc(100vw - 24px),560px);margin:0!important;
+ z-index:80!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ background:#ffffffed!important;border:0!important;border-radius:25px!important;
+ padding:9px!important;box-shadow:0 8px 20px #52788722!important
+}
+.screen[data-screen="photoPick"] .cjWorkflowNav button,.screen[data-screen="photoAssign"] .cjWorkflowNav button{font-size:clamp(10px,3vw,13px)!important;min-height:48px!important;white-space:nowrap}
+.screen[data-screen="photoPick"] .cjWorkflowNav button.active,.screen[data-screen="photoAssign"] .cjWorkflowNav button.active{background:#dff8ef!important;color:#3d8f82!important}
+#cjJourney .cjStage[data-jump="spread"]{display:none!important}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -3974,7 +3988,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 <button class="action" id="createNew"><span class="actionIcon">＋</span><span><b>新しく作る</b><small>写真を選んでアルバムを作成</small></span><span class="arrow">›</span></button>
 <button class="action saved" id="openSaved"><span class="actionIcon">▤</span><span><b>保存済みを見る</b><small>作成済みのアルバムを開く</small></span><span class="arrow">›</span></button>
 </div></section>
-<section class="screen" data-screen="photoPick">
+<section class="screen" data-screen="photoPick"><nav class="cjNav cjWorkflowNav" aria-label="画面の切り替え"><button type="button" data-roster-nav="map">🗺️ ぼうけん</button><button type="button" data-roster-nav="kids">🌼 クラス園児</button><button type="button" data-roster-nav="albums">📚 アルバム一覧</button></nav>
 <div class="top cjPhotoHead"><button class="back" data-back="classProjects" aria-label="戻る">‹</button><div class="topText"><p class="brand">COLOR JOURNEY · STAGE 01</p><h1>📸 写真をあつめよう！</h1><p class="lead">アルバムに入れたい写真をえらんでね 🌈</p></div></div><div class="cjPhotoDots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
 <label class="drop cjPhotoDrop" for="photoInput"><span class="cjPhotoOrb" aria-hidden="true">＋</span><strong>写真をえらぶ</strong><p>タップしてまとめて追加 📷</p><input id="photoInput" type="file" accept="image/*" multiple aria-label="このアルバムに写真をまとめて追加"></label><p class="cjPhotoFreshNote">🌱 新しいアルバムでは、今回えらんだ写真だけを使うよ。</p>
 <details id="approvedPhotoImportPanel" style="border:1px solid #dce4ef;background:#f7fbff;border-radius:14px;padding:13px;margin:16px 0">
@@ -4014,7 +4028,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 <button id="continueEdit" class="primary wide" disabled>写真を振り分ける ›</button>
 <p class="muted">選んだ写真を見開きに配置し、タイトルや背景を調整できます。</p>
 </section>
-<section class="screen" data-screen="photoAssign" data-flow-step="start">
+<section class="screen" data-screen="photoAssign" data-flow-step="start"><nav class="cjNav cjWorkflowNav" aria-label="画面の切り替え"><button type="button" data-roster-nav="map">🗺️ ぼうけん</button><button type="button" data-roster-nav="kids">🌼 クラス園児</button><button type="button" data-roster-nav="albums">📚 アルバム一覧</button></nav>
 <p id="approvedImportPhotoAssignNotice" class="muted" role="status" hidden style="border:1px solid #cee3d9;background:#f8fffa;border-radius:12px;padding:10px"></p>
 <div class="top"><button class="back" data-back="photoPick">‹</button><div class="topText"><p class="brand">COLOR JOURNEY · STAGE 01</p><h1>✨ 写真を整理しよう！</h1><p class="lead">AIが写真のなかまを見つけるよ 🌷</p></div></div>
 <div class="photoSortSaveBar">
@@ -4991,7 +5005,8 @@ window.cjOriginalApp={
   return {name:displayClassName(selected),year:activeYear()+'年度',flower:selected.flower};
  },
  navigate(kind){
-  if(kind==='albums'||kind==='spread'||kind==='finish'||kind==='merge'||kind==='check'){show('classProjects');return;}
+  if(kind==='albums'){show('saved');return;}
+  if(kind==='spread'||kind==='finish'||kind==='merge'||kind==='check'){show('classProjects');return;}
   if(kind==='kids'){$('[data-screen="classDetail"] .back').dataset.back='cjJourney';show('classDetail');return;}
   if(kind==='new'){$('#createNew').click();return;}
   if(kind==='cover'){openCoverEditor();return;}
@@ -14048,7 +14063,7 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
  document.querySelectorAll('[data-roster-nav]').forEach(button=>{
   button.addEventListener('click',()=>{
    const destination=button.dataset.rosterNav;
-   if(destination==='kids')return;
+   if(destination==='kids'&&button.closest('[data-screen="classDetail"]'))return;
    if(window.cjOriginalApp&&typeof window.cjOriginalApp.navigate==='function'){
     window.cjOriginalApp.navigate(destination);
    }
@@ -14057,5 +14072,29 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
 })();
 </script>
 <div id="cjSortClear" role="status" aria-live="polite"><div class="cjClearCenter"><div class="cjClearDots"><i style="--i:0;--c:#ffbca4"></i><i style="--i:1;--c:#8bdccb"></i><i style="--i:2;--c:#b9a8fb"></i><i style="--i:3;--c:#ffb3d0"></i><i style="--i:4;--c:#90cbf5"></i></div><div class="cjClearBurst">🌟</div><h2>おもいでをあつめているよ</h2><p>写真のピースが、ひとつにつながるよ</p><div class="cjClearBar"><span></span></div></div><div class="cjClearWipe"></div></div>
+<script>
+/* Shared Color Journey tabs: show the active tab, without altering data. */
+(function(){
+ const sections=['photoPick','photoAssign','cjJourney','classDetail'];
+ const update=()=>{
+  for(const screen of sections){
+   const el=document.querySelector('[data-screen="'+screen+'"]');
+   if(!el)return;
+   for(const btn of el.querySelectorAll('[data-roster-nav]')){
+    btn.classList.toggle('active',el.classList.contains('active')&&screen==='classDetail'&&btn.dataset.rosterNav==='kids');
+   }
+  }
+ };
+ // The workflow screens belong to the adventure, so highlight its destination.
+ const watch=new MutationObserver(()=>{
+  for(const id of ['photoPick','photoAssign']){
+   const el=document.querySelector('[data-screen="'+id+'"]');
+   if(el)for(const btn of el.querySelectorAll('.cjWorkflowNav button'))
+    btn.classList.toggle('active',btn.dataset.rosterNav==='map');
+  }
+ });
+ watch.observe(document.querySelector('.app'),{subtree:true,attributes:true,attributeFilter:['class']});
+})();
+</script>
 </body>
 </html>
