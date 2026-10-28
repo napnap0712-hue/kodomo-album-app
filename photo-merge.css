@@ -1004,3 +1004,12 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 .catchRoot .catchMany .catchPortrait{width:40px!important;height:40px!important}
 .catchRoot .catchMany .catchKid small{font-size:8px!important}
 .catchRoot .catchFolder{width:140px!important;height:140px!important}
+
+/* Catch: compact orbit and unobtrusive pinned checkpoint controls */
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:clamp(410px,57vh,505px)!important;min-height:410px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchKid{animation-duration:4.4s}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchRoot{padding-bottom:calc(135px + env(safe-area-inset-bottom))!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar{position:sticky!important;top:calc(4px + env(safe-area-inset-top));z-index:72!important;display:flex!important;flex-wrap:nowrap!important;gap:8px!important;margin:4px 0 8px!important;padding:6px 9px!important;border-radius:20px!important;background:#f7fffbf2!important;box-shadow:0 4px 14px #456b7a22!important;backdrop-filter:blur(12px)}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar #savePhotoSortProgress{flex:0 0 auto;min-height:36px!important;padding:7px 12px!important;border-radius:15px!important;font-size:12px!important;white-space:nowrap}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar #photoSortProgressSaveStatus{font-size:11px!important;line-height:1.35!important;color:#476e7c!important;min-width:0;max-height:42px;overflow:auto;overflow-wrap:anywhere}
+@media(max-width:390px){.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:430px!important}.screen[data-screen="photoAssign"][data-flow-step="review"] .photoSortSaveBar{padding:5px 7px!important}}
