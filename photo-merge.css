@@ -1047,3 +1047,17 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 .catchNameRow input{min-width:0;width:100%;box-sizing:border-box;border:1px solid #b9dcd9;border-radius:12px;background:#fff;padding:11px 9px;color:#304e5c;font-size:14px}
 .catchNameStatus{font-size:11px!important;color:#66848e!important}
 .catchNameCancel{display:block;width:100%;margin-top:7px;padding:12px;border:0;border-radius:14px;background:#f0f3f7;color:#506f7a;font-weight:800}
+
+/* Display-name dialog: force readable dark text, including iOS input states */
+.catchRoot .catchModal .catchModalCard{background:#ffffff!important;color:#294e60!important;-webkit-text-fill-color:#294e60}
+.catchRoot .catchModal .catchModalCard h3,
+.catchRoot .catchModal .catchModalCard p,
+.catchRoot .catchModal .catchModalCard .catchNameRow,
+.catchRoot .catchModal .catchModalCard .catchNameRow span,
+.catchRoot .catchModal .catchModalCard .catchNameStatus{color:#294e60!important;-webkit-text-fill-color:#294e60!important;opacity:1!important}
+.catchRoot .catchModal .catchModalCard .catchNameRow input,
+.catchRoot .catchModal .catchModalCard .catchNameRow input:focus{background:#fff!important;color:#203d4d!important;-webkit-text-fill-color:#203d4d!important;caret-color:#24576d!important;opacity:1!important;font-weight:750!important}
+.catchRoot .catchModal .catchModalCard .catchNameRow input::placeholder{color:#708391!important;-webkit-text-fill-color:#708391!important;opacity:1!important}
+.catchRoot .catchModal .catchModalCard .catchClose{background:#83dac4!important;color:#224b50!important;-webkit-text-fill-color:#224b50!important}
+.catchRoot .catchModal .catchModalCard .catchNameCancel{background:#eaf0f4!important;color:#375769!important;-webkit-text-fill-color:#375769!important}
+.catchRoot .catchModal .catchModalCard .catchPhotoGrid{color:#294e60!important}
