@@ -984,3 +984,8 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 @keyframes catchBob{0%,100%{translate:0 0}50%{translate:0 -9px}}@keyframes catchTravel{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1;transform:translate(calc(-50% + var(--catchDx)),calc(-50% + var(--catchDy))) scale(.58)}100%{opacity:0;transform:translate(calc(-50% + var(--catchDx)),calc(-50% + var(--catchDy))) scale(.18)}}
 @media(max-width:390px){.catchBoard{min-height:440px}.catchKid{width:72px}.catchPortrait{width:61px;height:61px}.catchPos6{left:calc(50% - 36px)}.catchFolder{width:145px;height:145px}}
 @media(prefers-reduced-motion:reduce){.catchKid,.catchFly.fly{animation:none!important}}
+
+/* Catch replaces the old STEP1 instructional chrome, not STEP2 or saved data. */
+.screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowGuide,
+.screen[data-screen="photoAssign"][data-flow-step="review"] #photoSortGameProgress,
+.screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowHint{display:none!important}
