@@ -7935,17 +7935,68 @@ function renderPhotoSortGameProgress(){
   data.photoMatchFinalReviewed=false;
   data.photoFolderNotice='↩ 写真1枚を戻したよ。必要ならもう一度振り分けてね。';
  }
- function playColorJourneySortClear(){
- const o=document.getElementById('cjSortClear');if(!o){show('cjJourney');return;}
- o.className='play';
- const h=o.querySelector('h2'),p=o.querySelector('p'),b=o.querySelector('.cjClearBar span');
- h.textContent='おもいでをあつめているよ';p.textContent='写真のピースが、ひとつにつながるよ';b.style.width='0';
- setTimeout(()=>b.style.width='36%',180);setTimeout(()=>b.style.width='72%',700);
- setTimeout(()=>{o.classList.add('combine');b.style.width='100%';h.textContent='みんなのおもいでが集まった！'},1400);
- setTimeout(()=>{o.classList.add('complete');h.textContent='🎉 おもいで整理クリア！';p.textContent='次のぼうけんへ、出発！'},2250);
- setTimeout(()=>{if(!o.classList.contains('play')||!albumAiGroupsData?.photoMatchFinalReviewed||!document.querySelector('[data-screen="photoAssign"].active'))return;show('cjJourney');o.classList.add('exit')},3600);
- setTimeout(()=>o.className='',4570);
+ let cjSortClearRestored=false;
+function cjSortClearNotice(message){
+ const target=document.getElementById('cjSortClearNotice');
+ if(target)target.textContent=message;
 }
+function playColorJourneySortClear(restored=false){
+ const o=document.getElementById('cjSortClear');
+ if(!o)return;
+ cjSortClearRestored=restored;
+ o.className='play';
+ const h=o.querySelector('h2'),p=o.querySelector('p'),bar=o.querySelector('.cjClearBar span');
+ const choices=o.querySelector('#cjSortClearChoices');
+ if(choices)choices.hidden=true;
+ cjSortClearNotice('');
+ h.textContent='おもいでをあつめているよ';p.textContent='写真のピースが、ひとつにつながるよ';
+ bar.style.width='0';
+ setTimeout(()=>{if(o.classList.contains('play'))bar.style.width='36%'},180);
+ setTimeout(()=>{if(o.classList.contains('play'))bar.style.width='72%'},700);
+ setTimeout(()=>{if(!o.classList.contains('play'))return;o.classList.add('combine');bar.style.width='100%';h.textContent='みんなのおもいでが集まった！'},1400);
+ setTimeout(()=>{if(!o.classList.contains('play'))return;o.classList.add('complete');h.textContent='🎉 おもいで整理クリア！';p.textContent='次はアルバムづくりへ！';if(choices)choices.hidden=false},2250);
+}
+async function cjSortClearSaveHome(){
+ const o=document.getElementById('cjSortClear'),button=document.getElementById('cjSortClearHome');
+ if(!o?.classList.contains('complete')||!albumAiGroupsData?.photoMatchFinalReviewed)return;
+ if(cjSortClearRestored){
+  cjSortClearNotice('🛟 復元した元データは上書きしない安全方式です。見開き編集へ進み、新しいアルバムとして保存してね。');
+  return;
+ }
+ button.disabled=true;cjSortClearNotice('💾 保存を確認しているよ…');
+ try{
+  const ok=await saveCurrentPhotoSortCheckpoint();
+  if(ok===true){o.className='';show('home')}
+  else cjSortClearNotice('⚠️ 保存を確認できなかったよ。画面はそのままにしてあるよ。');
+ }catch(e){cjSortClearNotice('⚠️ 保存できませんでした：'+String(e?.message||e))}
+ finally{button.disabled=false}
+}
+function cjSortClearOpenEditor(){
+ const o=document.getElementById('cjSortClear');
+ if(!o?.classList.contains('complete')||!albumAiGroupsData?.photoMatchFinalReviewed)return;
+ o.classList.add('editingIntro');
+ const choices=document.getElementById('cjSortClearChoices');
+ if(choices)choices.hidden=true;
+ const h=o.querySelector('h2'),p=o.querySelector('p');
+ h.textContent='📖 アルバムをひらこう！';
+ p.textContent='写真を並べて、おもいでのページをつくろう';
+ setTimeout(()=>{
+  if(!o.classList.contains('editingIntro'))return;
+  try{
+   photoSortSkipStrictFinish=true;
+   try{startEditingWithSelectedPhotos()}finally{photoSortSkipStrictFinish=false}
+   if(document.querySelector('[data-screen="editor"]')?.classList.contains('active'))o.className='';
+   else {o.classList.remove('editingIntro');if(choices)choices.hidden=false;cjSortClearNotice('⚠️ 編集画面を開けなかったよ。元の写真はそのままだよ。')}
+  }catch(e){photoSortSkipStrictFinish=false;o.classList.remove('editingIntro');if(choices)choices.hidden=false;cjSortClearNotice('⚠️ '+String(e?.message||e))}
+ },1450);
+}
+document.addEventListener('click',event=>{
+ const target=event.target.closest?.('#cjSortClearHome,#cjSortClearEditor');
+ if(!target)return;
+ event.preventDefault();
+ if(target.id==='cjSortClearHome')void cjSortClearSaveHome();
+ else cjSortClearOpenEditor();
+});
 async function finishPhotoSortFromCheck(){
   const data=albumAiGroupsData;
   if(!data?.valid()||!data.photoMatchActive){window.alert('写真の整理状況を確認できません。');return}
@@ -7989,16 +8040,11 @@ async function finishPhotoSortFromCheck(){
   if(changed&&!window.confirm('以前に登録した'+changed+
    '枚の園児情報と、今整理したフォルダが異なります。今回のフォルダを正として見開き編集に反映しますか？\nキャンセルなら以前の登録は変更しません。'))return;
   if(photoSortRecoveredKey===photoSortCheckpointKey()){
-   const previousAssignments=photoAssignments,previousLinks=data.photoMatchFolderChild;
-   photoAssignments=staged;data.photoMatchFolderChild={...previousLinks,...linked};
-   try{
-    photoSortSkipStrictFinish=true;
-    try{startEditingWithSelectedPhotos()}finally{photoSortSkipStrictFinish=false}
-    if(!document.querySelector('[data-screen="editor"]')?.classList.contains('active')){
-     photoAssignments=previousAssignments;data.photoMatchFolderChild=previousLinks;
-    }
-   }catch(error){photoAssignments=previousAssignments;data.photoMatchFolderChild=previousLinks;
-    window.alert('安全な引き継ぎを完了できませんでした：'+String(error?.message||error));}
+   // Never overwrite a recovered checkpoint. Keep the approved associations
+   // in memory until the teacher explicitly enters a NEW split album.
+   photoAssignments=staged;data.photoMatchFolderChild={...data.photoMatchFolderChild,...linked};
+   data.photoMatchFinalReviewed=true;
+   playColorJourneySortClear(true);
    return;
   }
   const oldAssignments=photoAssignments,oldLinks=data.photoMatchFolderChild;
@@ -14241,7 +14287,17 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
  });
 })();
 </script>
-<div id="cjAiLoading" role="dialog" aria-modal="true" aria-label="AI写真整理中"><div class="cjAiStage"><div class="cjAiDots" aria-hidden="true"><span class="cjAiCluster one"></span><span class="cjAiCluster two"></span><span class="cjAiCluster three"></span><i style="--dot:#ffbca4;--delay:-.15s;--x:-80px;--tx:-87px;--ty:-27px"></i><i style="--dot:#8bdccb;--delay:-.5s;--x:75px;--tx:89px;--ty:-25px"></i><i style="--dot:#b9a8fb;--delay:-.9s;--x:-35px;--tx:0px;--ty:67px"></i><i style="--dot:#ffb3d0;--delay:-1.3s;--x:60px;--tx:80px;--ty:-14px"></i><i style="--dot:#90cbf5;--delay:-1.8s;--x:-68px;--tx:-81px;--ty:-17px"></i></div><h2 id="cjAiTitle">写真のなかまを探しているよ</h2><p id="cjAiMessage" role="status" aria-live="polite">AIが今回の写真を確認中…</p><div class="cjAiProgress"><span id="cjAiProgressBar"></span></div><button type="button" class="cjAiCancel" id="cjAiCancel">中断する</button><div id="cjAiDoneActions" hidden><button type="button" id="cjAiGoMerge" >🎮 おもいでマージへ進む</button><button type="button" id="cjAiSaveHome" >💾 ここまで保存してホームへ</button><p id="cjAiDoneNotice" role="status" aria-live="polite"></p></div></div></div><div id="cjSortClear" role="status" aria-live="polite"><div class="cjClearCenter"><div class="cjClearDots"><i style="--i:0;--c:#ffbca4"></i><i style="--i:1;--c:#8bdccb"></i><i style="--i:2;--c:#b9a8fb"></i><i style="--i:3;--c:#ffb3d0"></i><i style="--i:4;--c:#90cbf5"></i></div><div class="cjClearBurst">🌟</div><h2>おもいでをあつめているよ</h2><p>写真のピースが、ひとつにつながるよ</p><div class="cjClearBar"><span></span></div></div><div class="cjClearWipe"></div></div>
+<div id="cjAiLoading" role="dialog" aria-modal="true" aria-label="AI写真整理中"><div class="cjAiStage"><div class="cjAiDots" aria-hidden="true"><span class="cjAiCluster one"></span><span class="cjAiCluster two"></span><span class="cjAiCluster three"></span><i style="--dot:#ffbca4;--delay:-.15s;--x:-80px;--tx:-87px;--ty:-27px"></i><i style="--dot:#8bdccb;--delay:-.5s;--x:75px;--tx:89px;--ty:-25px"></i><i style="--dot:#b9a8fb;--delay:-.9s;--x:-35px;--tx:0px;--ty:67px"></i><i style="--dot:#ffb3d0;--delay:-1.3s;--x:60px;--tx:80px;--ty:-14px"></i><i style="--dot:#90cbf5;--delay:-1.8s;--x:-68px;--tx:-81px;--ty:-17px"></i></div><h2 id="cjAiTitle">写真のなかまを探しているよ</h2><p id="cjAiMessage" role="status" aria-live="polite">AIが今回の写真を確認中…</p><div class="cjAiProgress"><span id="cjAiProgressBar"></span></div><button type="button" class="cjAiCancel" id="cjAiCancel">中断する</button><div id="cjAiDoneActions" hidden><button type="button" id="cjAiGoMerge" >🎮 おもいでマージへ進む</button><button type="button" id="cjAiSaveHome" >💾 ここまで保存してホームへ</button><p id="cjAiDoneNotice" role="status" aria-live="polite"></p></div></div></div><div id="cjSortClear" role="status" aria-live="polite"><div class="cjClearCenter"><div class="cjClearDots"><i style="--i:0;--c:#ffbca4"></i><i style="--i:1;--c:#8bdccb"></i><i style="--i:2;--c:#b9a8fb"></i><i style="--i:3;--c:#ffb3d0"></i><i style="--i:4;--c:#90cbf5"></i></div><div class="cjClearBurst">🌟</div><h2>おもいでをあつめているよ</h2><p>写真のピースが、ひとつにつながるよ</p><div class="cjClearBar"><span></span></div></div><div class="cjClearWipe"></div><div id="cjSortClearChoices" class="cjSortClearChoices" hidden><button type="button" id="cjSortClearEditor">📖 見開き編集へ進む</button><button type="button" id="cjSortClearHome">💾 保存してホームへ</button><p id="cjSortClearNotice" role="status" aria-live="polite"></p></div></div>
+<style>
+/* Stage 03: finish choices and lightweight picture-book handoff. */
+#cjSortClear .cjSortClearChoices{position:absolute;z-index:15;left:50%;top:69%;transform:translateX(-50%);width:min(88vw,350px);display:flex;flex-direction:column;gap:12px;align-items:stretch}
+#cjSortClear .cjSortClearChoices[hidden]{display:none!important}
+#cjSortClearChoices button{font:900 16px/1.3 inherit;border:3px solid white;border-radius:22px;min-height:56px;box-shadow:0 6px 0 #8db8bc66,0 14px 24px #45647724;color:#375769;background:#baf0e2;touch-action:manipulation}
+#cjSortClearHome{background:#f7d8ec!important}
+#cjSortClearNotice{margin:2px 0;color:#365766;font-weight:800;background:#ffffffdf;border-radius:12px}
+#cjSortClear.editingIntro .cjClearDots{animation:cjAlbumPageTurn 1.2s ease-in-out infinite}
+@keyframes cjAlbumPageTurn{0%,100%{transform:perspective(500px) rotateY(0deg)}50%{transform:perspective(500px) rotateY(-28deg) scale(1.06)}}
+</style>
 <script>
 /* Set tab appearance without changing any underlying album or photo state. */
 (function(){
