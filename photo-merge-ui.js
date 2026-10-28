@@ -867,6 +867,11 @@ window.omoideMergeGameRender=function(data,host,api){
  const track=make('div','catchTrack');const bar=make('span');bar.style.width=(groups.length?(groups.length-unassigned.length)/groups.length*100:100)+'%';track.append(bar);root.append(track);
  const board=make('div','catchBoard');
  board.style.setProperty('--catchCount',String(kids.length));
+ const halfCount=Math.ceil(kids.length/2);
+ const columnsPerSide=halfCount<=6?halfCount:halfCount<=10?Math.ceil(halfCount/2):Math.ceil(halfCount/3);
+ const avatarSize=halfCount<=3?82:halfCount<=4?76:halfCount<=5?65:halfCount<=6?51:halfCount<=10?55:48;
+ board.style.setProperty('--catchAvatar',avatarSize+'px');
+ board.style.setProperty('--catchKidWidth',Math.max(avatarSize+8,Math.min(78,Math.floor(100/Math.max(1,columnsPerSide)*3.4)))+'px');
  if(kids.length>7)board.classList.add('catchMany');
  for(const x of ['✦','✧','✦'])board.append(make('span','catchStar',x));
  const folder=button('','catchFolder',()=>{st.inspect=true;redraw()});
@@ -874,15 +879,14 @@ window.omoideMergeGameRender=function(data,host,api){
  else board.append(make('div','catchComplete','🎉 なかま探しクリア！'));
  kids.forEach((k,i)=>{
   const p=button('','catchKid',()=>send(k,p));
-  // Five columns, two rows above and below the central photo.
-  // Keep a stable order; for other roster sizes fill rows automatically.
+  // Adapt the two halves to roster size: 6 -> 3+3, 12 -> 6+6, 20 -> (5x2)+(5x2).
   const upperCount=Math.ceil(kids.length/2),lowerCount=kids.length-upperCount;
   const upper=i<upperCount,sectionIndex=upper?i:i-upperCount;
-  const columns=5,row=Math.floor(sectionIndex/columns),column=sectionIndex%columns;
+  const columns=columnsPerSide,row=Math.floor(sectionIndex/columns),column=sectionIndex%columns;
   const sectionCount=upper?upperCount:lowerCount;
   const rowCount=Math.ceil(sectionCount/columns),itemsInRow=Math.min(columns,sectionCount-row*columns);
-  const x=(column+1)/(itemsInRow+1)*100;
-  const y=upper?(rowCount===1?12:8+row*13):(rowCount===1?88:78+row*13);
+  const x=(column+.5+(columns-itemsInRow)/2)/columns*100;
+  const y=upper?(rowCount===1?13:rowCount===2?8+row*15:6+row*12):(rowCount===1?87:rowCount===2?77+row*15:70+row*12);
   p.style.left=x+'%';p.style.top=y+'%';
   p.classList.add('catchGridKid',upper?'catchUpper':'catchLower');
   p.style.transform='translate(-50%,-50%)';
