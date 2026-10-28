@@ -824,7 +824,7 @@ window.omoideMergeGameRender=function(data,host,api){
  if(!data||!api.valid()||!host)return;
  const make=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n};
  const button=(label,cls,fn)=>{const n=make('button',cls,label);n.type='button';n.addEventListener('click',fn);return n};
- let st=catchSessions.get(data);if(!st){st={cursor:0,kidPage:0,skipped:new Set(),notice:'',busy:false,inspect:false};catchSessions.set(data,st)}
+ let st=catchSessions.get(data);if(!st){st={cursor:0,kidPage:0,skipped:new Set(),notice:'',busy:false,inspect:false,combo:0,celebration:''};catchSessions.set(data,st)}
  let groups;try{groups=api.ensure(data).filter(f=>api.indexes(data,f).length)}catch(err){host.textContent='⚠️ '+String(err?.message||err);return}
  const kids=(api.children||[]).filter(k=>k&&k.id&&k.name),ids=new Set(kids.map(k=>String(k.id)));
  const linked=data.photoMatchFolderChild||{};
@@ -838,6 +838,7 @@ window.omoideMergeGameRender=function(data,host,api){
  st.kidPage=Math.min(st.kidPage,kidPages-1);
  const redraw=()=>window.omoideMergeRender(data,host,api);
  const portrait=k=>{const n=make('span','catchPortrait','🌼');if(typeof k?.facePhoto==='string'&&k.facePhoto.startsWith('data:image/')){const im=make('img');im.src=k.facePhoto;im.alt='';im.onerror=()=>n.textContent='🌼';n.replaceChildren(im)}return n};
+ const firstName=name=>{const parts=String(name||'').trim().replace(/(さん|ちゃん|くん)$/,'').split(/[\s\u3000]+/).filter(Boolean);return parts.length>1?parts[parts.length-1]:parts[0]||''};
  const pic=i=>{const image=make('img');try{image.src=api.url(data.sourceFiles[i])}catch(err){}image.alt='';image.loading='lazy';image.decoding='async';return image};
  function send(k,element){
   if(!focus||st.busy)return;
@@ -848,9 +849,10 @@ window.omoideMergeGameRender=function(data,host,api){
   if(start&&end&&board){const rect=board.getBoundingClientRect(),x1=start.left+start.width/2-rect.left,y1=start.top+start.height/2-rect.top,x2=end.left+end.width/2-rect.left,y2=end.top+end.height/2-rect.top;const line=document.createElementNS('http://www.w3.org/2000/svg','svg');line.setAttribute('class','catchConnect');line.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d','M'+x1+' '+y1+' L'+x2+' '+y2);path.setAttribute('pathLength','1');line.append(path);board.append(line);requestAnimationFrame(()=>line.classList.add('active'));}
   if(start&&end&&board){const rect=board.getBoundingClientRect();fly.style.left=(start.left+start.width/2-rect.left)+'px';fly.style.top=(start.top+start.height/2-rect.top)+'px';fly.style.setProperty('--catchDx',(end.left+end.width/2-start.left-start.width/2)+'px');fly.style.setProperty('--catchDy',(end.top+end.height/2-start.top-start.height/2)+'px');board.append(fly);requestAnimationFrame(()=>fly.classList.add('fly'));}
   const finish=()=>{
-   try{const result=api.assignChild(data,String(k.id),[focus.key]);st.notice='✨ CATCH! '+k.name+'さんへ '+result.photos+'枚！';st.cursor=0;}
+   try{const result=api.assignChild(data,String(k.id),[focus.key]);st.combo++;st.celebration=st.combo%10===0?'🌟 SUPER CATCH!':st.combo%5===0?'🎉 AMAZING!':st.combo%3===0?'🌈 GREAT!':'✨ NICE CATCH!';st.notice='✨ '+firstName(k.name)+'さんへ '+result.photos+'枚！';st.cursor=0;}
    catch(err){st.notice='⚠️ '+String(err?.message||err)}
    st.busy=false;redraw();
+   if(st.celebration){const shown=st.celebration;setTimeout(()=>{if(st.celebration===shown){st.celebration='';redraw()}},850)}
   };
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)finish();else setTimeout(finish,520);
  }
@@ -875,8 +877,9 @@ window.omoideMergeGameRender=function(data,host,api){
   p.style.left=(50+Math.cos(angle)*radius)+'%';p.style.top=(50+Math.sin(angle)*radius)+'%';
   p.classList.add(isInner?'catchInner':'catchOuter');
   p.style.transform='translate(-50%,-50%)';
-  p.append(portrait(k),make('small','',k.name+'さん'));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
+  p.append(portrait(k),make('small','',firstName(k.name)));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
  });
+ if(st.celebration){const toast=make('div','catchCelebration',st.celebration);toast.setAttribute('aria-live','polite');board.append(toast)}
  root.append(board);
  const notice=make('p','catchNotice',st.notice||(focus?'園児をタップしてキャッチ！':'すべての仮フォルダを確認したよ'));notice.setAttribute('role','status');root.append(notice);
  const actions=make('div','catchActions');
