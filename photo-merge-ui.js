@@ -839,6 +839,10 @@ window.omoideMergeGameRender=function(data,host,api){
  const redraw=()=>window.omoideMergeRender(data,host,api);
  const portrait=k=>{const n=make('span','catchPortrait','🌼');if(typeof k?.facePhoto==='string'&&k.facePhoto.startsWith('data:image/')){const im=make('img');im.src=k.facePhoto;im.alt='';im.onerror=()=>n.textContent='🌼';n.replaceChildren(im)}return n};
  const firstName=name=>{const parts=String(name||'').trim().replace(/(さん|ちゃん|くん)$/,'').split(/[\s\u3000]+/).filter(Boolean);return parts.length>1?parts[parts.length-1]:parts[0]||''};
+ const displayKey='omoide-catch-display-names-v1';
+ const getLabels=()=>{try{const v=JSON.parse(localStorage.getItem(displayKey)||'{}');return v&&typeof v==='object'?v:{}}catch{return {}}};
+ const displayName=k=>{const names=getLabels();return names[String(k.id)]||firstName(k.name)};
+ const saveLabel=(k,value)=>{const names=getLabels(),id=String(k.id),name=String(value||'').trim().slice(0,24);if(name)names[id]=name;else delete names[id];try{localStorage.setItem(displayKey,JSON.stringify(names));return true}catch{return false}};
  const pic=i=>{const image=make('img');try{image.src=api.url(data.sourceFiles[i])}catch(err){}image.alt='';image.loading='lazy';image.decoding='async';return image};
  function send(k,element){
   if(!focus||st.busy)return;
@@ -877,10 +881,11 @@ window.omoideMergeGameRender=function(data,host,api){
   p.style.left=(50+Math.cos(angle)*radius)+'%';p.style.top=(50+Math.sin(angle)*radius)+'%';
   p.classList.add(isInner?'catchInner':'catchOuter');
   p.style.transform='translate(-50%,-50%)';
-  p.append(portrait(k),make('small','',firstName(k.name)));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
+  p.append(portrait(k),make('small','',displayName(k)));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
  });
  if(st.celebration){const toast=make('div','catchCelebration',st.celebration);toast.setAttribute('aria-live','polite');board.append(toast)}
  root.append(board);
+ root.append(button('✏️ 園児の表示名を設定','catchNamesButton',()=>{st.editNames=true;redraw()}));
  const notice=make('p','catchNotice',st.notice||(focus?'園児をタップしてキャッチ！':'すべての仮フォルダを確認したよ'));notice.setAttribute('role','status');root.append(notice);
  const actions=make('div','catchActions');
  const undo=button('↶ 戻す','',()=>{if(api.undoChild?.(data)){st.skipped.clear();st.cursor=0;st.notice='ひとつ前に戻したよ';redraw()}});
@@ -891,6 +896,16 @@ window.omoideMergeGameRender=function(data,host,api){
 
  if(st.skipped.size){root.append(button('🫧 後回しの写真をもう一度見る（'+st.skipped.size+'組）','catchReview',()=>{st.skipped.clear();st.cursor=0;st.notice='後回しのフォルダを表示したよ';redraw()}))}
  root.append(button('🔎 写真の間違い探しへ','catchNext',()=>{if(st.busy)return;data.photoMergeSelected=[];data.photoMatchFinalReviewed=false;api.next('check',{scroll:true})}));
+ if(st.editNames){
+  const overlay=make('div','catchModal');const panel=make('section','catchModalCard');
+  panel.append(make('h3','','✏️ 園児の表示名'),make('p','','ゲームで使う名前だけ変更します。登録名は変わりません。'));
+  const fields=make('div','catchNameFields'),inputs=[];
+  kids.forEach(k=>{const row=make('label','catchNameRow');row.append(make('span','',k.name));const field=make('input');field.type='text';field.maxLength=24;field.value=getLabels()[String(k.id)]||'';field.placeholder=firstName(k.name);field.setAttribute('aria-label',k.name+' の表示名');row.append(field);fields.append(row);inputs.push([k,field])});
+  panel.append(fields);
+  const message=make('p','catchNameStatus','この端末・このブラウザに表示名を保存します。');panel.append(message);
+  panel.append(button('💾 表示名を保存','catchClose',()=>{let ok=true;inputs.forEach(([k,field])=>{if(!saveLabel(k,field.value))ok=false});if(ok){st.editNames=false;redraw()}else message.textContent='保存できませんでした。端末の空き容量やブラウザ設定を確認してください。'}));
+  panel.append(button('閉じる','catchNameCancel',()=>{st.editNames=false;redraw()}));overlay.append(panel);root.append(overlay);
+ }
  if(st.inspect&&focus){
   const modal=make('div','catchModal');const content=make('section','catchModalCard');
   content.append(make('h3','','📸 フォルダの中身'),make('p','','写真を確認して、園児を選ぼう'));
