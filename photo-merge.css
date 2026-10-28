@@ -1039,3 +1039,11 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 @keyframes catchCelebrate{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-8deg)}28%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(3deg)}48%{transform:translate(-50%,-50%) scale(.96) rotate(-1deg)}65%{transform:translate(-50%,-50%) scale(1.04)}83%{opacity:1}100%{opacity:0;transform:translate(-50%,-56%) scale(1)}}
 @media(max-width:390px){.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchKid{width:53px!important}.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchPortrait{width:43px!important;height:43px!important}}
 @media(prefers-reduced-motion:reduce){.catchCelebration{animation:none!important;opacity:1}}
+
+/* Catch display-name editor */
+.catchNamesButton{display:block;margin:10px auto 2px;padding:7px 13px!important;border:1px solid #b7e2d9!important;border-radius:999px!important;background:#fff!important;color:#476e7b!important;font-size:12px!important;font-weight:850!important}
+.catchNameFields{display:grid;gap:8px;margin:12px 0;max-height:48vh;overflow:auto;text-align:left}
+.catchNameRow{display:grid;grid-template-columns:minmax(90px,1fr) minmax(120px,1fr);gap:8px;align-items:center;font-size:12px;font-weight:800;color:#47697c}
+.catchNameRow input{min-width:0;width:100%;box-sizing:border-box;border:1px solid #b9dcd9;border-radius:12px;background:#fff;padding:11px 9px;color:#304e5c;font-size:14px}
+.catchNameStatus{font-size:11px!important;color:#66848e!important}
+.catchNameCancel{display:block;width:100%;margin-top:7px;padding:12px;border:0;border-radius:14px;background:#f0f3f7;color:#506f7a;font-weight:800}
