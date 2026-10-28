@@ -4002,6 +4002,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjAiLoading.done #cjAiDoneActions{position:relative;z-index:20;pointer-events:auto!important}#cjAiLoading.done #cjAiDoneActions button{position:relative;z-index:21;pointer-events:auto!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
+<link rel="stylesheet" href="./photo-pocket.css">
 </head>
 <body>
 <main class="app">
@@ -8011,6 +8012,26 @@ async function finishPhotoSortFromCheck(){
 const photoPlanetStageSessions=new WeakMap();
 function renderPhotoFolderMistakes(data,host){
  if(!host||!data?.valid())return;
+ if(typeof window.omoidePocketRender==='function'){
+  return window.omoidePocketRender(data,host,{
+   valid:()=>data===albumAiGroupsData&&data.valid(),
+   children:()=>getChildren(data.classId),
+   folders:photoFoldersEnsure,
+   indexes:photoFolderIndexes,
+   links:photoSortChildLinks,
+   inbox:photoSortInboxIndexes,
+   url:fileUrl,
+   park:(d,from,indices)=>photoFolderEditMembership(d,from,indices,null),
+   deliver:(d,indices,target)=>photoSortMoveInlinePhotos(d,PHOTO_SORT_UNPLACED,indices,target,'move'),
+   slot:(d,childId)=>{
+    const idx=(d.photoMergeChildIds||[]).findIndex((id,i)=>String(id)===childId&&!d.photoMergeSlots?.[i]);
+    return idx>=0?'__merge-empty-slot:'+idx:null;
+   },
+   undo:d=>{const snapshot=d.photoFolderUndo?.pop();if(!snapshot)return false;photoFolderRestoreSnapshot(d,snapshot);return true},
+   finish:finishPhotoSortFromCheck,
+   progress:renderPhotoSortGameProgress
+  });
+ }
  host.replaceChildren();
  let folders;
  try{
@@ -14084,6 +14105,7 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
 
 </script>
 <script src="./photo-merge-ui.js"></script>
+<script src="./photo-pocket-ui.js"></script>
 <script type="module" src="./face-recognition/auraface-probe.mjs"></script>
 <script type="module" src="./face-recognition/auraface-batch.mjs"></script>
 <div id="cjWipe" aria-hidden="true"></div>
