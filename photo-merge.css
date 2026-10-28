@@ -1085,3 +1085,23 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 .screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid{width:min(var(--catchKidWidth,60px),calc(90vw / var(--catchColumns,5)))!important}
 .screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard .catchGridKid .catchPortrait{width:min(var(--catchAvatar,52px),calc(88vw / var(--catchColumns,5) - 6px))!important;height:min(var(--catchAvatar,52px),calc(88vw / var(--catchColumns,5) - 6px))!important}
 }
+
+/* Six photo-group Catch board: fill the middle while preserving child roster rows. */
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:clamp(480px,70vh,620px)!important}
+.catchBubbleGrid{position:absolute;z-index:4;inset:31% 4% 29%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px 10px;align-items:center;justify-items:center}
+.catchBubbleWrap{position:relative;width:100%;height:100%;min-height:0;display:grid;place-items:center;animation:catchBubbleDrift 4s ease-in-out infinite}
+.catchBubbleWrap:nth-child(2n){animation-delay:-1.4s}.catchBubbleWrap:nth-child(3n){animation-delay:-2.2s}
+.catchBubbleGrid:has(.chosen) .catchBubbleWrap{animation-play-state:paused}
+.catchBubble{border:0!important;background:linear-gradient(145deg,#ffe7d9,#fff8df)!important;border-radius:50%!important;width:clamp(84px,21vw,108px)!important;height:clamp(84px,21vw,108px)!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px!important;box-shadow:0 5px 17px #6b9b9a44!important;color:#5b6477!important;border:4px solid #fff!important;touch-action:manipulation}
+.catchBubblePhoto{width:75%;height:75%;display:block;overflow:hidden;border-radius:50%;border:2px solid #fff;background:#d8e8eb}
+.catchBubblePhoto img{width:100%;height:100%;object-fit:cover}
+.catchBubble small{font-size:11px;font-weight:900;color:#4d6171!important;line-height:1.1}
+.catchBubble.chosen{outline:4px solid #f6a2c9;box-shadow:0 0 0 7px #ffbad966,0 6px 20px #bf7caa77!important}
+.catchInspect{position:absolute!important;right:0;top:0;z-index:6;border:2px solid white!important;border-radius:50%!important;background:#eefaf8!important;color:#3b7180!important;width:31px;height:31px;padding:0!important;font-size:14px!important}
+.catchRoot .catchBoard .catchGridKid{z-index:5!important}
+.catchRoot .catchBoard .catchBubbleGrid{z-index:4}
+.catchRoot .catchBoard .catchConnect{z-index:8}
+.catchRoot .catchBoard .catchCelebration{z-index:12}
+@keyframes catchBubbleDrift{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@media(max-width:390px){.catchBubbleGrid{inset:30% 2% 29%;gap:6px}.catchBubble{width:clamp(76px,23vw,96px)!important;height:clamp(76px,23vw,96px)!important}.catchInspect{right:-2px}}
+@media(prefers-reduced-motion:reduce){.catchBubbleWrap{animation:none!important}}
