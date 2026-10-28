@@ -3910,7 +3910,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 .screen[data-screen="photoAssign"][data-flow-step="start"] #photoSortGameProgress{background:transparent!important;color:#638e99!important;text-shadow:none!important;text-align:center;font-size:13px!important}
 .screen[data-screen="photoAssign"][data-flow-step="start"] #photoAssignFlowHint{color:#8ba5ab!important;text-align:center;font-size:12px!important}
 .screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel{position:relative;overflow:hidden;background:#ffffffc9!important;border:3px solid #fff!important;border-radius:32px!important;box-shadow:0 12px 28px #67aab41e!important;text-align:center!important;padding:24px 15px!important}
-.screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel::before{content:"🟠　🟣　🟢　🔵";display:block;letter-spacing:6px;font-size:21px;margin:1px 0 19px;animation:cjSortDotsBob 3.4s ease-in-out infinite}
+.screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel::before{content:"";display:block;width:220px;height:35px;margin:1px auto 19px;background:radial-gradient(circle at 12% 50%,#ffbca4 12px,transparent 13px),radial-gradient(circle at 31% 50%,#8bdccb 12px,transparent 13px),radial-gradient(circle at 50% 50%,#b9a8fb 12px,transparent 13px),radial-gradient(circle at 69% 50%,#ffb3d0 12px,transparent 13px),radial-gradient(circle at 88% 50%,#90cbf5 12px,transparent 13px);animation:cjSortDotsBob 3.4s ease-in-out infinite}
 @keyframes cjSortDotsBob{50%{transform:translateY(-5px)}}
 .screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel>strong{display:block;font-size:19px!important;color:#4a8290!important;margin:0 0 10px!important}
 .screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel>p{color:#86a2a7!important;font-size:12px!important;line-height:1.6!important}
@@ -7899,7 +7899,17 @@ async function finishPhotoSortFromCheck(){
   if(changed&&!window.confirm('以前に登録した'+changed+
    '枚の園児情報と、今整理したフォルダが異なります。今回のフォルダを正として見開き編集に反映しますか？\nキャンセルなら以前の登録は変更しません。'))return;
   if(photoSortRecoveredKey===photoSortCheckpointKey()){
-   window.alert('復元元の途中保存を保護しています。見開き編集から別のアルバムとして保存してね。');return;
+   const previousAssignments=photoAssignments,previousLinks=data.photoMatchFolderChild;
+   photoAssignments=staged;data.photoMatchFolderChild={...previousLinks,...linked};
+   try{
+    photoSortSkipStrictFinish=true;
+    try{startEditingWithSelectedPhotos()}finally{photoSortSkipStrictFinish=false}
+    if(!document.querySelector('[data-screen="editor"]')?.classList.contains('active')){
+     photoAssignments=previousAssignments;data.photoMatchFolderChild=previousLinks;
+    }
+   }catch(error){photoAssignments=previousAssignments;data.photoMatchFolderChild=previousLinks;
+    window.alert('安全な引き継ぎを完了できませんでした：'+String(error?.message||error));}
+   return;
   }
   const oldAssignments=photoAssignments,oldLinks=data.photoMatchFolderChild;
   photoAssignments=staged;data.photoMatchFolderChild={...oldLinks,...linked};
