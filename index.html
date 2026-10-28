@@ -14557,9 +14557,12 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
   try{
    await window.cjEditorExitSaveBridge();
    status.textContent='✨ 保存できたよ！';
-   window.cjOriginalApp.navigate('map');
-   if(!document.querySelector('#cjJourney.screen.active'))throw Error('冒険マップを開けなかったよ。');
+   // Close the editor overlay first, then restore the current class journey.
    box.classList.remove('open');box.setAttribute('aria-hidden','true');
+   window.cjOriginalApp.navigate('map');
+   // The editor's existing save callbacks can update navigation on the next tick.
+   // Keep this explicit exit destination on the class adventure map.
+   setTimeout(()=>{if(!document.querySelector('#cjJourney.screen.active'))window.cjOriginalApp.navigate('map')},0);
   }catch(e){status.textContent='⚠️ '+String(e?.message||e)+' 編集内容は残してあるよ。'}
   finally{pending=false;button.disabled=false}
  });
