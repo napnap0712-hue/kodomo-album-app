@@ -43,3 +43,29 @@
 @keyframes pocketBreathe{50%{transform:scale(1.03)}}
 @media(max-width:380px){.pocketGrid{gap:6px}.pocketRoster{gap:6px}.pocketKid{flex-basis:69px;min-width:69px}}
 @media(prefers-reduced-motion:reduce){.pocketPocket{animation:none!important}}
+
+/* Color Journey Stage 03 visual unity with Catch: overrides old purple stage theme */
+.screen[data-screen="photoAssign"][data-flow-step="check"]{background:linear-gradient(180deg,#e9faff,#f6fff5 65%,#e4f1ff)!important;color:#365c6d!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] #currentAlbumAiPanel,
+.screen[data-screen="photoAssign"][data-flow-step="check"] #photoFolderMistakePanel{background:transparent!important;color:#365c6d!important;border:0!important;box-shadow:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .cjWorkflowNav{display:none!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .photoSortSaveBar{position:sticky;top:calc(4px + env(safe-area-inset-top));z-index:72;display:flex;align-items:center;flex-wrap:nowrap;padding:6px 9px;margin:5px 0 8px;background:#f5fffbef;border-radius:20px}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .photoSortSaveBar #savePhotoSortProgress{min-height:38px;padding:7px 12px;font-size:12px}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .photoSortSaveBar #photoSortProgressSaveStatus{font-size:11px;color:#456a7b}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoot{color:#355c6b!important;background:transparent!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoot h2,.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoot h3{color:#375f72!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoot p,.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoot strong,.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoot span{color:#436b7a}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoster{gap:11px;padding:8px 4px 12px}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketKid{flex:0 0 71px!important;min-width:71px!important;min-height:87px!important;position:relative;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:3px!important;gap:2px}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketAvatar{width:63px;height:63px;border:4px solid white;box-shadow:0 5px 13px #7dabb455;background:#ffdccc;border-radius:50%}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketKid.active .pocketAvatar{outline:4px solid #8edec1}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketKid.checked .pocketAvatar{outline:3px solid #f6c671}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketKid small{background:white;border-radius:999px;padding:2px 5px;font-size:11px;color:#335d70!important;max-width:74px}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketTick{position:absolute;top:0;right:0;font-size:16px}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketGrid{background:radial-gradient(circle at 50% 45%,#fdfaf1,#e8f9f4 58%,#e1edff);border:3px solid white;border-radius:30px;padding:14px 10px;gap:10px}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketPhoto{border-radius:50%!important;aspect-ratio:1;border:4px solid white!important;padding:0!important;box-shadow:0 5px 15px #7d9cad44!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketPhoto img{border-radius:50%!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketPhoto.chosen{border-color:#f4a4cb!important;outline:3px solid #f4a4cb}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketPocket{border-radius:30px;background:linear-gradient(135deg,#fff0cf,#fbe2f0,#d5f4ed);color:#395e6c!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketDest{border-radius:999px!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoot{padding-bottom:calc(90px + env(safe-area-inset-bottom))!important}
