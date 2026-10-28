@@ -5054,6 +5054,8 @@ window.cjOriginalApp={
   return {name:displayClassName(selected),year:activeYear()+'年度',flower:selected.flower};
  },
  canMerge(){return !!(albumAiGroupsData?.valid()&&files.length);},
+ editorRevision(){return editorSaveRevision},
+ hasSavedSpread(){return !!newAlbumSplitSavedId||!!editingId},
  async openRecentMerge({preferSaved=false}={}){
   if(!preferSaved&&albumAiGroupsData?.valid()&&files.length){show('photoAssign');setPhotoAssignFlowStep('review');renderCurrentAlbumSingletonPairs();return {ok:true};}
   const classId=selected.id,year=activeYear();
@@ -5075,6 +5077,24 @@ window.cjOriginalApp={
   finally{db?.close();}
  },
  async openRecentSpread(){
+  // Reopen the latest explicitly saved spread album before any photo-sort checkpoint.
+  // A checkpoint contains only photo assignments, NOT the placed page elements.
+  let splitDb=null;
+  try{
+   const request=indexedDB.open('omoide-new-split-albums-v1');
+   splitDb=await new Promise((resolve,reject)=>{request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||Error('保存済みアルバムを読み込めません'))});
+   if(splitDb.objectStoreNames.contains('albums')){
+    const rows=await new Promise((resolve,reject)=>{const q=splitDb.transaction('albums','readonly').objectStore('albums').getAll();q.onsuccess=()=>resolve(q.result||[]);q.onerror=()=>reject(q.error)});
+    const latest=rows.filter(a=>a?.ready&&a.storage==='split-v1'&&!a.trashedAt&&a.classId===selected.id&&a.year===activeYear()).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0))[0];
+    if(latest){
+     splitDb.close();splitDb=null;
+     const opened=await openSplitProjectFromList(latest.id);
+     if(opened){window.cjEditorTopSaveRevision=null;return {ok:true}}
+     return {ok:false,message:'最新の保存済みアルバムを安全に開けなかったよ。編集内容の初期化を防ぐため停止したよ。'};
+    }
+   }
+  }catch(e){return {ok:false,message:'保存済みアルバムの確認に失敗したよ：'+String(e?.message||e)}}
+  finally{splitDb?.close()}
   const result=await this.openRecentMerge({preferSaved:true});
   if(!result?.ok)return result;
   const data=albumAiGroupsData;
@@ -5098,6 +5118,7 @@ window.cjOriginalApp={
    photoSortSkipStrictFinish=true;
    try{startEditingWithSelectedPhotos()}finally{photoSortSkipStrictFinish=false}
    if(!document.querySelector('[data-screen="editor"]')?.classList.contains('active'))throw Error('編集画面を開けませんでした');
+   window.cjEditorTopSaveRevision=null;
    return {ok:true};
   }catch(e){photoSortSkipStrictFinish=false;show('cjJourney');return {ok:false,message:'見開きを開けなかったよ：'+String(e?.message||e)}}
  },
@@ -13198,6 +13219,8 @@ async function saveNewSplitAlbum(){
 
 // Direct, verified save bridge for the Stage 04 exit overlay.
 // The original split save and regular save routines remain unchanged.
+window.cjEditorTopSaveRevision=null;
+document.addEventListener('cj-editor-saved',()=>{if(document.querySelector('[data-screen="editor"]')?.classList.contains('active'))window.cjEditorTopSaveRevision=editorSaveRevision});
 window.cjEditorExitSaveBridge=async function(){
  if(newAlbumSplitSelected){
   if(newAlbumSplitSaveBusy)throw Error('保存処理が進行中です。完了してからもう一度試してね。');
@@ -14557,21 +14580,16 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
  const editorBack=document.getElementById('cjEditorBackButton');
  editorBack.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();window.cjOpenEditorExit();});
  document.getElementById('cjEditorExitContinue').addEventListener('click',close);
- document.getElementById('cjEditorExitSave').addEventListener('click',async()=>{
+ document.getElementById('cjEditorExitSave').addEventListener('click',()=>{
   if(pending)return;
-  pending=true;status.textContent='💾 アルバムを安全に保存しているよ…';
-  const button=document.getElementById('cjEditorExitSave');button.disabled=true;
-  try{
-   await window.cjEditorExitSaveBridge();
-   status.textContent='✨ 保存できたよ！';
-   // Close the editor overlay first, then restore the current class journey.
-   box.classList.remove('open');box.setAttribute('aria-hidden','true');
-   window.cjOriginalApp.navigate('map');
-   // The editor's existing save callbacks can update navigation on the next tick.
-   // Keep this explicit exit destination on the class adventure map.
-   setTimeout(()=>{if(!document.querySelector('#cjJourney.screen.active'))window.cjOriginalApp.navigate('map')},0);
-  }catch(e){status.textContent='⚠️ '+String(e?.message||e)+' 編集内容は残してあるよ。'}
-  finally{pending=false;button.disabled=false}
+  // Only the persistent top-bar Save is allowed to commit editor changes.
+  if(window.cjEditorTopSaveRevision!==window.cjOriginalApp.editorRevision()||
+    !window.cjOriginalApp.hasSavedSpread()){
+   status.textContent='💾 まだ保存されていないよ。編集画面の上部「保存」を押してから戻ってね。';
+   return;
+  }
+  box.classList.remove('open');box.setAttribute('aria-hidden','true');
+  window.cjOriginalApp.navigate('map');
  });
 })();
 
