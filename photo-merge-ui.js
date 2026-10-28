@@ -845,6 +845,7 @@ window.omoideMergeGameRender=function(data,host,api){
   const board=host.querySelector('.catchBoard'),from=host.querySelector('.catchFolder');
   const start=from?.getBoundingClientRect(),end=element.getBoundingClientRect();
   const fly=make('div','catchFly');fly.append(pic(api.indexes(data,focus)[0]));
+  if(start&&end&&board){const rect=board.getBoundingClientRect(),x1=start.left+start.width/2-rect.left,y1=start.top+start.height/2-rect.top,x2=end.left+end.width/2-rect.left,y2=end.top+end.height/2-rect.top;const line=document.createElementNS('http://www.w3.org/2000/svg','svg');line.setAttribute('class','catchConnect');line.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d','M'+x1+' '+y1+' L'+x2+' '+y2);path.setAttribute('pathLength','1');line.append(path);board.append(line);requestAnimationFrame(()=>line.classList.add('active'));}
   if(start&&end&&board){const rect=board.getBoundingClientRect();fly.style.left=(start.left+start.width/2-rect.left)+'px';fly.style.top=(start.top+start.height/2-rect.top)+'px';fly.style.setProperty('--catchDx',(end.left+end.width/2-start.left-start.width/2)+'px');fly.style.setProperty('--catchDy',(end.top+end.height/2-start.top-start.height/2)+'px');board.append(fly);requestAnimationFrame(()=>fly.classList.add('fly'));}
   const finish=()=>{
    try{const result=api.assignChild(data,String(k.id),[focus.key]);st.notice='✨ CATCH! '+k.name+'さんへ '+result.photos+'枚！';st.cursor=0;}
@@ -867,8 +868,12 @@ window.omoideMergeGameRender=function(data,host,api){
  else board.append(make('div','catchComplete','🎉 なかま探しクリア！'));
  kids.forEach((k,i)=>{
   const p=button('','catchKid',()=>send(k,p));
-  const angle=(-Math.PI/2)+(2*Math.PI*i/Math.max(1,kids.length));
-  p.style.left=(50+Math.cos(angle)*35)+'%';p.style.top=(50+Math.sin(angle)*35)+'%';
+  const inner=kids.length>12?Math.min(8,Math.floor(kids.length*.4)):kids.length;
+  const isInner=i<inner,ringIndex=isInner?i:i-inner,ringCount=isInner?inner:kids.length-inner;
+  const angle=-Math.PI/2+2*Math.PI*ringIndex/Math.max(1,ringCount)+(isInner?0:Math.PI/Math.max(1,ringCount));
+  const radius=isInner?(kids.length>12?23:35):43;
+  p.style.left=(50+Math.cos(angle)*radius)+'%';p.style.top=(50+Math.sin(angle)*radius)+'%';
+  p.classList.add(isInner?'catchInner':'catchOuter');
   p.style.transform='translate(-50%,-50%)';
   p.append(portrait(k),make('small','',k.name+'さん'));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
  });
