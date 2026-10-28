@@ -5077,7 +5077,8 @@ window.cjOriginalApp={
  navigate(kind){
   if(kind==='albums'){show('saved');return;}
   if(kind==='merge'){return this.openRecentMerge();}
-  if(kind==='spread'||kind==='finish'||kind==='check'){show('saved');return;}
+  if(kind==='check'){return this.openRecentMerge().then(result=>{if(result?.ok){show('photoAssign');setPhotoAssignFlowStep('check',{scroll:true});renderCurrentAlbumSingletonPairs();}return result;});}
+  if(kind==='spread'||kind==='finish'){show('saved');return;}
   if(kind==='kids'){$('[data-screen="classDetail"] .back').dataset.back='cjJourney';show('classDetail');return;}
   if(kind==='new'){$('#createNew').click();return;}
   if(kind==='cover'){openCoverEditor();return;}
@@ -14194,6 +14195,7 @@ const $id=id=>document.getElementById(id);
 function updateJourney(){ /* Data is supplied by the original app when class login succeeds. */ }
 function jump(kind){
  if(kind==='merge'){window.cjOpenMergeIntro('map');return}
+ if(kind==='check'){window.cjOpenCheckIntro();return}
  if(kind==='map'){window.cjOriginalApp.navigate('map');return}
  window.cjOriginalApp.navigate(kind)
 }
@@ -14301,6 +14303,50 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
  });
  document.getElementById('cjMergeIntroBack').addEventListener('click',()=>{
   close();if(entry==='analysis')window.cjOriginalApp.navigate('map');
+ });
+})();
+</script>
+
+<style>
+#cjCheckMapIntro{position:fixed;inset:0;z-index:100006;display:none;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 45% 25%,#fff7d6,#e4f8f2 50%,#e9e9ff)}
+#cjCheckMapIntro.open{display:flex}
+#cjCheckMapIntro .cjCheckMapCard{width:min(100%,420px);padding:24px 20px;border-radius:30px;background:#ffffffed;box-shadow:0 18px 42px #7396a54d;text-align:center}
+#cjCheckMapIntro h2{font-size:24px;color:#315b6e;margin:6px}
+#cjCheckMapIntro p{color:#426d7a;font-weight:800}
+#cjCheckMapIntro .cjCheckMapDemo{height:190px;margin:18px 0;border-radius:24px;background:linear-gradient(135deg,#e6f9f0,#e9eaff);display:flex;align-items:center;justify-content:center;gap:14px}
+#cjCheckMapIntro .cjCheckMapPhoto,#cjCheckMapIntro .cjCheckMapMagnify,#cjCheckMapIntro .cjCheckMapOk{display:grid;place-items:center;width:70px;height:70px;border-radius:18px;background:#fff;box-shadow:0 5px 16px #7a9caa33;font-size:38px}
+#cjCheckMapIntro .cjCheckMapMagnify{animation:cjCheckMapScan 2.6s ease-in-out infinite}
+#cjCheckMapIntro .cjCheckMapOk{animation:cjCheckMapPop 2.6s ease-in-out infinite}
+#cjCheckMapIntro .cjCheckMapActions{display:flex;gap:9px;margin-top:15px}
+#cjCheckMapIntro button{flex:1;border:0;border-radius:18px;min-height:52px;padding:10px;background:#eaf1f7;color:#315969;font-size:14px;font-weight:900}
+#cjCheckMapIntro #cjCheckMapStart{background:#8ddac4}
+#cjCheckMapIntro #cjCheckMapNotice{min-height:23px;font-size:12px}
+@keyframes cjCheckMapScan{0%,100%{transform:translateX(-10px) rotate(-12deg)}55%{transform:translateX(12px) rotate(12deg)}}@keyframes cjCheckMapPop{0%,53%{transform:scale(.7);opacity:.25}78%,100%{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){#cjCheckMapIntro .cjCheckMapMagnify,#cjCheckMapIntro .cjCheckMapOk{animation:none!important}}
+</style>
+<div id="cjCheckMapIntro" role="dialog" aria-modal="true" aria-labelledby="cjCheckMapTitle" aria-hidden="true">
+<section class="cjCheckMapCard">
+<h2 id="cjCheckMapTitle">🔎 おもいで間違い探し！</h2>
+<p>違う園児の写真が混ざっていないかな？</p>
+<div class="cjCheckMapDemo" aria-hidden="true"><span class="cjCheckMapPhoto">📸</span><span class="cjCheckMapMagnify">🔍</span><span class="cjCheckMapOk">✅</span></div>
+<p>写真を確認して、違っていたらおひっこし！</p>
+<p id="cjCheckMapNotice" role="status" aria-live="polite"></p>
+<div class="cjCheckMapActions"><button type="button" id="cjCheckMapBack">もどる</button><button type="button" id="cjCheckMapStart">やってみよう！ →</button></div>
+</section></div>
+<script>
+(function(){
+ const intro=document.getElementById('cjCheckMapIntro'),start=document.getElementById('cjCheckMapStart'),notice=document.getElementById('cjCheckMapNotice');
+ const close=()=>{intro.classList.remove('open');intro.setAttribute('aria-hidden','true')};
+ window.cjOpenCheckIntro=()=>{start.disabled=false;notice.textContent='';intro.classList.add('open');intro.setAttribute('aria-hidden','false');start.focus({preventScroll:true})};
+ document.getElementById('cjCheckMapBack').addEventListener('click',close);
+ start.addEventListener('click',async()=>{
+  if(start.disabled)return;
+  start.disabled=true;notice.textContent='🔍 直近の保存を読み込んでいるよ…';
+  try{const result=await window.cjOriginalApp.navigate('check');
+   if(result?.ok){close();return;}
+   notice.textContent=result?.message||'保存データを読み込めなかったよ。';
+  }catch(e){notice.textContent='⚠️ '+String(e?.message||e)}
+  finally{start.disabled=false}
  });
 })();
 </script>
