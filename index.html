@@ -5053,9 +5053,15 @@ window.cjOriginalApp={
   $('#savedClassLabel').textContent=displayClassName(selected)+'のアルバム';
   return {name:displayClassName(selected),year:activeYear()+'年度',flower:selected.flower};
  },
+ canMerge(){return !!(albumAiGroupsData?.valid()&&files.length);},
  navigate(kind){
   if(kind==='albums'){show('saved');return;}
-  if(kind==='spread'||kind==='finish'||kind==='merge'||kind==='check'){show('saved');return;}
+  if(kind==='merge'){
+   if(albumAiGroupsData?.valid()&&files.length){show('photoAssign');setPhotoAssignFlowStep('review');renderCurrentAlbumSingletonPairs();}
+   else {show('saved');}
+   return;
+  }
+  if(kind==='spread'||kind==='finish'||kind==='check'){show('saved');return;}
   if(kind==='kids'){$('[data-screen="classDetail"] .back').dataset.back='cjJourney';show('classDetail');return;}
   if(kind==='new'){$('#createNew').click();return;}
   if(kind==='cover'){openCoverEditor();return;}
@@ -10212,6 +10218,7 @@ async function cjAiSaveAndHome(){
 function cjAiContinueToMerge(){
  const panel=document.getElementById('cjAiLoading');if(!panel?.classList.contains('done'))return;
  panel.className='';
+ if(typeof window.cjOpenMergeIntro==='function')window.cjOpenMergeIntro('analysis');
 }
 // The overlay markup is parsed after this script. Delegate to document so iPhone
 // buttons work even though they do not exist at initial listener registration.
@@ -14167,7 +14174,11 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
 (function(){
 const $id=id=>document.getElementById(id);
 function updateJourney(){ /* Data is supplied by the original app when class login succeeds. */ }
-function jump(kind){if(kind==='map'){window.cjOriginalApp.navigate('map');return}window.cjOriginalApp.navigate(kind)}
+function jump(kind){
+ if(kind==='merge'&&window.cjOriginalApp.canMerge?.()){window.cjOpenMergeIntro('map');return}
+ if(kind==='map'){window.cjOriginalApp.navigate('map');return}
+ window.cjOriginalApp.navigate(kind)
+}
 document.querySelectorAll('#cjJourney [data-jump]').forEach(btn=>btn.addEventListener('click',()=>jump(btn.dataset.jump)));
 $id('cjSwitch').addEventListener('click',()=>window.cjOriginalApp.navigate('home'));
 const observer=new MutationObserver(()=>{if($id('cjJourney').classList.contains('active'))updateJourney()});
@@ -14199,6 +14210,63 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
   for(const button of screen.querySelectorAll('.cjWorkflowNav button,.cjRosterNav button'))
    button.classList.toggle('active',button.dataset.rosterNav===active);
  }
+})();
+</script>
+<style>
+/* Color Journey stage 02: visual, non-destructive how-to overlay. */
+#cjMergeIntro{position:fixed;inset:0;z-index:100005;display:none;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 20% 20%,#fff5c7,#e5faff 46%,#ede6ff);font-family:inherit}
+#cjMergeIntro.open{display:flex}
+#cjMergeIntro .cjIntroCard{position:relative;width:min(100%,440px);padding:24px 18px;border-radius:32px;background:#ffffffd9;box-shadow:0 20px 56px #527d9140;text-align:center;overflow:hidden}
+#cjMergeIntro h2{font-size:23px;color:#396a7a;margin:6px 0}
+#cjMergeIntro p{font-size:14px;font-weight:750;color:#71949c;margin:7px 0 16px}
+#cjMergeIntro .cjDemo{height:218px;position:relative;border-radius:24px;background:linear-gradient(140deg,#e3f9f3,#f7ebff);overflow:hidden}
+#cjMergeIntro .cjDemoPieces{position:absolute;left:12%;top:48px;display:grid;grid-template-columns:repeat(2,68px);gap:11px}
+#cjMergeIntro .cjDemoPiece{display:grid;place-items:center;width:68px;height:78px;background:#fff;border:4px solid #fff;border-radius:18px;box-shadow:0 6px 13px #7898aa30;font-size:32px;animation:cjPieceTap 5s ease-in-out infinite}
+#cjMergeIntro .cjDemoPiece:nth-child(2){animation-delay:.12s}
+#cjMergeIntro .cjDemoTarget{position:absolute;right:10%;top:57px;width:84px;height:84px;border:5px solid white;background:#ffcfb4;border-radius:50%;display:grid;place-items:center;font-size:42px;box-shadow:0 7px 14px #ae8c9d33;animation:cjTargetPop 5s ease-in-out infinite}
+#cjMergeIntro .cjDemoFlying{position:absolute;left:28%;top:78px;font-size:34px;opacity:0;animation:cjFly 5s ease-in-out infinite}
+#cjMergeIntro .cjDemoMerge{position:absolute;top:160px;left:0;right:0;font-weight:950;color:#e68a8a;font-size:30px;text-shadow:0 3px 0 #fff;opacity:0;animation:cjMergeWord 5s ease-in-out infinite}
+#cjMergeIntro .cjDemoDots{position:absolute;bottom:12px;left:0;right:0;font-size:19px;letter-spacing:10px;color:#8bd6c4}
+#cjMergeIntro .cjIntroActions{display:flex;gap:10px;justify-content:center;margin-top:18px}
+#cjMergeIntro button{font:800 15px inherit;border:0;border-radius:20px;padding:15px 23px;min-height:52px;touch-action:manipulation}
+#cjMergeIntroStart{background:linear-gradient(110deg,#8edcbe,#8ccdf5);color:#27495b;box-shadow:0 6px 15px #8ac5c54d}
+#cjMergeIntroBack{background:#fff;color:#647e8b}
+@keyframes cjPieceTap{0%,13%,100%{transform:scale(1)}19%,27%{transform:scale(1.13);box-shadow:0 0 0 4px #ffb1d3}34%,80%{transform:scale(1)}}
+@keyframes cjFly{0%,26%,100%{opacity:0;transform:translate(0,0) scale(.9)}31%{opacity:1}51%{opacity:1;transform:translate(165px,0) scale(.6)}57%{opacity:0;transform:translate(165px,0) scale(.2)}}
+@keyframes cjTargetPop{0%,52%,100%{transform:scale(1)}58%,67%{transform:scale(1.22)}73%{transform:scale(1)}}
+@keyframes cjMergeWord{0%,57%,100%{opacity:0;transform:scale(.6)}65%,82%{opacity:1;transform:scale(1.13)}88%{opacity:0;transform:scale(1.0)}}
+@media(prefers-reduced-motion:reduce){#cjMergeIntro .cjDemo *{animation:none!important}#cjMergeIntro .cjDemoFlying{opacity:1;transform:translate(75px,0)}#cjMergeIntro .cjDemoMerge{opacity:1}}
+</style>
+<div id="cjMergeIntro" role="dialog" aria-modal="true" aria-labelledby="cjMergeIntroTitle" aria-hidden="true">
+ <section class="cjIntroCard">
+  <h2 id="cjMergeIntroTitle">🧩 おもいでマージ！</h2>
+  <p>写真をえらんで、なかまのところへポンッ！</p>
+  <div class="cjDemo" aria-hidden="true">
+   <div class="cjDemoPieces"><span class="cjDemoPiece">📸</span><span class="cjDemoPiece">🌼</span></div>
+   <div class="cjDemoTarget">👧</div><span class="cjDemoFlying">📸</span>
+   <span class="cjDemoMerge">✨ MERGE! ✨</span><div class="cjDemoDots">● ● ●</div>
+  </div>
+  <div class="cjIntroActions"><button type="button" id="cjMergeIntroBack">もどる</button><button type="button" id="cjMergeIntroStart">やってみよう！ →</button></div>
+ </section>
+</div>
+<script>
+(function(){
+ const intro=document.getElementById('cjMergeIntro');
+ let entry='map';
+ window.cjOpenMergeIntro=function(from){
+  entry=from==='analysis'?'analysis':'map';
+  intro.classList.remove('open');
+  void intro.offsetWidth;
+  intro.classList.add('open');intro.setAttribute('aria-hidden','false');
+  document.getElementById('cjMergeIntroStart').focus({preventScroll:true});
+ };
+ function close(){intro.classList.remove('open');intro.setAttribute('aria-hidden','true')}
+ document.getElementById('cjMergeIntroStart').addEventListener('click',()=>{
+  close();window.cjOriginalApp.navigate('merge');
+ });
+ document.getElementById('cjMergeIntroBack').addEventListener('click',()=>{
+  close();if(entry==='analysis')window.cjOriginalApp.navigate('map');
+ });
 })();
 </script>
 </body>
