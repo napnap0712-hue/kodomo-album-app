@@ -21,6 +21,20 @@ window.omoidePocketRender=function(data,host,api){
  if(!pending.length&&st.phase==='check')st.phase='deliver';
  if(pending.length&&st.phase==='deliver'&&!st.forceDeliver)st.phase='check';
  const redraw=()=>window.omoidePocketRender(data,host,api);
+ function deliverTo(k){
+  const chosen=[...st.chosen];
+  if(!chosen.length){st.notice='先に写真を選んでね';redraw();return}
+  try{
+   const dest=(byKid.get(String(k.id))||[])[0];
+   const slot=api.slot(data,String(k.id));
+   const key=dest?.key||slot;
+   if(!key)throw Error('この園児の移動先が見つかりません');
+   const wasReviewed=dest?reviewed.has(dest.key):false;
+   api.deliver(data,chosen,key);
+   if(wasReviewed&&dest)reviewed.add(dest.key);
+   st.chosen.clear();st.combo++;st.notice='✨ GREAT DELIVERY! '+name(k)+'さんへ '+chosen.length+'枚！';redraw();
+  }catch(e){st.notice='⚠️ '+String(e?.message||e);redraw()}
+ }
  const root=m('section','pocketRoot');host.replaceChildren(root);
  root.append(m('h2','pocketTitle','🔎 おもいで間違い探し！'));
  root.append(m('p','pocketSub',st.phase==='check'?'🔎 CHECK':'🫧 DELIVERY'));
@@ -29,7 +43,7 @@ window.omoidePocketRender=function(data,host,api){
  const progress=m('div','pocketProgress');const fill=m('span');fill.style.width=(kids.length?kids.filter(complete).length/kids.length*100:0)+'%';progress.append(fill);root.append(progress);
  const roster=m('div','pocketRoster');
  kids.forEach(k=>{
-  const node=b('','pocketKid'+(String(k.id)===st.id?' active':'')+(complete(k)?' checked':''),()=>{st.id=String(k.id);st.phase='check';st.chosen.clear();redraw()});
+  const node=b('','pocketKid'+(String(k.id)===st.id?' active':'')+(complete(k)?' checked':''),()=>{if(st.phase==='deliver'){deliverTo(k);return}st.id=String(k.id);st.phase='check';st.chosen.clear();redraw()});
   const avatar=m('span','pocketAvatar');if(k.facePhoto){const im=m('img');im.src=k.facePhoto;im.alt='';avatar.append(im)}else avatar.textContent='🌼';
   node.append(avatar,m('small','',name(k)),m('span','pocketTick',complete(k)?'⭐':''));roster.append(node)
  });
@@ -73,22 +87,6 @@ window.omoidePocketRender=function(data,host,api){
   inbox.forEach(i=>{const n=b('','pocketPhoto'+(st.chosen.has(i)?' chosen':''),()=>{st.chosen.has(i)?st.chosen.delete(i):st.chosen.add(i);redraw()});n.append(photo(i));n.setAttribute('aria-pressed',String(st.chosen.has(i)));grid.append(n)});
   root.append(grid);
 
-  const destinations=m('div','pocketDestinations');
-  kids.forEach(k=>destinations.append(b('🫧 '+name(k),'pocketDest',()=>{
-   const chosen=[...st.chosen];if(!chosen.length){st.notice='先に写真を選んでね';redraw();return}
-   try{
-    const dest=(byKid.get(String(k.id))||[])[0];
-    const slot=api.slot(data,String(k.id));
-    const key=dest?.key||slot;
-    if(!key)throw Error('この園児の移動先が見つかりません');
-    const wasReviewed=dest?reviewed.has(dest.key):false;
-    api.deliver(data,chosen,key);
-    // These specific photos were checked at delivery; preserve already confirmed destination.
-    if(wasReviewed&&dest)reviewed.add(dest.key);
-    st.chosen.clear();st.combo++;st.notice='✨ GREAT DELIVERY! '+name(k)+'さんへ '+chosen.length+'枚！';redraw();
-   }catch(e){st.notice='⚠️ '+String(e?.message||e);redraw()}
-  })));
-  root.append(destinations);
   if(!inbox.length&&pending.length===0){
    const done=m('section','pocketClear');
    done.append(m('h2','','🏆 ALL CLEAR!'),m('p','','みんなのおもいでが集まったよ！'));
