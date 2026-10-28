@@ -853,6 +853,17 @@ window.omoideMergeGameRender=function(data,host,api){
   const start=from?.getBoundingClientRect(),end=element.getBoundingClientRect();
   const fly=make('div','catchFly');fly.append(pic(api.indexes(data,selected[0])[0]));
   if(start&&end&&board){const rect=board.getBoundingClientRect(),x1=start.left+start.width/2-rect.left,y1=start.top+start.height/2-rect.top,x2=end.left+end.width/2-rect.left,y2=end.top+end.height/2-rect.top;const line=document.createElementNS('http://www.w3.org/2000/svg','svg');line.setAttribute('class','catchConnect');line.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d','M'+x1+' '+y1+' L'+x2+' '+y2);path.setAttribute('pathLength','1');line.append(path);board.append(line);requestAnimationFrame(()=>line.classList.add('active'));}
+  if(end&&board){
+   const rect=board.getBoundingClientRect(),x2=end.left+end.width/2-rect.left,y2=end.top+end.height/2-rect.top;
+   for(const node of board.querySelectorAll('.catchBubble.chosen')){
+    if(node===from)continue;
+    const box=node.getBoundingClientRect(),x1=box.left+box.width/2-rect.left,y1=box.top+box.height/2-rect.top;
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('class','catchConnect');svg.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d','M'+x1+' '+y1+' L'+x2+' '+y2);path.setAttribute('pathLength','1');svg.append(path);board.append(svg);
+    requestAnimationFrame(()=>svg.classList.add('active'));
+   }
+  }
   if(start&&end&&board){const rect=board.getBoundingClientRect();fly.style.left=(start.left+start.width/2-rect.left)+'px';fly.style.top=(start.top+start.height/2-rect.top)+'px';fly.style.setProperty('--catchDx',(end.left+end.width/2-start.left-start.width/2)+'px');fly.style.setProperty('--catchDy',(end.top+end.height/2-start.top-start.height/2)+'px');board.append(fly);requestAnimationFrame(()=>fly.classList.add('fly'));}
   const finish=()=>{
    try{const result=api.assignChild(data,String(k.id),selected.map(f=>f.key));st.chosen.clear();st.combo++;st.celebration=st.combo%10===0?'🌟 SUPER CATCH!':st.combo%5===0?'🎉 AMAZING!':st.combo%3===0?'🌈 GREAT!':'✨ NICE CATCH!';st.notice='✨ '+firstName(k.name)+'さんへ '+result.photos+'枚！';st.cursor=0;}
