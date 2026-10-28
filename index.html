@@ -3999,6 +3999,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjAiDoneActions #cjAiGoMerge{font-family:inherit;font-weight:800}
 #cjAiDoneActions #cjAiSaveHome{font-family:inherit;font-weight:800}
 @media(prefers-reduced-motion:reduce){#cjAiLoading.done .cjAiStage:before,#cjAiLoading.done .cjAiStage:after,#cjAiLoading.done .cjAiDots:after,#cjAiLoading.done #cjAiTitle{animation:none}}
+#cjAiLoading.done #cjAiDoneActions{position:relative;z-index:20;pointer-events:auto!important}#cjAiLoading.done #cjAiDoneActions button{position:relative;z-index:21;pointer-events:auto!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -10229,6 +10230,13 @@ function cjAiLoadingEnd(success){
   panel.querySelector('#cjAiProgressBar').style.width='100%';
   panel.querySelector('#cjAiCancel').hidden=true;
   const actions=panel.querySelector('#cjAiDoneActions');
+  // Bind the two buttons directly every time the completion screen appears.
+  // Other app-level click handlers may stop bubbling on iPhone Safari.
+  const game=panel.querySelector('#cjAiGoMerge');
+  const save=panel.querySelector('#cjAiSaveHome');
+  game.onclick=(event)=>{event.preventDefault();cjAiContinueToMerge();};
+  save.onclick=(event)=>{event.preventDefault();void cjAiSaveAndHome();};
+  game.style.pointerEvents='auto';save.style.pointerEvents='auto';
   // Let the victory animation finish before showing the two choices.
   setTimeout(()=>{if(panel.classList.contains('done'))actions.hidden=false;},850);
  }else panel.className='';
