@@ -3957,6 +3957,24 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 .screen[data-screen="saved"] .cjWorkflowNav{position:fixed!important;left:50%;bottom:calc(10px + env(safe-area-inset-bottom))!important;transform:translateX(-50%);width:min(calc(100vw - 24px),560px);margin:0!important;z-index:80!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;background:#ffffffed!important;border:0!important;border-radius:25px!important;padding:9px!important;box-shadow:0 8px 20px #52788722!important}
 .screen[data-screen="saved"] .cjWorkflowNav button{font-size:clamp(10px,3vw,13px)!important;min-height:48px!important;white-space:nowrap}
 .screen[data-screen="saved"] .cjWorkflowNav button.active{background:#dff8ef!important;color:#3d8f82!important}
+
+/* Color Journey: real AI analysis progress, no simulated percentages. */
+#cjAiLoading{position:fixed;inset:0;z-index:2147482000;display:none;place-items:center;overflow:hidden;padding:calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom));background:radial-gradient(circle at 12% 15%,#dffbef,transparent 42%),linear-gradient(160deg,#e9f9ff,#f6fff5 75%,#fff4e9);text-align:center;color:#557c91}
+#cjAiLoading.active{display:grid}#cjAiLoading .cjAiStage{width:min(100%,420px);position:relative}
+#cjAiLoading .cjAiStage h2{font-size:clamp(23px,6vw,30px);margin:12px 0;color:#4f8190}
+#cjAiLoading .cjAiStage p{font-size:13px;line-height:1.6;color:#78999e}
+#cjAiLoading .cjAiDots{height:190px;position:relative;margin:15px auto}
+#cjAiLoading .cjAiDots i{position:absolute;left:calc(50% - 20px);top:75px;width:40px;height:40px;border:5px solid #fff;border-radius:50%;background:var(--dot);box-shadow:0 7px 17px #6899a92d;animation:cjAiGather 3.2s ease-in-out infinite;animation-delay:var(--delay)}
+@keyframes cjAiGather{0%,100%{transform:translate(0,0) scale(.7);opacity:.6}23%{transform:translate(var(--x),-56px) scale(1)}54%{transform:translate(var(--tx),var(--ty)) scale(.9);opacity:1}76%{transform:translate(var(--tx),var(--ty)) scale(1.16)}}
+#cjAiLoading .cjAiCluster{position:absolute;top:38px;width:78px;height:78px;border:2px dashed #b7deda;border-radius:50%;opacity:.6}
+#cjAiLoading .cjAiCluster.one{left:calc(50% - 125px)}#cjAiLoading .cjAiCluster.two{right:calc(50% - 125px)}
+#cjAiLoading .cjAiCluster.three{top:122px;left:calc(50% - 39px)}
+#cjAiLoading .cjAiProgress{margin:13px auto 21px;width:min(84%,270px);height:9px;border-radius:12px;overflow:hidden;background:#dbeeea}
+#cjAiLoading .cjAiProgress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#7ecdbd,#b5a2f5);transition:width .2s ease}
+#cjAiLoading .cjAiCancel{min-height:48px;border:1px solid #d2e9e5;background:#fff;color:#648e91;border-radius:18px;padding:10px 28px;font-weight:800}
+#cjAiLoading.done .cjAiDots i{animation:cjAiWin .65s ease both;transform:translate(0,0)}
+@keyframes cjAiWin{50%{transform:scale(1.4)}100%{transform:scale(.5);opacity:0}}
+@media(prefers-reduced-motion:reduce){#cjAiLoading .cjAiDots i{animation:none!important}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -10135,6 +10153,30 @@ $('#albumAiUndoMerge')?.addEventListener('click',()=>{
 });
 $('#albumAiPendingOnly')?.addEventListener('change',()=>{if(albumAiGroupsData){albumAiGroupsData.visibleLimit=18;renderCurrentAlbumAiGroups()}});
 $('#albumAiMoreGroups')?.addEventListener('click',()=>{if(albumAiGroupsData){albumAiGroupsData.visibleLimit+=18;renderCurrentAlbumAiGroups()}});
+function cjAiLoadingStart(total){
+ const panel=document.getElementById('cjAiLoading');if(!panel)return;
+ panel.className='active';panel.querySelector('#cjAiTitle').textContent='写真のなかまを探しているよ';
+ panel.querySelector('#cjAiMessage').textContent='AIが今回の写真を確認中…';
+ panel.querySelector('#cjAiProgressBar').style.width='0%';
+ panel.querySelector('#cjAiCancel').hidden=false;
+ panel.querySelector('#cjAiCancel').onclick=()=>document.getElementById('cancelCurrentAlbumAi')?.click();
+}
+function cjAiLoadingProgress(current,total,faces){
+ const panel=document.getElementById('cjAiLoading');if(!panel?.classList.contains('active'))return;
+ panel.querySelector('#cjAiMessage').textContent='📷 '+current+' / '+total+'枚の写真を確認中　·　'+faces+'顔';
+ panel.querySelector('#cjAiProgressBar').style.width=(Math.min(94,Math.floor(current/total*94)))+'%';
+}
+function cjAiLoadingEnd(success){
+ const panel=document.getElementById('cjAiLoading');if(!panel)return;
+ if(success){
+  panel.classList.add('done');panel.querySelector('#cjAiTitle').textContent='✨ なかまが見つかったよ！';
+  panel.querySelector('#cjAiMessage').textContent='おもいでマージ！へ進もう';
+  panel.querySelector('#cjAiProgressBar').style.width='100%';
+  panel.querySelector('#cjAiCancel').hidden=true;
+  setTimeout(()=>{panel.className=''},800);
+ }else panel.className='';
+}
+
 $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
  if(albumAiRunning||!files.length)return;
  const classId=selected.id,schoolYear=activeYear();
@@ -10149,6 +10191,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
  const status=$('#currentAlbumAiStatus'),host=$('#currentAlbumAiGroups');
  const button=$('#analyzeCurrentAlbum'),cancel=$('#cancelCurrentAlbumAi');
  button.disabled=true;cancel.hidden=false;host.replaceChildren();
+ cjAiLoadingStart(sourceFiles.length);
  const valid=()=>token===albumAiGeneration&&classId===selected.id&&schoolYear===activeYear()&&
   registered===JSON.stringify(getChildren(classId))&&sourceFiles.length===files.length&&
   sourceFiles.every((f,i)=>files[i]===f)&&
@@ -10162,6 +10205,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   for(let index=0;index<sourceFiles.length;index++){
    check();
    status.textContent='📷 顔を確認中 '+(index+1)+' / '+sourceFiles.length+'枚 ／ 検出'+samples.length+'顔';
+   cjAiLoadingProgress(index+1,sourceFiles.length,samples.length);
    try{
     const found=await humanFacesFromBlob(human,sourceFiles[index]);check();
     if(!found.length)withoutFaces++;
@@ -10212,6 +10256,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   setPhotoAssignFlowStep('review');
   renderCurrentAlbumSingletonPairs();
   check();
+  cjAiLoadingEnd(true);
  }catch(error){
   if(token===albumAiGeneration){
    albumAiGroupsData=null;host.replaceChildren();
@@ -10221,6 +10266,7 @@ $('#analyzeCurrentAlbum')?.addEventListener('click',async()=>{
   }
  }finally{
   if(token===albumAiGeneration){albumAiRunning=false;button.disabled=false;cancel.hidden=true;}
+  if(!albumAiGroupsData?.valid()||token!==albumAiGeneration)cjAiLoadingEnd(false);
  }
 });
 
@@ -14077,7 +14123,7 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
  });
 })();
 </script>
-<div id="cjSortClear" role="status" aria-live="polite"><div class="cjClearCenter"><div class="cjClearDots"><i style="--i:0;--c:#ffbca4"></i><i style="--i:1;--c:#8bdccb"></i><i style="--i:2;--c:#b9a8fb"></i><i style="--i:3;--c:#ffb3d0"></i><i style="--i:4;--c:#90cbf5"></i></div><div class="cjClearBurst">🌟</div><h2>おもいでをあつめているよ</h2><p>写真のピースが、ひとつにつながるよ</p><div class="cjClearBar"><span></span></div></div><div class="cjClearWipe"></div></div>
+<div id="cjAiLoading" role="dialog" aria-modal="true" aria-label="AI写真整理中"><div class="cjAiStage"><div class="cjAiDots" aria-hidden="true"><span class="cjAiCluster one"></span><span class="cjAiCluster two"></span><span class="cjAiCluster three"></span><i style="--dot:#ffbca4;--delay:-.15s;--x:-80px;--tx:-87px;--ty:-27px"></i><i style="--dot:#8bdccb;--delay:-.5s;--x:75px;--tx:89px;--ty:-25px"></i><i style="--dot:#b9a8fb;--delay:-.9s;--x:-35px;--tx:0px;--ty:67px"></i><i style="--dot:#ffb3d0;--delay:-1.3s;--x:60px;--tx:80px;--ty:-14px"></i><i style="--dot:#90cbf5;--delay:-1.8s;--x:-68px;--tx:-81px;--ty:-17px"></i></div><h2 id="cjAiTitle">写真のなかまを探しているよ</h2><p id="cjAiMessage" role="status" aria-live="polite">AIが今回の写真を確認中…</p><div class="cjAiProgress"><span id="cjAiProgressBar"></span></div><button type="button" class="cjAiCancel" id="cjAiCancel">中断する</button></div></div><div id="cjSortClear" role="status" aria-live="polite"><div class="cjClearCenter"><div class="cjClearDots"><i style="--i:0;--c:#ffbca4"></i><i style="--i:1;--c:#8bdccb"></i><i style="--i:2;--c:#b9a8fb"></i><i style="--i:3;--c:#ffb3d0"></i><i style="--i:4;--c:#90cbf5"></i></div><div class="cjClearBurst">🌟</div><h2>おもいでをあつめているよ</h2><p>写真のピースが、ひとつにつながるよ</p><div class="cjClearBar"><span></span></div></div><div class="cjClearWipe"></div></div>
 <script>
 /* Set tab appearance without changing any underlying album or photo state. */
 (function(){
