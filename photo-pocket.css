@@ -69,3 +69,25 @@
 .screen[data-screen="photoAssign"][data-flow-step="check"] .pocketPocket{border-radius:30px;background:linear-gradient(135deg,#fff0cf,#fbe2f0,#d5f4ed);color:#395e6c!important}
 .screen[data-screen="photoAssign"][data-flow-step="check"] .pocketDest{border-radius:999px!important}
 .screen[data-screen="photoAssign"][data-flow-step="check"] .pocketRoot{padding-bottom:calc(90px + env(safe-area-inset-bottom))!important}
+
+/* Stage 03: same small sticky checkpoint bar as Catch; prevent wide old banner. */
+.screen[data-screen="photoAssign"][data-flow-step="check"] .photoSortSaveBar{
+ position:sticky!important;top:calc(4px + env(safe-area-inset-top))!important;z-index:73!important;
+ display:flex!important;align-items:center!important;justify-content:flex-start!important;
+ flex-wrap:nowrap!important;gap:8px!important;width:auto!important;min-height:0!important;
+ margin:4px 0 9px!important;padding:6px 9px!important;border:1px solid #d9eae5!important;
+ border-radius:20px!important;background:#f7fffbf2!important;box-shadow:0 4px 14px #456b7a22!important;
+ backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .photoSortSaveBar #savePhotoSortProgress{
+ width:auto!important;max-width:fit-content!important;flex:0 0 auto!important;min-height:36px!important;
+ padding:7px 12px!important;margin:0!important;border-radius:15px!important;
+ font-size:12px!important;line-height:1.3!important;white-space:nowrap!important;
+ background:#d6f5e9!important;color:#285e65!important;-webkit-text-fill-color:#285e65!important;
+}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .photoSortSaveBar #photoSortProgressSaveStatus{
+ display:block!important;flex:1 1 0!important;min-width:0!important;margin:0!important;padding:0!important;
+ max-height:45px!important;overflow:auto!important;overflow-wrap:anywhere!important;white-space:normal!important;
+ font-size:10px!important;line-height:1.35!important;color:#436a78!important;-webkit-text-fill-color:#436a78!important;
+}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .photoSortSaveBar:has(#photoSortProgressSaveStatus) {max-width:100%!important}
