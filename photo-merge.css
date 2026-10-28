@@ -989,3 +989,18 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 .screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowGuide,
 .screen[data-screen="photoAssign"][data-flow-step="review"] #photoSortGameProgress,
 .screen[data-screen="photoAssign"][data-flow-step="review"] #photoAssignFlowHint{display:none!important}
+
+/* Catch: contrast and complete roster */
+.catchRoot .catchLead,.catchRoot .catchNotice,.catchRoot .catchStat,.catchRoot .catchStat span{color:#426d80!important}
+.catchRoot .catchKid small{color:#315d70!important;background:#fff!important}
+.catchRoot .catchFolder strong,.catchRoot .catchFolder small{color:#725268!important}
+.catchRoot .catchActions button{color:#396679!important}
+.catchRoot .catchNext{color:white!important}
+.catchRoot .catchBoard{height:clamp(460px,70vh,650px)!important}
+.catchRoot .catchKid{width:58px!important;max-width:58px}
+.catchRoot .catchPortrait{width:47px!important;height:47px!important;border-width:3px!important}
+.catchRoot .catchKid small{font-size:9px!important;line-height:1.15;max-width:70px;padding:3px}
+.catchRoot .catchMany .catchKid{width:50px!important}
+.catchRoot .catchMany .catchPortrait{width:40px!important;height:40px!important}
+.catchRoot .catchMany .catchKid small{font-size:8px!important}
+.catchRoot .catchFolder{width:140px!important;height:140px!important}
