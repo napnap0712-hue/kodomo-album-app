@@ -12141,7 +12141,7 @@ $('#prepareNewSplitAlbum').addEventListener('click',async()=>{
    request.onerror=()=>reject(request.error||Error('新規保存領域を開けません'));
    request.onblocked=()=>reject(Error('保存領域が別のタブで使用されています'));
   });
-  const id='new-'+crypto.randomUUID();
+  const id='new-'+omoideCompatibleUniqueId();
   const album={id,title:'新しいアルバム',photoCount:0,createdAt:new Date().toISOString(),storage:'split-v1',ready:true};
   const edits={albumId:id,background:'#ffffff',layout:'spread',spreadIndex:0,designElements:[],photoCount:0};
   await new Promise((resolve,reject)=>{
@@ -13059,6 +13059,13 @@ async function durableSplitPhoto(file){
  splitDurablePhotoCache.set(file,result);
  return result;
 }
+// Safari on LAN HTTP may not expose crypto.randomUUID; keep IDs unique without requiring HTTPS.
+let omoideIdSequence=0;
+function omoideCompatibleUniqueId(){
+ if(typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function')return crypto.randomUUID();
+ omoideIdSequence++;
+ return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)+'-'+omoideIdSequence.toString(36);
+}
 async function saveNewSplitAlbum(){
  if(!newAlbumSplitSavedId)newAlbumSplitOrigin=null;
  if(newAlbumSplitSaveBusy)return;
@@ -13094,7 +13101,7 @@ async function saveNewSplitAlbum(){
    req.onupgradeneeded=()=>{for(const name of ['albums','photos','edits','history'])if(!req.result.objectStoreNames.contains(name))req.result.createObjectStore(name)};
    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||Error('保存領域を開けません'));req.onblocked=()=>reject(Error('保存領域が使用中です'));
   });
-  const id=newAlbumSplitSavedId||('split-'+crypto.randomUUID());
+  const id=newAlbumSplitSavedId||('split-'+omoideCompatibleUniqueId());
   if(newAlbumSplitSavedId){
    const old=await new Promise((resolve,reject)=>{const q=db.transaction('albums','readonly').objectStore('albums').get(id);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error)});
    if(!old||old.storage!=='split-v1')throw Error('このアルバムの保存先を確認できません');
@@ -13137,7 +13144,7 @@ async function saveNewSplitAlbum(){
   await new Promise((resolve,reject)=>{
    const tx=db.transaction(['albums','photos','edits','history'],'readwrite');
    if(previousSnapshot){
-    const history=tx.objectStore('history'),key=id+':'+Date.now()+':'+crypto.randomUUID();
+    const history=tx.objectStore('history'),key=id+':'+Date.now()+':'+omoideCompatibleUniqueId();
     history.put(previousSnapshot,key);
     const keys=history.getAllKeys();
     keys.onsuccess=()=>{
