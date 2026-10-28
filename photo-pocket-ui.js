@@ -23,7 +23,7 @@ window.omoidePocketRender=function(data,host,api){
  const redraw=()=>window.omoidePocketRender(data,host,api);
  const root=m('section','pocketRoot');host.replaceChildren(root);
  root.append(m('h2','pocketTitle','🔎 おもいで間違い探し！'));
- root.append(m('p','pocketSub',st.phase==='check'?'PART 1　まちがいをポケットへ':'PART 2　おもいでを届けよう'));
+ root.append(m('p','pocketSub',st.phase==='check'?'🔎 CHECK':'🫧 DELIVERY'));
  const summary=m('div','pocketSummary');
  summary.append(m('strong','',kids.filter(complete).length+' / '+kids.length+' 人確認'),m('span','','🧺 ポケット '+inbox.length+'枚'));root.append(summary);
  const progress=m('div','pocketProgress');const fill=m('span');fill.style.width=(kids.length?kids.filter(complete).length/kids.length*100:0)+'%';progress.append(fill);root.append(progress);
@@ -38,7 +38,7 @@ window.omoidePocketRender=function(data,host,api){
   const photos=selectedKid?idsOf(selectedKid):[];
   const title=m('div','pocketCardHeader');
   title.append(m('h3','',selectedKid?'🌷 '+name(selectedKid)+'さん':'園児を登録してね'),m('span','',photos.length+'枚'));root.append(title);
-  const instructions=m('p','pocketHint','違う子の写真だけ選んで、ポケットへ。写真を長押しせず、タップで選べるよ。');root.append(instructions);
+
   const grid=m('div','pocketGrid');
   photos.forEach(i=>{
    const n=b('','pocketPhoto'+(st.chosen.has(i)?' chosen':''),()=>{st.chosen.has(i)?st.chosen.delete(i):st.chosen.add(i);redraw()});
@@ -68,11 +68,11 @@ window.omoidePocketRender=function(data,host,api){
   }));root.append(actions);
   if(!pending.length)root.append(b('🌈 おもいでを届ける','pocketNext',()=>{st.phase='deliver';redraw()}));
  }else{
-  root.append(m('div','pocketPocket','🧺 おもいでポケット'));
+  root.append(m('div','pocketPocket','🧺 '+inbox.length+'枚'));
   const grid=m('div','pocketGrid');
   inbox.forEach(i=>{const n=b('','pocketPhoto'+(st.chosen.has(i)?' chosen':''),()=>{st.chosen.has(i)?st.chosen.delete(i):st.chosen.add(i);redraw()});n.append(photo(i));n.setAttribute('aria-pressed',String(st.chosen.has(i)));grid.append(n)});
   root.append(grid);
-  root.append(m('p','pocketHint',inbox.length?'写真を選んで、届けたい園児をタップ！':'🌟 ポケットは空になったよ！'));
+
   const destinations=m('div','pocketDestinations');
   kids.forEach(k=>destinations.append(b('🫧 '+name(k),'pocketDest',()=>{
    const chosen=[...st.chosen];if(!chosen.length){st.notice='先に写真を選んでね';redraw();return}
