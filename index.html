@@ -14589,7 +14589,7 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
     !window.cjOriginalApp.hasSavedSpread()||
     !window.cjOriginalApp.editorSavedClean()||
     (!window.cjOriginalApp.isSplitEditing()&&window.cjEditorTopSaveRevision!==window.cjOriginalApp.editorRevision())){
-   status.textContent='💾 まだ保存されていないよ。編集画面の上部「保存」を押してから戻ってね。';
+   status.textContent='💾 保存状態を確認できないよ（'+[window.cjEditorTopSaveRevision===null?'保存通知なし':null,!window.cjOriginalApp.hasSavedSpread()?'保存IDなし':null,!window.cjOriginalApp.editorSavedClean()?'未保存変更あり':null,(!window.cjOriginalApp.isSplitEditing()&&window.cjEditorTopSaveRevision!==window.cjOriginalApp.editorRevision())?'編集後の変更あり':null].filter(Boolean).join('・')+'）。上部「保存」の完了表示を確認してね。';
    return;
   }
   box.classList.remove('open');box.setAttribute('aria-hidden','true');
