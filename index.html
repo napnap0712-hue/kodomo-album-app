@@ -8061,10 +8061,11 @@ async function finishPhotoSortFromCheck(){
   }
   const oldAssignments=photoAssignments,oldLinks=data.photoMatchFolderChild;
   photoAssignments=staged;data.photoMatchFolderChild={...oldLinks,...linked};
-  const saved=await saveCurrentPhotoSortCheckpoint();
-  if(!saved){photoAssignments=oldAssignments;data.photoMatchFolderChild=oldLinks;
-   window.alert('保存を確認できませんでした。元写真はそのままです。');return;}
+  const previousFinal=data.photoMatchFinalReviewed;
   data.photoMatchFinalReviewed=true;
+  const saved=await saveCurrentPhotoSortCheckpoint();
+  if(!saved){photoAssignments=oldAssignments;data.photoMatchFolderChild=oldLinks;data.photoMatchFinalReviewed=previousFinal;
+   window.alert('保存を確認できませんでした。元写真はそのままです。');return;}
   playColorJourneySortClear();
  }
 const photoPlanetStageSessions=new WeakMap();
