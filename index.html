@@ -14253,15 +14253,22 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
 @keyframes cjTargetPop{0%,52%,100%{transform:scale(1)}58%,67%{transform:scale(1.22)}73%{transform:scale(1)}}
 @keyframes cjMergeWord{0%,57%,100%{opacity:0;transform:scale(.6)}65%,82%{opacity:1;transform:scale(1.13)}88%{opacity:0;transform:scale(1.0)}}
 @media(prefers-reduced-motion:reduce){#cjMergeIntro .cjDemo *{animation:none!important}#cjMergeIntro .cjDemoFlying{opacity:1;transform:translate(75px,0)}#cjMergeIntro .cjDemoMerge{opacity:1}}
+
+#cjMergeIntro .cjDemoTarget{left:50%;right:auto;transform:translateX(-50%);animation:cjCatchCenter 5s ease-in-out infinite}
+#cjMergeIntro .cjDemoPieces{left:auto;right:7%;top:35px;grid-template-columns:1fr;gap:40px}
+#cjMergeIntro .cjDemoPiece{width:55px;height:55px;border-radius:50%;background:#ffd7c9}
+#cjMergeIntro .cjDemoFlying{left:50%;top:80px;animation:cjCatchFly 5s ease-in-out infinite}
+@keyframes cjCatchCenter{0%,55%,100%{scale:1}65%{scale:1.12}}
+@keyframes cjCatchFly{0%,25%,100%{opacity:0;transform:translate(0,0)}32%{opacity:1}52%{opacity:1;transform:translate(120px,-30px) scale(.5)}60%{opacity:0}}
 </style>
 <div id="cjMergeIntro" role="dialog" aria-modal="true" aria-labelledby="cjMergeIntroTitle" aria-hidden="true">
  <section class="cjIntroCard">
-  <h2 id="cjMergeIntroTitle">🧩 おもいでマージ！</h2>
-  <p>写真をえらんで、なかまのところへポンッ！</p>
+  <h2 id="cjMergeIntroTitle">🫧 おもいでキャッチ！</h2>
+  <p>中央の写真を見て、園児をタップ！</p>
   <div class="cjDemo" aria-hidden="true">
-   <div class="cjDemoPieces"><span class="cjDemoPiece">📸</span><span class="cjDemoPiece">🌼</span></div>
-   <div class="cjDemoTarget">👧</div><span class="cjDemoFlying">📸</span>
-   <span class="cjDemoMerge">✨ MERGE! ✨</span><div class="cjDemoDots">● ● ●</div>
+   <div class="cjDemoPieces"><span class="cjDemoPiece">👧</span><span class="cjDemoPiece">👦</span></div>
+   <div class="cjDemoTarget">📸</div><span class="cjDemoFlying">📸</span>
+   <span class="cjDemoMerge">✨ CATCH! ✨</span><div class="cjDemoDots">● ● ●</div>
   </div>
   <p id="cjMergeIntroNotice" role="status" aria-live="polite"></p>
   <div class="cjIntroActions"><button type="button" id="cjMergeIntroBack">もどる</button><button type="button" id="cjMergeIntroStart">やってみよう！ →</button></div>
