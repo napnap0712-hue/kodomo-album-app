@@ -871,6 +871,7 @@ window.omoideMergeGameRender=function(data,host,api){
  const columnsPerSide=halfCount<=6?halfCount:halfCount<=10?Math.ceil(halfCount/2):Math.ceil(halfCount/3);
  const avatarSize=halfCount<=3?82:halfCount<=4?76:halfCount<=5?65:halfCount<=6?51:halfCount<=10?55:48;
  board.style.setProperty('--catchAvatar',avatarSize+'px');
+ board.style.setProperty('--catchColumns',String(columnsPerSide));
  board.style.setProperty('--catchKidWidth',Math.max(avatarSize+8,Math.min(78,Math.floor(100/Math.max(1,columnsPerSide)*3.4)))+'px');
  if(kids.length>7)board.classList.add('catchMany');
  for(const x of ['✦','✧','✦'])board.append(make('span','catchStar',x));
