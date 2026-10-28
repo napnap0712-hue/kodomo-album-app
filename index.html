@@ -7966,7 +7966,7 @@ async function cjSortClearSaveHome(){
  button.disabled=true;cjSortClearNotice('💾 保存を確認しているよ…');
  try{
   const ok=await saveCurrentPhotoSortCheckpoint();
-  if(ok===true){o.className='';show('home')}
+  if(ok===true){o.className='';show('cjJourney')}
   else cjSortClearNotice('⚠️ 保存を確認できなかったよ。画面はそのままにしてあるよ。');
  }catch(e){cjSortClearNotice('⚠️ 保存できませんでした：'+String(e?.message||e))}
  finally{button.disabled=false}
