@@ -13189,6 +13189,26 @@ async function saveNewSplitAlbum(){
 }
 
 
+// Direct, verified save bridge for the Stage 04 exit overlay.
+// The original split save and regular save routines remain unchanged.
+window.cjEditorExitSaveBridge=async function(){
+ if(newAlbumSplitSelected){
+  if(newAlbumSplitSaveBusy)throw Error('保存処理が進行中です。完了してからもう一度試してね。');
+  const revision=editorSaveRevision;
+  await saveNewSplitAlbum();
+  if(!newAlbumSplitSavedId||splitUnsavedRevision||editorSaveRevision!==revision)
+   throw Error('保存完了を確認できなかったよ。編集内容はそのままだよ。');
+  return true;
+ }
+ const button=document.getElementById('saveDraft');
+ if(!button||button.disabled)throw Error('保存ボタンが使えないよ。');
+ return await new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>{document.removeEventListener('cj-editor-saved',onSave);reject(Error('保存完了を確認できなかったよ。'))},45000);
+  function onSave(){clearTimeout(timer);document.removeEventListener('cj-editor-saved',onSave);resolve(true)}
+  document.addEventListener('cj-editor-saved',onSave,{once:true});
+  button.click();
+ });
+};
 function setupStaffEditorHeader(){
  const button=document.getElementById('editorRestoreMenuButton');
  const choices=document.getElementById('editorRestoreChoices');
@@ -14502,7 +14522,7 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
 <style>
 #cjEditorExit{display:none;position:fixed;inset:0;z-index:100008;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 20% 10%,#ecfff5,#e9f6ff 57%,#fff3e4);color:#365c70}
 #cjEditorExit.open{display:flex}
-#cjEditorExit .cjEditorExitCard{box-sizing:border-box;width:min(100%,440px);padding:25px 20px 24px;border:4px solid white;border-radius:33px;background:#ffffffdd;box-shadow:0 15px 45px #799bb53a;text-align:center}
+#cjEditorExit .cjEditorExitCard{box-sizing:border-box;width:min(100%,440px);max-height:88dvh;overflow:auto;padding:24px 20px;border:4px solid white;border-radius:33px;background:#ffffffd9;box-shadow:0 15px 45px #799bb53a;text-align:center}
 #cjEditorExit h2{font-size:clamp(22px,6vw,29px);margin:8px 0;color:#365c70}
 #cjEditorExit p{font-size:14px;color:#507382;font-weight:800}
 #cjEditorExit .cjExitBook{font-size:64px;margin:8px auto 18px;transform-origin:center}
@@ -14510,7 +14530,7 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
 @keyframes cjExitBounce{0%{transform:translateY(35px) scale(.6);opacity:.2}65%{transform:translateY(-12px) scale(1.12);opacity:1}100%{transform:none;opacity:1}}
 #cjEditorExit .cjEditorExitButtons{display:grid;gap:10px;margin-top:20px}
 #cjEditorExit .cjEditorExitButtons button{width:100%;min-height:54px;border-radius:19px;border:0;font-size:15px;font-weight:900;color:#2a5663;background:linear-gradient(110deg,#8cdac3,#aadcf0)}
-#cjEditorExit #cjEditorExitSave{background:white;border:2px solid #b5d9cf}
+#cjEditorExit #cjEditorExitSave{background:#fff!important;border:2px solid #b5d9cf!important}#cjEditorExit .cjEditorExitButtons button:disabled{opacity:.6}#cjEditorExit .cjEditorExitButtons{margin-top:20px;gap:10px}#cjEditorExit .cjEditorExitButtons button{box-shadow:none!important}
 #cjEditorExitStatus{min-height:25px;overflow-wrap:anywhere}
 @media(prefers-reduced-motion:reduce){#cjEditorExit .cjExitBook.burst{animation:none}}
 </style>
@@ -14530,21 +14550,18 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
  const editorBack=document.getElementById('cjEditorBackButton');
  editorBack.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();window.cjOpenEditorExit();});
  document.getElementById('cjEditorExitContinue').addEventListener('click',close);
- document.getElementById('cjEditorExitSave').addEventListener('click',()=>{
+ document.getElementById('cjEditorExitSave').addEventListener('click',async()=>{
   if(pending)return;
   pending=true;status.textContent='💾 アルバムを安全に保存しているよ…';
-  const save=document.getElementById('saveDraft');
-  if(!save||save.disabled){pending=false;status.textContent='⚠️ 保存ボタンを利用できないよ。編集画面で確認してね。';return}
-  save.click();
-  // The existing save handlers emit success only after a completed database write.
-  setTimeout(()=>{if(pending){pending=false;status.textContent='⚠️ 保存完了をまだ確認できないよ。編集画面を残してあるよ。'}},120000);
- });
- document.addEventListener('cj-editor-saved',()=>{
-  if(!pending||!box.classList.contains('open'))return;
-  pending=false;status.textContent='✨ 保存できたよ！';
-  window.cjOriginalApp.navigate('map');
-  if(document.querySelector('#cjJourney.screen.active'))close();
-  else status.textContent='⚠️ 冒険マップへの移動を確認できなかったよ。';
+  const button=document.getElementById('cjEditorExitSave');button.disabled=true;
+  try{
+   await window.cjEditorExitSaveBridge();
+   status.textContent='✨ 保存できたよ！';
+   window.cjOriginalApp.navigate('map');
+   if(!document.querySelector('#cjJourney.screen.active'))throw Error('冒険マップを開けなかったよ。');
+   box.classList.remove('open');box.setAttribute('aria-hidden','true');
+  }catch(e){status.textContent='⚠️ '+String(e?.message||e)+' 編集内容は残してあるよ。'}
+  finally{pending=false;button.disabled=false}
  });
 })();
 
