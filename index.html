@@ -4193,7 +4193,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 <dialog id="assignmentPhotoDialog" class="assignmentPhotoDialog"><div class="assignmentDialogTop"><strong id="assignmentDialogTitle">元写真を確認</strong><button type="button" class="secondary" id="assignmentDialogClose">閉じる ×</button></div><img id="assignmentDialogImage" alt="元写真全体"><p class="muted">元の写真を表示しています。振り分けは一覧の「変更」から修正できます。</p></dialog>
 </section>
 <section class="screen" data-screen="editor"><div id="splitHistoryPanel" hidden style="background:#fff;border:1px solid #dce4ef;border-radius:14px;padding:14px;margin:12px 0"><strong>🕘 このアルバムの保存履歴</strong><p style="font-size:12px;color:#64748b">以前の保存状態を表示します。復元・削除はまだできません。</p><div id="splitHistoryEntries" style="display:grid;gap:9px"></div><button class="secondary" id="closeSplitHistory" type="button">閉じる</button></div>
-<div class="top"><button class="back" data-back="classProjects" aria-label="ページ一覧に戻る">‹</button><div class="topText"><p class="brand">COLOR JOURNEY · STAGE 04</p><h1>📖 おもいでを ひらこう！</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
+<div class="top"><button class="back" data-back="classProjects" aria-label="見開き編集を終了">‹</button><div class="topText"><p class="brand">COLOR JOURNEY · STAGE 04</p><h1>📖 おもいでを ひらこう！</h1><p class="lead">写真を選んでアルバムを編集します。</p></div>
 <div class="editorActions">
  <span id="editorSaveState" role="status" aria-live="polite" style="font-size:12px;color:#64748b;align-self:center">未保存</span>
  <button class="primary" id="saveDraft" type="button">💾 保存</button>
@@ -5118,7 +5118,7 @@ window.cjOriginalApp={
 };
 async function renderSaved(){try{const items=(await getAllDrafts()).filter(item=>item.classId===selected.id&&draftInYear(item));$('#savedList').innerHTML=items.length?items.map(item=>'<article class="savedItem"><span><b>'+escapeText(item.title||'無題のアルバム')+'</b><br><small class="muted">'+new Date(item.updatedAt).toLocaleDateString('ja-JP')+' ・ '+item.photos.length+'枚</small></span><button class="secondary" data-open-draft="'+escapeText(item.id)+'">開く</button></article>').join(''):'<div class="empty">このクラスの保存済みアルバムはまだありません。</div>';document.querySelectorAll('[data-open-draft]').forEach(btn=>btn.addEventListener('click',()=>loadDraft(btn.dataset.openDraft)));}catch(error){$('#savedList').innerHTML='<div class="empty">保存済み一覧を読み込めませんでした。このブラウザの保存機能を確認してください。</div>';}}
 function escapeText(value){return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
-document.querySelectorAll('[data-back]').forEach(btn=>btn.addEventListener('click',()=>show(btn.dataset.back)));
+document.querySelectorAll('[data-back]').forEach(btn=>btn.addEventListener('click',()=>{if(btn.closest('.screen[data-screen="editor"]')){window.cjOpenEditorExit?.();return;}show(btn.dataset.back)}));
 $('#createNew').addEventListener('click',()=>{pendingProjectSlot=null;photoSortCheckpointKnownSavedAt=null;files=[];photoAssignments=[];assignmentSourceType='manual';clearCurrentAlbumAi();$('#photoInput').value='';$('#photoPreviews').innerHTML='';$('#photoCount').textContent='写真はまだ選択されていません。';$('#continueEdit').disabled=true;show('photoPick');void refreshPhotoSortResumeAvailability();});
 $('#openSaved').addEventListener('click',()=>show('saved'));
 $('#refreshSafety').addEventListener('click',renderSafetyManagement);
@@ -13161,6 +13161,7 @@ async function saveNewSplitAlbum(){
   if(changedDuringSave)scheduleEditorAutoSave();
   status.textContent='✅ '+(newAlbumSplitOrigin?.migrationSourceId?'既存アルバムの分離保存が完了しました':'新規アルバムを分離保存しました')+'：写真'+photos.length+'枚・配置'+els.length+'個。'+(newAlbumSplitOrigin?.migrationSourceId?'元のアルバムは保持されています。':'従来のアルバムとバックアップは未変更です。');
   setEditorSaveState(changedDuringSave?'● 続きの変更を保存待ち':'✓ 自動保存済み');
+  if(!changedDuringSave)document.dispatchEvent(new CustomEvent('cj-editor-saved',{detail:{kind:'split',id}}));
   // Backup failure never rolls back a confirmed album save; report separately.
   backupSavedSplitAlbum(id).then(()=>{
    if(newAlbumSplitSavedId===id&&!splitUnsavedRevision)setEditorSaveState('✓ 保存済み・端末内バックアップ済み');
@@ -13186,6 +13187,7 @@ async function saveNewSplitAlbum(){
  }
  finally{db?.close();newAlbumSplitSaveBusy=false;button.disabled=!editorPhotoIntegrityOk;button.textContent='💾 保存'}
 }
+
 
 function setupStaffEditorHeader(){
  const button=document.getElementById('editorRestoreMenuButton');
@@ -13213,7 +13215,7 @@ function setupStaffEditorHeader(){
  document.addEventListener('keydown',event=>{if(event.key==='Escape')hide()});
 }
 setupStaffEditorHeader();
-$('#saveDraft').addEventListener('click',async()=>{if(newAlbumSplitSelected){await saveNewSplitAlbum();return}if(safeSplitEditorMode){$('#editorStatus').textContent='🔒 試験モードでは元アルバムへの保存は禁止です。「試験コピーだけ保存」を使ってね。';return}const button=$('#saveDraft');if(!editorPhotoIntegrityOk){setEditorSaveState('⚠ 写真を読み込めません');$('#editorStatus').textContent='写真の読み込みに問題があるため保存を停止しました。元データを保護しています。';return}if(editorSaveInProgress)return;clearTimeout(editorAutoSaveTimer);editorSaveInProgress=true;button.disabled=true;button.textContent='保存中…';const savingRevision=editorSaveRevision;setEditorSaveState('◌ 保存中…');$('#editorStatus').textContent='写真と編集内容を保存しています…';try{if(!files.length)throw new Error('保存する写真がありません。先に写真を追加してください');const photos=[];for(const file of files){const saved=await makeDurablePhoto(file);if(!saved.blob||!saved.blob.size)throw new Error('保存用の写真データが空です');let bytes;try{bytes=await saved.blob.arrayBuffer()}catch(error){if(error?.name!=='NotFoundError')throw new Error('写真の実データを読み取れません。元のアルバムは変更していません ('+(error?.name||'unknown')+')');const url=fileUrl(file);try{const response=await fetch(url);if(!response.ok)throw new Error('画像を取得できません');bytes=await response.arrayBuffer()}catch(recoveryError){throw new Error('写真の実データを復元できません。元のアルバムは変更していません (NotFoundError)')}}if(!bytes.byteLength)throw new Error('写真の実データが空です');const durableBlob=new Blob([bytes],{type:saved.type||'image/jpeg'});photos.push({name:saved.name,type:durableBlob.type,blob:durableBlob})}let thumbnail=null;try{const capture=await Promise.race([loadExportImageLibrary().then(lib=>lib($('#designCanvas'),{backgroundColor:'#ffffff',scale:1,useCORS:true,logging:false})),new Promise((_,reject)=>setTimeout(()=>reject(new Error('thumbnail timeout')),3500))]);const thumb=document.createElement('canvas');thumb.width=420;thumb.height=Math.max(180,Math.round(420*capture.height/capture.width));thumb.getContext('2d').drawImage(capture,0,0,thumb.width,thumb.height);thumbnail=thumb.toDataURL('image/jpeg',.68)}catch(e){console.warn('Thumbnail unavailable; keeping existing preview',e)}const draft={id:editingId||('draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),classId:selected.id,year:activeYear(),title:$('#albumTitle').value.trim()||'無題のアルバム',background:$('#pageBackground').value,caption:$('#pageCaption').value.trim(),layout:$('#layoutMode').value,photoGap:photoGapPercent,spreadIndex,designElements,photos,photoAssignments:photoAssignments.map(ids=>[...ids]),thumbnail,updatedAt:Date.now()};await putDraft(draft);editingId=draft.id;editRecoveryBaseline=draft.updatedAt;if(editorSaveRevision===savingRevision)clearEditRecovery(draft.id);if(pendingProjectSlot!==null){const slots=readProjectSlots();while(slots.length<=pendingProjectSlot)slots.push(null);slots[pendingProjectSlot]=draft.id;writeProjectSlots(slots)}$('#editorStatus').textContent='保存しました！クラスのページ一覧から開けます。';setEditorSaveState(editorSaveRevision===savingRevision?'✓ 保存済み':'● 保存中に変更あり');}catch(error){setEditorSaveState('⚠ 保存失敗');$('#editorStatus').textContent='保存できませんでした：'+(error&&error.message?error.message:'端末の保存領域を確認して、もう一度お試しください');}finally{editorSaveInProgress=false;button.disabled=false;button.textContent='下書きを保存';if(editorSaveRevision!==savingRevision&&$('#editorSaveState').textContent!=='⚠ 保存失敗')scheduleEditorAutoSave();}});
+$('#saveDraft').addEventListener('click',async()=>{if(newAlbumSplitSelected){await saveNewSplitAlbum();return}if(safeSplitEditorMode){$('#editorStatus').textContent='🔒 試験モードでは元アルバムへの保存は禁止です。「試験コピーだけ保存」を使ってね。';return}const button=$('#saveDraft');if(!editorPhotoIntegrityOk){setEditorSaveState('⚠ 写真を読み込めません');$('#editorStatus').textContent='写真の読み込みに問題があるため保存を停止しました。元データを保護しています。';return}if(editorSaveInProgress)return;clearTimeout(editorAutoSaveTimer);editorSaveInProgress=true;button.disabled=true;button.textContent='保存中…';const savingRevision=editorSaveRevision;setEditorSaveState('◌ 保存中…');$('#editorStatus').textContent='写真と編集内容を保存しています…';try{if(!files.length)throw new Error('保存する写真がありません。先に写真を追加してください');const photos=[];for(const file of files){const saved=await makeDurablePhoto(file);if(!saved.blob||!saved.blob.size)throw new Error('保存用の写真データが空です');let bytes;try{bytes=await saved.blob.arrayBuffer()}catch(error){if(error?.name!=='NotFoundError')throw new Error('写真の実データを読み取れません。元のアルバムは変更していません ('+(error?.name||'unknown')+')');const url=fileUrl(file);try{const response=await fetch(url);if(!response.ok)throw new Error('画像を取得できません');bytes=await response.arrayBuffer()}catch(recoveryError){throw new Error('写真の実データを復元できません。元のアルバムは変更していません (NotFoundError)')}}if(!bytes.byteLength)throw new Error('写真の実データが空です');const durableBlob=new Blob([bytes],{type:saved.type||'image/jpeg'});photos.push({name:saved.name,type:durableBlob.type,blob:durableBlob})}let thumbnail=null;try{const capture=await Promise.race([loadExportImageLibrary().then(lib=>lib($('#designCanvas'),{backgroundColor:'#ffffff',scale:1,useCORS:true,logging:false})),new Promise((_,reject)=>setTimeout(()=>reject(new Error('thumbnail timeout')),3500))]);const thumb=document.createElement('canvas');thumb.width=420;thumb.height=Math.max(180,Math.round(420*capture.height/capture.width));thumb.getContext('2d').drawImage(capture,0,0,thumb.width,thumb.height);thumbnail=thumb.toDataURL('image/jpeg',.68)}catch(e){console.warn('Thumbnail unavailable; keeping existing preview',e)}const draft={id:editingId||('draft-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)),classId:selected.id,year:activeYear(),title:$('#albumTitle').value.trim()||'無題のアルバム',background:$('#pageBackground').value,caption:$('#pageCaption').value.trim(),layout:$('#layoutMode').value,photoGap:photoGapPercent,spreadIndex,designElements,photos,photoAssignments:photoAssignments.map(ids=>[...ids]),thumbnail,updatedAt:Date.now()};await putDraft(draft);editingId=draft.id;editRecoveryBaseline=draft.updatedAt;if(editorSaveRevision===savingRevision)clearEditRecovery(draft.id);if(pendingProjectSlot!==null){const slots=readProjectSlots();while(slots.length<=pendingProjectSlot)slots.push(null);slots[pendingProjectSlot]=draft.id;writeProjectSlots(slots)}$('#editorStatus').textContent='保存しました！クラスのページ一覧から開けます。';setEditorSaveState(editorSaveRevision===savingRevision?'✓ 保存済み':'● 保存中に変更あり');if(editorSaveRevision===savingRevision)document.dispatchEvent(new CustomEvent('cj-editor-saved',{detail:{kind:'draft',id:draft.id}}));}catch(error){setEditorSaveState('⚠ 保存失敗');$('#editorStatus').textContent='保存できませんでした：'+(error&&error.message?error.message:'端末の保存領域を確認して、もう一度お試しください');}finally{editorSaveInProgress=false;button.disabled=false;button.textContent='下書きを保存';if(editorSaveRevision!==savingRevision&&$('#editorSaveState').textContent!=='⚠ 保存失敗')scheduleEditorAutoSave();}});
 let exportImageLibraryPromise=null;
 function loadExportImageLibrary(){
  if(!exportImageLibraryPromise)exportImageLibraryPromise=new Promise((resolve,reject)=>{
@@ -14496,6 +14498,54 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
   finally{start.disabled=false}
  });
 })();
+</script>
+<style>
+#cjEditorExit{display:none;position:fixed;inset:0;z-index:100008;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at 20% 10%,#ecfff5,#e9f6ff 57%,#fff3e4);color:#365c70}
+#cjEditorExit.open{display:flex}
+#cjEditorExit .cjEditorExitCard{box-sizing:border-box;width:min(100%,440px);padding:25px 20px 24px;border:4px solid white;border-radius:33px;background:#ffffffdd;box-shadow:0 15px 45px #799bb53a;text-align:center}
+#cjEditorExit h2{font-size:clamp(22px,6vw,29px);margin:8px 0;color:#365c70}
+#cjEditorExit p{font-size:14px;color:#507382;font-weight:800}
+#cjEditorExit .cjExitBook{font-size:64px;margin:8px auto 18px;transform-origin:center}
+#cjEditorExit .cjExitBook.burst{animation:cjExitBounce 1.1s ease-out}
+@keyframes cjExitBounce{0%{transform:translateY(35px) scale(.6);opacity:.2}65%{transform:translateY(-12px) scale(1.12);opacity:1}100%{transform:none;opacity:1}}
+#cjEditorExit .cjEditorExitButtons{display:grid;gap:10px;margin-top:20px}
+#cjEditorExit .cjEditorExitButtons button{width:100%;min-height:54px;border-radius:19px;border:0;font-size:15px;font-weight:900;color:#2a5663;background:linear-gradient(110deg,#8cdac3,#aadcf0)}
+#cjEditorExit #cjEditorExitSave{background:white;border:2px solid #b5d9cf}
+#cjEditorExitStatus{min-height:25px;overflow-wrap:anywhere}
+@media(prefers-reduced-motion:reduce){#cjEditorExit .cjExitBook.burst{animation:none}}
+</style>
+<div id="cjEditorExit" role="dialog" aria-modal="true" aria-labelledby="cjEditorExitTitle" aria-hidden="true"><section class="cjEditorExitCard"><div class="cjExitBook" aria-hidden="true">📖 ✨</div><h2 id="cjEditorExitTitle">おもいでのつづきは？</h2><p>見開きページを編集中だよ！</p><div class="cjEditorExitButtons"><button type="button" id="cjEditorExitContinue">📖 編集を続ける</button><button type="button" id="cjEditorExitSave">💾 保存してホームへ</button></div><p id="cjEditorExitStatus" role="status" aria-live="polite"></p></section></div>
+<script>// Stage 04 exit is a UI-only bridge; all save verification stays in existing handlers.
+(function(){
+ const box=document.getElementById('cjEditorExit');
+ const status=document.getElementById('cjEditorExitStatus');
+ let pending=false;
+ const close=()=>{if(pending)return;box.classList.remove('open');box.setAttribute('aria-hidden','true')};
+ window.cjOpenEditorExit=()=>{
+  pending=false;status.textContent='';
+  box.classList.add('open');box.setAttribute('aria-hidden','false');
+  box.querySelector('.cjExitBook').classList.remove('burst');
+  void box.offsetWidth;box.querySelector('.cjExitBook').classList.add('burst');
+ };
+ document.getElementById('cjEditorExitContinue').addEventListener('click',close);
+ document.getElementById('cjEditorExitSave').addEventListener('click',()=>{
+  if(pending)return;
+  pending=true;status.textContent='💾 アルバムを安全に保存しているよ…';
+  const save=document.getElementById('saveDraft');
+  if(!save||save.disabled){pending=false;status.textContent='⚠️ 保存ボタンを利用できないよ。編集画面で確認してね。';return}
+  save.click();
+  // The existing save handlers emit success only after a completed database write.
+  setTimeout(()=>{if(pending){pending=false;status.textContent='⚠️ 保存完了をまだ確認できないよ。編集画面を残してあるよ。'}},120000);
+ });
+ document.addEventListener('cj-editor-saved',()=>{
+  if(!pending||!box.classList.contains('open'))return;
+  pending=false;status.textContent='✨ 保存できたよ！';
+  window.cjOriginalApp.navigate('map');
+  if(document.querySelector('#cjJourney.screen.active'))close();
+  else status.textContent='⚠️ 冒険マップへの移動を確認できなかったよ。';
+ });
+})();
+
 </script>
 </body>
 </html>
