@@ -91,3 +91,11 @@
  font-size:10px!important;line-height:1.35!important;color:#436a78!important;-webkit-text-fill-color:#436a78!important;
 }
 .screen[data-screen="photoAssign"][data-flow-step="check"] .photoSortSaveBar:has(#photoSortProgressSaveStatus) {max-width:100%!important}
+
+/* Show existing AI-unassigned photo inbox in pocket from the first check screen. */
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketInboxPreview{display:flex;flex-direction:column;align-items:center;gap:9px;width:100%;margin:10px auto 14px;padding:12px 10px!important;border:3px solid white!important;border-radius:23px!important;background:linear-gradient(110deg,#fff3d8,#fce8f0,#e7f8f4)!important;box-shadow:0 6px 15px #7b99a22d!important;color:#3b6170!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketInboxPreview strong{font-size:15px;color:#3b6170!important}
+.screen[data-screen="photoAssign"][data-flow-step="check"] .pocketInboxPreview small{font-size:11px;font-weight:800;color:#567787!important}
+.pocketInboxThumbs{display:flex;justify-content:center;gap:5px;max-width:100%}
+.pocketInboxThumb{display:block;overflow:hidden;width:45px;height:45px;border:3px solid #fff;border-radius:50%;background:#d9f4ec;box-shadow:0 3px 8px #789cad55}
+.pocketInboxThumb img{width:100%;height:100%;object-fit:cover}
