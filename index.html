@@ -7966,7 +7966,7 @@ async function cjSortClearSaveHome(){
  button.disabled=true;cjSortClearNotice('💾 保存を確認しているよ…');
  try{
   const ok=await saveCurrentPhotoSortCheckpoint();
-  if(ok===true){o.className='';show('cjJourney')}
+  if(ok===true){window.cjOriginalApp.navigate('map');if(!document.querySelector('#cjJourney.screen.active'))throw Error('冒険マップへの移動を確認できません');o.className=''}
   else cjSortClearNotice('⚠️ 保存を確認できなかったよ。画面はそのままにしてあるよ。');
  }catch(e){cjSortClearNotice('⚠️ 保存できませんでした：'+String(e?.message||e))}
  finally{button.disabled=false}
@@ -14289,14 +14289,17 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
 </script>
 <div id="cjAiLoading" role="dialog" aria-modal="true" aria-label="AI写真整理中"><div class="cjAiStage"><div class="cjAiDots" aria-hidden="true"><span class="cjAiCluster one"></span><span class="cjAiCluster two"></span><span class="cjAiCluster three"></span><i style="--dot:#ffbca4;--delay:-.15s;--x:-80px;--tx:-87px;--ty:-27px"></i><i style="--dot:#8bdccb;--delay:-.5s;--x:75px;--tx:89px;--ty:-25px"></i><i style="--dot:#b9a8fb;--delay:-.9s;--x:-35px;--tx:0px;--ty:67px"></i><i style="--dot:#ffb3d0;--delay:-1.3s;--x:60px;--tx:80px;--ty:-14px"></i><i style="--dot:#90cbf5;--delay:-1.8s;--x:-68px;--tx:-81px;--ty:-17px"></i></div><h2 id="cjAiTitle">写真のなかまを探しているよ</h2><p id="cjAiMessage" role="status" aria-live="polite">AIが今回の写真を確認中…</p><div class="cjAiProgress"><span id="cjAiProgressBar"></span></div><button type="button" class="cjAiCancel" id="cjAiCancel">中断する</button><div id="cjAiDoneActions" hidden><button type="button" id="cjAiGoMerge" >🎮 おもいでマージへ進む</button><button type="button" id="cjAiSaveHome" >💾 ここまで保存してホームへ</button><p id="cjAiDoneNotice" role="status" aria-live="polite"></p></div></div></div><div id="cjSortClear" role="status" aria-live="polite"><div class="cjClearCenter"><div class="cjClearDots"><i style="--i:0;--c:#ffbca4"></i><i style="--i:1;--c:#8bdccb"></i><i style="--i:2;--c:#b9a8fb"></i><i style="--i:3;--c:#ffb3d0"></i><i style="--i:4;--c:#90cbf5"></i></div><div class="cjClearBurst">🌟</div><h2>おもいでをあつめているよ</h2><p>写真のピースが、ひとつにつながるよ</p><div class="cjClearBar"><span></span></div></div><div class="cjClearWipe"></div><div id="cjSortClearChoices" class="cjSortClearChoices" hidden><button type="button" id="cjSortClearEditor">📖 見開き編集へ進む</button><button type="button" id="cjSortClearHome">💾 保存してホームへ</button><p id="cjSortClearNotice" role="status" aria-live="polite"></p></div></div>
 <style>
-/* Stage 03: finish choices and lightweight picture-book handoff. */
-#cjSortClear .cjSortClearChoices{position:absolute;z-index:15;left:50%;top:69%;transform:translateX(-50%);width:min(88vw,350px);display:flex;flex-direction:column;gap:12px;align-items:stretch}
+/* Stage 03 clear screen shares Stage 02's compact, rounded victory-card buttons. */
+#cjSortClear .cjClearCenter{box-sizing:border-box;width:min(100%,440px)!important;max-width:440px!important;padding:25px 20px 30px!important;border:4px solid white!important;border-radius:33px!important;background:#ffffffd9!important;box-shadow:0 15px 45px #799bb53a!important}
+#cjSortClear .cjSortClearChoices{position:relative!important;z-index:15!important;left:auto!important;top:auto!important;transform:none!important;width:100%!important;display:flex!important;flex-direction:column!important;gap:10px!important;align-items:stretch!important;margin-top:12px!important}
 #cjSortClear .cjSortClearChoices[hidden]{display:none!important}
-#cjSortClearChoices button{font:900 16px/1.3 inherit;border:3px solid white;border-radius:22px;min-height:56px;box-shadow:0 6px 0 #8db8bc66,0 14px 24px #45647724;color:#375769;background:#baf0e2;touch-action:manipulation}
-#cjSortClearHome{background:#f7d8ec!important}
-#cjSortClearNotice{margin:2px 0;color:#365766;font-weight:800;background:#ffffffdf;border-radius:12px}
+#cjSortClearChoices button{box-sizing:border-box!important;display:block!important;width:100%!important;max-width:100%!important;margin:0!important;padding:16px 12px!important;border:0!important;border-radius:19px!important;min-height:54px!important;box-shadow:none!important;font-family:inherit!important;font-size:15px!important;line-height:1.35!important;font-weight:900!important;color:#2a5663!important;touch-action:manipulation!important}
+#cjSortClearEditor{background:linear-gradient(110deg,#8cdac3,#aadcf0)!important}
+#cjSortClearHome{background:#fff!important;border:2px solid #b5d9cf!important}
+#cjSortClearNotice{min-height:25px;margin:2px 0!important;color:#365766!important;font-size:12px!important;font-weight:800!important;overflow-wrap:anywhere}
 #cjSortClear.editingIntro .cjClearDots{animation:cjAlbumPageTurn 1.2s ease-in-out infinite}
 @keyframes cjAlbumPageTurn{0%,100%{transform:perspective(500px) rotateY(0deg)}50%{transform:perspective(500px) rotateY(-28deg) scale(1.06)}}
+@media(max-height:680px){#cjSortClear .cjClearCenter{max-height:calc(100dvh - 36px);overflow:auto}#cjSortClear .cjClearDots{margin:8px auto}}
 </style>
 <script>
 /* Set tab appearance without changing any underlying album or photo state. */
