@@ -5054,13 +5054,29 @@ window.cjOriginalApp={
   return {name:displayClassName(selected),year:activeYear()+'年度',flower:selected.flower};
  },
  canMerge(){return !!(albumAiGroupsData?.valid()&&files.length);},
+ async openRecentMerge(){
+  if(albumAiGroupsData?.valid()&&files.length){show('photoAssign');setPhotoAssignFlowStep('review');renderCurrentAlbumSingletonPairs();return {ok:true};}
+  const classId=selected.id,year=activeYear();
+  let db;
+  try{
+   db=await photoSortCheckpointOpen();
+   const rows=await new Promise((resolve,reject)=>{
+    const q=db.transaction('checkpoints','readonly').objectStore('checkpoints').getAll();
+    q.onsuccess=()=>resolve(q.result||[]);q.onerror=()=>reject(q.error||new Error('途中保存を読み込めません'));
+   });
+   if(classId!==selected.id||year!==activeYear())return {ok:false,message:'クラスが切り替わりました。もう一度選んでね。'};
+   const latest=rows.filter(row=>row?.version===1&&row.classId===classId&&row.schoolYear===year&&row.ai&&Array.isArray(row.photos)&&row.photos.length).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0))[0];
+   if(!latest)return {ok:false,empty:true,message:'まだ写真のなかまがいないよ！ 📸 まずは写真を追加して、AIでなかまを探してね。'};
+   pendingProjectSlot=latest.slot;
+   show('photoPick');
+   const ok=await resumePhotoSortCheckpoint(null,true);
+   return ok?{ok:true}:{ok:false,message:'保存した写真を安全に再開できなかったよ。表示された理由を確認してね。'};
+  }catch(error){return {ok:false,message:'保存を確認できなかったよ：'+String(error?.message||error)};}
+  finally{db?.close();}
+ },
  navigate(kind){
   if(kind==='albums'){show('saved');return;}
-  if(kind==='merge'){
-   if(albumAiGroupsData?.valid()&&files.length){show('photoAssign');setPhotoAssignFlowStep('review');renderCurrentAlbumSingletonPairs();}
-   else {show('classProjects');renderPhotoSortPendingSlotBadges();}
-   return;
-  }
+  if(kind==='merge'){return this.openRecentMerge();}
   if(kind==='spread'||kind==='finish'||kind==='check'){show('saved');return;}
   if(kind==='kids'){$('[data-screen="classDetail"] .back').dataset.back='cjJourney';show('classDetail');return;}
   if(kind==='new'){$('#createNew').click();return;}
@@ -6226,7 +6242,7 @@ function photoSortRestoreAiData(savedAI,sourceFiles,storedRoster){
  // EQ: Exclusion in STEP 2 is a reversible mask; kept AI faces are not assigned while hidden.
  return {groups,keys,unused};
 }
-async function resumePhotoSortCheckpoint(replacementFiles=null){
+async function resumePhotoSortCheckpoint(replacementFiles=null,fromJourney=false){
  if(photoSortCheckpointBusy)return;
  const status=$('#photoSortResumeStatus'),button=$('#resumePhotoSortProgress');
  photoSortCheckpointBusy=true;button.disabled=true;
@@ -6363,7 +6379,7 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
   const resumedStep=albumAiGroupsData?
    (['folders','pending','check'].includes(row.flowStep)?row.flowStep:'review'):
    (row.flowStep==='folders'?'folders':'start');
-  setPhotoAssignFlowStep(resumedStep);
+  setPhotoAssignFlowStep(fromJourney&&albumAiGroupsData?'review':resumedStep);
   if(albumAiGroupsData){
    renderCurrentAlbumAiGroups();
    renderCurrentAlbumSingletonPairs();
@@ -6372,8 +6388,9 @@ async function resumePhotoSortCheckpoint(replacementFiles=null){
   $('#photoSortProgressSaveStatus').textContent=replacementFiles?
    '🛟 元の記録は上書き禁止：元写真から'+sourcedFromDevice+'枚を再取得し、保存済みから'+sourcedFromSaved+'枚を読み出しました。見開きへ進んだら新しい分離アルバムとして保存してね。':
    '✅ 保存した振り分けを復元したよ。次の変更は「ここまで保存」で更新してね。';
+  return true;
  }catch(e){status.textContent='⚠️ 続きを開けませんでした：'+String(e?.message||e)+
-  '。保存したデータと元のアルバムは変更していません。';console.warn('Photo sort resume safely stopped',e)}
+  '。保存したデータと元のアルバムは変更していません。';console.warn('Photo sort resume safely stopped',e);return false}
  finally{photoSortCheckpointBusy=false;button.disabled=false}
 }
 $('#resumePhotoSortProgress')?.addEventListener('click',()=>resumePhotoSortCheckpoint());
@@ -14246,6 +14263,7 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
    <div class="cjDemoTarget">👧</div><span class="cjDemoFlying">📸</span>
    <span class="cjDemoMerge">✨ MERGE! ✨</span><div class="cjDemoDots">● ● ●</div>
   </div>
+  <p id="cjMergeIntroNotice" role="status" aria-live="polite"></p>
   <div class="cjIntroActions"><button type="button" id="cjMergeIntroBack">もどる</button><button type="button" id="cjMergeIntroStart">やってみよう！ →</button></div>
  </section>
 </div>
@@ -14255,14 +14273,23 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
  let entry='map';
  window.cjOpenMergeIntro=function(from){
   entry=from==='analysis'?'analysis':'map';
-  intro.classList.remove('open');
+  document.getElementById('cjMergeIntroNotice').textContent='';
+  const start=document.getElementById('cjMergeIntroStart');start.disabled=false;start.onclick=null;start.textContent='やってみよう！ →';
   void intro.offsetWidth;
   intro.classList.add('open');intro.setAttribute('aria-hidden','false');
   document.getElementById('cjMergeIntroStart').focus({preventScroll:true});
  };
  function close(){intro.classList.remove('open');intro.setAttribute('aria-hidden','true')}
- document.getElementById('cjMergeIntroStart').addEventListener('click',()=>{
-  close();window.cjOriginalApp.navigate('merge');
+ document.getElementById('cjMergeIntroStart').addEventListener('click',async()=>{
+  const start=document.getElementById('cjMergeIntroStart'),notice=document.getElementById('cjMergeIntroNotice');
+  if(start.disabled)return;start.disabled=true;notice.textContent='🔍 直近の保存を確認しているよ…';
+  try{
+   const result=await window.cjOriginalApp.navigate('merge');
+   if(result?.ok){close();return;}
+   notice.textContent=result?.message||'写真の振り分けを開けなかったよ。';
+   if(result?.empty){start.textContent='📸 写真を追加する';start.disabled=false;start.onclick=()=>{close();window.cjOriginalApp.navigate('new');start.onclick=null;start.textContent='やってみよう！ →';};return;}
+  }catch(e){notice.textContent='⚠️ '+String(e?.message||e)}
+  start.disabled=false;
  });
  document.getElementById('cjMergeIntroBack').addEventListener('click',()=>{
   close();if(entry==='analysis')window.cjOriginalApp.navigate('map');
