@@ -4,6 +4,9 @@
 const sessions=new WeakMap();
 window.omoidePocketRender=function(data,host,api){
  if(!data||!api||!api.valid())return;
+ // Match the legacy Stage 03 renderer's session initialization.
+ // The strict finish validation still checks every folder, child and photo.
+ data.photoMatchActive=true;
  const m=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e};
  const b=(text,cls,fn)=>{const e=m('button',cls,text);e.type='button';e.addEventListener('click',fn);return e};
  let st=sessions.get(data);if(!st){st={id:null,chosen:new Set(),phase:'check',notice:'',combo:0};sessions.set(data,st)}
