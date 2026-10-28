@@ -754,4 +754,67 @@ window.omoideMergeGameRender=function(data,host,api){
  host.append(footer);api.progress();
 };
 
+
+/* Orbit merge renderer: keeps original AI, assign/undo and next actions. */
+const orbitSessions=new WeakMap();
+window.omoideMergeGameRender=function(data,host,api){
+ if(!data||!api.valid()||!host)return;
+ const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n};
+ const btn=(txt,cls,fn)=>{const n=el('button',cls,txt);n.type='button';n.addEventListener('click',fn);return n};
+ let st=orbitSessions.get(data);
+ if(!st){st={kid:0,page:0,selected:new Set(),notice:'',effect:false};orbitSessions.set(data,st)}
+ let groups;
+ try{groups=api.ensure(data).filter(f=>api.indexes(data,f).length)}catch(err){host.textContent='⚠️ '+String(err);return}
+ const kids=(api.children||[]).filter(k=>k&&k.id&&k.name),ids=new Set(kids.map(k=>String(k.id)));
+ const links=data.photoMatchFolderChild||{},waiting=groups.filter(f=>!ids.has(String(links[f.key]||'')));
+ for(const key of [...st.selected])if(!waiting.some(f=>f.key===key))st.selected.delete(key);
+ st.kid=Math.min(st.kid,Math.max(0,kids.length-1));
+ const kid=kids[st.kid],pages=Math.max(1,Math.ceil(waiting.length/8));
+ st.page=Math.min(st.page,pages-1);
+ const redraw=()=>window.omoideMergeRender(data,host,api);
+ const portrait=k=>{const n=el('span','orbitPortrait','🌼');if(typeof k?.facePhoto==='string'&&k.facePhoto.startsWith('data:image/')){const img=el('img');img.src=k.facePhoto;img.alt='';img.onerror=()=>{n.textContent='🌼'};n.replaceChildren(img)}return n};
+ function assign(){
+  if(!kid||!st.selected.size){st.notice=kid?'まわりの写真をえらんでね':'園児を登録してね';redraw();return}
+  try{
+   const done=api.assignChild(data,String(kid.id),[...st.selected]);st.selected.clear();st.effect=true;
+   st.notice='✨ MERGE! '+kid.name+'さんに'+done.photos+'枚！';redraw();
+   setTimeout(()=>{st.effect=false;host.querySelector('.orbitTarget')?.classList.remove('success')},950);
+  }catch(err){st.notice='⚠️ '+String(err?.message||err);redraw()}
+ }
+ host.replaceChildren();
+ const root=el('section','orbitRoot');
+ root.append(el('h2','','🫧 おもいでマージ！'),el('p','orbitLead','なかまの写真を見つけよう'));
+ const top=el('div','orbitTop');
+ top.append(el('strong','','🌈 '+(groups.length-waiting.length)+' / '+groups.length+' 組'));
+ if(data.photoFolderUndo?.length)top.append(btn('↶ 戻す','orbitUndo',()=>{if(api.undoChild?.(data)){st.selected.clear();st.notice='前のマージを戻したよ';redraw()}}));
+ root.append(top);
+ const roster=el('div','orbitRoster');
+ kids.forEach((k,i)=>{const n=btn('','orbitKid'+(i===st.kid?' active':''),()=>{st.kid=i;st.selected.clear();st.notice='';redraw()});n.append(portrait(k),el('small','',k.name+'さん'));n.setAttribute('aria-pressed',String(i===st.kid));roster.append(n)});
+ root.append(roster);
+ const board=el('div','orbitBoard');
+ const target=btn('','orbitTarget'+(st.effect?' success':''),assign);
+ target.append(portrait(kid),el('strong','',kid?kid.name+'さん':'園児を登録'),el('small','',st.selected.size?st.selected.size+'組をMERGE!':'ここへあつめよう'));
+ board.append(target);
+ waiting.slice(st.page*8,st.page*8+8).forEach((f,i)=>{
+  const selected=st.selected.has(f.key),count=api.indexes(data,f).length;
+  const n=btn('','orbitBubble orbitPos'+i+(selected?' chosen':''),()=>{selected?st.selected.delete(f.key):st.selected.add(f.key);st.notice=st.selected.size+'組を選択中。まんなかへポンッ！';redraw()});
+  const frame=el('span','orbitPhoto'),img=el('img');
+  try{img.src=api.url(data.sourceFiles[api.indexes(data,f)[0]])}catch(err){}
+  img.alt='';img.loading='lazy';img.draggable=false;frame.append(img);
+  n.append(frame,el('span','orbitCount',count+'枚'));
+  n.setAttribute('aria-pressed',String(selected));n.setAttribute('aria-label','仮フォルダ '+count+'枚');
+  board.append(n);
+ });
+ if(!waiting.length)board.append(el('div','orbitEmpty','🌟 なかまが集まったよ！'));
+ root.append(board);
+ const msg=el('p','orbitMsg',st.notice||(waiting.length?'写真を選んで中央をタップ！':'ぜんぶ確認したよ！'));
+ msg.setAttribute('role','status');root.append(msg);
+ const nav=el('div','orbitNav');
+ const prev=btn('‹ 前','',()=>{st.page--;st.selected.clear();redraw()});prev.disabled=st.page===0;
+ const next=btn('次 ›','',()=>{st.page++;st.selected.clear();redraw()});next.disabled=st.page>=pages-1;
+ nav.append(prev,el('span','',st.page+1+' / '+pages),next);root.append(nav);
+ root.append(btn('🔎 写真の間違い探しへ','orbitNext',()=>{data.photoMergeSelected=[];data.photoMatchFinalReviewed=false;api.next('check',{scroll:true})}));
+ host.append(root);api.progress();
+};
+
 })();
