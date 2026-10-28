@@ -52,6 +52,15 @@ window.omoidePocketRender=function(data,host,api){
  });
  root.append(roster);
  if(st.phase==='check'){
+  // AI未検出・未振り分けも最初からポケットに見せる（既存inboxと同じ参照、コピーしない）。
+  if(inbox.length){
+   const peek=b('','pocketInboxPreview',()=>{st.phase='deliver';st.forceDeliver=true;st.chosen.clear();redraw()});
+   peek.append(m('strong','','🧺 おもいでポケット　'+inbox.length+'枚'));
+   const thumbnails=m('span','pocketInboxThumbs');
+   inbox.slice(0,5).forEach(i=>{const bubble=m('span','pocketInboxThumb');bubble.append(photo(i));thumbnails.append(bubble)});
+   peek.append(thumbnails,m('small','','タップして写真を届ける ›'));
+   root.append(peek);
+  }
   const photos=selectedKid?idsOf(selectedKid):[];
   const title=m('div','pocketCardHeader');
   title.append(m('h3','',selectedKid?'🌷 '+name(selectedKid)+'さん':'園児を登録してね'),m('span','',photos.length+'枚'));root.append(title);
