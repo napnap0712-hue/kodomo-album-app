@@ -7943,7 +7943,7 @@ function renderPhotoSortGameProgress(){
  setTimeout(()=>b.style.width='36%',180);setTimeout(()=>b.style.width='72%',700);
  setTimeout(()=>{o.classList.add('combine');b.style.width='100%';h.textContent='みんなのおもいでが集まった！'},1400);
  setTimeout(()=>{o.classList.add('complete');h.textContent='🎉 おもいで整理クリア！';p.textContent='次のぼうけんへ、出発！'},2250);
- setTimeout(()=>{if(!o.classList.contains('play')||!document.querySelector('[data-screen="photoAssign"].active'))return;show('cjJourney');o.classList.add('exit')},3600);
+ setTimeout(()=>{if(!o.classList.contains('play')||!albumAiGroupsData?.photoMatchFinalReviewed||!document.querySelector('[data-screen="photoAssign"].active'))return;show('cjJourney');o.classList.add('exit')},3600);
  setTimeout(()=>o.className='',4570);
 }
 async function finishPhotoSortFromCheck(){
