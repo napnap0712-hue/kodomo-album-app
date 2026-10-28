@@ -5054,8 +5054,8 @@ window.cjOriginalApp={
   return {name:displayClassName(selected),year:activeYear()+'年度',flower:selected.flower};
  },
  canMerge(){return !!(albumAiGroupsData?.valid()&&files.length);},
- async openRecentMerge(){
-  if(albumAiGroupsData?.valid()&&files.length){show('photoAssign');setPhotoAssignFlowStep('review');renderCurrentAlbumSingletonPairs();return {ok:true};}
+ async openRecentMerge({preferSaved=false}={}){
+  if(!preferSaved&&albumAiGroupsData?.valid()&&files.length){show('photoAssign');setPhotoAssignFlowStep('review');renderCurrentAlbumSingletonPairs();return {ok:true};}
   const classId=selected.id,year=activeYear();
   let db;
   try{
@@ -5077,7 +5077,7 @@ window.cjOriginalApp={
  navigate(kind){
   if(kind==='albums'){show('saved');return;}
   if(kind==='merge'){return this.openRecentMerge();}
-  if(kind==='check'){return this.openRecentMerge().then(result=>{if(result?.ok){show('photoAssign');setPhotoAssignFlowStep('check',{scroll:true});renderCurrentAlbumSingletonPairs();}return result;});}
+  if(kind==='check'){return this.openRecentMerge({preferSaved:true}).then(result=>{if(result?.ok){show('photoAssign');setPhotoAssignFlowStep('check',{scroll:true});renderCurrentAlbumSingletonPairs();}return result;});}
   if(kind==='spread'||kind==='finish'){show('saved');return;}
   if(kind==='kids'){$('[data-screen="classDetail"] .back').dataset.back='cjJourney';show('classDetail');return;}
   if(kind==='new'){$('#createNew').click();return;}
