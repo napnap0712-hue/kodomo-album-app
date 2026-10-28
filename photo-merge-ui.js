@@ -859,12 +859,17 @@ window.omoideMergeGameRender=function(data,host,api){
  const stat=make('div','catchStat');stat.append(make('strong','',(groups.length-unassigned.length)+' / '+groups.length+' 組'),make('span','','🌟 なかまを集めよう'));root.append(stat);
  const track=make('div','catchTrack');const bar=make('span');bar.style.width=(groups.length?(groups.length-unassigned.length)/groups.length*100:100)+'%';track.append(bar);root.append(track);
  const board=make('div','catchBoard');
+ board.style.setProperty('--catchCount',String(kids.length));
+ if(kids.length>7)board.classList.add('catchMany');
  for(const x of ['✦','✧','✦'])board.append(make('span','catchStar',x));
  const folder=button('','catchFolder',()=>{st.inspect=true;redraw()});
  if(focus){const photo=make('span','catchMainPhoto');photo.append(pic(api.indexes(data,focus)[0]));folder.append(photo,make('strong','','AI仮フォルダ'),make('small','',api.indexes(data,focus).length+'枚の写真'));board.append(folder);}
  else board.append(make('div','catchComplete','🎉 なかま探しクリア！'));
- kids.slice(st.kidPage*7,st.kidPage*7+7).forEach((k,i)=>{
-  const p=button('','catchKid catchPos'+i,()=>send(k,p));
+ kids.forEach((k,i)=>{
+  const p=button('','catchKid',()=>send(k,p));
+  const angle=(-Math.PI/2)+(2*Math.PI*i/Math.max(1,kids.length));
+  p.style.left=(50+Math.cos(angle)*43)+'%';p.style.top=(50+Math.sin(angle)*43)+'%';
+  p.style.transform='translate(-50%,-50%)';
   p.append(portrait(k),make('small','',k.name+'さん'));p.setAttribute('aria-label',k.name+'さんに振り分け');board.append(p);
  });
  root.append(board);
@@ -875,7 +880,7 @@ window.omoideMergeGameRender=function(data,host,api){
  actions.append(undo,button('🔍 写真を確認','',()=>{if(focus){st.inspect=true;redraw()}}));
  const skip=button('あとで確認 ›','catchSkip',()=>{if(!focus)return;st.skipped.add(focus.key);st.cursor=0;st.notice='あとで確認するよ';redraw()});
  skip.disabled=!focus;actions.append(skip);root.append(actions);
- if(kidPages>1){const nav=make('div','catchPages');const prev=button('‹ 園児','',()=>{st.kidPage--;redraw()});prev.disabled=st.kidPage===0;const next=button('園児 ›','',()=>{st.kidPage++;redraw()});next.disabled=st.kidPage>=kidPages-1;nav.append(prev,make('span','',st.kidPage+1+' / '+kidPages),next);root.append(nav)}
+
  if(st.skipped.size){root.append(button('🫧 後回しの写真をもう一度見る（'+st.skipped.size+'組）','catchReview',()=>{st.skipped.clear();st.cursor=0;st.notice='後回しのフォルダを表示したよ';redraw()}))}
  root.append(button('🔎 写真の間違い探しへ','catchNext',()=>{if(st.busy)return;data.photoMergeSelected=[];data.photoMatchFinalReviewed=false;api.next('check',{scroll:true})}));
  if(st.inspect&&focus){
