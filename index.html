@@ -5058,7 +5058,7 @@ window.cjOriginalApp={
   if(kind==='albums'){show('saved');return;}
   if(kind==='merge'){
    if(albumAiGroupsData?.valid()&&files.length){show('photoAssign');setPhotoAssignFlowStep('review');renderCurrentAlbumSingletonPairs();}
-   else {show('saved');}
+   else {show('classProjects');renderPhotoSortPendingSlotBadges();}
    return;
   }
   if(kind==='spread'||kind==='finish'||kind==='check'){show('saved');return;}
@@ -14175,7 +14175,7 @@ try { setupTextColorControls(); } catch (colorSetupError) { console.error('Color
 const $id=id=>document.getElementById(id);
 function updateJourney(){ /* Data is supplied by the original app when class login succeeds. */ }
 function jump(kind){
- if(kind==='merge'&&window.cjOriginalApp.canMerge?.()){window.cjOpenMergeIntro('map');return}
+ if(kind==='merge'){window.cjOpenMergeIntro('map');return}
  if(kind==='map'){window.cjOriginalApp.navigate('map');return}
  window.cjOriginalApp.navigate(kind)
 }
