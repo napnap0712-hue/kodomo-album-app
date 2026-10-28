@@ -1030,3 +1030,12 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="review"]) .ap
 @keyframes catchLineDraw{to{stroke-dashoffset:0}}
 @media(max-width:390px){.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard{height:510px!important}}
 @media(prefers-reduced-motion:reduce){.catchConnect path{stroke-dashoffset:0!important;animation:none!important}}
+
+/* Catch win banner + slightly larger child avatars using compact given-name labels. */
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchKid{width:58px!important;max-width:58px}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchPortrait{width:48px!important;height:48px!important;border-width:3px!important}
+.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchKid small{max-width:62px;font-size:10px!important;padding:3px 4px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.catchCelebration{position:absolute;z-index:15;left:50%;top:47%;transform:translate(-50%,-50%);width:max-content;max-width:92%;padding:16px 20px;border:5px solid #fff;border-radius:23px;background:linear-gradient(125deg,#ffb2d4,#ffdc90,#a5ecdc);box-shadow:0 9px 0 #e8a4b35c,0 15px 27px #7496a45b;color:#7b416f!important;font-size:clamp(21px,6vw,31px);font-weight:1000;letter-spacing:.02em;text-shadow:1px 2px #fff;pointer-events:none;animation:catchCelebrate .8s both}
+@keyframes catchCelebrate{0%{opacity:0;transform:translate(-50%,-50%) scale(.4) rotate(-8deg)}28%{opacity:1;transform:translate(-50%,-50%) scale(1.18) rotate(3deg)}48%{transform:translate(-50%,-50%) scale(.96) rotate(-1deg)}65%{transform:translate(-50%,-50%) scale(1.04)}83%{opacity:1}100%{opacity:0;transform:translate(-50%,-56%) scale(1)}}
+@media(max-width:390px){.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchKid{width:53px!important}.screen[data-screen="photoAssign"][data-flow-step="review"] .catchBoard:has(.catchOuter) .catchPortrait{width:43px!important;height:43px!important}}
+@media(prefers-reduced-motion:reduce){.catchCelebration{animation:none!important;opacity:1}}
