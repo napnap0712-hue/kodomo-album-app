@@ -3984,6 +3984,21 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjAiSaveHome{background:#fff;color:#648c8b;border:1px solid #dcece9!important}
 #cjAiDoneActions button:disabled{opacity:.6}
 #cjAiDoneNotice{min-height:20px;margin:2px 0 0!important}
+
+/* Photo analysis: gentle, celebratory success screen. */
+#cjAiLoading.done{background:radial-gradient(circle at 50% 26%,#fff9da,transparent 53%),radial-gradient(circle at 15% 80%,#e8e0ff,transparent 48%),linear-gradient(160deg,#e8fcff,#edfff0 70%,#fff4eb)}
+#cjAiLoading.done .cjAiStage:before,#cjAiLoading.done .cjAiStage:after{content:"✦  ✨  ✦";position:absolute;left:0;right:0;top:-34px;font-size:29px;color:#ffc991;animation:cjAiTwinkle 1.9s ease-in-out infinite;pointer-events:none}
+#cjAiLoading.done .cjAiStage:after{top:auto;bottom:-25px;animation-delay:.5s;color:#b0a9fa}
+@keyframes cjAiTwinkle{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
+#cjAiLoading.done #cjAiTitle{color:#65869b;font-size:clamp(26px,7vw,34px);animation:cjAiTitlePop .7s cubic-bezier(.17,1.6,.4,1) both;text-shadow:0 3px #ffffff}
+@keyframes cjAiTitlePop{from{transform:scale(.45) rotate(-5deg);opacity:0}to{transform:scale(1);opacity:1}}
+#cjAiLoading.done .cjAiDots:after{content:"🌟";font-size:68px;position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);animation:cjAiStarPop .7s cubic-bezier(.2,1.5,.3,1) both}
+@keyframes cjAiStarPop{from{opacity:0;transform:translate(-50%,-50%) scale(.2) rotate(-25deg)}to{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0)}}
+#cjAiLoading.done .cjAiCluster{border-color:#f3d8a6}
+#cjAiLoading.done .cjAiProgress{display:none}
+#cjAiDoneActions #cjAiGoMerge{font-family:inherit;font-weight:800}
+#cjAiDoneActions #cjAiSaveHome{font-family:inherit;font-weight:800}
+@media(prefers-reduced-motion:reduce){#cjAiLoading.done .cjAiStage:before,#cjAiLoading.done .cjAiStage:after,#cjAiLoading.done .cjAiDots:after,#cjAiLoading.done #cjAiTitle{animation:none}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -10197,13 +10212,20 @@ function cjAiContinueToMerge(){
  const panel=document.getElementById('cjAiLoading');if(!panel?.classList.contains('done'))return;
  panel.className='';
 }
-document.getElementById('cjAiGoMerge')?.addEventListener('click',cjAiContinueToMerge);
-document.getElementById('cjAiSaveHome')?.addEventListener('click',cjAiSaveAndHome);
+// The overlay markup is parsed after this script. Delegate to document so iPhone
+// buttons work even though they do not exist at initial listener registration.
+document.addEventListener('click',event=>{
+ const button=event.target.closest?.('#cjAiGoMerge,#cjAiSaveHome');
+ if(!button)return;
+ event.preventDefault();
+ if(button.id==='cjAiGoMerge')cjAiContinueToMerge();
+ else cjAiSaveAndHome();
+});
 function cjAiLoadingEnd(success){
  const panel=document.getElementById('cjAiLoading');if(!panel)return;
  if(success){
-  panel.classList.add('done');panel.querySelector('#cjAiTitle').textContent='✨ なかまが見つかったよ！';
-  panel.querySelector('#cjAiMessage').textContent='おもいでマージ！へ進もう';
+  panel.classList.add('done');panel.querySelector('#cjAiTitle').textContent='🎉 なかま発見！大成功！';
+  panel.querySelector('#cjAiMessage').textContent='写真のなかまたちが集まったよ！';
   panel.querySelector('#cjAiProgressBar').style.width='100%';
   panel.querySelector('#cjAiCancel').hidden=true;
   const actions=panel.querySelector('#cjAiDoneActions');
