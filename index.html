@@ -3918,6 +3918,25 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 .screen[data-screen="photoAssign"][data-flow-step="start"] #analyzeCurrentAlbum:active{transform:translateY(4px);box-shadow:0 4px 0 #a6dbd4!important}
 .screen[data-screen="photoAssign"][data-flow-step="start"] #photoAssignFlowManual{color:#67999c!important;font-size:12px!important;margin-top:15px!important}
 @media(prefers-reduced-motion:reduce){.screen[data-screen="photoAssign"][data-flow-step="start"] #currentAlbumAiPanel::before{animation:none}}
+
+#cjSortClear{display:none;position:fixed;inset:0;z-index:2147482500;place-items:center;text-align:center;overflow:hidden;padding:20px;background:radial-gradient(circle at 10% 24%,#e0fff0,transparent 39%),linear-gradient(165deg,#eaf9ff,#f6fff7 78%,#fff6ea);color:#4e8192}
+#cjSortClear.play{display:grid}#cjSortClear .cjClearCenter{z-index:2;position:relative;width:100%;max-width:400px}
+#cjSortClear .cjClearDots{display:flex;justify-content:center;gap:10px;margin:25px auto}
+#cjSortClear .cjClearDots i{display:block;width:39px;height:39px;border-radius:50%;border:3px solid #fff;background:var(--c);box-shadow:0 8px 16px #6f9ca42d;animation:cjCollect 1.4s ease-in-out infinite;animation-delay:calc(var(--i)*.12s)}
+@keyframes cjCollect{0%,100%{transform:translateY(0) scale(.92)}30%{transform:translateY(-42px) scale(1.18)}65%{transform:translateY(9px) scale(.9)}}
+#cjSortClear.combine .cjClearDots i{animation:cjGather 1s ease both;animation-delay:calc(var(--i)*.04s)}
+@keyframes cjGather{to{transform:translateX(calc((2 - var(--i))*49px)) scale(.15);opacity:0}}
+#cjSortClear .cjClearBurst{font-size:80px;opacity:0;transform:scale(.15)}
+#cjSortClear.complete .cjClearBurst{animation:cjStar 1s cubic-bezier(.19,1.5,.3,1) forwards}
+@keyframes cjStar{50%{opacity:1;transform:scale(1.23)}100%{opacity:1;transform:scale(1)}}
+#cjSortClear h2{font-size:clamp(23px,6vw,30px);margin:18px 0 7px}#cjSortClear p{font-size:14px;color:#83a2a8}
+#cjSortClear .cjClearBar{width:min(70vw,250px);height:9px;border-radius:20px;background:#d5eae8;overflow:hidden;margin:18px auto}
+#cjSortClear .cjClearBar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#8fdbc7,#baa6f8,#ffc3a3);transition:width .25s}
+#cjSortClear.complete .cjClearBar{opacity:0}
+#cjSortClear .cjClearWipe{position:absolute;inset:0;background:#91d9cd;transform:translateY(100%);border-radius:100% 100% 0 0}
+#cjSortClear.exit .cjClearWipe{animation:cjWipeMap 1s ease-in-out forwards}
+@keyframes cjWipeMap{0%{transform:translateY(100%)}55%{transform:translateY(0);border-radius:0}100%{transform:translateY(-105%);border-radius:0}}
+@media(prefers-reduced-motion:reduce){#cjSortClear .cjClearDots i{animation:none}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 </head>
@@ -5964,10 +5983,10 @@ async function refreshPhotoSortResumeAvailability(){
  }catch(e){if(key===photoSortCheckpointKey()){box.hidden=false;status.textContent='⚠️ 途中保存の確認ができません：'+String(e?.message||e)}}
 }
 async function saveCurrentPhotoSortCheckpoint(){
- if(photoSortCheckpointBusy)return;
+ if(photoSortCheckpointBusy)return false;
  if(photoSortRecoveredKey===photoSortCheckpointKey()){
   $('#photoSortProgressSaveStatus').textContent='🛟 元の途中保存を保護中です。この復元では元データの上書きを禁止しています。続きは見開きへ進み、新しい分離アルバムとして保存してください。';
-  return;
+  return false;
  }
  const status=$('#photoSortProgressSaveStatus'),button=$('#savePhotoSortProgress');
  if(!files.length){status.textContent='写真を追加してから保存してね。';return}
@@ -5979,7 +5998,7 @@ async function saveCurrentPhotoSortCheckpoint(){
    throw Error('別のアルバムに切り替わったため途中保存を中止しました。');
   if(current&&photoSortCheckpointKnownSavedAt!==current.savedAt){
    if(!window.confirm('この枠には別の途中保存があります。上書きしますか？ 以前の途中経過は置き換わります。')){
-    status.textContent='上書きを中止しました。今の写真や振り分けはそのままです。';return;
+    status.textContent='上書きを中止しました。今の写真や振り分けはそのままです。';return false;
    }
   }
   const classId=selected.id,schoolYear=activeYear(),slot=pendingProjectSlot;
@@ -6015,8 +6034,10 @@ async function saveCurrentPhotoSortCheckpoint(){
   if(classId===selected.id&&schoolYear===activeYear()&&slot===pendingProjectSlot){
    photoSortCheckpointKnownSavedAt=snapshot.savedAt;
    status.textContent='✅ 途中保存できたよ！この端末で同じアルバムを開けば続きから再開できるよ。';
+   return true;
   }
- }catch(e){status.textContent='⚠️ 保存できませんでした：'+String(e?.message||e)+ '。元の写真は変更していません。'}
+  return false;
+ }catch(e){status.textContent='⚠️ 保存できませんでした：'+String(e?.message||e)+ '。元の写真は変更していません。';return false;}
  finally{photoSortCheckpointBusy=false;button.disabled=false}
 }
 $('#savePhotoSortProgress')?.addEventListener('click',saveCurrentPhotoSortCheckpoint);
@@ -7824,7 +7845,18 @@ function renderPhotoSortGameProgress(){
   data.photoMatchFinalReviewed=false;
   data.photoFolderNotice='↩ 写真1枚を戻したよ。必要ならもう一度振り分けてね。';
  }
- function finishPhotoSortFromCheck(){
+ function playColorJourneySortClear(){
+ const o=document.getElementById('cjSortClear');if(!o){show('cjJourney');return;}
+ o.className='play';
+ const h=o.querySelector('h2'),p=o.querySelector('p'),b=o.querySelector('.cjClearBar span');
+ h.textContent='おもいでをあつめているよ';p.textContent='写真のピースが、ひとつにつながるよ';b.style.width='0';
+ setTimeout(()=>b.style.width='36%',180);setTimeout(()=>b.style.width='72%',700);
+ setTimeout(()=>{o.classList.add('combine');b.style.width='100%';h.textContent='みんなのおもいでが集まった！'},1400);
+ setTimeout(()=>{o.classList.add('complete');h.textContent='🎉 おもいで整理クリア！';p.textContent='次のぼうけんへ、出発！'},2250);
+ setTimeout(()=>{show('cjJourney');o.classList.add('exit')},3600);
+ setTimeout(()=>o.className='',4570);
+}
+async function finishPhotoSortFromCheck(){
   const data=albumAiGroupsData;
   if(!data?.valid()||!data.photoMatchActive){window.alert('写真の整理状況を確認できません。');return}
   const kids=getChildren(data.classId),ids=new Set(kids.map(k=>String(k.id)));
@@ -7857,7 +7889,7 @@ function renderPhotoSortGameProgress(){
    const msg='📷 整理が残っているよ。未振り分け写真 '+noFolder+'枚・未確認の園児フォルダ '+
     unreviewed+'組・園児未設定のAIカード '+noChild+'組。';
    const label=$('#photoSortProgressSaveStatus');if(label)label.textContent=msg;
-   if(!window.confirm(msg+'\n未振り分けは消さずに残します。このまま見開き編集へ進む？'))return;
+   window.alert(msg+'\n整理を終えてからクリアしよう。');return;
   }
   const changed=files.reduce((n,_,i)=>{
    const before=[...new Set(assignmentPhotoIds(i))].sort().join('|');
@@ -7866,18 +7898,16 @@ function renderPhotoSortGameProgress(){
   },0);
   if(changed&&!window.confirm('以前に登録した'+changed+
    '枚の園児情報と、今整理したフォルダが異なります。今回のフォルダを正として見開き編集に反映しますか？\nキャンセルなら以前の登録は変更しません。'))return;
+  if(photoSortRecoveredKey===photoSortCheckpointKey()){
+   window.alert('復元元の途中保存を保護しています。見開き編集から別のアルバムとして保存してね。');return;
+  }
   const oldAssignments=photoAssignments,oldLinks=data.photoMatchFolderChild;
   photoAssignments=staged;data.photoMatchFolderChild={...oldLinks,...linked};
-  try{
-   photoSortSkipStrictFinish=true;
-   try{startEditingWithSelectedPhotos()}finally{photoSortSkipStrictFinish=false}
-   if(!document.querySelector('[data-screen="editor"]')?.classList.contains('active')){
-    photoAssignments=oldAssignments;data.photoMatchFolderChild=oldLinks;
-   }
-  }catch(error){
-   photoAssignments=oldAssignments;data.photoMatchFolderChild=oldLinks;
-   window.alert('見開き編集への移動を完了できませんでした：'+String(error?.message||error));
-  }
+  const saved=await saveCurrentPhotoSortCheckpoint();
+  if(!saved){photoAssignments=oldAssignments;data.photoMatchFolderChild=oldLinks;
+   window.alert('保存を確認できませんでした。元写真はそのままです。');return;}
+  data.photoMatchFinalReviewed=true;
+  playColorJourneySortClear();
  }
 const photoPlanetStageSessions=new WeakMap();
 function renderPhotoFolderMistakes(data,host){
@@ -7960,7 +7990,7 @@ function renderPhotoFolderMistakes(data,host){
   win.append(make('div','omoideGalaxyStars','⭐ ✨ 🪐 ✨ ⭐'),make('h2','','🎉 おつかれさまでした！'),make('strong','','おもいで銀河、完成！'),make('p','','みんなのおもいでが集まったよ！'));
   next.prepend(win);
  }
- if(!remaining)next.append(btn('📖 見開き編集へすすむ！','primary wide',finishPhotoSortFromCheck));
+ if(!remaining)next.append(btn('✨ 振り分け完了！','primary wide',finishPhotoSortFromCheck));
  host.append(next);
  }
  if(data.photoFolderUndo.length)host.append(btn('↩ 直前の移動を戻す','secondary',()=>{
@@ -8018,7 +8048,7 @@ function renderPhotoFolderMistakes(data,host){
     make('h3','','おもいで銀河、完成！'),
     make('p','','みんなのおもいでを整理できたよ！'),
     make('div','omoideGalaxySummary','📸 '+data.sourceFiles.length+'枚　🌷 '+kids.length+'人　✅ '+n+'/'+folders.length),
-    btn('📖 見開き編集へすすむ！','primary wide',finishPhotoSortFromCheck),
+    btn('✨ 振り分け完了！','primary wide',finishPhotoSortFromCheck),
     btn('↩ 写真の振り分けを見直す','secondary wide',()=>{
      mistakeFocusKey=folders[0]?.key||null;mistakeManualFocusKey=mistakeFocusKey;
      renderPhotoFolderMistakes(data,host);
@@ -14016,5 +14046,6 @@ observer.observe($id('cjJourney'),{attributes:true,attributeFilter:['class']});
  });
 })();
 </script>
+<div id="cjSortClear" role="status" aria-live="polite"><div class="cjClearCenter"><div class="cjClearDots"><i style="--i:0;--c:#ffbca4"></i><i style="--i:1;--c:#8bdccb"></i><i style="--i:2;--c:#b9a8fb"></i><i style="--i:3;--c:#ffb3d0"></i><i style="--i:4;--c:#90cbf5"></i></div><div class="cjClearBurst">🌟</div><h2>おもいでをあつめているよ</h2><p>写真のピースが、ひとつにつながるよ</p><div class="cjClearBar"><span></span></div></div><div class="cjClearWipe"></div></div>
 </body>
 </html>
