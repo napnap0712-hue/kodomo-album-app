@@ -13353,11 +13353,24 @@ window.cjCelebrateSpreadCard=function(){
      }
     }
    }finally{db?.close()}
-   // Preserve the existing saved order until the class's 12-slot linkage is verified.
-   found.sort((a,b)=>(a.completedAt||0)-(b.completedAt||0));
-   collectionCards=found;
+   // Match the same 12-slot map used by the class page list. Never sort by completion time.
+   const legacySlots=readProjectSlots(),positions=readSplitPagePositions();
+   const orderedSlots=Array(12).fill(null),unplaced=[];
+   for(const card of found){
+    const slot=positions[card.id];
+    if(Number.isInteger(slot)&&slot>=0&&slot<12&&!legacySlots[slot]&&!orderedSlots[slot])orderedSlots[slot]=card;
+    else unplaced.push(card);
+   }
+   // Newly finished albums that have not been assigned a saved slot use the
+   // first free slot, matching renderSplitProjectCards without mutating preferences.
+   unplaced.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+   for(const card of unplaced){
+    const slot=orderedSlots.findIndex((item,i)=>!item&&!legacySlots[i]);
+    if(slot>=0)orderedSlots[slot]=card;
+   }
+   collectionCards=orderedSlots.filter(Boolean).map((card)=>({...card,slot:orderedSlots.indexOf(card)}));
    const selectedName=selectedChildName||'園児未選択';
-   label.textContent='📖 '+selectedName+'さんのアルバム ・ 共通見開き '+found.length+'枚完成';
+   label.textContent='📖 '+selectedName+'さんのアルバム ・ 共通見開き '+collectionCards.length+' / 12枚完成';
    let growthReady=false,messageReady=false,coverReady=false,backReady=false;
    if(selectedChildName){
     try{const d=await growthRead(growthKey(selectedChildName));growthReady=!!d&&['height4','weight4','height3','weight3'].every(k=>Number(d[k])>0)}catch(e){}
@@ -13367,7 +13380,7 @@ window.cjCelebrateSpreadCard=function(){
    try{const b=await coverRead(bcKey());backReady=!!(b?.photo instanceof Blob&&b.photo.size)}catch(e){}
    const pages=[
     {name:'表紙',icon:'🎀',special:true,ready:coverReady,caption:selectedChildName?selectedChildName+'さん':'園児を選んでね',kind:'cover'},
-    ...Array.from({length:12},(_,i)=>({name:'見開き '+String(i+1).padStart(2,'0'),icon:'📖',entry:found[i]||null,ready:!!found[i]})),
+    ...Array.from({length:12},(_,i)=>({name:'見開き '+String(i+1).padStart(2,'0'),icon:'📖',entry:orderedSlots[i]||null,ready:!!orderedSlots[i]})),
     {name:'成長記録',icon:'🌱',special:true,ready:growthReady,caption:selectedChildName?selectedChildName+'さん':'園児を選んでね',kind:'growth'},
     {name:'メッセージ',icon:'💌',special:true,ready:messageReady,caption:selectedChildName?selectedChildName+'さん':'園児を選んでね',kind:'message'},
     {name:'裏表紙',icon:'📷',special:true,ready:backReady,caption:'クラス共通',kind:'back'}
@@ -13479,7 +13492,7 @@ window.cjCelebrateSpreadCard=function(){
    for(let i=0;i<cards.length;i++){
     if(selected.id!==classId||activeYear()!==year)throw Error('クラスまたは年度が変わりました');
     status.textContent='🖼️ '+(i+1)+' / '+cards.length+' 見開きの画像を作成中…';
-    items.push(...await renderSavedPageImages(cards[i].id,i));
+    items.push(...await renderSavedPageImages(cards[i].id,cards[i].slot));
    }
    readyFiles=items.map(item=>new File([item.blob],item.name,{type:'image/png'}));
    readyClass=classId;readyYear=year;
