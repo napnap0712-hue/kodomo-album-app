@@ -11396,6 +11396,14 @@ if(mode==='rect'){el.layoutFit='contain';el.zoom=100;}else if(mode==='square'){e
 });});renderSpread(files);$('#editorStatus').textContent=mode==='auto'?'おまかせ：'+patterns[autoArrangeStep]+'（'+(autoArrangeStep+1)+'/6）':mode==='square'?'均等・正方形：すべて正方形の枠に整列しました。':'均等・長方形：すべて横長の枠に整列しました。';}
 let equalArrangeNext='square';
 function setPhotoGap(value){photoGapPercent=Math.round(Math.max(0,Math.min(15,Number(value)||0))*10)/10;$('#photoGap').value=photoGapPercent;$('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';if(lastArrangeMode==='free'&&freeLayoutBase){applyPhotoGeometry(shrinkForGap(freeLayoutBase,photoGapPercent));renderSpread(files);}else if(lastArrangeMode){arrangeSpreadPhotos(lastArrangeMode,true);}else{const current=visiblePhotos();if(!current.length)return;if(!freeLayoutBase||freeLayoutBase.length!==current.length||freeLayoutBase.some(x=>!current.some(p=>p.id===x.id)))freeLayoutBase=capturePhotoGeometry(current);applyPhotoGeometry(shrinkForGap(freeLayoutBase,photoGapPercent));renderSpread(files);$('#editorStatus').textContent='写真同士の余白を '+photoGapPercent.toFixed(1)+'% に調整しました。';}}
+function restoreSavedPageBackground(value){
+ const select=$('#pageBackground'),saved=typeof value==='string'&&value?value:'#ffffff';
+ if(![...select.options].some(option=>option.value===saved)){
+  const option=document.createElement('option');option.value=saved;option.textContent=saved.startsWith('my-background:')?'保存したマイ背景':saved.startsWith('custom-pattern:')?'保存したカスタムパターン':'保存した背景色';
+  option.dataset.restoredBackground='true';select.appendChild(option);
+ }
+ select.value=saved;
+}
 function syncPageSettingsChoices(){document.querySelectorAll('[data-page-mode]').forEach(b=>b.classList.toggle('active',b.dataset.pageMode===$('#layoutMode').value));document.querySelectorAll('[data-bg]').forEach(b=>b.classList.toggle('active',b.dataset.bg===$('#pageBackground').value));}
 function applyPlainBackground(){const hex=plainBgSelectedColor;const soft=Number($('#plainBgSoftness').value)/100;const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));const mixed='#'+rgb.map(n=>Math.round(n+(255-n)*soft).toString(16).padStart(2,'0')).join('');const select=$('#pageBackground');let opt=select.querySelector('option[data-plain-custom]');if(!opt){opt=document.createElement('option');opt.dataset.plainCustom='true';opt.textContent='選択した色';select.appendChild(opt)}opt.value=mixed;select.value=mixed;$('#plainBgSoftnessValue').textContent=Math.round(soft*100)+'%';document.querySelectorAll('[data-plain-color]').forEach(b=>b.classList.toggle('active',b.dataset.plainColor===hex));select.dispatchEvent(new Event('change',{bubbles:true}));}
 let plainBgSelectedColor='#ffffff';document.querySelectorAll('[data-plain-color]').forEach(b=>b.addEventListener('click',()=>{plainBgSelectedColor=b.dataset.plainColor;$('#plainBgColor').value=plainBgSelectedColor;applyPlainBackground()}));$('#plainBgColor').addEventListener('input',e=>{plainBgSelectedColor=e.target.value;applyPlainBackground()});$('#plainBgSoftness').addEventListener('input',applyPlainBackground);
@@ -12131,7 +12139,7 @@ $('#resumeSavedNewSplitEdit').addEventListener('click',async()=>{
   pendingHistoryRestoreId=null;
   editingId=null;newAlbumSplitSelected=true;newAlbumSplitSavedId=meta.id;$('#viewSplitHistory').hidden=false;$('#restoreSplitBackup').hidden=false;$('#restorePreviousSplitBackup').hidden=false;$('#restorePreviousSplitBackup').hidden=false;$('#splitHistoryPanel').hidden=true;splitUnsavedRevision=0;newAlbumSplitOrigin=meta.migrationSourceId?{migrationSourceId:meta.migrationSourceId,sourceUpdatedAt:meta.sourceUpdatedAt}:null;
   $('#albumTitle').value=meta.title||'';$('#pageCaption').value=edits.caption||'';
-  $('#pageBackground').value=edits.background||'#ffffff';$('#layoutMode').value=edits.layout||'spread';
+  restoreSavedPageBackground(edits.background);$('#layoutMode').value=edits.layout||'spread';
   spreadIndex=Number.isInteger(edits.spreadIndex)?edits.spreadIndex:0;
   photoGapPercent=Number.isFinite(Number(edits.photoGap))?Number(edits.photoGap):2;
   $('#photoGap').value=photoGapPercent;$('#photoGapValue').textContent=photoGapPercent.toFixed(1)+'%';
