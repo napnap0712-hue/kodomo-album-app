@@ -4038,6 +4038,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjCollection .cjCollectionCard.specialCard{background:#fff9f6}
 #cjCollection .cjCollectionCard.isEmpty{opacity:.72}
 #cjCollection .cjCollectionCard .cjCollectionIcon img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+#cjCollection .cjSortableTile{min-width:0;position:relative}#cjCollection .cjSortableTile .cjCollectionCard{width:100%}#cjCollection .cjSortableTile.cjDragging{opacity:.45}#cjCollection .cjSortableTile.cjDropTarget{outline:3px dashed #e7ab62;outline-offset:2px;border-radius:22px}#cjCollection .cjMoveTools{display:flex;justify-content:center;gap:8px;margin-top:5px}#cjCollection .cjMoveTools button{border:0;border-radius:12px;background:#e4f3f1;color:#41657c;font-weight:900;padding:5px 12px;min-height:30px;cursor:pointer}#cjCollection .cjMoveTools button:disabled{opacity:.3}#cjCollection .cjSortHint{font-size:12px;margin:7px 0 12px;color:#587585}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 <link rel="stylesheet" href="./photo-pocket.css">
@@ -4082,7 +4083,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
  <button type="button" id="cjBatchExport" class="cjBatchExport">📚 完成した見開きをまとめて画像保存</button><p id="cjBatchStatus" role="status" class="cjCollectionHint">高画質画像を生成したあと、「📤 生成した画像を共有」を押して保存してね。</p>
  <div id="cjReadyExports" hidden><button id="cjShareReadyExports" type="button" class="cjBatchExport">📤 生成した画像を共有</button><button id="cjZipReadyExports" type="button" class="secondary">📦 ZIPで保存</button><p id="cjReadyExportInfo" role="status"></p></div>
  <div class="cjChildHeading">🌼 だれのアルバムをつくる？</div><div id="cjCollectionChildren" class="cjCollectionChildren" aria-label="園児を選択"></div>
- <div id="cjCollectionGrid" class="cjCollectionGrid"></div>
+ <p class="cjSortHint">📖 見開き12枚は長押しで並び替えできるよ。矢印でも移動できるよ。</p><div id="cjCollectionGrid" class="cjCollectionGrid"></div>
  <div id="cjCollectionMenu" class="cjCollectionMenu" hidden><h2 id="cjCollectionMenuTitle">おもいでカード</h2><p>保存した見開きから、高画質の左右ページを画像書き出しできるよ。</p><div class="cjCollectionActions"><button type="button" id="cjCollectionEdit">✏️ 編集する</button><button type="button" id="cjCollectionExport">🖼️ 画像保存へ</button><button type="button" id="cjCollectionCancel">閉じる</button></div></div>
  <p class="cjCollectionHint">カードは完成ページの目印。写真データは複製しないので保存容量も増やさないよ。</p>
 </section>
@@ -13322,6 +13323,10 @@ window.cjCelebrateSpreadCard=function(){
  const grid=document.getElementById('cjCollectionGrid'),menu=document.getElementById('cjCollectionMenu');
  let selectedCard=null;
  const getKey=()=> 'omoide-cj-spread-cards-v1-'+activeYear()+'-'+selected.id;
+ const getOrderKey=()=> 'omoide-cj-collection-order-v1-'+activeYear()+'-'+selected.id;
+ const defaultOrder=()=>Array.from({length:12},(_,i)=>i);
+ function readOrder(){try{const order=JSON.parse(localStorage.getItem(getOrderKey())||'null');return Array.isArray(order)&&order.length===12&&new Set(order).size===12&&order.every(i=>Number.isInteger(i)&&i>=0&&i<12)?order:defaultOrder()}catch(e){return defaultOrder()}}
+ function moveOrder(from,to){if(from===to||from<0||from>11||to<0||to>11)return;const order=readOrder();order.splice(to,0,order.splice(from,1)[0]);try{localStorage.setItem(getOrderKey(),JSON.stringify(order))}catch(e){document.getElementById('cjBatchStatus').textContent='⚠️ 並び順を保存できなかったよ：'+String(e?.message||e);return}readyFiles=[];document.getElementById('cjReadyExports').hidden=true;void window.cjRenderCollection()}
  function closeMenu(){selectedCard=null;menu.hidden=true}
  let collectionCards=[];
  let selectedChildName=null;
@@ -13368,7 +13373,8 @@ window.cjCelebrateSpreadCard=function(){
     const slot=orderedSlots.findIndex((item,i)=>!item&&!legacySlots[i]);
     if(slot>=0)orderedSlots[slot]=card;
    }
-   collectionCards=orderedSlots.filter(Boolean).map((card)=>({...card,slot:orderedSlots.indexOf(card)}));
+   const displayOrder=readOrder(),displaySlots=displayOrder.map(sourceSlot=>orderedSlots[sourceSlot]);
+   collectionCards=displaySlots.flatMap((card,i)=>card?[{...card,slot:i,sourceSlot:displayOrder[i]}]:[]);
    const selectedName=selectedChildName||'園児未選択';
    label.textContent='📖 '+selectedName+'さんのアルバム ・ 共通見開き '+collectionCards.length+' / 12枚完成';
    let growthReady=false,messageReady=false,coverReady=false,backReady=false;
@@ -13380,7 +13386,7 @@ window.cjCelebrateSpreadCard=function(){
    try{const b=await coverRead(bcKey());backReady=!!(b?.photo instanceof Blob&&b.photo.size)}catch(e){}
    const pages=[
     {name:'表紙',icon:'🎀',special:true,ready:coverReady,caption:selectedChildName?selectedChildName+'さん':'園児を選んでね',kind:'cover'},
-    ...Array.from({length:12},(_,i)=>({name:'見開き '+String(i+1).padStart(2,'0'),icon:'📖',entry:orderedSlots[i]||null,ready:!!orderedSlots[i]})),
+    ...Array.from({length:12},(_,i)=>({name:'見開き '+String(i+1).padStart(2,'0'),icon:'📖',entry:displaySlots[i]||null,ready:!!displaySlots[i],orderIndex:i})),
     {name:'成長記録',icon:'🌱',special:true,ready:growthReady,caption:selectedChildName?selectedChildName+'さん':'園児を選んでね',kind:'growth'},
     {name:'メッセージ',icon:'💌',special:true,ready:messageReady,caption:selectedChildName?selectedChildName+'さん':'園児を選んでね',kind:'message'},
     {name:'裏表紙',icon:'📷',special:true,ready:backReady,caption:'クラス共通',kind:'back'}
@@ -13402,7 +13408,23 @@ window.cjCelebrateSpreadCard=function(){
       document.getElementById('cjBatchStatus').textContent='この見開きはまだカード登録されていないよ。STAGE 04で完成させてね。';
      }
     });
-    grid.appendChild(b);
+    if(page.special){grid.appendChild(b)}else{
+     const tile=document.createElement('div');tile.className='cjSortableTile';tile.dataset.cjOrderIndex=String(page.orderIndex);
+     b.draggable=true;b.setAttribute('aria-label',page.name+'、並び替え可能');
+     b.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/plain',String(page.orderIndex));e.dataTransfer.effectAllowed='move';tile.classList.add('cjDragging')});
+     b.addEventListener('dragend',()=>grid.querySelectorAll('.cjDragging,.cjDropTarget').forEach(x=>x.classList.remove('cjDragging','cjDropTarget')));
+     tile.addEventListener('dragover',e=>{e.preventDefault();tile.classList.add('cjDropTarget')});
+     tile.addEventListener('dragleave',()=>tile.classList.remove('cjDropTarget'));
+     tile.addEventListener('drop',e=>{e.preventDefault();tile.classList.remove('cjDropTarget');const from=Number(e.dataTransfer.getData('text/plain'));if(Number.isInteger(from))moveOrder(from,page.orderIndex)});
+     let timer=null,startX=0,startY=0,dragging=false;
+     b.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;startX=e.touches[0].clientX;startY=e.touches[0].clientY;dragging=false;timer=setTimeout(()=>{dragging=true;tile.classList.add('cjDragging')},400)},{passive:true});
+     b.addEventListener('touchmove',e=>{const t=e.touches[0];if(!t)return;if(!dragging&&Math.hypot(t.clientX-startX,t.clientY-startY)>12){clearTimeout(timer);timer=null}if(dragging){e.preventDefault();grid.querySelectorAll('.cjDropTarget').forEach(x=>x.classList.remove('cjDropTarget'));document.elementFromPoint(t.clientX,t.clientY)?.closest('.cjSortableTile')?.classList.add('cjDropTarget')}},{passive:false});
+     b.addEventListener('touchend',e=>{clearTimeout(timer);timer=null;if(!dragging)return;dragging=false;e.preventDefault();const t=e.changedTouches[0],target=t&&document.elementFromPoint(t.clientX,t.clientY)?.closest('.cjSortableTile');grid.querySelectorAll('.cjDragging,.cjDropTarget').forEach(x=>x.classList.remove('cjDragging','cjDropTarget'));if(target)moveOrder(page.orderIndex,Number(target.dataset.cjOrderIndex));else void window.cjRenderCollection()},{passive:false});
+     b.addEventListener('touchcancel',()=>{clearTimeout(timer);timer=null;dragging=false;tile.classList.remove('cjDragging')});
+     const controls=document.createElement('div');controls.className='cjMoveTools';
+     for(const [arrow,delta] of [['◀',-1],['▶',1]]){const move=document.createElement('button');move.type='button';move.textContent=arrow;move.disabled=page.orderIndex+delta<0||page.orderIndex+delta>11;move.setAttribute('aria-label',page.name+'を'+(delta<0?'前':'後')+'へ移動');move.addEventListener('click',()=>moveOrder(page.orderIndex,page.orderIndex+delta));controls.appendChild(move)}
+     tile.append(b,controls);grid.appendChild(tile);
+    }
    }
   }catch(e){label.textContent='カードを読み込めなかったよ：'+String(e?.message||e)}
  };
@@ -13492,7 +13514,7 @@ window.cjCelebrateSpreadCard=function(){
    for(let i=0;i<cards.length;i++){
     if(selected.id!==classId||activeYear()!==year)throw Error('クラスまたは年度が変わりました');
     status.textContent='🖼️ '+(i+1)+' / '+cards.length+' 見開きの画像を作成中…';
-    items.push(...await renderSavedPageImages(cards[i].id,cards[i].slot));
+    items.push(...await renderSavedPageImages(cards[i].id,i));
    }
    readyFiles=items.map(item=>new File([item.blob],item.name,{type:'image/png'}));
    readyClass=classId;readyYear=year;
