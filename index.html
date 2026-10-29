@@ -4039,7 +4039,8 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjCollection .cjCollectionCard.isEmpty{opacity:.72}
 #cjCollection .cjCollectionCard .cjCollectionIcon img{width:100%;height:100%;object-fit:cover;border-radius:10px}
 #cjCollection .cjSortableTile{min-width:0;position:relative}#cjCollection .cjSortableTile .cjCollectionCard{width:100%}#cjCollection .cjSortableTile.cjDragging{opacity:.45}#cjCollection .cjSortableTile.cjDropTarget{outline:3px dashed #e7ab62;outline-offset:2px;border-radius:22px}#cjCollection .cjMoveTools{display:flex;justify-content:center;gap:8px;margin-top:5px}#cjCollection .cjMoveTools button{border:0;border-radius:12px;background:#e4f3f1;color:#41657c;font-weight:900;padding:5px 12px;min-height:30px;cursor:pointer}#cjCollection .cjMoveTools button:disabled{opacity:.3}#cjCollection .cjSortHint{font-size:12px;margin:7px 0 12px;color:#587585}
-#cjCollection .cjCollectionIcon.cjCoverMini{width:80px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:space-around;gap:3px;background:#fff;border:1px solid #ecdfe9;border-radius:7px;padding:6px 3px;color:#526c81;overflow:hidden}#cjCollection .cjCoverMini .cjCoverMiniTitle{font-size:9px;font-weight:900;line-height:1.2}#cjCollection .cjCoverMini .cjCoverMiniYear,#cjCollection .cjCoverMini .cjCoverMiniClass{font-size:7px;line-height:1.1}#cjCollection .cjCoverMini .cjCoverMiniName{display:block;width:100%;font-size:9px;font-weight:900;line-height:1.3;overflow-wrap:anywhere;text-align:center;white-space:normal;color:#39536a}#cjCollection .cjCoverMini img{width:30px!important;height:30px!important;object-fit:contain!important;border-radius:0!important}@media(max-width:460px){#cjCollection .cjCollectionIcon.cjCoverMini{width:60px;height:77px;padding:3px 2px}#cjCollection .cjCoverMini img{width:23px!important;height:23px!important}#cjCollection .cjCoverMini .cjCoverMiniName{font-size:8px}}
+#cjCollection .cjCollectionIcon.cjCoverMini{width:80px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:space-around;gap:3px;background:#fff;border:1px solid #ecdfe9;border-radius:7px;padding:6px 3px;color:#526c81;overflow:hidden}#cjCollection .cjCoverMini .cjCoverMiniTitle{font-size:9px;font-weight:900;line-height:1.2}#cjCollection .cjCoverMini .cjCoverMiniYear,#cjCollection .cjCoverMini .cjCoverMiniClass{font-size:7px;line-height:1.1}#cjCollection .cjCoverMini .cjCoverMiniName{display:block;width:100%;font-size:9px;font-weight:900;line-height:1.3;overflow-wrap:anywhere;text-align:center;white-space:normal;color:#39536a}#cjCollection .cjCoverMini img{width:30px!important;height:30px!important;object-fit:contain!important;border-radius:0!important}@media(max-width:460px){#cjCollection .cjCollectionIcon.cjCoverMini{width:60px;height:77px;padding:3px 2px}#cjCollection .cjCoverMini img{width:23px!important;height:23px!important}#cjCollection .cjCoverMini .cjCoverMiniName{font-size:8px}
+#cjCollection .cjCoverActual{display:block;width:76px;height:108px;position:relative;overflow:hidden;border-radius:5px;background:#fff;box-shadow:0 1px 7px #243d5322}#cjCollection .cjCoverActual .coverPaper{width:320px!important;height:452.6px!important;max-height:none!important;min-height:0!important;aspect-ratio:auto!important;margin:0!important;transform:scale(.2375);transform-origin:top left;box-shadow:none!important;border:0!important}#cjCollection .cjCoverActual .coverPaper .coverTitle{font-size:38px!important}#cjCollection .cjCoverActual .coverPaper .coverSubtitle{font-size:19px!important}#cjCollection .cjCoverActual .coverPaper .coverName{font-size:27px!important}#cjCollection .cjCoverActual .coverPaper img{width:90%!important;height:52%!important;object-fit:contain!important;border-radius:0!important}#cjCollection .cjCollectionCard .cjCoverActual{width:76px;height:108px}#cjCoverPreviewOverlay{position:fixed;inset:0;z-index:100005;background:#26374bd9;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:14px}#cjCoverPreviewOverlay[hidden]{display:none!important}#cjCoverPreviewOverlay .cjCoverPreviewPage{width:min(100%,320px);max-height:75vh;aspect-ratio:210/297;position:relative}#cjCoverPreviewOverlay .cjCoverPreviewPage .coverPaper{width:100%!important;height:100%!important;max-height:none!important;margin:0!important;box-shadow:none!important}#cjCoverPreviewOverlay .cjCoverPreviewPage .coverTitle{font-size:clamp(18px,5vw,38px)!important}#cjCoverPreviewOverlay .cjCoverPreviewPage .coverSubtitle{font-size:clamp(12px,3vw,19px)!important}#cjCoverPreviewOverlay .cjCoverPreviewPage .coverName{font-size:clamp(16px,4vw,27px)!important}#cjCoverPreviewOverlay button{border:0;border-radius:14px;padding:12px 28px;font-size:16px;font-weight:900;background:#e5f7ed;color:#294c63}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 <link rel="stylesheet" href="./photo-pocket.css">
@@ -13331,6 +13332,27 @@ window.cjCelebrateSpreadCard=function(){
  let collectionCards=[];
  let selectedChildName=null;
  const childrenHost=document.getElementById('cjCollectionChildren');
+ function buildCoverPreview(data,child,year){
+  // Clone the existing printable cover; never alter the editor's live node or save data.
+  const source=document.getElementById('coverPaper'),paper=source.cloneNode(true);
+  paper.removeAttribute('id');paper.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+  const subs=paper.querySelectorAll('.coverSubtitle');
+  if(subs[0])subs[0].textContent=data?.year||String(year)+'年度';
+  const title=paper.querySelector('.coverTitle');if(title)title.textContent=data?.title||'おもいでブック';
+  const flower=paper.querySelector('.coverFlower');if(flower){flower.src='./'+selected.flower;flower.alt='';}
+  if(subs[1])subs[1].textContent=displayClassName(selected);
+  const name=paper.querySelector('.coverName');if(name)name.textContent=child?child+'さん':'';
+  return paper;
+ }
+ function showCoverPreview(data,child,year){
+  const overlay=document.createElement('div');overlay.id='cjCoverPreviewOverlay';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','表紙の完成プレビュー');
+  const frame=document.createElement('div');frame.className='cjCoverPreviewPage';frame.appendChild(buildCoverPreview(data,child,year));
+  const close=document.createElement('button');close.type='button';close.textContent='閉じる';
+  const dismiss=()=>{overlay.remove();document.removeEventListener('keydown',esc)};
+  const esc=e=>{if(e.key==='Escape')dismiss()};
+  close.addEventListener('click',dismiss);overlay.addEventListener('click',e=>{if(e.target===overlay)dismiss()});
+  overlay.append(frame,close);document.body.appendChild(overlay);document.addEventListener('keydown',esc);close.focus();
+ }
  window.cjRenderCollection=async function(){
   closeMenu();grid.replaceChildren();
   const label=document.getElementById('cjCollectionCount'),year=activeYear(),classId=selected.id;
@@ -13396,17 +13418,14 @@ window.cjCelebrateSpreadCard=function(){
     const b=document.createElement('button');b.type='button';b.className='cjCollectionCard'+(page.special?' specialCard':'')+(!page.ready?' isEmpty':'');
     const icon=document.createElement('span');icon.className='cjCollectionIcon';
     if(page.kind==='cover'&&page.ready){
-     icon.classList.add('cjCoverMini');
-     const line=(cls,value)=>{const el=document.createElement('span');el.className=cls;el.textContent=value;return el};
-     const flower=document.createElement('img');flower.src='./'+selected.flower;flower.alt='';
-     icon.append(line('cjCoverMiniYear',coverData?.year||String(year)+'年度'),line('cjCoverMiniTitle',coverData?.title||'おもいでブック'),flower,line('cjCoverMiniClass',displayClassName(selected)),line('cjCoverMiniName',selectedChildName+'さん'));
+     icon.classList.add('cjCoverActual');icon.appendChild(buildCoverPreview(coverData,selectedChildName,year));
     }else if(page.entry?.thumbnail){const img=document.createElement('img');img.src=page.entry.thumbnail;img.alt='完成した見開き';icon.append(img)}else icon.textContent=page.ready?page.icon:'＋';
     const title=document.createElement('strong');title.textContent=page.name;
     const state=document.createElement('small');state.textContent=page.kind==='cover'?(page.ready?'✨ 名前を自動反映':'園児を選んでね'):(page.ready?(page.caption||'✨ 完成済み'):(page.special?'◌ 未完成':'◌ 未登録'));
     b.append(icon,title,state);
     b.addEventListener('click',()=>{
      if(page.kind==='cover'){
-      // Cover is generated from the selected child and the preserved shared template.
+      if(selectedChildName)showCoverPreview(coverData,selectedChildName,year);
       return;
      }else if(page.entry){
       selectedCard=page.entry;document.getElementById('cjCollectionMenuTitle').textContent=page.name;menu.hidden=false;menu.scrollIntoView({behavior:'smooth',block:'nearest'});
