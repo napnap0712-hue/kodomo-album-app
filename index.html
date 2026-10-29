@@ -13239,6 +13239,38 @@ async function saveNewSplitAlbum(){
 }
 
 
+/* Stage 04 completion celebration: visual-only, no changes to stored albums. */
+<style>
+#cjCardFlight{position:fixed;inset:0;z-index:100500;display:flex;align-items:center;justify-content:center;background:rgba(44,66,96,.22);backdrop-filter:blur(5px);pointer-events:all}
+#cjCardFlight .cjFlightStage{text-align:center;position:relative;width:min(94vw,420px);height:390px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+#cjCardFlight .cjFlightLabel{font-size:22px;font-weight:900;color:#33566d;text-shadow:0 2px white;animation:cjFlightLabel 2.7s both}
+#cjCardFlight .cjFlightBook{width:195px;height:135px;position:relative;margin:10px auto 20px;transform-style:preserve-3d;animation:cjFlightBook 2.7s cubic-bezier(.2,.8,.2,1) both}
+#cjCardFlight .cjFlightBook:before,#cjCardFlight .cjFlightBook:after{content:"";position:absolute;top:0;height:100%;width:50%;box-sizing:border-box;border:5px solid #fff;box-shadow:0 12px 25px #466b8950;background:linear-gradient(145deg,#ffe3e8,#fff5d9)}
+#cjCardFlight .cjFlightBook:before{left:0;border-radius:16px 3px 3px 16px;transform-origin:right center;animation:cjFlightClose 2.7s both}
+#cjCardFlight .cjFlightBook:after{right:0;border-radius:3px 16px 16px 3px;background:linear-gradient(140deg,#b8eae5,#d8e8ff)}
+#cjCardFlight .cjFlightBook span{position:absolute;inset:0;display:grid;place-items:center;z-index:2;font-size:50px;animation:cjFlightIcon 2.7s both}
+#cjCardFlight .cjFlightTarget{position:absolute;right:10px;top:15px;padding:12px 15px;border:4px solid white;border-radius:20px;background:#ffe5ae;box-shadow:0 9px 23px #466b8944;font-weight:900;font-size:13px;color:#426071;animation:cjFlightTarget 2.7s both}
+#cjCardFlight .cjFlightSpark{position:absolute;inset:0;pointer-events:none;font-size:27px;animation:cjFlightSpark 2.7s both}
+@keyframes cjFlightClose{0%,22%{transform:rotateY(-40deg)}48%,100%{transform:rotateY(0deg)}}
+@keyframes cjFlightBook{0%,20%{transform:translate(0,0) scale(1);opacity:1}48%{transform:translate(0,-18px) scale(.7) rotate(-7deg);opacity:1}76%{transform:translate(105px,-105px) scale(.3) rotate(16deg);opacity:1}85%,100%{transform:translate(105px,-105px) scale(.1);opacity:0}}
+@keyframes cjFlightIcon{0%,35%{opacity:1}55%,100%{opacity:0}}
+@keyframes cjFlightLabel{0%,15%{opacity:0;transform:translateY(14px)}28%,70%{opacity:1;transform:none}90%,100%{opacity:1}}
+@keyframes cjFlightTarget{0%,58%{transform:scale(.65);opacity:0}76%{transform:scale(1.16);opacity:1}88%,100%{transform:scale(1);opacity:1}}
+@keyframes cjFlightSpark{0%,60%{opacity:0}80%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){#cjCardFlight *{animation:none!important}#cjCardFlight .cjFlightBook{display:none}#cjCardFlight .cjFlightTarget{position:static}}
+</style>
+<script>
+window.cjCelebrateSpreadCard=function(){
+ const old=document.getElementById('cjCardFlight');if(old)old.remove();
+ const overlay=document.createElement('div');
+ overlay.id='cjCardFlight';overlay.setAttribute('role','status');overlay.setAttribute('aria-live','polite');
+ overlay.innerHTML='<div class="cjFlightStage"><div class="cjFlightTarget">📚 STAGE 09<br>カード GET!</div><div class="cjFlightSpark">✨ 🌟 ✨</div><div class="cjFlightBook"><span>📖</span></div><div class="cjFlightLabel">✨ おもいでカードをゲット！</div></div>';
+ document.body.appendChild(overlay);
+ const done=()=>{if(overlay.isConnected)overlay.remove()};
+ overlay.addEventListener('click',done,{once:true});
+ setTimeout(done,window.matchMedia('(prefers-reduced-motion: reduce)').matches?1200:2900);
+};
+</script>
 /* STAGE 04 completion is a small, class-scoped reference manifest.
    It does not alter album blobs, editor contents, or the legacy 16-page status. */
 (function(){
@@ -13273,7 +13305,8 @@ async function saveNewSplitAlbum(){
    const cards=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
    cards[id]={id,updatedAt:meta.updatedAt,completedAt:Date.now()};
    localStorage.setItem(storageKey,JSON.stringify(cards));
-   document.getElementById('editorStatus').textContent='✨ 見開きを完成登録したよ！カードの収集演出は次のステップで追加するね。';
+   document.getElementById('editorStatus').textContent='✨ 見開きを完成登録したよ！おもいでカードをゲット！';
+   window.cjCelebrateSpreadCard?.();
    button.textContent='✅ 完成登録したよ';
    setTimeout(()=>{button.textContent='✨ この見開きを完成！';refresh()},1800);
   }catch(error){alert('完成登録できませんでした：'+String(error?.message||error))}
