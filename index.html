@@ -4012,6 +4012,21 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjJourney .cjSideQuest strong{font-size:11px;line-height:1.25;white-space:nowrap;text-shadow:0 1px white}
 #cjJourney .cjMapLayout .cjStage{transform:translateX(clamp(-30px,calc(var(--offset)*.33),30px));}
 @media(max-width:440px){#cjJourney .cjMapLayout{grid-template-columns:76px minmax(0,1fr);gap:4px}#cjJourney .cjSideQuest{width:76px}#cjJourney .cjSideCircle{width:62px;height:62px;font-size:27px}#cjJourney .cjMapLayout .cjStage{transform:translateX(clamp(-20px,calc(var(--offset)*.24),20px))}}
+
+/* Stage 09 collectible spread list, using references to saved albums only. */
+#cjCollection{max-width:760px;margin:auto;padding:22px 15px 55px;background:linear-gradient(155deg,#effaff,#fff9f5);min-height:100vh;color:#385872}
+.cjCollectHead{display:flex;gap:12px;align-items:start}.cjCollectHead button{border:3px solid white;border-radius:50%;background:#d5f2e8;width:43px;height:43px;flex:none;font-size:27px;color:#385872}
+.cjCollectHead small{font-size:11px;font-weight:900;letter-spacing:.12em}.cjCollectHead h1{font-size:23px;line-height:1.3;margin:5px 0}.cjCollectHead p{font-size:13px;margin:4px 0}
+.cjCollectionCount{padding:12px 16px;border-radius:18px;background:#fff;font-weight:900;margin:23px 0 15px}
+.cjCollectionGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.cjCollectionCard{border:4px solid white;border-radius:22px;background:#fff;min-width:0;min-height:155px;box-shadow:0 8px 20px #54778d18;padding:10px 6px;color:#385872;display:flex;flex-direction:column;align-items:center;gap:7px;justify-content:center;cursor:pointer}
+.cjCollectionCard:disabled{opacity:.54;cursor:default}.cjCollectionCard .cjCollectionIcon{width:70px;height:80px;border-radius:13px;background:linear-gradient(135deg,#bdece3,#e8ddfa);display:grid;place-items:center;font-size:36px;border:3px solid white;box-shadow:0 4px 10px #54778d22}
+.cjCollectionCard strong{font-size:12px}.cjCollectionCard small{font-size:10px;line-height:1.4;color:#57748a}
+.cjCollectionCard.isEmpty .cjCollectionIcon{background:#e8eef0;color:#9faeb7}
+.cjCollectionMenu{margin:18px 0;padding:20px;background:#fff;border:3px solid #d6ede9;border-radius:24px;box-shadow:0 7px 25px #43688720}
+.cjCollectionMenu[hidden]{display:none}.cjCollectionMenu h2{font-size:19px;margin:0 0 9px}.cjCollectionMenu p,.cjCollectionHint{font-size:12px;line-height:1.6}
+.cjCollectionActions{display:flex;gap:8px;flex-wrap:wrap}.cjCollectionActions button{border:0;border-radius:14px;background:#d1efe8;color:#345a70;font-weight:900;min-height:45px;padding:9px 14px}
+.cjCollectionActions #cjCollectionExport{background:#ffdfa8}
+@media(max-width:460px){.cjCollectionGrid{gap:7px}.cjCollectionCard{min-height:135px}.cjCollectionCard .cjCollectionIcon{width:55px;height:65px;font-size:30px}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 <link rel="stylesheet" href="./photo-pocket.css">
@@ -4050,6 +4065,13 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
  <nav class="cjNav" aria-label="カラージャーニー"><button class="active" data-jump="map">🗺️ ぼうけん</button><button data-jump="kids">🌼 クラス園児</button><button data-jump="albums">📚 アルバム一覧</button></nav>
  <p class="cjExplain" id="cjNotice" role="status">ステージは好きな順に開けるよ。保存済みのページはそのまま残るよ。</p>
  </section>
+<section class="screen" data-screen="cjCollection" id="cjCollection">
+ <header class="cjCollectHead"><button type="button" id="cjCollectionBack" aria-label="冒険マップへ戻る">‹</button><div><small>COLOR JOURNEY · STAGE 09</small><h1>📚 おもいでコレクション</h1><p>完成した見開きカードがここに集まるよ！</p></div></header>
+ <p id="cjCollectionCount" class="cjCollectionCount" role="status">カードを確認中…</p>
+ <div id="cjCollectionGrid" class="cjCollectionGrid"></div>
+ <div id="cjCollectionMenu" class="cjCollectionMenu" hidden><h2 id="cjCollectionMenuTitle">おもいでカード</h2><p>保存した見開きから、高画質の左右ページを画像書き出しできるよ。</p><div class="cjCollectionActions"><button type="button" id="cjCollectionEdit">✏️ 編集する</button><button type="button" id="cjCollectionExport">🖼️ 画像保存へ</button><button type="button" id="cjCollectionCancel">閉じる</button></div></div>
+ <p class="cjCollectionHint">カードは完成ページの目印。写真データは複製しないので保存容量も増やさないよ。</p>
+</section>
 <section class="screen" data-screen="classProjects"><div class="top"><button class="back" data-back="home">‹</button><div class="topText"><p class="brand">CLASS PROJECTS · CE</p><h1 id="projectClassTitle">クラス</h1><p class="lead">見開き1ページ＝1プロジェクト</p></div><div class="projectDeleteActions"><button id="projectCancelDelete" type="button" class="secondary" hidden>キャンセル</button><button id="projectDeleteButton" type="button" class="secondary">🗑 削除</button></div></div><section class="cdProgressPanel" aria-label="クラスの制作進捗"><div class="cdProgressTop"><strong>🌷 クラスの完成状況</strong><b id="cdProgressPercent">0%</b></div><progress id="cdProgressBar" max="16" value="0"></progress><p id="cdProgressSummary" class="muted">仕上げ済み 0 / 16ページ</p><button id="cdCompleteClass" type="button" class="primary" disabled>✅ アルバムを完了する</button><p id="cdCompleteStatus" class="muted" role="status">各ページを仕上げ済みにすると、完了できるようになります。</p></section><dialog id="cdFinishDialog" class="cdFinishDialog" aria-labelledby="cdFinishTitle" aria-modal="true"><div class="cdFinishCard"><h2 id="cdFinishTitle">🌷 アルバムを完成にしますか？</h2><p id="cdFinishCounts"></p><p id="cdFinishExplanation"></p><p>使用中の元写真・編集内容・既存バックアップは保持されます。完了後も自由に編集でき、削除した写真を再利用する場合は追加アップロードが必要です。</p><div class="cdFinishActions"><button type="button" id="cdFinishCancel" class="secondary">キャンセル</button><button type="button" id="cdFinishConfirm" class="primary">未使用写真を削除して完了</button></div></div></dialog><div id="projectGrid" class="projectGrid"></div><div class="cdStatusLegend" aria-label="仕上げ状態の見方"><span><i class="cdLegendDot ready" aria-hidden="true">✓</i>仕上げ済み</span><span><i class="cdLegendDot updated" aria-hidden="true">!</i>更新あり</span><span><i class="cdLegendDot" aria-hidden="true"></i>編集中</span><span><i class="cdLegendDot" aria-hidden="true">＋</i>未作成</span></div><section class="cdPageChecklist" aria-label="ページごとの仕上げ管理"><strong>✅ 各ページの仕上げ確認</strong><p class="muted">各ページの保存が終わったら「仕上げ済み」にしてね。あとから何度でも編集できます。</p><div id="cdPageChecklistRows" class="cdPageChecklistRows"></div></section><div id="splitProjectList" hidden style="margin-top:16px"><strong style="font-size:13px">🌱 分離保存したページ</strong><div id="splitProjectCards" class="projectGrid" style="margin-top:8px"></div></div><div id="splitTrashList" hidden style="margin-top:16px"><strong>🗑 分離保存アルバムのゴミ箱</strong><div id="splitTrashCards" style="display:grid;gap:8px;margin-top:8px"></div></div><button id="addProjectSlot" class="secondary projectAdd" type="button">＋ 見開きページを追加</button><p id="projectStatus" class="muted"></p></section><section class="screen" data-screen="classChoice">
 <div class="top"><button class="back" data-back="home" aria-label="戻る">‹</button><div class="topText"><p class="brand">CLASS</p><h1 id="classTitle">クラス</h1><p class="lead">何をするか選んでね。</p></div></div>
 <div class="actionList">
@@ -5148,7 +5170,7 @@ window.cjOriginalApp={
   if(kind==='albums'){show('saved');return;}
   if(kind==='merge'){return this.openRecentMerge();}
   if(kind==='check'){return this.openRecentMerge({preferSaved:true}).then(result=>{if(result?.ok){show('photoAssign');setPhotoAssignFlowStep('check',{scroll:true});renderCurrentAlbumSingletonPairs();}return result;});}
-  if(kind==='spread'){return this.openRecentSpread();} if(kind==='finish'){show('saved');return;}
+  if(kind==='spread'){return this.openRecentSpread();} if(kind==='finish'){show('cjCollection');void window.cjRenderCollection?.();return;}
   if(kind==='kids'){$('[data-screen="classDetail"] .back').dataset.back='cjJourney';show('classDetail');return;}
   if(kind==='new'){$('#createNew').click();return;}
   if(kind==='cover'){openCoverEditor();return;}
@@ -13273,6 +13295,59 @@ window.cjCelebrateSpreadCard=function(){
  setTimeout(done,window.matchMedia('(prefers-reduced-motion: reduce)').matches?1200:2900);
 };
 
+/* Stage 09 reads completion references only; existing export stays authoritative. */
+(function(){
+ const grid=document.getElementById('cjCollectionGrid'),menu=document.getElementById('cjCollectionMenu');
+ let selectedCard=null;
+ const getKey=()=> 'omoide-cj-spread-cards-v1-'+activeYear()+'-'+selected.id;
+ function closeMenu(){selectedCard=null;menu.hidden=true}
+ window.cjRenderCollection=async function(){
+  closeMenu();grid.replaceChildren();
+  const label=document.getElementById('cjCollectionCount');
+  try{
+   const data=JSON.parse(localStorage.getItem(getKey())||'{}');
+   const entries=Object.values(data&&typeof data==='object'&&!Array.isArray(data)?data:{}).filter(c=>c&&typeof c.id==='string');
+   let db=null,found=[];
+   try{
+    db=await cdOpenSplitDb();
+    for(const c of entries){
+     const a=await cdReadStore(db,'albums',c.id);
+     if(a?.ready&&a.storage==='split-v1'&&!a.trashedAt&&a.classId===selected.id&&a.year===activeYear()){
+      found.push({id:c.id,title:a.title||'おもいでの見開き',updatedAt:a.updatedAt,completedAt:c.completedAt});
+     }
+    }
+   }finally{db?.close()}
+   found.sort((a,b)=>(a.completedAt||0)-(b.completedAt||0));
+   label.textContent='✨ 完成カード '+found.length+'枚';
+   if(!found.length){grid.textContent='まだ完成したカードがないよ。STAGE 04で保存してから「この見開きを完成！」を押してね。';return}
+   for(const entry of found){
+    const b=document.createElement('button');b.type='button';b.className='cjCollectionCard';
+    const icon=document.createElement('span');icon.className='cjCollectionIcon';icon.textContent='📖';
+    const title=document.createElement('strong');title.textContent=entry.title;
+    const sub=document.createElement('small');sub.textContent='✨ 完成済み';
+    b.append(icon,title,sub);
+    b.addEventListener('click',()=>{selectedCard=entry;document.getElementById('cjCollectionMenuTitle').textContent=entry.title;menu.hidden=false;menu.scrollIntoView({behavior:'smooth',block:'nearest'})});
+    grid.appendChild(b);
+   }
+  }catch(e){label.textContent='カードを読み込めなかったよ：'+String(e?.message||e)}
+ };
+ async function openCard(exportMode){
+  if(!selectedCard)return;
+  const id=selectedCard.id;
+  closeMenu();
+  const opened=await openSplitProjectFromList(id);
+  if(!opened){alert('保存済みの見開きを安全に開けなかったよ。元データは変更していないよ。');return}
+  window.cjEditorTopSaveRevision=null;
+  if(exportMode){
+   document.getElementById('editorStatus').textContent='🖼️ 画像保存は上部の「画像書き出し」を押してね。左右ページは既存の書き出し機能を使うよ。';
+   document.getElementById('exportImage')?.focus();
+  }
+ }
+ document.getElementById('cjCollectionBack').addEventListener('click',()=>window.cjOriginalApp.navigate('map'));
+ document.getElementById('cjCollectionCancel').addEventListener('click',closeMenu);
+ document.getElementById('cjCollectionEdit').addEventListener('click',()=>void openCard(false));
+ document.getElementById('cjCollectionExport').addEventListener('click',()=>void openCard(true));
+})();
 /* STAGE 04 completion is a small, class-scoped reference manifest.
    It does not alter album blobs, editor contents, or the legacy 16-page status. */
 (function(){
