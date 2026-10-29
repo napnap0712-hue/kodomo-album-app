@@ -4069,7 +4069,8 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 <section class="screen" data-screen="cjCollection" id="cjCollection">
  <header class="cjCollectHead"><button type="button" id="cjCollectionBack" aria-label="冒険マップへ戻る">‹</button><div><small>COLOR JOURNEY · STAGE 09</small><h1>📚 おもいでコレクション</h1><p>完成した見開きカードがここに集まるよ！</p></div></header>
  <p id="cjCollectionCount" class="cjCollectionCount" role="status">カードを確認中…</p>
- <button type="button" id="cjBatchExport" class="cjBatchExport">📚 完成した見開きをまとめて画像保存</button><p id="cjBatchStatus" role="status" class="cjCollectionHint">左右の画像を作成して、共有メニューから「画像を保存」できます。</p>
+ <button type="button" id="cjBatchExport" class="cjBatchExport">📚 完成した見開きをまとめて画像保存</button><p id="cjBatchStatus" role="status" class="cjCollectionHint">高画質画像を生成したあと、「📤 生成した画像を共有」を押して保存してね。</p>
+ <div id="cjReadyExports" hidden><button id="cjShareReadyExports" type="button" class="cjBatchExport">📤 生成した画像を共有</button><button id="cjZipReadyExports" type="button" class="secondary">📦 ZIPで保存</button><p id="cjReadyExportInfo" role="status"></p></div>
  <div id="cjCollectionGrid" class="cjCollectionGrid"></div>
  <div id="cjCollectionMenu" class="cjCollectionMenu" hidden><h2 id="cjCollectionMenuTitle">おもいでカード</h2><p>保存した見開きから、高画質の左右ページを画像書き出しできるよ。</p><div class="cjCollectionActions"><button type="button" id="cjCollectionEdit">✏️ 編集する</button><button type="button" id="cjCollectionExport">🖼️ 画像保存へ</button><button type="button" id="cjCollectionCancel">閉じる</button></div></div>
  <p class="cjCollectionHint">カードは完成ページの目印。写真データは複製しないので保存容量も増やさないよ。</p>
@@ -13316,7 +13317,7 @@ window.cjCelebrateSpreadCard=function(){
     for(const c of entries){
      const a=await cdReadStore(db,'albums',c.id);
      if(a?.ready&&a.storage==='split-v1'&&!a.trashedAt&&a.classId===selected.id&&a.year===activeYear()){
-      found.push({id:c.id,title:a.title||'おもいでの見開き',updatedAt:a.updatedAt,completedAt:c.completedAt});
+      found.push({id:c.id,title:a.title||'おもいでの見開き',updatedAt:a.updatedAt,completedAt:c.completedAt,thumbnail:c.thumbnail||null});
      }
     }
    }finally{db?.close()}
@@ -13326,7 +13327,7 @@ window.cjCelebrateSpreadCard=function(){
    if(!found.length){grid.textContent='まだ完成したカードがないよ。STAGE 04で保存してから「この見開きを完成！」を押してね。';return}
    for(const entry of found){
     const b=document.createElement('button');b.type='button';b.className='cjCollectionCard';
-    const icon=document.createElement('span');icon.className='cjCollectionIcon';icon.textContent='📖';
+    const icon=document.createElement('span');icon.className='cjCollectionIcon';if(entry.thumbnail){const img=document.createElement('img');img.src=entry.thumbnail;img.alt='完成見開きのサムネイル';img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:10px';icon.appendChild(img)}else icon.textContent='📖';
     const title=document.createElement('strong');title.textContent=entry.title;
     const sub=document.createElement('small');sub.textContent='✨ 完成済み';
     b.append(icon,title,sub);
@@ -13391,6 +13392,27 @@ window.cjCelebrateSpreadCard=function(){
   full.width=0;full.height=0;
   return images;
  }
+ let readyFiles=[],readyClass='',readyYear='';
+ const readyBox=document.getElementById('cjReadyExports');
+ document.getElementById('cjShareReadyExports').addEventListener('click',async()=>{
+  const info=document.getElementById('cjReadyExportInfo');
+  if(!readyFiles.length)return;
+  try{
+   if(!navigator.share||!navigator.canShare||!navigator.canShare({files:readyFiles})){info.textContent='⚠️ この端末は画像の一括共有に対応していません。ZIP保存を使ってね。';return}
+   await navigator.share({files:readyFiles,title:'おもいでブックのページ画像'});
+   info.textContent='✅ 共有を終了したよ。写真アプリへの保存を確認してね。';
+  }catch(error){info.textContent=error?.name==='AbortError'?'共有をキャンセルしたよ。':('共有できなかったよ：'+String(error?.message||error))}
+ });
+ document.getElementById('cjZipReadyExports').addEventListener('click',async()=>{
+  if(!readyFiles.length)return;
+  const info=document.getElementById('cjReadyExportInfo');
+  try{
+   info.textContent='ZIPを準備中…';
+   const zip=await makeZip(readyFiles.map(f=>({name:f.name,blob:f}))),url=URL.createObjectURL(zip);
+   const link=document.createElement('a');link.href=url;link.download='omoide-spreads-'+readyYear+'-'+readyClass+'.zip';document.body.append(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),60000);info.textContent='✅ ZIPを保存したよ。';
+  }catch(e){info.textContent='ZIPを保存できなかったよ：'+String(e?.message||e)}
+ });
  document.getElementById('cjBatchExport').addEventListener('click',async()=>{
   const btn=document.getElementById('cjBatchExport'),status=document.getElementById('cjBatchStatus');
   if(!collectionCards.length){status.textContent='完成カードがまだないよ。';return}
@@ -13402,18 +13424,12 @@ window.cjCelebrateSpreadCard=function(){
     status.textContent='🖼️ '+(i+1)+' / '+cards.length+' 見開きの画像を作成中…';
     items.push(...await renderSavedPageImages(cards[i].id,i));
    }
-   const filesToShare=items.map(item=>new File([item.blob],item.name,{type:'image/png'}));
-   if(navigator.share&&navigator.canShare&&navigator.canShare({files:filesToShare})){
-    status.textContent='📤 共有メニューから「画像を保存」を選んでね。';
-    await navigator.share({files:filesToShare,title:'おもいでブックのページ画像'});
-    status.textContent='✅ 共有メニューを閉じたよ。写真アプリに保存できたか確認してね。';
-   }else{
-    status.textContent='📦 この端末は画像の一括共有に対応していないため、ZIPを作成中…';
-    const blob=await makeZip(items),url=URL.createObjectURL(blob);
-    const link=document.createElement('a');link.href=url;link.download='omoide-spreads-'+year+'-'+classId+'.zip';document.body.append(link);link.click();link.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
-    status.textContent='✅ ZIPを保存したよ。この端末では画像の一括共有に対応していなかったよ。';
-   }
+   readyFiles=items.map(item=>new File([item.blob],item.name,{type:'image/png'}));
+   readyClass=classId;readyYear=year;
+   readyBox.hidden=false;
+   document.getElementById('cjReadyExportInfo').textContent='✅ 高画質画像 '+readyFiles.length+'枚が完成！「📤 生成した画像を共有」をタップしてね。';
+   status.textContent='✅ 画像の生成が終わったよ。下の共有ボタンを押してね。';
+
   }catch(e){status.textContent=e?.name==='AbortError'?'共有をキャンセルしたよ。画像データは変更していないよ。':'⚠️ 一括書き出しを完了できなかったよ：'+String(e?.message||e)}
   finally{btn.disabled=false;items.length=0;show('cjCollection');}
  });
@@ -13454,7 +13470,18 @@ window.cjCelebrateSpreadCard=function(){
    const storageKey='omoide-cj-spread-cards-v1-'+year+'-'+classId;
    const value=JSON.parse(localStorage.getItem(storageKey)||'{}');
    const cards=value&&typeof value==='object'&&!Array.isArray(value)?value:{};
-   cards[id]={id,updatedAt:meta.updatedAt,completedAt:Date.now()};
+   let thumbnail=null;
+   try{
+    const node=document.getElementById('designCanvas'),lib=await loadExportImageLibrary();
+    if(node?.clientWidth){
+     const preview=await captureEditorWithOriginalPhotos(node,lib,{backgroundColor:'#fff',scale:Math.min(1,520/node.clientWidth),useCORS:true,logging:false,width:node.clientWidth,height:node.clientHeight,scrollX:0,scrollY:0});
+     const reduced=document.createElement('canvas');reduced.width=480;reduced.height=Math.max(1,Math.round(480*preview.height/preview.width));
+     reduced.getContext('2d').drawImage(preview,0,0,reduced.width,reduced.height);
+     thumbnail=reduced.toDataURL('image/jpeg',.65);
+     reduced.width=0;reduced.height=0;preview.width=0;preview.height=0;
+    }
+   }catch(thumbnailError){console.warn('カードの縮小画像を作成できませんでした',thumbnailError)}
+   cards[id]={id,updatedAt:meta.updatedAt,completedAt:Date.now(),thumbnail:thumbnail||cards[id]?.thumbnail||null};
    localStorage.setItem(storageKey,JSON.stringify(cards));
    document.getElementById('editorStatus').textContent='✨ 見開きを完成登録したよ！おもいでカードをゲット！';
    window.cjCelebrateSpreadCard?.();
