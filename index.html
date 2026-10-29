@@ -4027,6 +4027,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 .cjCollectionActions{display:flex;gap:8px;flex-wrap:wrap}.cjCollectionActions button{border:0;border-radius:14px;background:#d1efe8;color:#345a70;font-weight:900;min-height:45px;padding:9px 14px}
 .cjCollectionActions #cjCollectionExport{background:#ffdfa8}
 @media(max-width:460px){.cjCollectionGrid{gap:7px}.cjCollectionCard{min-height:135px}.cjCollectionCard .cjCollectionIcon{width:55px;height:65px;font-size:30px}}
+.cjBatchExport{border:3px solid white;border-radius:18px;background:#ffe0a9;color:#34566f;padding:14px 18px;min-height:50px;font-weight:900;width:100%;margin-bottom:12px;box-shadow:0 6px 15px #54778d22}.cjBatchExport:disabled{opacity:.6}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 <link rel="stylesheet" href="./photo-pocket.css">
@@ -4068,6 +4069,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 <section class="screen" data-screen="cjCollection" id="cjCollection">
  <header class="cjCollectHead"><button type="button" id="cjCollectionBack" aria-label="冒険マップへ戻る">‹</button><div><small>COLOR JOURNEY · STAGE 09</small><h1>📚 おもいでコレクション</h1><p>完成した見開きカードがここに集まるよ！</p></div></header>
  <p id="cjCollectionCount" class="cjCollectionCount" role="status">カードを確認中…</p>
+ <button type="button" id="cjBatchExport" class="cjBatchExport">📚 完成した見開きをまとめて画像保存</button><p id="cjBatchStatus" role="status" class="cjCollectionHint">左右の画像を順番に作成し、ZIPファイルにまとめます。</p>
  <div id="cjCollectionGrid" class="cjCollectionGrid"></div>
  <div id="cjCollectionMenu" class="cjCollectionMenu" hidden><h2 id="cjCollectionMenuTitle">おもいでカード</h2><p>保存した見開きから、高画質の左右ページを画像書き出しできるよ。</p><div class="cjCollectionActions"><button type="button" id="cjCollectionEdit">✏️ 編集する</button><button type="button" id="cjCollectionExport">🖼️ 画像保存へ</button><button type="button" id="cjCollectionCancel">閉じる</button></div></div>
  <p class="cjCollectionHint">カードは完成ページの目印。写真データは複製しないので保存容量も増やさないよ。</p>
@@ -13301,6 +13303,7 @@ window.cjCelebrateSpreadCard=function(){
  let selectedCard=null;
  const getKey=()=> 'omoide-cj-spread-cards-v1-'+activeYear()+'-'+selected.id;
  function closeMenu(){selectedCard=null;menu.hidden=true}
+ let collectionCards=[];
  window.cjRenderCollection=async function(){
   closeMenu();grid.replaceChildren();
   const label=document.getElementById('cjCollectionCount');
@@ -13318,6 +13321,7 @@ window.cjCelebrateSpreadCard=function(){
     }
    }finally{db?.close()}
    found.sort((a,b)=>(a.completedAt||0)-(b.completedAt||0));
+   collectionCards=found;
    label.textContent='✨ 完成カード '+found.length+'枚';
    if(!found.length){grid.textContent='まだ完成したカードがないよ。STAGE 04で保存してから「この見開きを完成！」を押してね。';return}
    for(const entry of found){
@@ -13340,9 +13344,72 @@ window.cjCelebrateSpreadCard=function(){
   window.cjEditorTopSaveRevision=null;
   if(exportMode){
    document.getElementById('editorStatus').textContent='🖼️ 画像保存は上部の「画像書き出し」を押してね。左右ページは既存の書き出し機能を使うよ。';
-   document.getElementById('exportImage')?.focus();
+   setTimeout(()=>document.getElementById('exportImage')?.click(),400);
   }
  }
+
+ /* Page export is generated through the unchanged trusted editor renderer.
+    Export buffers are released after writing ZIP; no photos are overwritten. */
+ function zipUint16(n){const b=new Uint8Array(2);new DataView(b.buffer).setUint16(0,n,true);return b}
+ function zipUint32(n){const b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,n>>>0,true);return b}
+ const zipTable=Array.from({length:256},(_,n)=>{for(let j=0;j<8;j++)n=n&1?0xedb88320^(n>>>1):n>>>1;return n>>>0});
+ function zipCrc(bytes){let c=0xffffffff;for(const n of bytes)c=zipTable[(c^n)&255]^(c>>>8);return(c^0xffffffff)>>>0}
+ async function makeZip(items){
+  const chunks=[],records=[];let offset=0;
+  const add=(...parts)=>{for(const part of parts){chunks.push(part);offset+=part.byteLength}};
+  for(const item of items){
+   const name=new TextEncoder().encode(item.name),bytes=new Uint8Array(await item.blob.arrayBuffer()),crc=zipCrc(bytes),start=offset;
+   add(zipUint32(0x04034b50),zipUint16(20),zipUint16(0x0800),zipUint16(0),zipUint16(0),zipUint16(0),zipUint32(crc),zipUint32(bytes.length),zipUint32(bytes.length),zipUint16(name.length),zipUint16(0),name,bytes);
+   records.push({name,crc,size:bytes.length,start});
+  }
+  const centralStart=offset;
+  for(const x of records)add(zipUint32(0x02014b50),zipUint16(20),zipUint16(20),zipUint16(0x0800),zipUint16(0),zipUint16(0),zipUint16(0),zipUint32(x.crc),zipUint32(x.size),zipUint32(x.size),zipUint16(x.name.length),zipUint16(0),zipUint16(0),zipUint16(0),zipUint16(0),zipUint32(0),zipUint32(x.start),x.name);
+  const centralSize=offset-centralStart;
+  add(zipUint32(0x06054b50),zipUint16(0),zipUint16(0),zipUint16(records.length),zipUint16(records.length),zipUint32(centralSize),zipUint32(centralStart),zipUint16(0));
+  return new Blob(chunks,{type:'application/zip'});
+ }
+ function waitImages(node){return Promise.all([...node.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,12000)})))}
+ async function renderSavedPageImages(id,index){
+  if(!await openSplitProjectFromList(id))throw Error('見開き '+(index+1)+' を読み込めません');
+  await new Promise(resolve=>setTimeout(resolve,550));
+  const node=document.getElementById('designCanvas'),lib=await loadExportImageLibrary();
+  if(!node||!node.clientWidth)throw Error('見開きキャンバスが表示されません');
+  if(document.fonts?.ready)await document.fonts.ready;
+  await waitImages(node);
+  const w=node.clientWidth,h=node.clientHeight,split=document.getElementById('layoutMode').value==='spread';
+  const desktop=window.matchMedia('(min-width:980px)').matches;
+  const scale=Math.min(9,Math.max(1,((desktop?2480:1600)*(split?2:1))/w));
+  const full=await captureEditorWithOriginalPhotos(node,lib,{backgroundColor:null,scale,useCORS:true,logging:false,width:w,height:h,scrollX:0,scrollY:0});
+  const images=[];
+  for(const [name,start,ratio] of split?[['left',0,.5],['right',.5,.5]]:[['left',0,1]]){
+   const canvas=document.createElement('canvas');canvas.width=Math.round(full.width*ratio);canvas.height=full.height;
+   canvas.getContext('2d').drawImage(full,Math.round(full.width*start),0,canvas.width,canvas.height,0,0,canvas.width,canvas.height);
+   const blob=await new Promise((resolve,reject)=>canvas.toBlob(x=>x?resolve(x):reject(Error('画像生成に失敗')),'image/png'));
+   images.push({name:'page-'+String(index+1).padStart(2,'0')+'-'+name+'.png',blob});
+   canvas.width=0;canvas.height=0;
+  }
+  full.width=0;full.height=0;
+  return images;
+ }
+ document.getElementById('cjBatchExport').addEventListener('click',async()=>{
+  const btn=document.getElementById('cjBatchExport'),status=document.getElementById('cjBatchStatus');
+  if(!collectionCards.length){status.textContent='完成カードがまだないよ。';return}
+  if(!confirm('完成カード '+collectionCards.length+'枚を左右ページの画像に書き出します。処理中は画面を閉じないでね。'))return;
+  btn.disabled=true;const cards=collectionCards.slice(),classId=selected.id,year=activeYear(),items=[];
+  try{
+   for(let i=0;i<cards.length;i++){
+    if(selected.id!==classId||activeYear()!==year)throw Error('クラスまたは年度が変わりました');
+    status.textContent='🖼️ '+(i+1)+' / '+cards.length+' 見開きの画像を作成中…';
+    items.push(...await renderSavedPageImages(cards[i].id,i));
+   }
+   status.textContent='📦 ZIPファイルを作成中…';
+   const blob=await makeZip(items);const url=URL.createObjectURL(blob);
+   const link=document.createElement('a');link.href=url;link.download='omoide-spreads-'+year+'-'+classId+'.zip';document.body.append(link);link.click();link.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),60000);
+   status.textContent='✅ '+items.length+'枚の画像をZIPにまとめたよ！ダウンロードを確認してね。';
+  }catch(e){status.textContent='⚠️ 一括書き出しを完了できなかったよ：'+String(e?.message||e)}
+  finally{btn.disabled=false;items.length=0;show('cjCollection');}
+ });
  document.getElementById('cjCollectionBack').addEventListener('click',()=>window.cjOriginalApp.navigate('map'));
  document.getElementById('cjCollectionCancel').addEventListener('click',closeMenu);
  document.getElementById('cjCollectionEdit').addEventListener('click',()=>void openCard(false));
