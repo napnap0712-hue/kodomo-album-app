@@ -4069,7 +4069,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 <section class="screen" data-screen="cjCollection" id="cjCollection">
  <header class="cjCollectHead"><button type="button" id="cjCollectionBack" aria-label="冒険マップへ戻る">‹</button><div><small>COLOR JOURNEY · STAGE 09</small><h1>📚 おもいでコレクション</h1><p>完成した見開きカードがここに集まるよ！</p></div></header>
  <p id="cjCollectionCount" class="cjCollectionCount" role="status">カードを確認中…</p>
- <button type="button" id="cjBatchExport" class="cjBatchExport">📚 完成した見開きをまとめて画像保存</button><p id="cjBatchStatus" role="status" class="cjCollectionHint">左右の画像を順番に作成し、ZIPファイルにまとめます。</p>
+ <button type="button" id="cjBatchExport" class="cjBatchExport">📚 完成した見開きをまとめて画像保存</button><p id="cjBatchStatus" role="status" class="cjCollectionHint">左右の画像を作成して、共有メニューから「画像を保存」できます。</p>
  <div id="cjCollectionGrid" class="cjCollectionGrid"></div>
  <div id="cjCollectionMenu" class="cjCollectionMenu" hidden><h2 id="cjCollectionMenuTitle">おもいでカード</h2><p>保存した見開きから、高画質の左右ページを画像書き出しできるよ。</p><div class="cjCollectionActions"><button type="button" id="cjCollectionEdit">✏️ 編集する</button><button type="button" id="cjCollectionExport">🖼️ 画像保存へ</button><button type="button" id="cjCollectionCancel">閉じる</button></div></div>
  <p class="cjCollectionHint">カードは完成ページの目印。写真データは複製しないので保存容量も増やさないよ。</p>
@@ -13402,12 +13402,19 @@ window.cjCelebrateSpreadCard=function(){
     status.textContent='🖼️ '+(i+1)+' / '+cards.length+' 見開きの画像を作成中…';
     items.push(...await renderSavedPageImages(cards[i].id,i));
    }
-   status.textContent='📦 ZIPファイルを作成中…';
-   const blob=await makeZip(items);const url=URL.createObjectURL(blob);
-   const link=document.createElement('a');link.href=url;link.download='omoide-spreads-'+year+'-'+classId+'.zip';document.body.append(link);link.click();link.remove();
-   setTimeout(()=>URL.revokeObjectURL(url),60000);
-   status.textContent='✅ '+items.length+'枚の画像をZIPにまとめたよ！ダウンロードを確認してね。';
-  }catch(e){status.textContent='⚠️ 一括書き出しを完了できなかったよ：'+String(e?.message||e)}
+   const filesToShare=items.map(item=>new File([item.blob],item.name,{type:'image/png'}));
+   if(navigator.share&&navigator.canShare&&navigator.canShare({files:filesToShare})){
+    status.textContent='📤 共有メニューから「画像を保存」を選んでね。';
+    await navigator.share({files:filesToShare,title:'おもいでブックのページ画像'});
+    status.textContent='✅ 共有メニューを閉じたよ。写真アプリに保存できたか確認してね。';
+   }else{
+    status.textContent='📦 この端末は画像の一括共有に対応していないため、ZIPを作成中…';
+    const blob=await makeZip(items),url=URL.createObjectURL(blob);
+    const link=document.createElement('a');link.href=url;link.download='omoide-spreads-'+year+'-'+classId+'.zip';document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+    status.textContent='✅ ZIPを保存したよ。この端末では画像の一括共有に対応していなかったよ。';
+   }
+  }catch(e){status.textContent=e?.name==='AbortError'?'共有をキャンセルしたよ。画像データは変更していないよ。':'⚠️ 一括書き出しを完了できなかったよ：'+String(e?.message||e)}
   finally{btn.disabled=false;items.length=0;show('cjCollection');}
  });
  document.getElementById('cjCollectionBack').addEventListener('click',()=>window.cjOriginalApp.navigate('map'));
