@@ -13240,7 +13240,8 @@ async function saveNewSplitAlbum(){
 
 
 /* Stage 04 completion celebration: visual-only, no changes to stored albums. */
-<style>
+const cjCardFlightStyle=document.createElement('style');
+cjCardFlightStyle.textContent=`
 #cjCardFlight{position:fixed;inset:0;z-index:100500;display:flex;align-items:center;justify-content:center;background:rgba(44,66,96,.22);backdrop-filter:blur(5px);pointer-events:all}
 #cjCardFlight .cjFlightStage{text-align:center;position:relative;width:min(94vw,420px);height:390px;display:flex;flex-direction:column;align-items:center;justify-content:center}
 #cjCardFlight .cjFlightLabel{font-size:22px;font-weight:900;color:#33566d;text-shadow:0 2px white;animation:cjFlightLabel 2.7s both}
@@ -13258,8 +13259,9 @@ async function saveNewSplitAlbum(){
 @keyframes cjFlightTarget{0%,58%{transform:scale(.65);opacity:0}76%{transform:scale(1.16);opacity:1}88%,100%{transform:scale(1);opacity:1}}
 @keyframes cjFlightSpark{0%,60%{opacity:0}80%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){#cjCardFlight *{animation:none!important}#cjCardFlight .cjFlightBook{display:none}#cjCardFlight .cjFlightTarget{position:static}}
-</style>
-<script>
+`;
+document.head.appendChild(cjCardFlightStyle);
+
 window.cjCelebrateSpreadCard=function(){
  const old=document.getElementById('cjCardFlight');if(old)old.remove();
  const overlay=document.createElement('div');
@@ -13270,7 +13272,7 @@ window.cjCelebrateSpreadCard=function(){
  overlay.addEventListener('click',done,{once:true});
  setTimeout(done,window.matchMedia('(prefers-reduced-motion: reduce)').matches?1200:2900);
 };
-</script>
+
 /* STAGE 04 completion is a small, class-scoped reference manifest.
    It does not alter album blobs, editor contents, or the legacy 16-page status. */
 (function(){
