@@ -4039,7 +4039,7 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjCollection .cjCollectionCard.isEmpty{opacity:.72}
 #cjCollection .cjCollectionCard .cjCollectionIcon img{width:100%;height:100%;object-fit:cover;border-radius:10px}
 #cjCollection .cjSortableTile{min-width:0;position:relative}#cjCollection .cjSortableTile .cjCollectionCard{width:100%}#cjCollection .cjSortableTile.cjDragging{opacity:.45}#cjCollection .cjSortableTile.cjDropTarget{outline:3px dashed #e7ab62;outline-offset:2px;border-radius:22px}#cjCollection .cjMoveTools{display:flex;justify-content:center;gap:8px;margin-top:5px}#cjCollection .cjMoveTools button{border:0;border-radius:12px;background:#e4f3f1;color:#41657c;font-weight:900;padding:5px 12px;min-height:30px;cursor:pointer}#cjCollection .cjMoveTools button:disabled{opacity:.3}#cjCollection .cjSortHint{font-size:12px;margin:7px 0 12px;color:#587585}
-#cjCollection .cjCollectionIcon.cjCoverMini{width:80px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:space-around;gap:3px;background:#fff;border:1px solid #ecdfe9;border-radius:7px;padding:6px 3px;color:#526c81;overflow:hidden}#cjCollection .cjCoverMini .cjCoverMiniTitle{font-size:9px;font-weight:900;line-height:1.2}#cjCollection .cjCoverMini .cjCoverMiniYear,#cjCollection .cjCoverMini .cjCoverMiniClass{font-size:7px;line-height:1.1}#cjCollection .cjCoverMini .cjCoverMiniName{font-size:8px;font-weight:900;line-height:1.2;overflow-wrap:anywhere}#cjCollection .cjCoverMini img{width:30px!important;height:30px!important;object-fit:contain!important;border-radius:0!important}@media(max-width:460px){#cjCollection .cjCollectionIcon.cjCoverMini{width:60px;height:77px;padding:3px 2px}#cjCollection .cjCoverMini img{width:23px!important;height:23px!important}}
+#cjCollection .cjCollectionIcon.cjCoverMini{width:80px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:space-around;gap:3px;background:#fff;border:1px solid #ecdfe9;border-radius:7px;padding:6px 3px;color:#526c81;overflow:hidden}#cjCollection .cjCoverMini .cjCoverMiniTitle{font-size:9px;font-weight:900;line-height:1.2}#cjCollection .cjCoverMini .cjCoverMiniYear,#cjCollection .cjCoverMini .cjCoverMiniClass{font-size:7px;line-height:1.1}#cjCollection .cjCoverMini .cjCoverMiniName{display:block;width:100%;font-size:9px;font-weight:900;line-height:1.3;overflow-wrap:anywhere;text-align:center;white-space:normal;color:#39536a}#cjCollection .cjCoverMini img{width:30px!important;height:30px!important;object-fit:contain!important;border-radius:0!important}@media(max-width:460px){#cjCollection .cjCollectionIcon.cjCoverMini{width:60px;height:77px;padding:3px 2px}#cjCollection .cjCoverMini img{width:23px!important;height:23px!important}#cjCollection .cjCoverMini .cjCoverMiniName{font-size:8px}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 <link rel="stylesheet" href="./photo-pocket.css">
@@ -4061,7 +4061,6 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
  <div class="cjMapLayout">
  <aside class="cjSideQuests" aria-label="特別ページのミニゲーム">
   <span class="cjSideTitle">✨ ミニゲーム</span>
-  <button type="button" class="cjSideQuest" data-jump="cover" style="--side:#ffb9ce"><span class="cjSideCircle">🎀</span><strong>表紙</strong></button>
   <button type="button" class="cjSideQuest" data-jump="growth" style="--side:#c8e9a9"><span class="cjSideCircle">🌱</span><strong>成長記録</strong></button>
   <button type="button" class="cjSideQuest" data-jump="message" style="--side:#dfcbfc"><span class="cjSideCircle">💌</span><strong>おてがみ</strong></button>
   <button type="button" class="cjSideQuest" data-jump="back" style="--side:#ffdeb0"><span class="cjSideCircle">📷</span><strong>裏表紙</strong></button>
@@ -13382,7 +13381,8 @@ window.cjCelebrateSpreadCard=function(){
    if(selectedChildName){
     try{const d=await growthRead(growthKey(selectedChildName));growthReady=!!d&&['height4','weight4','height3','weight3'].every(k=>Number(d[k])>0)}catch(e){}
     try{const d=JSON.parse(localStorage.getItem(messageKey(selectedChildName))||'null');messageReady=!!d&&Array.isArray(d.cards)&&d.cards.length>0&&d.cards.every(c=>String(c.teacher||'').trim()&&String(c.text||'').trim())}catch(e){}
-    try{const c=await readCoverSaved(year,classId);coverData=c||null;coverReady=!!c?.title&&!!selectedChildName}catch(e){}
+    try{const c=await readCoverSaved(year,classId);coverData=c||null}catch(e){}
+    coverReady=!!selectedChildName
    }
    try{const b=await coverRead(bcKey());backReady=!!(b?.photo instanceof Blob&&b.photo.size)}catch(e){}
    const pages=[
@@ -13402,10 +13402,13 @@ window.cjCelebrateSpreadCard=function(){
      icon.append(line('cjCoverMiniYear',coverData?.year||String(year)+'年度'),line('cjCoverMiniTitle',coverData?.title||'おもいでブック'),flower,line('cjCoverMiniClass',displayClassName(selected)),line('cjCoverMiniName',selectedChildName+'さん'));
     }else if(page.entry?.thumbnail){const img=document.createElement('img');img.src=page.entry.thumbnail;img.alt='完成した見開き';icon.append(img)}else icon.textContent=page.ready?page.icon:'＋';
     const title=document.createElement('strong');title.textContent=page.name;
-    const state=document.createElement('small');state.textContent=page.ready?(page.caption||'✨ 完成済み'):(page.special?'◌ 未完成':'◌ 未登録');
+    const state=document.createElement('small');state.textContent=page.kind==='cover'?(page.ready?'✨ 名前を自動反映':'園児を選んでね'):(page.ready?(page.caption||'✨ 完成済み'):(page.special?'◌ 未完成':'◌ 未登録'));
     b.append(icon,title,state);
     b.addEventListener('click',()=>{
-     if(page.entry){
+     if(page.kind==='cover'){
+      // Cover is generated from the selected child and the preserved shared template.
+      return;
+     }else if(page.entry){
       selectedCard=page.entry;document.getElementById('cjCollectionMenuTitle').textContent=page.name;menu.hidden=false;menu.scrollIntoView({behavior:'smooth',block:'nearest'});
      }else if(page.special){
       const destinations={cover:'cover',growth:'growth',message:'message',back:'back'};
