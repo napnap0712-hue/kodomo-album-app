@@ -4000,6 +4000,18 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 #cjAiDoneActions #cjAiSaveHome{font-family:inherit;font-weight:800}
 @media(prefers-reduced-motion:reduce){#cjAiLoading.done .cjAiStage:before,#cjAiLoading.done .cjAiStage:after,#cjAiLoading.done .cjAiDots:after,#cjAiLoading.done #cjAiTitle{animation:none}}
 #cjAiLoading.done #cjAiDoneActions{position:relative;z-index:20;pointer-events:auto!important}#cjAiLoading.done #cjAiDoneActions button{position:relative;z-index:21;pointer-events:auto!important;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+
+/* Side quests: visual map relocation only; existing editors and storage unchanged. */
+#cjJourney .cjMapLayout{display:grid;grid-template-columns:83px minmax(0,1fr);align-items:start;gap:12px;max-width:430px;margin:12px auto 0}
+#cjJourney .cjMapLayout .cjPath{width:100%;min-width:0;margin:0;padding:16px 0}
+#cjJourney .cjSideQuests{display:flex;flex-direction:column;align-items:center;gap:18px;padding-top:22px;position:relative;z-index:2}
+#cjJourney .cjSideTitle{font-size:10px;font-weight:900;color:#6c879b;text-align:center;white-space:nowrap}
+#cjJourney .cjSideQuest{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0;min-height:95px;width:83px;color:#46647b;cursor:pointer}
+#cjJourney .cjSideCircle{display:grid;place-items:center;width:69px;height:69px;border:4px solid white;border-radius:50%;background:var(--side);box-shadow:0 5px 0 #ffffffaa,0 8px 16px #47688933,inset 0 5px 9px #ffffff91;font-size:29px;transition:transform .16s}
+#cjJourney .cjSideQuest:active .cjSideCircle{transform:scale(.91)}
+#cjJourney .cjSideQuest strong{font-size:11px;line-height:1.25;white-space:nowrap;text-shadow:0 1px white}
+#cjJourney .cjMapLayout .cjStage{transform:translateX(clamp(-30px,calc(var(--offset)*.33),30px));}
+@media(max-width:440px){#cjJourney .cjMapLayout{grid-template-columns:76px minmax(0,1fr);gap:4px}#cjJourney .cjSideQuest{width:76px}#cjJourney .cjSideCircle{width:62px;height:62px;font-size:27px}#cjJourney .cjMapLayout .cjStage{transform:translateX(clamp(-20px,calc(var(--offset)*.24),20px))}}
 </style>
 <link rel="stylesheet" href="./photo-merge.css">
 <link rel="stylesheet" href="./photo-pocket.css">
@@ -4018,15 +4030,22 @@ body:has(.screen[data-screen="photoAssign"].active[data-flow-step="start"]){back
 <section class="screen" data-screen="cjJourney" id="cjJourney">
  <header class="cjHead"><div class="cjHeadClass"><span class="cjHeadFlower" id="cjHeadFlower">🌼</span><div><small>COLOR JOURNEY · <span id="cjYear"></span></small><h1 id="cjClassTitle">おもいでのぼうけん</h1></div></div><button class="cjQuiet" type="button" id="cjSwitch">クラス切替</button></header>
  <div class="cjWelcome"><h2>さあ、おもいでをつくろう！</h2><p>好きなステージからはじめよう 🌈</p></div>
+ <div class="cjMapLayout">
+ <aside class="cjSideQuests" aria-label="特別ページのミニゲーム">
+  <span class="cjSideTitle">✨ ミニゲーム</span>
+  <button type="button" class="cjSideQuest" data-jump="cover" style="--side:#ffb9ce"><span class="cjSideCircle">🎀</span><strong>表紙</strong></button>
+  <button type="button" class="cjSideQuest" data-jump="growth" style="--side:#c8e9a9"><span class="cjSideCircle">🌱</span><strong>成長記録</strong></button>
+  <button type="button" class="cjSideQuest" data-jump="message" style="--side:#dfcbfc"><span class="cjSideCircle">💌</span><strong>おてがみ</strong></button>
+  <button type="button" class="cjSideQuest" data-jump="back" style="--side:#ffdeb0"><span class="cjSideCircle">📷</span><strong>裏表紙</strong></button>
+ </aside>
  <div class="cjPath" id="cjPath">
  <svg class="cjLine" viewBox="0 0 360 1080" preserveAspectRatio="none" aria-hidden="true"><path d="M180 42 C290 82 290 150 180 166 S48 245 155 288 S292 385 186 411 S50 507 172 538 S291 625 182 665 S47 745 172 787 S289 864 181 916 S91 990 180 1035" fill="none" stroke="#fff" stroke-width="18" stroke-linecap="round"/><path d="M180 42 C290 82 290 150 180 166 S48 245 155 288 S292 385 186 411 S50 507 172 538 S291 625 182 665 S47 745 172 787 S289 864 181 916 S91 990 180 1035" fill="none" stroke="#c5e7e4" stroke-width="7" stroke-dasharray="2 16" stroke-linecap="round"/></svg>
  <button class="cjStage" data-jump="new" style="--stage:#77cfc2;--offset:0px"><b>01</b><span>📸</span><strong>写真を追加</strong></button>
  <button class="cjStage" data-jump="merge" style="--stage:#ffc87d;--offset:81px"><b>02</b><span>🧩</span><strong>おもいでマージ！</strong></button>
  <button class="cjStage" data-jump="check" style="--stage:#b2a4ec;--offset:-83px"><b>03</b><span>🔎</span><strong>間違い探し！</strong></button>
- <button class="cjStage" data-jump="spread" style="--stage:#8ec8f1;--offset:-65px"><b>04</b><span>📖</span><strong>見開き編集</strong></button> <button class="cjStage" data-jump="cover" style="--stage:#ff9cb8;--offset:66px"><b>05</b><span>🌸</span><strong>表紙</strong></button> <button class="cjStage" data-jump="growth" style="--stage:#a5cf79;--offset:70px"><b>06</b><span>📏</span><strong>成長記録</strong></button>
- <button class="cjStage" data-jump="message" style="--stage:#c4a5ff;--offset:-75px"><b>07</b><span>💌</span><strong>先生のメッセージ</strong></button>
- <button class="cjStage" data-jump="back" style="--stage:#f7b276;--offset:60px"><b>08</b><span>🌻</span><strong>裏表紙</strong></button>
- <button class="cjStage" data-jump="finish" style="--stage:#ffc95d;--offset:0px"><b>09</b><span>🏆</span><strong>アルバム完成</strong></button>
+ <button class="cjStage" data-jump="spread" style="--stage:#8ec8f1;--offset:-65px"><b>04</b><span>📖</span><strong>見開き編集</strong></button>
+ <button class="cjStage" data-jump="finish" style="--stage:#ffc95d;--offset:0px"><b>05</b><span>🏆</span><strong>アルバム完成</strong></button>
+ </div>
  </div>
  <nav class="cjNav" aria-label="カラージャーニー"><button class="active" data-jump="map">🗺️ ぼうけん</button><button data-jump="kids">🌼 クラス園児</button><button data-jump="albums">📚 アルバム一覧</button></nav>
  <p class="cjExplain" id="cjNotice" role="status">ステージは好きな順に開けるよ。保存済みのページはそのまま残るよ。</p>
