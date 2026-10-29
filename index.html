@@ -13512,6 +13512,23 @@ window.cjCelebrateSpreadCard=function(){
   full.width=0;full.height=0;
   return images;
  }
+ async function renderSelectedCoverImage(child,year,classId){
+  if(!child||selected.id!==classId||activeYear()!==year)throw Error('園児またはクラスを確認してください');
+  const saved=await readCoverSaved(year,classId);
+  const paper=buildCoverPreview(saved,child,year);
+  const holder=document.createElement('div');holder.style.cssText='position:fixed;left:0;top:0;width:320px;height:453px;z-index:-1;pointer-events:none;background:#fff';
+  paper.style.cssText='width:320px!important;height:453px!important;max-height:none!important;margin:0!important;box-shadow:none!important;';
+  holder.appendChild(paper);document.body.appendChild(holder);
+  let canvas=null;
+  try{
+   const lib=await loadExportImageLibrary();if(document.fonts?.ready)await document.fonts.ready;
+   await waitImages(paper);
+   if(!paper.clientWidth||!paper.clientHeight)throw Error('表紙のサイズを確認できません');
+   canvas=await lib(paper,{backgroundColor:'#ffffff',scale:2480/paper.clientWidth,useCORS:true,logging:false,width:paper.clientWidth,height:paper.clientHeight,scrollX:0,scrollY:0});
+   const blob=await new Promise((resolve,reject)=>canvas.toBlob(value=>value?resolve(value):reject(Error('表紙画像を生成できません')),'image/png'));
+   return {name:'page-01-cover.png',blob};
+  }finally{holder.remove();if(canvas){canvas.width=0;canvas.height=0}}
+ }
  let readyFiles=[],readyClass='',readyYear='';
  const readyBox=document.getElementById('cjReadyExports');
  document.getElementById('cjShareReadyExports').addEventListener('click',async()=>{
@@ -13535,19 +13552,22 @@ window.cjCelebrateSpreadCard=function(){
  });
  document.getElementById('cjBatchExport').addEventListener('click',async()=>{
   const btn=document.getElementById('cjBatchExport'),status=document.getElementById('cjBatchStatus');
+  if(!selectedChildName){status.textContent='先に園児を選んでね。';return}
   if(!collectionCards.length){status.textContent='完成カードがまだないよ。';return}
-  if(!confirm('完成カード '+collectionCards.length+'枚を左右ページの画像に書き出します。処理中は画面を閉じないでね。'))return;
-  btn.disabled=true;const cards=collectionCards.slice(),classId=selected.id,year=activeYear(),items=[];
+  if(!confirm('選択した園児の表紙1枚と、完成見開き'+collectionCards.length+'枚を画像に書き出します。処理中は画面を閉じないでね。'))return;
+  btn.disabled=true;const cards=collectionCards.slice(),classId=selected.id,year=activeYear(),child=selectedChildName,items=[];
   try{
+   status.textContent='🎀 '+child+'さんの表紙を生成中…';
+   items.push(await renderSelectedCoverImage(child,year,classId));
    for(let i=0;i<cards.length;i++){
-    if(selected.id!==classId||activeYear()!==year)throw Error('クラスまたは年度が変わりました');
+    if(selected.id!==classId||activeYear()!==year||selectedChildName!==child)throw Error('園児・クラスまたは年度が変わりました');
     status.textContent='🖼️ '+(i+1)+' / '+cards.length+' 見開きの画像を作成中…';
-    items.push(...await renderSavedPageImages(cards[i].id,i));
+    items.push(...await renderSavedPageImages(cards[i].id,i+1));
    }
    readyFiles=items.map(item=>new File([item.blob],item.name,{type:'image/png'}));
    readyClass=classId;readyYear=year;
    readyBox.hidden=false;
-   document.getElementById('cjReadyExportInfo').textContent='✅ 高画質画像 '+readyFiles.length+'枚が完成！「📤 生成した画像を共有」をタップしてね。';
+   document.getElementById('cjReadyExportInfo').textContent='✅ 表紙を含む高画質画像 '+readyFiles.length+'枚が完成！ZIP保存を使ってね。';
    status.textContent='✅ 画像の生成が終わったよ。下の共有ボタンを押してね。';
 
   }catch(e){status.textContent=e?.name==='AbortError'?'共有をキャンセルしたよ。画像データは変更していないよ。':'⚠️ 一括書き出しを完了できなかったよ：'+String(e?.message||e)}
