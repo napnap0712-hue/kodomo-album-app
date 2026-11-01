@@ -14,6 +14,12 @@ const curtain=document.getElementById('curtain');
 
 let activeStage='',switching=false,returnInProgress=false;
 function showPhotoAdd(){
+ showGame('games/photo-add.html','写真追加');
+}
+function showMemoryCatch(){
+ showGame('games/memory-catch.html','おもいでキャッチ！',true);
+}
+function showGame(src,title,isolated=false){
  if(switching)return;
  switching=true;
  curtain.classList.add('on');
@@ -29,7 +35,11 @@ function showPhotoAdd(){
      curtain.classList.remove('on');switching=false;
    }));
  };
- game.src='games/photo-add.html';
+ game.title=title;
+ // The catch prototype has no access to the old app's storage or parent DOM.
+ if(isolated)game.setAttribute('sandbox','allow-scripts');
+ else game.removeAttribute('sandbox');
+ game.src=src;
 }
 master.addEventListener('load',()=>{
  try{
@@ -41,36 +51,45 @@ master.addEventListener('load',()=>{
    // All original character animations remain untouched in master-LOCKED.html.
    const stageFrame=d.getElementById('stageFrame');
    if(!stageFrame)throw Error('stageFrame missing');
-   // The approved dandelion guide does NOT send flower-stage-start.
-   // Its start button instead shows a ready overlay, so intercept that exact click.
+   // These approved guides show a ready overlay instead of sending flower-stage-start.
+   // Intercept their existing start buttons without changing tutorial playback.
    stageFrame.addEventListener('load',()=>{
      try{
        const guide=stageFrame.contentDocument;
        guide.addEventListener('click',e=>{
-         if(activeStage!=='写真追加')return;
+         const startGame=activeStage==='写真追加'?showPhotoAdd:
+           activeStage==='おもいでキャッチ！'?showMemoryCatch:null;
+         if(!startGame)return;
          const button=e.target.closest?.('button');
          if(!button)return;
          if(button.id==='start'||(button.id==='cta'&&button.textContent.includes('はじめよう'))){
            e.preventDefault();e.stopImmediatePropagation();
-           showPhotoAdd();
+           startGame();
          }
        },true);
      }catch(err){console.error('Intro connection failed',err)}
    });
    // Some guides post a start message instead. Keep this as a compatible fallback.
    w.addEventListener('message',e=>{
-     if(activeStage!=='写真追加'||e.source!==stageFrame.contentWindow)return;
+     const startGame=activeStage==='写真追加'?showPhotoAdd:
+       activeStage==='おもいでキャッチ！'?showMemoryCatch:null;
+     if(!startGame||e.source!==stageFrame.contentWindow)return;
      if(e.data?.type==='flower-stage-start'){
-       e.stopImmediatePropagation();showPhotoAdd();
+       e.stopImmediatePropagation();startGame();
      }
    },true);
  }catch(err){console.error('FLOWER JOURNEY connection failed',err)}
 });
 window.addEventListener('message',e=>{
- if(e.source!==game.contentWindow||e.data?.type!=='flower-stage-complete'||e.data?.saved!==true||returnInProgress)return;
+ if(e.source!==game.contentWindow||returnInProgress)return;
+ const completed=e.data?.type==='flower-stage-complete'&&e.data?.saved===true&&activeStage==='写真追加';
+ const exited=e.data?.type==='flower-stage-exit'&&e.data?.stage==='memory-catch'&&activeStage==='おもいでキャッチ！'&&e.data?.saved===false;
+ if(completed||exited)returnToMap();
+});
+function returnToMap(){
  returnInProgress=true;
  // No page navigation, blank iframe, separate fade curtain, or delayed removal of the master.
- // Put the actual finished map behind the fully opaque photo stage BEFORE fading the photo stage.
+ // Put the finished map behind the fully opaque game BEFORE fading the whole iframe.
  try{
    const doc=master.contentDocument;
    const panel=doc?.getElementById('stagePanel');
@@ -101,7 +120,7 @@ window.addEventListener('message',e=>{
      // The old game document is kept, not unloaded; no reload/blank-frame flash.
      activeStage='';switching=false;returnInProgress=false;
    };
-   // Force a frame with the map already painted behind the active photo stage.
+   // Force a frame with the map already painted behind the active game.
    requestAnimationFrame(()=>requestAnimationFrame(()=>{
      game.addEventListener('transitionend',end);
      game.classList.add('return-zoom');
@@ -112,6 +131,6 @@ window.addEventListener('message',e=>{
    console.error('Map restoration failed; keep current screen to avoid blank background',err);
    returnInProgress=false;
  }
-});
+}
 })();
 </script></body></html>
