@@ -24,3 +24,41 @@
 .screen[data-screen="editor"] button:focus-visible{outline:3px solid #65b8aa!important;outline-offset:2px}
 @media(max-width:899px){.screen[data-screen="editor"]{padding-bottom:calc(115px + env(safe-area-inset-bottom))!important}.screen[data-screen="editor"]>.top{margin-bottom:12px!important}.screen[data-screen="editor"] .mobileEditorTabs{gap:2px!important}.screen[data-screen="editor"] .mobileEditorTabs button[data-editor-tab]{padding:7px 2px!important;font-size:10px!important;min-width:0!important}.screen[data-screen="editor"] .mobileEditorTabs button[data-editor-tab] .cfTabIcon{width:25px!important;height:25px!important;padding:8px!important}.screen[data-screen="editor"] .canvasWrap{padding:9px!important}}
 @media(prefers-reduced-motion:reduce){.screen[data-screen="editor"] .mobileEditorTabs button[data-editor-tab].active .cfTabIcon{transform:none!important}}
+
+/* Approved FLOWER JOURNEY V4 header: chrome only, never printable canvas. */
+
+#fjEditor > .top#fjWideHeader{display:block!important;position:relative!important;inset:auto!important;grid-template-columns:none!important;grid-template-rows:none!important;flex-direction:initial!important;width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;margin:0 0 8px!important;padding:0 0 max(0px,calc(var(--fj-controls-height,34px) - var(--fj-art-height,0px)*.14 + 3px))!important;gap:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;backdrop-filter:none!important}
+#fjEditor > .top#fjWideHeader > .fjCannaHeaderImage{display:block!important;position:relative!important;inset:auto!important;grid-area:auto!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:3/1!important;object-fit:contain!important;flex:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;transform:none!important}
+#fjEditor > .top#fjWideHeader > .topText{display:none!important}
+#fjEditor > .top#fjWideHeader > #cjEditorBackButton{display:block!important;position:absolute!important;inset:auto!important;top:5px!important;left:5px!important;z-index:3!important;width:auto!important;min-width:0!important;height:auto!important;min-height:28px!important;margin:0!important;padding:5px 9px!important;border:1px solid #dfba95!important;border-radius:24px!important;background:#fff7e9ee!important;color:#71513f!important;box-shadow:0 2px 5px #71513f22!important;font-size:clamp(10px,1vw,13px)!important;line-height:1.2!important;white-space:nowrap!important;flex:none!important}
+#fjEditor > .top#fjWideHeader > .editorActions{display:flex!important;position:absolute!important;inset:auto!important;top:calc(var(--fj-art-height,0px)*.86)!important;left:0!important;right:0!important;bottom:auto!important;z-index:2!important;grid-area:auto!important;order:initial!important;flex:none!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:center!important;gap:clamp(4px,.6vw,8px)!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;padding:0 3px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important}
+#fjEditor > .top#fjWideHeader .editorActions button{flex:0 1 auto!important;width:auto!important;min-width:0!important;max-width:100%!important;min-height:clamp(32px,3vw,42px)!important;height:auto!important;padding:6px clamp(5px,1vw,12px)!important;font-size:clamp(10px,1.1vw,13px)!important;line-height:1.2!important;white-space:nowrap!important;border-radius:13px!important}
+#fjEditor > .top#fjWideHeader .editorRestoreWrap{position:relative!important;flex:none!important;width:auto!important;min-width:0!important}
+#fjEditor > .top#fjWideHeader #saveDraft{background:#efa2ad!important;color:white!important;border:2px solid white!important}
+#fjEditor > .top#fjWideHeader > #fjEditorActions #cjCompleteSpread{display:inline-flex!important;align-items:center!important;justify-content:center!important;background:#ffe6aa!important;color:#775333!important;border:2px solid white!important}
+#fjEditor > .top#fjWideHeader #editorRestoreMenuButton{background:#dbf0df!important;color:#526f5d!important;border:2px solid white!important}
+#fjEditor > .top#fjWideHeader .editorActions > #editorSaveState{position:absolute!important;top:calc(7px - var(--fj-art-height,0px)*.86)!important;right:7px!important;z-index:3!important;margin:0!important;padding:2px 5px!important;font-size:10px!important;line-height:1.2!important;color:#73534b!important;background:#fff8e5c9!important;border-radius:10px!important}
+
+/* Approved V5 tool switcher: retain live editor panels and their inputs. */
+#fjEditor .editorPanel{display:flex!important;flex-direction:column!important;gap:12px!important;align-items:stretch!important}
+#fjEditor.newSplitPreparation .editorPanel{display:none!important}
+#fjEditor .editorPanel>.field:first-child{order:0!important;width:100%!important}
+#fjEditor .editorPanel>.editorCanvasFirst{order:1!important;position:relative!important;top:auto!important;width:100%!important;min-width:0!important;grid-area:auto!important}
+#fjEditor .editorPanel>.mobileEditorTabs{order:2!important;position:relative!important;inset:auto!important;grid-area:auto!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:5px!important;width:100%!important;max-width:850px!important;margin:12px auto 0!important;padding:10px!important;align-self:center!important;min-width:0!important}
+#fjEditor .mobileEditorTabs button[data-editor-tab]{display:flex!important;flex-direction:column!important;justify-content:center!important;align-items:center!important;gap:6px!important;width:100%!important;height:auto!important;min-height:78px!important;padding:7px 1px!important;font-size:11px!important;white-space:normal!important;border-radius:16px!important}
+#fjEditor .mobileEditorTabs button[data-editor-tab] .cfTabIcon{box-sizing:border-box!important;width:48px!important;height:48px!important;padding:10px!important;border:0!important;border-radius:50%!important}
+#fjEditor .mobileEditorTabs button[data-editor-tab] span{font-size:11px!important}
+#fjEditor .mobileEditorTabs button[data-editor-tab].active{background:#fff6e9!important;color:#85543e!important}
+#fjEditor .mobileEditorTabs button[data-editor-tab].active .cfTabIcon{outline:3px solid #f2ad82!important;outline-offset:1px!important;transform:translateY(-3px)!important}
+#fjEditor .editorPanel>:is(.pageSettings,.photoManager,.textTabUnifiedCard,#seasonStickerPanel){order:3!important;position:static!important;inset:auto!important;grid-area:auto!important;width:100%!important;max-width:850px!important;min-width:0!important;align-self:center!important;margin:0!important}
+#fjEditor .desktopEditorWelcome{display:none!important}
+#fjEditor:not([data-editor-tab="photos"]) .photoManager{display:none!important}
+#fjEditor:not([data-editor-tab="text"]) .textTabUnifiedCard{display:none!important}
+#fjEditor:not([data-editor-tab="stamps"]) #seasonStickerPanel{display:none!important}
+#fjEditor:not([data-editor-tab="background"]):not([data-editor-tab="layout"]) .pageSettings{display:none!important}
+#fjEditor[data-editor-tab="photos"] .photoManager{display:block!important}
+#fjEditor[data-editor-tab="text"] .textTabUnifiedCard{display:block!important}
+#fjEditor:is([data-editor-tab="background"],[data-editor-tab="layout"]) .pageSettings{display:block!important}
+#fjEditor[data-editor-tab="stamps"] #seasonStickerPanel:not([hidden]){display:block!important}
+@media(min-width:800px){#fjEditor .mobileEditorTabs button[data-editor-tab] .cfTabIcon{width:57px!important;height:57px!important;padding:12px!important}}
+@media(prefers-reduced-motion:reduce){#fjEditor .mobileEditorTabs button[data-editor-tab] .cfTabIcon{transform:none!important}}
