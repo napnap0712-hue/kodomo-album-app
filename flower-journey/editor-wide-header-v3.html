@@ -1,0 +1,46 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>見開き編集・横長ヘッダー比較 Ver.3</title><style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:system-ui,-apple-system,sans-serif;background:#def0e7;color:#574b44}.bar{height:56px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px;background:#fff7df;border-bottom:1px solid #e6d8ba}.bar strong{font-size:13px}.bar small{display:block;color:#887e73;font-size:10px}.btns{display:flex;gap:6px}.btns button{border:1px solid #e0bbbd;border-radius:999px;padding:9px 12px;font-weight:700;background:white;color:#745b58}.btns button.active{background:#ef9fa9;color:#fff;border-color:#ef9fa9}iframe{height:calc(100dvh - 56px);width:100%;display:block;border:0;background:#fff}#notice{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);background:#fff9e4ee;border:1px solid #e0cf9c;padding:9px 14px;border-radius:20px;font-size:11px;pointer-events:none;max-width:calc(100vw - 20px);text-align:center}
+</style></head><body><header class="bar"><div><strong>🌺 見開き編集・ヘッダー Ver.3</strong><small>編集機能・保存データは変更しません</small></div><div class="btns"><button id="old">元の色</button><button class="active" id="new">花畑カラー</button></div></header><iframe id="app" src="../index.html" title="既存のおもいでブック"></iframe><div id="notice">Ver.1の画像表示を維持し、白い枠と余白を調整。保存・編集はしないでね。</div><script>
+const frame=document.getElementById('app');let changed=true;const css=`
+/* Header-only visual preview. Paper/canvas styles are intentionally excluded. */
+body:has(section[data-screen="editor"].active){background:#e2f2e9!important;color:#604e47!important}
+section[data-screen="editor"]{color:#604e47!important}
+section[data-screen="editor"]>.top{display:flex!important;flex-direction:column!important;position:relative!important;width:100%!important;height:auto!important;min-height:0!important;margin:0 0 12px!important;padding:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;isolation:isolate!important;gap:0!important}
+/* Explicit image node prevents the collapsed pseudo-element seen in Ver.2. */
+section[data-screen="editor"]>.top .fjCannaHeaderImage{display:block!important;position:relative!important;width:100%!important;max-width:100%!important;height:auto!important;min-width:0!important;aspect-ratio:3/1!important;object-fit:contain!important;flex:none!important;margin:0!important;padding:0!important;border:0!important;opacity:1!important;visibility:visible!important}
+section[data-screen="editor"]>.top>.topText{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important;padding:0!important;margin:-1px!important}
+section[data-screen="editor"]>.top #cjEditorBackButton{position:absolute!important;top:clamp(7px,1vw,13px)!important;left:clamp(7px,1vw,13px)!important;z-index:3!important;flex:none!important;border:2px solid #e9ba91!important;border-radius:999px!important;background:#fff8e8ef!important;color:#755444!important;box-shadow:0 3px 8px #745a4530!important}
+/* Controls sit over the meadow's bottom, away from the title lettering. */
+section[data-screen="editor"]>.top .editorActions{position:relative!important;z-index:2!important;display:flex!important;justify-content:center!important;align-items:center!important;flex-wrap:nowrap!important;gap:clamp(3px,1vw,8px)!important;width:100%!important;margin:-13px 0 0!important;padding:5px clamp(3px,.8vw,9px)!important;background:#fff5dece!important;border:1px solid #f0dfbd!important;border-radius:14px!important;box-shadow:0 3px 9px #7556361a!important;min-height:0!important}
+section[data-screen="editor"]>.top #editorSaveState{font-size:clamp(9px,1.6vw,12px)!important;color:#73534b!important;white-space:nowrap!important;flex:0 1 auto!important;min-width:0!important}
+section[data-screen="editor"]>.top .editorActions button{min-width:0!important;min-height:38px!important;padding:8px clamp(5px,1.4vw,12px)!important;font-size:clamp(10px,1.7vw,12px)!important;white-space:nowrap!important;border-radius:13px!important}
+section[data-screen="editor"]>.top #saveDraft{background:#f0a0a9!important;color:white!important;border:1px solid #e68e9b!important}
+section[data-screen="editor"]>.top #cjCompleteSpread{background:#ffe5a7!important;color:#775333!important;border:1px solid #eed3a1!important}
+section[data-screen="editor"]>.top #cjCompleteSpread:disabled{opacity:.6!important}
+section[data-screen="editor"]>.top #editorRestoreMenuButton{background:#d9f0e4!important;color:#526f5d!important;border:1px solid #badfcd!important}
+section[data-screen="editor"] .photoManager{background:#f9fff8!important;border-color:#bddec8!important}
+section[data-screen="editor"] .photoManagerHead{color:#71554c!important}
+section[data-screen="editor"] .editorPanel,section[data-screen="editor"] .field{color:#725c55!important}
+section[data-screen="editor"] button.secondary:not(#cjCompleteSpread){background:#e3f2e7;color:#527160;border-color:#c4dfcc}
+section[data-screen="editor"] .field select,section[data-screen="editor"] .field input{border-color:#c8dfce}
+@media(max-width:600px){section[data-screen="editor"]>.top .editorActions{gap:3px!important;padding:4px 2px!important;margin-top:-8px!important}section[data-screen="editor"]>.top .editorActions button{padding:7px 5px!important;font-size:10px!important}section[data-screen="editor"]>.top #cjEditorBackButton{width:35px!important;height:35px!important;font-size:20px!important}}
+/* Printable pages, background choices and export are not modified. */
+`;
+function apply(){try{
+ const doc=frame.contentDocument;if(!doc)return;
+ let el=doc.getElementById('flowerPaletteOnly');
+ if(!el){el=doc.createElement('style');el.id='flowerPaletteOnly';doc.head.appendChild(el)}
+ el.textContent=changed?css:'';
+ const top=doc.querySelector('section[data-screen="editor"]>.top');
+ if(top){let image=top.querySelector('.fjCannaHeaderImage');
+   if(changed){
+     if(!image){image=doc.createElement('img');image.className='fjCannaHeaderImage';image.alt='FLOWER JOURNEY 見開き編集！ カンナさん';image.decoding='async';image.src='/flower-journey/assets/canna-wide-header.png';top.prepend(image)}
+     image.hidden=false;
+   }else if(image){image.hidden=true;}
+ }
+}catch(e){document.getElementById('notice').textContent='同じ開発サーバー上で開いてください'}}
+frame.addEventListener('load',apply);
+document.getElementById('old').onclick=()=>toggle(false);
+document.getElementById('new').onclick=()=>toggle(true);
+function toggle(v){changed=v;document.getElementById('old').classList.toggle('active',!v);document.getElementById('new').classList.toggle('active',v);apply()}
+</script></body></html>
