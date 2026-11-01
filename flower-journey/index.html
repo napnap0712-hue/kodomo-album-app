@@ -1,0 +1,113 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>FLOWER JOURNEY（開発版 v7）</title><style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#dceee8}
+iframe{width:100%;height:100%;border:0;display:block;position:absolute;inset:0}
+#master{z-index:1;background:#dceee8}
+#game{display:none;z-index:4;background:#88d5ec;opacity:1;transform:scale(1);transform-origin:center;will-change:opacity,transform,filter}
+#game.return-zoom{opacity:0;transform:scale(1.115);filter:blur(8px);transition:opacity .9s cubic-bezier(.15,.7,.2,1),transform 1s cubic-bezier(.15,.7,.2,1),filter .9s ease}
+#curtain{position:fixed;inset:0;z-index:5;pointer-events:none;background:#dceee8;opacity:0;transition:opacity .32s ease}
+#curtain.on{opacity:1}
+</style></head><body><iframe id="master" title="完成済み冒険マップと全説明アニメーション" src="master-LOCKED.html"></iframe><iframe id="game" title="写真追加"></iframe><div id="curtain"></div><script>
+(()=>{'use strict';
+const master=document.getElementById('master');
+const game=document.getElementById('game');
+const curtain=document.getElementById('curtain');
+
+let activeStage='',switching=false,returnInProgress=false;
+function showPhotoAdd(){
+ if(switching)return;
+ switching=true;
+ curtain.classList.add('on');
+ game.classList.remove('return-zoom');
+ game.style.removeProperty('transition');
+ game.style.removeProperty('filter');
+ game.style.opacity='1';
+ game.style.transform='scale(1)';
+ game.onload=()=>{
+   game.style.display='block';
+   requestAnimationFrame(()=>requestAnimationFrame(()=>{
+     curtain.classList.remove('on');switching=false;
+   }));
+ };
+ game.src='games/photo-add.html';
+}
+master.addEventListener('load',()=>{
+ try{
+   const w=master.contentWindow,d=w.document;
+   d.addEventListener('click',e=>{
+     const button=e.target.closest?.('.tap');
+     if(button)activeStage=String(button.dataset.title||'');
+   },true);
+   // All original character animations remain untouched in master-LOCKED.html.
+   const stageFrame=d.getElementById('stageFrame');
+   if(!stageFrame)throw Error('stageFrame missing');
+   // The approved dandelion guide does NOT send flower-stage-start.
+   // Its start button instead shows a ready overlay, so intercept that exact click.
+   stageFrame.addEventListener('load',()=>{
+     try{
+       const guide=stageFrame.contentDocument;
+       guide.addEventListener('click',e=>{
+         if(activeStage!=='写真追加')return;
+         const button=e.target.closest?.('button');
+         if(!button)return;
+         if(button.id==='start'||(button.id==='cta'&&button.textContent.includes('はじめよう'))){
+           e.preventDefault();e.stopImmediatePropagation();
+           showPhotoAdd();
+         }
+       },true);
+     }catch(err){console.error('Intro connection failed',err)}
+   });
+   // Some guides post a start message instead. Keep this as a compatible fallback.
+   w.addEventListener('message',e=>{
+     if(activeStage!=='写真追加'||e.source!==stageFrame.contentWindow)return;
+     if(e.data?.type==='flower-stage-start'){
+       e.stopImmediatePropagation();showPhotoAdd();
+     }
+   },true);
+ }catch(err){console.error('FLOWER JOURNEY connection failed',err)}
+});
+window.addEventListener('message',e=>{
+ if(e.source!==game.contentWindow||e.data?.type!=='flower-stage-complete'||e.data?.saved!==true||returnInProgress)return;
+ returnInProgress=true;
+ // No page navigation, blank iframe, separate fade curtain, or delayed removal of the master.
+ // Put the actual finished map behind the fully opaque photo stage BEFORE fading the photo stage.
+ try{
+   const doc=master.contentDocument;
+   const panel=doc?.getElementById('stagePanel');
+   const frame=doc?.getElementById('stageFrame');
+   const shade=doc?.getElementById('shade');
+   if(!panel || !frame)throw new Error('Cannot restore map; stage panel missing');
+   // Cancel only comparison effects of the master (it invalidates outstanding transition timers).
+   master.contentWindow.onComparisonBack?.();
+   if(shade)shade.hidden=true;
+   panel.classList.remove('stage-visible','stage-leaving');
+   panel.hidden=true;
+   // No need to clear srcdoc here: leaving it intact avoids iframe load/timer races.
+   // Preserve map DOM and all original eight tutorials without mutation.
+   const finish=()=>{
+     game.style.display='none';
+     game.classList.remove('return-zoom');
+     game.style.removeProperty('opacity');
+     game.style.removeProperty('transform');
+     game.style.removeProperty('filter');
+     // The old game document is kept, not unloaded; no reload/blank-frame flash.
+     activeStage='';switching=false;returnInProgress=false;
+   };
+   // Force a frame with the map already painted behind the active photo stage.
+   requestAnimationFrame(()=>requestAnimationFrame(()=>{
+     game.classList.add('return-zoom');
+     // One-time fallback if transitionend is skipped (background tab, reduced motion).
+     const fallback=setTimeout(finish,1250);
+     game.addEventListener('transitionend',function end(ev){
+       if(ev.propertyName!=='opacity')return;
+       game.removeEventListener('transitionend',end);
+       clearTimeout(fallback);
+       finish();
+     });
+   }));
+ }catch(err){
+   console.error('Map restoration failed; keep current screen to avoid blank background',err);
+   returnInProgress=false;
+ }
+});
+})();
+</script></body></html>
