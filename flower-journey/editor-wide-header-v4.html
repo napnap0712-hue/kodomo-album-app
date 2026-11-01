@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>見開き編集・横長ヘッダー比較 Ver.4</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:system-ui,-apple-system,sans-serif;color:#574b44;background:#def0e7}body{display:flex;flex-direction:column}.bar{flex:none;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:7px 10px;background:#fff7df}.bar strong{font-size:13px}.bar small{display:block;font-size:10px;line-height:1.5}.modes{display:flex;gap:5px}.modes button{padding:7px 10px;border:1px solid #dfb8bb;border-radius:20px;background:white;color:#745b58;font-weight:700}.modes button[aria-pressed=true]{background:#e89ca8;color:white}iframe{flex:1;min-height:0;width:100%;border:0;background:white}#metrics{flex:none;font-size:11px;padding:5px 10px;background:#fff9e9;min-height:25px;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="bar"><div><strong>🌺 横長ヘッダー Ver.4</strong><small>表示比較専用：アプリのJS・編集・保存は実行しません</small></div><nav class="modes" aria-label="表示比較"><button data-mode="original" aria-pressed="false">元の画面</button><button data-mode="v3" aria-pressed="false">Ver.3</button><button data-mode="v4" aria-pressed="true">Ver.4</button></nav></header>
+<iframe id="preview" sandbox="allow-same-origin" title="データを使用しない見開き編集の表示比較"></iframe>
+<output id="metrics" aria-live="polite">既存HTMLとCSSを読み取り中…</output>
+<script>
+(()=>{
+'use strict';
+const frame=document.getElementById('preview'),metrics=document.getElementById('metrics');
+let mode='v4',doc,top,image,actions,state,style,v3CSS='',observer;
+// IDs outrank the legacy .screen selectors, including their !important rules.
+// Every override is confined to the editor header; paper/canvas/export CSS is untouched.
+const v4CSS=`
+#fjHeaderComparisonEditor > .top#fjWideHeader{display:block!important;position:relative!important;inset:auto!important;grid-template-columns:none!important;grid-template-rows:none!important;flex-direction:initial!important;width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;margin:0 0 8px!important;padding:0 0 max(0px,calc(var(--fj-controls-height,34px) - var(--fj-art-height,0px)*.14 + 3px))!important;gap:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important;backdrop-filter:none!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader > .fjCannaHeaderImage{display:block!important;position:relative!important;inset:auto!important;grid-area:auto!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:3/1!important;object-fit:contain!important;flex:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;transform:none!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader > .topText{display:none!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader > #cjEditorBackButton{display:block!important;position:absolute!important;inset:auto!important;top:5px!important;left:5px!important;z-index:3!important;width:auto!important;min-width:0!important;height:auto!important;min-height:28px!important;margin:0!important;padding:5px 9px!important;border:1px solid #dfba95!important;border-radius:24px!important;background:#fff7e9ee!important;color:#71513f!important;box-shadow:0 2px 5px #71513f22!important;font-size:clamp(10px,1vw,13px)!important;line-height:1.2!important;white-space:nowrap!important;flex:none!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader > .editorActions{display:flex!important;position:absolute!important;inset:auto!important;top:calc(var(--fj-art-height,0px)*.86)!important;left:0!important;right:0!important;bottom:auto!important;z-index:2!important;grid-area:auto!important;order:initial!important;flex:none!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:center!important;gap:clamp(4px,.6vw,8px)!important;width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;padding:0 3px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader .editorActions button{flex:0 1 auto!important;width:auto!important;min-width:0!important;max-width:100%!important;min-height:clamp(32px,3vw,42px)!important;height:auto!important;padding:6px clamp(5px,1vw,12px)!important;font-size:clamp(10px,1.1vw,13px)!important;line-height:1.2!important;white-space:nowrap!important;border-radius:13px!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader .editorRestoreWrap{position:relative!important;flex:none!important;width:auto!important;min-width:0!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader #saveDraft{background:#efa2ad!important;color:white!important;border:2px solid white!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader > #fjHeaderComparisonActions #cjCompleteSpread{display:inline-flex!important;align-items:center!important;justify-content:center!important;background:#ffe6aa!important;color:#775333!important;border:2px solid white!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader #editorRestoreMenuButton{background:#dbf0df!important;color:#526f5d!important;border:2px solid white!important}
+#fjHeaderComparisonEditor > .top#fjWideHeader > #editorSaveState{position:absolute!important;top:7px!important;right:7px!important;z-index:3!important;margin:0!important;padding:2px 5px!important;font-size:10px!important;line-height:1.2!important;color:#73534b!important;background:#fff8e5c9!important;border-radius:10px!important}
+`;
+function measure(){
+ if(!image||!doc)return;
+ const ir=image.getBoundingClientRect(),ar=actions.getBoundingClientRect();
+ top.style.setProperty('--fj-art-height',ir.height+'px');
+ top.style.setProperty('--fj-controls-height',ar.height+'px');
+ const r=top.getBoundingClientRect(),computed=doc.defaultView.getComputedStyle(top);
+ metrics.textContent=`${mode==='v4'?'Ver.4':mode==='v3'?'Ver.3':'元の画面'}｜画像 ${mode==='original'?'非表示':ir.width.toFixed(1)+' × '+ir.height.toFixed(1)+'px'}｜ヘッダー ${r.width.toFixed(1)} × ${r.height.toFixed(1)}px｜${computed.display}`;
+}
+function apply(){
+ if(!doc)return;
+ observer?.disconnect();
+ // Restore node order before applying another comparison mode.
+ if(state&&state.parentElement!==actions)actions.prepend(state);
+ image.hidden=mode==='original';image.style.display=mode==='original'?'none':'';
+ top.id=mode==='v4'?'fjWideHeader':'';
+ doc.getElementById('cjEditorBackButton').textContent=mode==='v4'?'←マップへ':'‹';
+ if(mode==='v4'&&state)top.append(state);
+ style.textContent=mode==='v4'?v4CSS:mode==='v3'?v3CSS:'';
+ document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+ observer=new ResizeObserver(measure);observer.observe(image);observer.observe(actions);
+ requestAnimationFrame(measure);
+}
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;apply()}));
+async function load(){
+ const [appResponse,oldResponse]=await Promise.all([fetch('../index.html'),fetch('editor-wide-header-v3.html')]);
+ if(!appResponse.ok||!oldResponse.ok)throw Error('原本を読み込めませんでした');
+ const [source,old]=await Promise.all([appResponse.text(),oldResponse.text()]);
+ v3CSS=old.match(/const css=`([\s\S]*?)`;/)?.[1];
+ if(!v3CSS)throw Error('Ver.3の比較CSSを確認できませんでした');
+ // DOMParser is inert: never run the old app, initialise storage, or attach save handlers.
+ const parsed=new DOMParser().parseFromString(source,'text/html');
+ const editor=parsed.querySelector('section[data-screen="editor"]');
+ if(!editor)throw Error('既存エディターのHTMLが見つかりません');
+ editor.classList.add('active');editor.id='fjHeaderComparisonEditor';editor.inert=true;
+ editor.querySelectorAll('script,iframe,object,embed').forEach(n=>n.remove());
+ editor.querySelectorAll('*').forEach(n=>{for(const a of [...n.attributes])if(a.name.toLowerCase().startsWith('on'))n.removeAttribute(a.name)});
+ const css=[...parsed.querySelectorAll('style,link[rel="stylesheet"]')].map(n=>n.outerHTML).join('\n');
+ frame.addEventListener('load',()=>{
+  doc=frame.contentDocument;top=doc.querySelector('section[data-screen="editor"]>.top');
+  actions=top.querySelector('.editorActions');actions.id='fjHeaderComparisonActions';state=top.querySelector('#editorSaveState');
+  image=doc.createElement('img');image.className='fjCannaHeaderImage';
+  image.alt='FLOWER JOURNEY 見開き編集！ カンナさんと風車';image.width=2172;image.height=724;
+  image.src=new URL('assets/canna-wide-header.png',location.href).href;
+  top.prepend(image);style=doc.createElement('style');doc.head.append(style);
+  image.addEventListener('load',measure);apply();
+ },{once:true});
+ frame.srcdoc='<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="script-src \'none\'; connect-src \'none\'; object-src \'none\'; frame-src \'none\'; form-action \'none\'"><base href="'+new URL('../',location.href).href+'">'+css+'</head><body><div class="app">'+editor.outerHTML+'</div></body></html>';
+}
+load().catch(error=>{metrics.textContent='表示できません：'+error.message+'。同じ開発サーバーで開いてください。'});
+})();
+</script>
+</body>
+</html>

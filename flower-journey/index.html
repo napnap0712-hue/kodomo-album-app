@@ -19,6 +19,9 @@ function showPhotoAdd(){
 function showMemoryCatch(){
  showGame('games/memory-catch.html','おもいでキャッチ！',true);
 }
+function showCosmosMistake(){
+ showGame('games/cosmos.html','おもいで間違い探し！',true);
+}
 function showGame(src,title,isolated=false){
  if(switching)return;
  switching=true;
@@ -58,7 +61,8 @@ master.addEventListener('load',()=>{
        const guide=stageFrame.contentDocument;
        guide.addEventListener('click',e=>{
          const startGame=activeStage==='写真追加'?showPhotoAdd:
-           activeStage==='おもいでキャッチ！'?showMemoryCatch:null;
+           activeStage==='おもいでキャッチ！'?showMemoryCatch:
+           activeStage.includes('間違い探し')?showCosmosMistake:null;
          if(!startGame)return;
          const button=e.target.closest?.('button');
          if(!button)return;
@@ -72,7 +76,8 @@ master.addEventListener('load',()=>{
    // Some guides post a start message instead. Keep this as a compatible fallback.
    w.addEventListener('message',e=>{
      const startGame=activeStage==='写真追加'?showPhotoAdd:
-       activeStage==='おもいでキャッチ！'?showMemoryCatch:null;
+       activeStage==='おもいでキャッチ！'?showMemoryCatch:
+           activeStage.includes('間違い探し')?showCosmosMistake:null;
      if(!startGame||e.source!==stageFrame.contentWindow)return;
      if(e.data?.type==='flower-stage-start'){
        e.stopImmediatePropagation();startGame();
@@ -85,7 +90,9 @@ window.addEventListener('message',e=>{
  const completed=e.data?.type==='flower-stage-complete'&&e.data?.saved===true&&activeStage==='写真追加';
  const catchDemoFinished=activeStage==='おもいでキャッチ！'&&e.data?.type==='flower-stage-complete'&&e.data?.stage==='memory-catch'&&e.data?.demo===true&&e.data?.complete===true&&e.data?.saved===false;
  const catchBack=activeStage==='おもいでキャッチ！'&&e.data?.type==='flower-stage-back';
- if(completed||catchDemoFinished||catchBack)returnToMap();
+ const cosmosDone=activeStage.includes('間違い探し')&&e.data?.type==='flower-stage-complete'&&e.data?.stage==='cosmos-mistake'&&e.data?.demo===true&&e.data?.complete===true&&e.data?.saved===false;
+ const cosmosBack=activeStage.includes('間違い探し')&&e.data?.type==='flower-stage-back'&&e.data?.stage==='cosmos-mistake';
+ if(completed||catchDemoFinished||catchBack||cosmosDone||cosmosBack)returnToMap();
 });
 function returnToMap(){
  returnInProgress=true;
