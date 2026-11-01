@@ -3,7 +3,7 @@
 iframe{width:100%;height:100%;border:0;display:block;position:absolute;inset:0}
 #master{z-index:1;background:#dceee8}
 #game{display:none;z-index:4;background:#88d5ec;opacity:1;transform:scale(1);transform-origin:center;will-change:opacity,transform,filter}
-#game.return-zoom{opacity:0;transform:scale(1.115);filter:blur(8px);transition:opacity .9s cubic-bezier(.15,.7,.2,1),transform 1s cubic-bezier(.15,.7,.2,1),filter .9s ease}
+#game.return-zoom{opacity:0;transform:scale(1.115);filter:blur(8px);pointer-events:none;transition:opacity 1s cubic-bezier(.15,.7,.2,1),transform 1s cubic-bezier(.15,.7,.2,1),filter 1s ease}
 #curtain{position:fixed;inset:0;z-index:5;pointer-events:none;background:#dceee8;opacity:0;transition:opacity .32s ease}
 #curtain.on{opacity:1}
 </style></head><body><iframe id="master" title="完成済み冒険マップと全説明アニメーション" src="master-LOCKED.html"></iframe><iframe id="game" title="写真追加"></iframe><div id="curtain"></div><script>
@@ -20,8 +20,9 @@ function showPhotoAdd(){
  game.classList.remove('return-zoom');
  game.style.removeProperty('transition');
  game.style.removeProperty('filter');
- game.style.opacity='1';
- game.style.transform='scale(1)';
+ // Keep the initial values in CSS so return-zoom can override them.
+ game.style.removeProperty('opacity');
+ game.style.removeProperty('transform');
  game.onload=()=>{
    game.style.display='block';
    requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -83,7 +84,15 @@ window.addEventListener('message',e=>{
    panel.hidden=true;
    // No need to clear srcdoc here: leaving it intact avoids iframe load/timer races.
    // Preserve map DOM and all original eight tutorials without mutation.
+   let finished=false,fallback;
+   const end=ev=>{
+     if(ev.target===game&&ev.propertyName==='opacity')finish();
+   };
    const finish=()=>{
+     if(finished)return;
+     finished=true;
+     clearTimeout(fallback);
+     game.removeEventListener('transitionend',end);
      game.style.display='none';
      game.classList.remove('return-zoom');
      game.style.removeProperty('opacity');
@@ -94,15 +103,10 @@ window.addEventListener('message',e=>{
    };
    // Force a frame with the map already painted behind the active photo stage.
    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+     game.addEventListener('transitionend',end);
      game.classList.add('return-zoom');
      // One-time fallback if transitionend is skipped (background tab, reduced motion).
-     const fallback=setTimeout(finish,1250);
-     game.addEventListener('transitionend',function end(ev){
-       if(ev.propertyName!=='opacity')return;
-       game.removeEventListener('transitionend',end);
-       clearTimeout(fallback);
-       finish();
-     });
+     fallback=setTimeout(finish,1250);
    }));
  }catch(err){
    console.error('Map restoration failed; keep current screen to avoid blank background',err);
