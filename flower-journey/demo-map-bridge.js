@@ -4,6 +4,11 @@
 let active='',opening=false;
 const stage=document.getElementById('stageFrame');
 const supported=title=>title==='写真追加'?'photo-add':title.includes('おもいでキャッチ')?'memory-catch':title.includes('間違い探し')?'cosmos-mistake':null;
+const originalTransition=window.showComparisonTransition;
+window.showComparisonTransition=(title,button)=>{
+ if(title==='おともだち登録'){if(!opening){opening=true;parent.postMessage({type:'fj-demo-start',stage:'friend-registration'},'*')}return}
+ originalTransition(title,button);
+};
 function start(){const key=supported(active);if(!key||opening)return;opening=true;parent.postMessage({type:'fj-demo-start',stage:key},'*')}
 document.addEventListener('click',e=>{const tap=e.target.closest?.('.tap');if(tap){active=tap.dataset.title||'';opening=false}},true);
 // Opaque child frames cannot be inspected by the map. Install the small event
