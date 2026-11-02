@@ -2,7 +2,8 @@
 (()=>{
 'use strict';
 const game=document.getElementById('demoGame'),friend=document.getElementById('friendRegistration');
-let display=game,session=null;
+let display=game,session=null,rosterModel=null;
+const fictionalRoster=new URLSearchParams(location.search).get('fictionalRoster')==='1';
 const boundary=window.flowerClassBoundary,channels=new WeakMap();
 function alive(){return boundary.isActive(session)}
 function demoAllowed(){return alive()&&boundary.authorize(session,{...session,operation:'demo:navigate'}).allowed}
@@ -41,9 +42,26 @@ function demoPhoto(html){
  }
  return html;
 }
+// This opt-in route can only construct generated fixtures; it has no data reader.
+function fictionalFriend(html){
+ const scope={classId:session.classId,schoolYear:session.schoolYear,baseYear:2026};
+ const api=window.FlowerFriendRosterViewAdapter;
+ rosterModel=api.createDemoModel(boundary,session,scope,window.FlowerFictionalRoster.make(scope));
+ const view=JSON.stringify(api.viewFor(rosterModel)).replace(/</g,'\\u003c');
+ const replacements=[
+  ['let children=[],edit=-1', 'let children='+view+',edit=-1'],
+  ["b.className='friend';b.append", "b.className='friend';b.dataset.rosterId=c.id;b.append"],
+  ['const data={name,game,photo:imageData};',"const data={...(edit<0?{id:'fixture-new-'+crypto.randomUUID()}:children[edit]),name,game,photo:imageData};"]
+ ];
+ for(const [original,replacement] of replacements){
+  if(html.split(original).length!==2)throw Error('Ver.6の架空名簿接続箇所を確認できません。原本は変更していません。');
+  html=html.replace(original,replacement);
+ }
+ return html;
+}
 function notice(message){document.getElementById('status').textContent=message;document.getElementById('notice').hidden=false}
 function close(){
- boundary.invalidate(session);session=null;
+ boundary.invalidate(session);session=null;rosterModel=null;
  ++generation;clearTimeout(timer);finishTransition?.();finishTransition=null;
  for(const frame of [game,friend]){frame.hidden=true;frame.classList.remove('return-zoom','enter-zoom');frame.onload=null;frame.removeAttribute('srcdoc');channels.delete(frame)}display=game;phase='closed';active='';
 }
@@ -80,7 +98,8 @@ async function start(stage){
   target.title=title+'（デモ・本保存なし）';
   target.onload=reveal;
   // The map stays visible underneath until the game has fully loaded.
-  target.srcdoc=isolate(bindPosts(stage==='photo-add'?demoPhoto(html):html),bootstrap(target)+bindPosts(adapter)).replace('<base href="'+new URL('./',location.href).href+'">','<base href="'+base+'">');
+  const documentHTML=stage==='friend-registration'&&fictionalRoster?fictionalFriend(html):stage==='photo-add'?demoPhoto(html):html;
+  target.srcdoc=isolate(bindPosts(documentHTML),bootstrap(target)+bindPosts(adapter)).replace('<base href="'+new URL('./',location.href).href+'">','<base href="'+base+'">');
  }catch(e){if(id!==generation||!demoAllowed())return;phase='map';active='';post(map,{type:'fj-demo-start-failed'});notice(e.message)}
 }
 function returnToMap(){
