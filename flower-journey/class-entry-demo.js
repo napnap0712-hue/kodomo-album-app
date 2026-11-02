@@ -4,6 +4,9 @@
 const entry=document.getElementById('entry'),map=document.getElementById('map'),view=document.getElementById('mapView');
 const notice=document.getElementById('notice'),status=document.getElementById('status'),retry=document.getElementById('retry'),petals=document.getElementById('petals');
 const names=['たんぽぽ','ちゅうりっぷ','コスモス','カンナ','でいご','さくら'];
+// Explicit fictional school year; never infer a legacy storage year.
+const demoScope=Object.freeze({mode:'demo',schoolYear:2026});
+const boundary=window.flowerClassBoundary;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)');
 let nonce='',generation=0,busy=false,source='';
 function message(text,failed=false){status.textContent=text;notice.hidden=false;retry.hidden=!failed}
@@ -52,14 +55,17 @@ window.addEventListener('message',async event=>{
  const data=event.data;
  // This is a temporary UI session, never passed to cjOriginalApp or persisted.
  if(event.source!==entry.contentWindow||event.origin!=='null'||data?.type!=='fj-v8-demo-login'||data.nonce!==nonce||!Number.isInteger(data.classIndex)||!names[data.classIndex]||busy||!view.hidden)return;
+ if(Object.keys(data).some(key=>!['type','nonce','classIndex'].includes(key)))return;
  const id=++generation;busy=true;
+ let session;
  document.getElementById('mapClass').textContent=names[data.classIndex]+'ぐみ';
  message('仮ログイン確認済み。冒険マップを読み込んでいます…');
  try{
+  session=boundary.createSession({classId:window.FlowerClassDataBoundary.classIdForIndex(data.classIndex),...demoScope});
   const loaded=new Promise(resolve=>{map.onload=()=>{map.onload=null;resolve()}});
   // Compose an isolated view without changing the immutable map file.
-  await window.flowerDemo.connect(map);
-  await timeout(loaded,20000);if(id!==generation)return;
+  await window.flowerDemo.connect(map,session);
+  await timeout(loaded,20000);if(id!==generation||!boundary.isActive(session))return;
   bloom();await new Promise(resolve=>setTimeout(resolve,reduce.matches?0:900));if(id!==generation)return;
   view.hidden=false;
   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));if(id!==generation)return;
@@ -68,12 +74,13 @@ window.addEventListener('message',async event=>{
   setTimeout(()=>{if(id===generation){entry.style.visibility='hidden';entry.inert=true;busy=false}},reduce.matches?0:1050);
  }catch(error){
   if(id!==generation)return;
-  map.onload=null;map.removeAttribute('src');view.hidden=true;busy=false;
+  boundary.invalidate(session);window.flowerDemo.close();
+  map.onload=null;map.removeAttribute('src');map.removeAttribute('srcdoc');view.hidden=true;busy=false;
   message(String(error.message||error),true);
  }
 });
 document.getElementById('logout').addEventListener('click',()=>{
- ++generation;busy=false;window.flowerDemo.close();map.onload=null;map.removeAttribute('src');map.removeAttribute('srcdoc');view.hidden=true;view.classList.remove('visible','reveal');petals.replaceChildren();
+ ++generation;busy=false;boundary.invalidate();window.flowerDemo.close();map.onload=null;map.removeAttribute('src');map.removeAttribute('srcdoc');view.hidden=true;view.classList.remove('visible','reveal');petals.replaceChildren();
  entry.style.removeProperty('visibility');entry.inert=false;nonce='';void loadEntry();
 });
 retry.addEventListener('click',()=>{void loadEntry()});
