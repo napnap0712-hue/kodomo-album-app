@@ -57,8 +57,8 @@ window.addEventListener('message',async event=>{
  message('仮ログイン確認済み。冒険マップを読み込んでいます…');
  try{
   const loaded=new Promise(resolve=>{map.onload=()=>{map.onload=null;resolve()}});
-  // Load ONLY the immutable map/tutorials, never index.html's game/editor router.
-  map.src='master-LOCKED.html';
+  // Compose an isolated view without changing the immutable map file.
+  await window.flowerDemo.connect(map);
   await timeout(loaded,20000);if(id!==generation)return;
   bloom();await new Promise(resolve=>setTimeout(resolve,reduce.matches?0:900));if(id!==generation)return;
   view.hidden=false;
@@ -73,7 +73,7 @@ window.addEventListener('message',async event=>{
  }
 });
 document.getElementById('logout').addEventListener('click',()=>{
- ++generation;busy=false;map.onload=null;map.removeAttribute('src');view.hidden=true;view.classList.remove('visible','reveal');petals.replaceChildren();
+ ++generation;busy=false;window.flowerDemo.close();map.onload=null;map.removeAttribute('src');map.removeAttribute('srcdoc');view.hidden=true;view.classList.remove('visible','reveal');petals.replaceChildren();
  entry.style.removeProperty('visibility');entry.inert=false;nonce='';void loadEntry();
 });
 retry.addEventListener('click',()=>{void loadEntry()});
