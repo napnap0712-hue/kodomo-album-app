@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>架空名簿の暗号化テスト</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f5f8;color:#172637;font:16px/1.6 system-ui,sans-serif}main{max-width:640px;margin:auto;padding:20px 16px 48px}h1{font-size:1.45rem}h2{font-size:1.1rem;margin:0 0 12px}.warning{background:#fff0cd;border:2px solid #946300;padding:12px;border-radius:12px;font-weight:bold}section{background:white;border:1px solid #cad2de;border-radius:14px;padding:16px;margin:16px 0}label{display:block;margin-top:12px}input,select,button{font:inherit;min-height:48px;border-radius:8px;width:100%;padding:10px;border:1px solid #68788c}button{margin-top:12px;background:#194d75;color:white;font-weight:bold;cursor:pointer}button:disabled{opacity:.55;cursor:default}input:disabled,select:disabled{color:#425369;background:#eef1f4}input[type=checkbox]{width:24px;min-height:24px;vertical-align:middle;margin-right:8px}.secondary{background:white;color:#194d75}.note{font-size:.9rem;color:#435267}#status{padding:12px;border:2px solid #68788c;border-radius:10px;overflow-wrap:anywhere}ul{padding-left:22px}li{margin:8px 0;overflow-wrap:anywhere}code{overflow-wrap:anywhere}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #bd6900;outline-offset:2px}
+</style>
+<main>
+<h1>架空名簿の暗号化テスト</h1>
+<p class="warning">架空データ専用・本番利用不可</p>
+<p class="note">実際のパスワードは入力しないでください。架空の3人だけを使用します。データはメモリ内のみで、再読み込みで消えます。</p>
+<p id="status" role="status" aria-live="polite">準備中です。</p>
+<section><h2>1. クラス・年度</h2>
+<label for="classId">クラス</label><select id="classId"><option value="tanpopo">たんぽぽ</option><option value="tulip">チューリップ</option><option value="cosmos">コスモス</option><option value="canna">カンナ</option><option value="deigo">でいご</option><option value="sakura">さくら</option></select>
+<label for="year">年度（推測しません）</label><input id="year" type="number" min="1900" max="9999" step="1" placeholder="例：2026" inputmode="numeric" autocomplete="off">
+<p class="note">暗号化後はクラス・年度を固定します。基準年度も入力年度と同じに固定する独立テストです。</p>
+</section>
+<section><h2>2. 暗号化・パスフレーズで解除</h2>
+<label for="current">テスト用パスフレーズ（16文字以上）</label><input id="current" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+<button id="encrypt" disabled>架空名簿を暗号化</button><button id="decrypt" disabled>パスフレーズで解除・照合</button>
+</section>
+<section><h2>3. パスフレーズ変更</h2>
+<label for="next">新しいテスト用パスフレーズ（16文字以上）</label><input id="next" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+<button id="change" disabled>上の旧パスフレーズから変更</button>
+<p class="note">成功後、解除には新しいパスフレーズを入力してください。古い暗号化コピーは旧パスフレーズで開けます。</p>
+</section>
+<section><h2>4. 復旧キー</h2>
+<label for="issued">今回発行したテスト用キー</label><input id="issued" type="password" readonly autocomplete="off" aria-describedby="key-note">
+<label><input id="reveal" type="checkbox">発行キーを表示する</label>
+<p id="key-note" class="note">発行キーはこの専用欄だけに表示します。ログには記録しません。下の欄へ転記して試せます。</p>
+<label for="recovery">解除に使うテスト用復旧キー</label><input id="recovery" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
+<button id="recover" disabled>復旧キーで解除・照合</button><button id="reset" disabled>復旧キーで新パスフレーズに再設定</button>
+<p class="note">再設定には「3」の新パスフレーズを使います。間違った入力では元データを維持します。</p>
+</section>
+<section><h2>検証結果</h2><p id="scope">暗号化データはありません。</p><ul id="results" aria-label="直近の操作結果"><li>まだ操作していません。</li></ul>
+<button id="discard" class="secondary" disabled>すべて破棄して最初から</button>
+<p class="note">名簿や暗号文の取り込み・保存・通信機能はありません。HTTPSまたはlocalhostで開いてください。</p>
+</section>
+</main>
+<script src="class-data-boundary.js" defer></script>
+<script src="friend-roster-view-adapter.js" defer></script>
+<script src="fictional-roster-readonly-adapter.js" defer></script>
+<script src="fictional-roster-fixture.js" defer></script>
+<script src="fictional-roster-crypto.js" defer></script>
+<script src="fictional-roster-rekey.js" defer></script>
+<script src="fictional-crypto-lab.js" defer></script>
+</html>
