@@ -56,7 +56,7 @@ async function unlock(boundary,session,scope,rootJSON,secret,recovery=false){
   live();const stored=await store.read();live();const latest=stored===null?records:await crypt.open(stored);live();
   return root.FlowerStage11Memory.view(boundary,session,scope,latest);
  }
- const integration=Object.freeze({composeFriend,memoryRows,opened(api){channel=api;button.hidden=false},handle,close});
+ const integration=Object.freeze({composeFriend,memoryRows,cosmosRows:memoryRows,opened(api){channel=api;button.hidden=false},handle,close});
  return Object.freeze({integration,isDirty:()=>dirty,close});
 }
 Object.defineProperty(root,'FlowerStage10Registration',{value:Object.freeze({unlock})});
