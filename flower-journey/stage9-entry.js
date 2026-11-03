@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id),entry=$('entry'),map=$('map'),view=$('ma
 const boundary=window.flowerClassBoundary,names=['たんぽぽ','ちゅうりっぷ','コスモス','カンナ','でいご','さくら'];
 const reduce=matchMedia('(prefers-reduced-motion: reduce)'),petals=$('petals');
 let nonce='',generation=0,selection=null,busy=false,source='',bridge='';
+let entryReady=null;
 const registrationMode=new URLSearchParams(location.search).get('registration')==='1';
 if(registrationMode)document.querySelector('.mapBar small').textContent='第10段階・架空登録専用・本番利用不可\nおともだち登録は暗号化保存／ゲームは本保存なし';
 function notice(text,retry=false){$('status').textContent=text;$('notice').hidden=false;$('retry').hidden=!retry}
@@ -27,14 +28,16 @@ function compose(){
  return '<!doctype html>'+doc.documentElement.outerHTML;
 }
 async function load(){
+ entryReady?.reject(Error('Cancelled'));entryReady=null;
  const id=++generation;busy=true;selection=null;boundary.invalidate();notice('第9段階の入口を読み込んでいます…');
  try{
   if(!isSecureContext||!crypto.subtle||typeof crypto.randomUUID!=='function'||!globalThis.indexedDB)throw Error('Unsupported');
   if(!source)[source,bridge]=await timeout(Promise.all([fetchText('class-entry-password-v8.html'),fetchText('stage9-entry-bridge.js')]),15000);
   if(id!==generation)return;nonce=crypto.randomUUID();
-  const loaded=new Promise(resolve=>{entry.onload=()=>{entry.onload=null;resolve()}});entry.srcdoc=compose();await timeout(loaded,15000);
-  if(id!==generation)return;busy=false;$('notice').hidden=true;
- }catch{if(id===generation){busy=false;notice('第9段階を開けません。HTTPS・ブラウザ対応・ファイル配置を確認してください。',true)}}
+  const loaded=new Promise((resolve,reject)=>{entryReady={id,resolve,reject}});entry.onload=null;entry.srcdoc=compose();await timeout(loaded,15000);
+  if(id!==generation)return;busy=false;$('notice').hidden=true;return true;
+ }catch{if(id===generation){busy=false;notice('[ENTRY_READY] 入口の準備を確認できません。HTTPS・ブラウザ対応・ファイル配置を確認して再試行してください。',true)}}
+ finally{if(entryReady?.id===id)entryReady=null}
 }
 function compare(c,records){if(JSON.stringify(records)!==JSON.stringify(FlowerFictionalRoster.make(c.scope)))throw Error('Fictional fixture mismatch')}
 function bloom(){
@@ -55,8 +58,8 @@ function bloom(){
 async function enterMap(c,id){
  live(c,id);if(!c.unlocked)throw Error('Locked');post('stage9-cleared');
  notice('架空データの解除確認済み。冒険マップを読み込んでいます…');
- const loaded=new Promise(resolve=>{map.onload=()=>{map.onload=null;resolve()}});
- await window.flowerDemo.connect(map,c.session,c.registration?.integration||null);await timeout(loaded,20000);live(c,id);
+ map.onload=null;
+ await timeout(window.flowerDemo.connect(map,c.session,c.registration?.integration||null),22000);live(c,id);
  bloom();view.hidden=false;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));live(c,id);
  view.classList.add('visible','reveal');entry.style.visibility='hidden';entry.inert=true;$('notice').hidden=true;
  $('mapClass').textContent=names[c.index]+'ぐみ（2026年度）';
@@ -65,6 +68,7 @@ async function enterMap(c,id){
 }
 window.addEventListener('message',async event=>{
  const d=event.data;
+ if(event.source===entry.contentWindow&&event.origin==='null'&&d?.type==='stage9-entry-ready'&&d.nonce===nonce&&Object.keys(d).sort().join()==='nonce,type'){entryReady?.resolve();return}
  if(event.source!==entry.contentWindow||event.origin!=='null'||!d||d.nonce!==nonce||!view.hidden||busy||!Number.isInteger(d.classIndex)||!names[d.classIndex]||!Number.isSafeInteger(d.serial)||d.serial<1)return;
  const allowed=['type','nonce','classIndex','serial',...(['stage9-submit','stage9-confirm'].includes(d.type)?['secret']:[])];
  if(Object.keys(d).some(k=>!allowed.includes(k)))return;
@@ -110,21 +114,25 @@ window.addEventListener('message',async event=>{
    if(registrationMode){phase='登録データ復元';c.registration=await FlowerStage10Registration.unlock(boundary,c.session,c.scope,slot.envelopeJSON,d.secret,true)}
    live(c,id);c.unlocked=true;phase='マップ読込';await enterMap(c,id);
   }
- }catch{
+ }catch(error){
   if(id!==generation)return;
-  if(phase==='マップ読込'){reset();notice('マップを開けませんでした。再度解除してください。',true);return}
-  if(phase==='登録データ復元'){post('stage9-error',{message:'登録用の暗号化データを復元できません。対象・破損・DB利用状態を確認してください。データは自動変更しません。'});return}
+  if(phase==='マップ読込'){await reset('[MAP_LOAD] ログインと登録復元は成功しましたが、マップの準備を確認できませんでした。再度解除してください。');return}
+  if(phase==='登録データ復元'){
+   const messages={REG_KEY:'[REG_KEY] ログインは成功しましたが、登録用の鍵を準備できませんでした。保存データを変更せず再試行してください。',REG_READ:'[REG_READ] ログインは成功しましたが、登録DBの読み込み・形式確認に失敗しました。対象・anchor・DB利用状態を確認してください。初期化はしません。',REG_OPEN:'[REG_OPEN] ログインは成功しましたが、登録データの復号・照合に失敗しました。保存データは変更していません。'};
+   post('stage9-error',{message:messages[error.prototypeCode]||'[REG_RESTORE] ログインは成功しましたが、登録データを復元できませんでした。保存データを変更せず再試行してください。'});return;
+  }
   const message=phase==='解除'?'解除できません。パスフレーズの誤り・破損などを確認してください。マップへは進みません。':phase==='復旧キー確認'?'復旧キーの確認・確定ができません。控えたキーを確認してください。':phase==='初回保存'?'初回保存を確認できません。成功とは扱いません。再選択して保存状態を確認してください。':'第9段階データを読めません。対象・形式・DB利用状態を確認してください。';
-  post('stage9-error',{message});
+  const code=phase==='解除'?'LOGIN_UNLOCK':phase==='初回保存'?'LOGIN_CREATE':phase==='復旧キー確認'?'RECOVERY_CONFIRM':'LOGIN_READ';
+  post('stage9-error',{message:'['+code+'] '+message,retrySelection:d.type==='stage9-select'});
  }finally{if(id===generation)busy=false}
 });
-function reset(){
+async function reset(afterMessage=null){
  selection?.registration?.close();
  ++generation;busy=false;selection=null;nonce='';boundary.invalidate();window.flowerDemo.close();
  map.onload=null;map.removeAttribute('src');map.removeAttribute('srcdoc');view.hidden=true;view.classList.remove('visible','reveal');petals.replaceChildren();entry.style.removeProperty('visibility');entry.inert=false;
- void load();
+ const loaded=await load();if(loaded&&afterMessage)notice(afterMessage,true);
 }
-$('logout').addEventListener('click',()=>{if(selection?.registration?.isDirty()&&!window.confirm('未保存の変更を破棄してログアウトしますか？'))return;reset()});$('retry').addEventListener('click',reset);
+$('logout').addEventListener('click',()=>{if(selection?.registration?.isDirty()&&!window.confirm('未保存の変更を破棄してログアウトしますか？'))return;void reset()});$('retry').addEventListener('click',()=>{void reset()});
 window.addEventListener('beforeunload',e=>{if(selection?.registration?.isDirty()){e.preventDefault();e.returnValue=''}});
 window.addEventListener('pagehide',()=>{selection?.registration?.close();++generation;busy=false;selection=null;nonce='';boundary.invalidate();window.flowerDemo.close();map.removeAttribute('srcdoc');entry.removeAttribute('srcdoc');view.hidden=true});
 window.addEventListener('pageshow',e=>{if(e.persisted)reset()});

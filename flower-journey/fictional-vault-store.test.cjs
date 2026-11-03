@@ -22,7 +22,7 @@ test('dedicated fictional IndexedDB integration',async t=>{
   return route.fulfill({contentType:name.endsWith('.html')?'text/html':'application/javascript',body:fs.readFileSync(path.join(__dirname,name))});
  });
  await page.goto('https://fictional-storage.test/fictional-storage-lab.html');
- await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('準備できました'));
+ await page.waitForFunction(()=>!document.querySelector('#save').disabled);
  const initialRequests=requests;
  await page.evaluate(async pass=>{
   window.labTest={};const x=labTest;x.boundary=FlowerClassDataBoundary.createBoundary();x.scope={classId:'tanpopo',schoolYear:2026,baseYear:2026};x.session=x.boundary.createSession({...x.scope,mode:'demo'});
@@ -56,13 +56,14 @@ test('dedicated fictional IndexedDB integration',async t=>{
  await t.test('invalid year and revoked session fail before DB access',async()=>{
   assert(await page.evaluate(async pass=>{const x=labTest;let rejected=0;try{FlowerFictionalVaultStore.createStore(x.boundary,x.session,{...x.scope,schoolYear:NaN})}catch{rejected++}x.boundary.invalidate();const n=dbNames.length;for(const fn of [()=>x.store.readEncrypted(),()=>x.store.save(x.a,pass),()=>x.store.remove(undefined,FlowerFictionalVaultStore.CONFIRM_DELETE)])try{await fn()}catch{rejected++}return rejected===4&&dbNames.length===n},PASS));
  });
- async function click(id,fields,expected){for(const [key,value]of Object.entries(fields))await page.locator('#'+key).fill(value);await page.locator('#'+id).click();await page.waitForFunction(()=>!document.querySelector('#prepare').disabled);assert((await page.locator('#status').innerText()).includes(expected))}
+ async function click(id,fields,expected){for(const [key,value]of Object.entries(fields))await page.locator('#'+key).fill(value);await page.locator('#'+id).click();await page.waitForFunction(()=>!document.querySelector('#save').disabled);assert((await page.locator('#status').innerText()).includes(expected))}
  await t.test('real UI restores after reload and rejects wrong passphrase',async()=>{
   await page.reload();await page.waitForFunction(()=>!document.querySelector('#restore').disabled);
-  await click('restore',{year:'2026',pass:WRONG},'拒否');await click('restore',{pass:PASS},'復元成功');
+  await click('restore',{year:'2026',pass:WRONG},'解除できません');await click('restore',{pass:PASS},'復元できたよ！');
  });
- await t.test('390px and 1366px UI saves candidates and requires explicit deletion',async()=>{
-  for(const width of [390,1366]){await page.setViewportSize({width,height:900});await click('prepare',{pass:PASS},'暗号化成功');assert.equal(await page.locator('#issued').getAttribute('type'),'password');await click('save',{pass:PASS},'保存成功');assert(await page.locator('#remove').isDisabled());assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:path.join(artifacts,`storage-${width}.png`),fullPage:true});}
+ await t.test('390px and 1366px one-click UI saves require overwrite and deletion confirmation',async()=>{
+  await page.locator('details').filter({has:page.locator('#overwrite')}).locator('summary').click();
+  for(const width of [390,1366]){await page.setViewportSize({width,height:900});await page.locator('#overwrite').check();await click('save',{pass:PASS},'保存できたよ！');assert.equal(await page.locator('#issued').getAttribute('type'),'password');assert(await page.locator('#remove').isDisabled());assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:path.join(artifacts,`storage-${width}.png`),fullPage:true});}
   await page.locator('#confirmDelete').check();await click('remove',{},'削除しました');await click('restore',{pass:PASS},'ありません');
  });
  await t.test('only test DB is accessed, with no storage secrets or operation network',async()=>{

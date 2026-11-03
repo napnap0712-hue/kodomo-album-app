@@ -17,7 +17,7 @@ test('Stage 10 fictional registration',async t=>{
   const p=await page();let rootBefore,photo,addedId;
   await t.test(`${width}px addition, generated photo, failed save retention and retry`,async()=>{
    await login(p,0,true);rootBefore=await raw(p,DB9,'confirmed-packages');const f=await friend(p);assert.equal(await f.locator('.friend:not(.add)').count(),3);
-   await f.locator('.friend.add').click();await f.locator('#realName').fill('架空 追加児');await f.locator('#gameName').fill('追加デモ');await f.locator('#photo').evaluate(e=>e.click());await f.locator('#photoView img').waitFor();photo=await f.locator('#photoView img').getAttribute('src');assert(photo.startsWith('data:image/jpeg;base64,'));await f.locator('#form .save').click();
+   await f.locator('.friend.add').click();await f.locator('#realName').fill('架空 追加児');await f.locator('#gameName').fill('追加デモ');await f.locator('#photo').evaluate(e=>e.click());await f.locator('[data-test-icon="1"]').click();await f.locator('#photoView img').waitFor();photo=await f.locator('#photoView img').getAttribute('src');assert(photo.startsWith('data:image/png;base64,'));await f.locator('#form .save').click();
    addedId=await f.locator('body').evaluate(()=>stage10Read().find(r=>r.game==='追加デモ').id);
    await logout(p,false);assert(await p.locator('#mapView').evaluate(e=>!e.hidden));
    await p.evaluate(()=>{window.putOriginal=IDBObjectStore.prototype.put;IDBObjectStore.prototype.put=function(...a){const q=putOriginal.apply(this,a);if(this.name==='encrypted-registration')this.transaction.abort();return q}});

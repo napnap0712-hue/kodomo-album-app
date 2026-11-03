@@ -4,7 +4,7 @@
 const game=document.getElementById('demoGame'),friend=document.getElementById('friendRegistration');
 let display=game,session=null,rosterModel=null,registration=null;
 const fictionalRoster=new URLSearchParams(location.search).get('fictionalRoster')==='1';
-const boundary=window.flowerClassBoundary,channels=new WeakMap();
+const boundary=window.flowerClassBoundary,channels=new WeakMap();let mapReady=null;
 function alive(){return boundary.isActive(session)}
 function demoAllowed(){return alive()&&boundary.authorize(session,{...session,operation:'demo:navigate'}).allowed}
 function bindPosts(code){return code.replace(/\b(?:window\.)?parent\.postMessage\(/g,'window.flowerDemoChannel.send(')}
@@ -12,7 +12,7 @@ function post(frame,data){const channelId=channels.get(frame);if(!alive()||!chan
 function bootstrap(frame){
  const channelId=crypto.randomUUID();channels.set(frame,channelId);
  const scope=JSON.stringify(boundary.context(session,channelId));
- return `(()=>{const scope=Object.freeze(${scope});Object.defineProperty(window,'flowerDemoChannel',{value:Object.freeze({send(data){parent.postMessage({...data,...scope},'*')},matches(e){return e.source===parent&&Object.keys(scope).every(k=>e.data?.[k]===scope[k])}})});})();`;
+ return `(()=>{const scope=Object.freeze(${scope});Object.defineProperty(window,'flowerDemoChannel',{value:Object.freeze({send(data){parent.postMessage({...data,...scope},'*')},matches(e){return e.source===parent&&Object.keys(scope).every(k=>e.data?.[k]===scope[k])}})});window.addEventListener('load',()=>window.flowerDemoChannel.send({type:'fj-demo-document-ready'}),{once:true});})();`;
 }
 const routes={'friend-registration':['friend-registration-v6-standalone.html','おともだち登録 Ver.6'],'photo-add':['games/photo-add.html','写真追加'],'memory-catch':['games/memory-catch.html','おもいでキャッチ'],'cosmos-mistake':['games/cosmos.html','おもいで間違い探し']};
 let map=null,active='',phase='closed',generation=0,timer=null,finishTransition=null;
@@ -61,6 +61,7 @@ function fictionalFriend(html){
 }
 function notice(message){document.getElementById('status').textContent=message;document.getElementById('notice').hidden=false}
 function close(){
+ mapReady?.reject(Error('Map connection cancelled'));mapReady=null;
  registration?.close();registration=null;
  boundary.invalidate(session);session=null;rosterModel=null;
  ++generation;clearTimeout(timer);finishTransition?.();finishTransition=null;
@@ -78,7 +79,10 @@ async function connect(frame,nextSession,registrationIntegration=null){
  const hotspot='<button id="friendButton" class="tap" type="button" style="--x:79.25%;--y:4.15%;--w:27.5%;--h:4.5%;" data-title="おともだち登録" aria-label="FLOWER WORLD：おともだち登録を開く"></button>';
  // Insert before the original map binds its .tap listeners, reusing its petals.
  const composed=html.slice(0,end)+script(bridge)+html.slice(end);
- map.srcdoc=isolate(composed.replace('</main>',hotspot+'</main>'),bootstrap(map));
+ const documentHTML=isolate(composed.replace('</main>',hotspot+'</main>'),bootstrap(map));
+ const ready=new Promise((resolve,reject)=>{mapReady={id,resolve,reject}});let readyTimer;
+ try{map.srcdoc=documentHTML;await Promise.race([ready,new Promise((_,reject)=>{readyTimer=setTimeout(()=>reject(Error('マップの準備応答を確認できません')),20000)})])}
+ finally{clearTimeout(readyTimer);if(mapReady?.id===id)mapReady=null}
 }
 async function start(stage){
  if(!demoAllowed()||phase!=='map'||typeof stage!=='string'||!Object.hasOwn(routes,stage))return;
@@ -134,6 +138,7 @@ function fade(){
 window.addEventListener('message',e=>{
  const d=e.data;if(!d||!demoAllowed())return;
  if(map&&boundary.accepts(session,e,map.contentWindow,channels.get(map))){
+  if(d.type==='fj-demo-document-ready'){mapReady?.resolve();return}
   if(d.type==='fj-demo-start')void start(d.stage);
   if(d.type==='fj-demo-map-ready'&&phase==='restoring')fade();
   if(d.type==='fj-demo-error')notice(d.message);

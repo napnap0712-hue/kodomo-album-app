@@ -2,11 +2,11 @@
 (function(root){
 'use strict';
 async function unlock(boundary,session,scope,rootJSON,secret,recovery=false){
- const crypt=await root.FlowerStage10Crypto.unlock(boundary,session,scope,rootJSON,secret,recovery);secret=null;
+ let crypt;try{crypt=await root.FlowerStage10Crypto.unlock(boundary,session,scope,rootJSON,secret,recovery)}catch{throw Object.assign(Error('Registration key unavailable'),{prototypeCode:'REG_KEY'})}finally{secret=null}
  let records,expected,dirty=false,saving=false,closed=false,channel=null;
  const store=root.FlowerStage10Store.createStore(boundary,session,scope,crypt),request={...session,operation:'demo:register'};
  function live(){if(closed||!boundary.authorize(session,request).allowed)throw Error('Expired registration')}
- try{expected=await store.read();if(expected===null)records=crypt.takeInitialRecords();else{crypt.takeInitialRecords();records=await crypt.open(expected)}}catch(error){crypt.close();throw error}
+ try{try{expected=await store.read()}catch{throw Object.assign(Error('Registration read unavailable'),{prototypeCode:'REG_READ'})}if(expected===null)records=crypt.takeInitialRecords();else{crypt.takeInitialRecords();try{records=await crypt.open(expected)}catch{throw Object.assign(Error('Registration decrypt unavailable'),{prototypeCode:'REG_OPEN'})}}}catch(error){crypt.close();throw error}
  function project(rows=records){return root.FlowerFriendRosterViewAdapter.viewFor(root.FlowerFriendRosterViewAdapter.createDemoModel(boundary,session,scope,rows))}
  function merge(view){
   live();if(!Array.isArray(view)||view.length>500)throw Error('Invalid view');const seen=new Set(),old=new Map(records.map(r=>[r.id,r])),original=new Map(project().map(r=>[r.id,r]));
@@ -29,7 +29,7 @@ async function unlock(boundary,session,scope,rootJSON,secret,recovery=false){
   live();html=once(html,'let children=[],edit=-1','let children='+JSON.stringify(project()).replace(/</g,'\\u003c')+',edit=-1');
   html=once(html,'const data={name,game,photo:imageData};',"const data={...(edit<0?{id:'fictional-'+crypto.randomUUID()}:children[edit]),name,game,photo:imageData};");
   html=once(html,"const name=$('realName').value.trim(),game=$('gameName').value.trim();","const rawName=$('realName').value,rawGame=$('gameName').value;const name=edit>=0&&rawName===children[edit].name?children[edit].name:rawName.trim(),game=edit>=0&&rawGame===children[edit].game?children[edit].game:rawGame.trim();");
-  html=once(html,'function render(){',"function render(){window.stage10Read=()=>children.map(c=>({...c}));window.stage10Replace=rows=>{children=rows;render();close()};window.stage10Notify=(text,persistent)=>{clearTimeout(toastTimer);$('toast').textContent=text;$('toast').style.display='block';if(!persistent)toastTimer=setTimeout(()=>{$('toast').style.display='none'},2200)};window.dispatchEvent(new Event('stage10-change'));");
+  html=once(html,'function render(){',"function render(){window.stage10Read=()=>children.map(c=>({...c}));window.stage10ChooseIcon=url=>{imageData=url;setPhoto()};window.stage10Replace=rows=>{children=rows;render();close()};window.stage10Notify=(text,persistent)=>{clearTimeout(toastTimer);$('toast').textContent=text;$('toast').style.display='block';if(!persistent)toastTimer=setTimeout(()=>{$('toast').style.display='none'},2200)};window.dispatchEvent(new Event('stage10-change'));");
   return html;
  }
  async function handle(d,api){
