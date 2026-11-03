@@ -10,14 +10,17 @@
 <section><h2>クラス・年度</h2><label for="classId">クラス</label><select id="classId"><option value="tanpopo">たんぽぽ</option><option value="tulip">チューリップ</option><option value="cosmos">コスモス</option><option value="canna">カンナ</option><option value="deigo">でいご</option><option value="sakura">さくら</option></select>
 <label for="year">年度（1900〜9999）</label><input id="year" type="number" min="1900" max="9999" step="1" inputmode="numeric" autocomplete="off">
 <p class="note">基準年度＝入力年度、形式v1で固定します。年度は自動補完しません。</p></section>
-<section><h2>暗号化と保存</h2><label for="pass">テスト用パスフレーズ（16文字以上）</label><input id="pass" type="password" autocomplete="off" autocapitalize="off" spellcheck="false">
-<button id="prepare" disabled>架空3人を暗号化（まだ保存しません）</button>
+<section><h2>保存・続きから開く</h2>
+<label for="pass">テスト用パスフレーズ（16文字以上）</label><input id="pass" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="passHelp">
+<p id="passHelp" class="note">初回は1回だけ入力して「保存する」。再読み込み後は保存時と同じものを入力して「続きから開く」。操作後は入力欄を空にします。空白・全角／半角もそのまま区別します。</p>
+<button id="save" disabled>保存する</button><button id="restore" disabled>続きから開く</button>
+<p id="summary">保存時と同じクラス・年度を選んでください。</p>
+<details><summary>保存済みテストデータの上書き</summary><label><input id="overwrite" type="checkbox">選択クラス・年度のデータを上書きする</label><p class="note">現在の保存データを入力パスフレーズで正しく解除できた場合だけ許可します。通常はチェック不要です。</p></details>
+</section>
+<section><h2>初回保存後：復旧キーを控える</h2>
 <label for="issued">今回発行したテスト用復旧キー</label><input id="issued" type="password" readonly autocomplete="off"><label><input id="reveal" type="checkbox">発行キーを表示</label>
-<p class="note">キーは保存しません。再読み込みで消えます。保存には上のパスフレーズを再入力してください。</p>
-<button id="save" disabled>暗号化パッケージを保存</button>
-<p class="note">既存の同クラス・年度のデータを上書きするには、先に正しいパスフレーズで復元してください。</p></section>
-<section><h2>再読み込み後の復元</h2><button id="restore" disabled>選択クラス・年度を復元して照合</button>
-<p class="note">上のパスフレーズを使用します。名簿は表示せず、架空名簿の全項目との一致を確認します。</p><p id="summary">メモリ内に候補はありません。</p></section>
+<p class="note">保存成功後に安全な場所へ控えてください。キー自体はDBへ保存せず、再読み込みでこの欄から消えます。保存失敗時は、このキーで保存済みデータが開けるとは限りません。</p></section>
+<details><summary>パスフレーズを忘れた場合だけ</summary><section><label for="recovery">控えたテスト用復旧キー</label><input id="recovery" type="password" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="recover" disabled>復旧キーで開く</button><p class="note">通常は入力不要です。選択クラス・年度のデータを解除・照合するだけで、パスフレーズの再設定や保存内容の変更は行いません。</p></section></details>
 <section><h2>テストデータの削除</h2><label><input id="confirmDelete" type="checkbox">選択クラス・年度のテストデータを削除する</label><button id="remove" disabled>確認したテストデータだけ削除</button><p class="note">専用DB内の選択データだけを削除します。DBの容器は残します。</p></section>
 <p class="note">旧暗号化コピーは旧パスフレーズで解除できます。ブラウザの保存領域は消去される場合があり、本番バックアップには使えません。</p>
 </main>
