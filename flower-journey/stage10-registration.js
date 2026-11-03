@@ -52,7 +52,11 @@ async function unlock(boundary,session,scope,rootJSON,secret,recovery=false){
   }catch{if(!closed)api.post({type:'stage10-save-result',ok:false,message:'保存を確認できません。変更は画面に残しています。別タブの更新・保存制限を確認してください。競合時は変更を控え、再ログインしてください。'})}
   finally{saving=false;button.disabled=false}
  }
- const integration=Object.freeze({composeFriend,opened(api){channel=api;button.hidden=false},handle,close});
+ async function memoryRows(){
+  live();const stored=await store.read();live();const latest=stored===null?records:await crypt.open(stored);live();
+  return root.FlowerStage11Memory.view(boundary,session,scope,latest);
+ }
+ const integration=Object.freeze({composeFriend,memoryRows,opened(api){channel=api;button.hidden=false},handle,close});
  return Object.freeze({integration,isDirty:()=>dirty,close});
 }
 Object.defineProperty(root,'FlowerStage10Registration',{value:Object.freeze({unlock})});

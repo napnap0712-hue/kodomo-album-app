@@ -84,6 +84,16 @@ async function start(stage){
  if(!demoAllowed()||phase!=='map'||typeof stage!=='string'||!Object.hasOwn(routes,stage))return;
  phase='loading';const id=generation;active=stage;
  try{
+  let memoryRows=null;
+  if(stage==='memory-catch'&&registration?.memoryRows){
+   memoryRows=await registration.memoryRows();if(id!==generation||!demoAllowed())return;
+   if(!memoryRows.length){
+    phase='map';active='';post(map,{type:'fj-demo-start-failed'});
+    if(window.confirm('園児が0人です。おともだち登録を開きますか？')){await start('friend-registration')}
+    else{display=game;phase='game';returnToMap();notice('FLOWER WORLDから架空のおともだちを登録してください。')}
+    return;
+   }
+  }
   const [path,title]=routes[stage];
   const target=stage==='friend-registration'?friend:game;display=target;
   const reveal=()=>{
@@ -100,7 +110,7 @@ async function start(stage){
   target.title=title+'（デモ・本保存なし）';
   target.onload=reveal;
   // The map stays visible underneath until the game has fully loaded.
-  const documentHTML=stage==='friend-registration'&&registration?registration.composeFriend(html):stage==='friend-registration'&&fictionalRoster?fictionalFriend(html):stage==='photo-add'?demoPhoto(html):html;
+  const documentHTML=memoryRows?window.FlowerStage11Memory.compose(html,memoryRows):stage==='friend-registration'&&registration?registration.composeFriend(html):stage==='friend-registration'&&fictionalRoster?fictionalFriend(html):stage==='photo-add'?demoPhoto(html):html;
   target.srcdoc=isolate(bindPosts(documentHTML),bootstrap(target)+bindPosts(adapter)).replace('<base href="'+new URL('./',location.href).href+'">','<base href="'+base+'">');
  }catch(e){if(id!==generation||!demoAllowed())return;phase='map';active='';post(map,{type:'fj-demo-start-failed'});notice(e.message)}
 }
