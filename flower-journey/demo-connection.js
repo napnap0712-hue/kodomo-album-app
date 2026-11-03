@@ -2,7 +2,7 @@
 (()=>{
 'use strict';
 const game=document.getElementById('demoGame'),friend=document.getElementById('friendRegistration');
-let display=game,session=null,rosterModel=null;
+let display=game,session=null,rosterModel=null,registration=null;
 const fictionalRoster=new URLSearchParams(location.search).get('fictionalRoster')==='1';
 const boundary=window.flowerClassBoundary,channels=new WeakMap();
 function alive(){return boundary.isActive(session)}
@@ -61,14 +61,15 @@ function fictionalFriend(html){
 }
 function notice(message){document.getElementById('status').textContent=message;document.getElementById('notice').hidden=false}
 function close(){
+ registration?.close();registration=null;
  boundary.invalidate(session);session=null;rosterModel=null;
  ++generation;clearTimeout(timer);finishTransition?.();finishTransition=null;
  for(const frame of [game,friend]){frame.hidden=true;frame.classList.remove('return-zoom','enter-zoom');frame.onload=null;frame.removeAttribute('srcdoc');channels.delete(frame)}display=game;phase='closed';active='';
 }
-async function connect(frame,nextSession){
+async function connect(frame,nextSession,registrationIntegration=null){
  close();
  if(!boundary.isActive(nextSession))throw Error('有効なデモセッションがありません');
- session=nextSession;map=frame;const id=generation;
+ session=nextSession;registration=registrationIntegration;map=frame;const id=generation;
  const [html,bridge]=await Promise.all([source('master-LOCKED.html'),source('demo-map-bridge.js')]);
  if(id!==generation||!demoAllowed())throw Error('接続が中止されました');
  phase='map';
@@ -88,17 +89,18 @@ async function start(stage){
   const reveal=()=>{
    if(id!==generation||!demoAllowed())return;
    target.onload=null;target.hidden=false;phase='game';
+   if(target===friend)registration?.opened?.({post:data=>post(friend,data),returnToMap});
    if(target===friend){target.classList.remove('enter-zoom');void target.offsetWidth;target.classList.add('enter-zoom')}
   };
   // Keep the isolated registration document alive throughout this demo login.
   if(target===friend&&friend.hasAttribute('srcdoc')){reveal();return}
-  const [html,adapter]=await Promise.all([source(path),stage==='photo-add'?source('demo-photo-adapter.js'):stage==='friend-registration'?source('demo-friend-adapter.js'):Promise.resolve('')]);
+  const [html,adapter]=await Promise.all([source(path),stage==='photo-add'?source('demo-photo-adapter.js'):stage==='friend-registration'?source(registration?'stage10-friend-bridge.js':'demo-friend-adapter.js'):Promise.resolve('')]);
   if(id!==generation||!demoAllowed())return;
   const base=new URL(stage==='friend-registration'?'./':'games/',location.href).href;
   target.title=title+'（デモ・本保存なし）';
   target.onload=reveal;
   // The map stays visible underneath until the game has fully loaded.
-  const documentHTML=stage==='friend-registration'&&fictionalRoster?fictionalFriend(html):stage==='photo-add'?demoPhoto(html):html;
+  const documentHTML=stage==='friend-registration'&&registration?registration.composeFriend(html):stage==='friend-registration'&&fictionalRoster?fictionalFriend(html):stage==='photo-add'?demoPhoto(html):html;
   target.srcdoc=isolate(bindPosts(documentHTML),bootstrap(target)+bindPosts(adapter)).replace('<base href="'+new URL('./',location.href).href+'">','<base href="'+base+'">');
  }catch(e){if(id!==generation||!demoAllowed())return;phase='map';active='';post(map,{type:'fj-demo-start-failed'});notice(e.message)}
 }
@@ -128,6 +130,9 @@ window.addEventListener('message',e=>{
   return;
  }
  if(!boundary.accepts(session,e,display.contentWindow,channels.get(display))||phase!=='game')return;
+ if(active==='friend-registration'&&registration&&typeof d.type==='string'&&d.type.startsWith('stage10-')){
+  void registration.handle(d,{post:data=>post(friend,data),returnToMap});return;
+ }
  if(active==='friend-registration'&&d.type==='fj-demo-friend-delete'){
   const approved=window.confirm('このおともだちを一覧から削除しますか？');
   post(friend,{type:'fj-demo-friend-delete-result',request:d.request,approved});return;
